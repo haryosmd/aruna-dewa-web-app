@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+**/.nuxt
+**/.output
+**/dist
+docs
+.git
+.codex
+.data
+**/.env
+**/.env.*
+!**/.env.example
+test-results
+playwright-report

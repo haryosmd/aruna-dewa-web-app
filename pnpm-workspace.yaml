@@ -1,0 +1,28 @@
+packages:
+  - apps/*
+  - packages/*
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+  - "@prisma/client"
+  - "@prisma/engines"
+  - prisma
+  - argon2
+
+  - "@embedded-postgres/darwin-arm64"
+  - "@embedded-postgres/darwin-x64"
+  - "@embedded-postgres/linux-x64"
+  - "@embedded-postgres/linux-arm64"
+
+# Satu vite untuk seluruh workspace.
+#
+# `@nuxt/vite-builder@4.5.2` menuntut `^8.2.0`, sementara `@tailwindcss/vite` menerima
+# `^5.2 || ^6 || ^7 || ^8` dan `vitest` membawa rangenya sendiri. Tanpa patokan, `pnpm
+# install` bisa menaruh vite 7 dan vite 8 di satu tree sekaligus: `tailwindcss()` lalu
+# bertipe `Plugin` dari vite yang berbeda dengan yang dibaca `defineNuxtConfig`, dan
+# `pnpm typecheck` gagal di `nuxt.config.ts` tanpa satu baris kode pun berubah.
+#
+# Dipaku ke 8, bukan 7 — 7 membuat `pnpm typecheck` hijau tapi `nuxt dev` mati di
+# `transformWithOxc is not exported by vite`, yang hanya ada di vite 8.
+overrides:
+  vite: ^8.2.0

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="40" viewBox="0 0 120 40" role="img" aria-label="jago">
+  <!--
+    Penanda sementara, digambar sendiri. BUKAN lambang resmi jago dan tidak meniru
+    bentuknya. Ganti berkas ini dengan SVG resmi dari brand kit bank yang bersangkutan;
+    tidak ada kode lain yang perlu diubah.
+  -->
+  <rect x="1" y="1" width="34" height="38" rx="8" fill="#F26F21"/>
+  <path d="M10 26 L18 12 L26 26" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.5 21 H22.5" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"/>
+  <text x="44" y="26" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="15" font-weight="700" fill="#F26F21">jago</text>
+</svg>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="260" height="260" viewBox="0 0 260 260">
+  <!-- Tile songket untuk dipakai sebagai mask-image. Belah ketupat bertingkat di antara rel hairline. -->
+  <g fill="none" stroke="#000" stroke-width="3" stroke-linejoin="round">
+    <path d="M0 65 H260" stroke-width="1.6" />
+    <path d="M0 195 H260" stroke-width="1.6" />
+    <path d="M65 0 V260" stroke-width="1.6" />
+    <path d="M195 0 V260" stroke-width="1.6" />
+
+    <path d="M65 40 L90 65 L65 90 L40 65 Z" />
+    <path d="M195 40 L220 65 L195 90 L170 65 Z" />
+    <path d="M65 170 L90 195 L65 220 L40 195 Z" />
+    <path d="M195 170 L220 195 L195 220 L170 195 Z" />
+
+    <path d="M130 105 L155 130 L130 155 L105 130 Z" />
+    <path d="M0 105 L25 130 L0 155 L-25 130 Z" />
+    <path d="M260 105 L285 130 L260 155 L235 130 Z" />
+    <path d="M130 -25 L155 0 L130 25 L105 0 Z" />
+    <path d="M130 235 L155 260 L130 285 L105 260 Z" />
+
+    <path d="M65 55 L75 65 L65 75 L55 65 Z" stroke-width="1.6" />
+    <path d="M195 55 L205 65 L195 75 L185 65 Z" stroke-width="1.6" />
+    <path d="M65 185 L75 195 L65 205 L55 195 Z" stroke-width="1.6" />
+    <path d="M195 185 L205 195 L195 205 L185 195 Z" stroke-width="1.6" />
+  </g>
+</svg>

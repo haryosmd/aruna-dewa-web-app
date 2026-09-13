@@ -1,0 +1,44 @@
+{
+  "name": "@aruna/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "typecheck": "nuxt typecheck",
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@aruna/contracts": "workspace:*",
+    "@iconify/vue": "^4.3.0",
+    "@tanstack/vue-table": "^8.21.3",
+    "@vueuse/core": "^13.9.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "embla-carousel-autoplay": "^8.5.2",
+    "embla-carousel-vue": "^8.5.2",
+    "gsap": "^3.13.0",
+    "lucide-vue-next": "^0.468.0",
+    "nuxt": "^4.1.1",
+    "pinia": "^3.0.3",
+    "reka-ui": "^2.5.0",
+    "tailwind-merge": "^3.3.1",
+    "vue": "^3.5.18",
+    "vue-sonner": "^1.2.5",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@nuxt/fonts": "^0.11.4",
+    "@pinia/nuxt": "^0.11.2",
+    "@tailwindcss/vite": "^4.1.13",
+    "@types/node": "^22.18.6",
+    "@vue/test-utils": "^2.4.6",
+    "@vueuse/nuxt": "^13.9.0",
+    "happy-dom": "^18.0.1",
+    "tailwindcss": "^4.1.13",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.4",
+    "vue-tsc": "^2.2.12"
+  }
+}

@@ -1,0 +1,380 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  OPERATOR
+}
+
+enum InvitationMemberRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum InvitationStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum OrderStatus {
+  DRAFT
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SETTLED
+  FAILED
+  EXPIRED
+  REFUNDED
+}
+
+enum ImportStatus {
+  PREVIEW
+  READY
+  COMMITTED
+  FAILED
+}
+
+enum RSVPAttendance {
+  YES
+  NO
+  MAYBE
+}
+
+enum MediaProvider {
+  LOCAL
+  S3
+}
+
+enum TokenPurpose {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+  OAUTH_STATE
+}
+
+model User {
+  id                 String              @id @default(uuid()) @db.Uuid
+  email              String              @unique
+  name               String
+  passwordHash       String?
+  emailVerifiedAt    DateTime?
+  role               UserRole            @default(USER)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  oauthIdentities    OAuthIdentity[]
+  sessions           Session[]
+  tokens             OneTimeToken[]
+  memberships        InvitationMember[]
+  createdInvitations Invitation[]         @relation("InvitationCreator")
+  auditEvents        AuditEvent[]         @relation("AuditActor")
+}
+
+model OAuthIdentity {
+  id             String   @id @default(uuid()) @db.Uuid
+  provider       String
+  providerUserId String
+  email          String?
+  userId         String   @db.Uuid
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  @@unique([provider, providerUserId])
+}
+
+model Session {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @db.Uuid
+  refreshTokenHash String
+  expiresAt        DateTime
+  rotatedAt        DateTime?
+  revokedAt        DateTime?
+  userAgent        String?
+  ip               String?
+  createdAt        DateTime @default(now())
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, expiresAt])
+}
+
+model OneTimeToken {
+  id        String       @id @default(uuid()) @db.Uuid
+  userId    String?      @db.Uuid
+  purpose   TokenPurpose
+  tokenHash String       @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime     @default(now())
+  user      User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([purpose, expiresAt])
+}
+
+model Invitation {
+  id              String              @id @default(uuid()) @db.Uuid
+  slug            String              @unique
+  title           String
+  partner1        String
+  partner2        String
+  eventDate       DateTime?
+  venue           String?
+  address         String?
+  status          InvitationStatus    @default(DRAFT)
+  draftDocument   Json
+  draftRevision   Int                 @default(1)
+  activeRevisionId String?            @unique @db.Uuid
+  createdById     String              @db.Uuid
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  publishedAt     DateTime?
+  createdBy       User                @relation("InvitationCreator", fields: [createdById], references: [id])
+  members         InvitationMember[]
+  revisions       PublishedRevision[]
+  activeRevision  PublishedRevision?  @relation("ActiveRevision", fields: [activeRevisionId], references: [id])
+  events          Event[]
+  orders          Order[]
+  entitlements    Entitlement[]
+  guests          Guest[]
+  importJobs      ImportJob[]
+  mediaAssets     MediaAsset[]
+  wishes          Wish[]
+  auditEvents     AuditEvent[]
+}
+
+model InvitationMember {
+  invitationId String               @db.Uuid
+  userId       String               @db.Uuid
+  role         InvitationMemberRole @default(EDITOR)
+  createdAt    DateTime             @default(now())
+  invitation   Invitation           @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([invitationId, userId])
+  @@index([userId])
+}
+
+model PublishedRevision {
+  id           String      @id @default(uuid()) @db.Uuid
+  invitationId String      @db.Uuid
+  revision     Int
+  document     Json
+  createdAt    DateTime    @default(now())
+  invitation   Invitation  @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  activeFor    Invitation? @relation("ActiveRevision")
+  @@unique([invitationId, revision])
+}
+
+model Event {
+  id           String   @id @default(uuid()) @db.Uuid
+  invitationId String   @db.Uuid
+  name         String
+  startsAt     DateTime?
+  endsAt       DateTime?
+  rsvpDeadline DateTime?
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  guestEvents  GuestEvent[]
+  rsvps        RSVP[]
+}
+
+model Package {
+  id          String           @id
+  name        String
+  price       Int
+  active      Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  features    PackageFeature[]
+  orderItems  OrderItem[]
+}
+
+model Feature {
+  id        String           @id
+  name      String
+  active    Boolean          @default(true)
+  packages  PackageFeature[]
+  addons    Addon[]          @relation("AddonFeature")
+  entitlements Entitlement[]
+}
+
+model PackageFeature {
+  packageId String
+  featureId String
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  feature   Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  @@id([packageId, featureId])
+}
+
+model Addon {
+  id        String   @id
+  featureId String
+  name      String
+  price     Int
+  active    Boolean  @default(true)
+  feature   Feature  @relation("AddonFeature", fields: [featureId], references: [id])
+  orderItems OrderItem[]
+}
+
+model Order {
+  id           String      @id @default(uuid()) @db.Uuid
+  invitationId String      @db.Uuid
+  userId       String      @db.Uuid
+  total        Int
+  status       OrderStatus @default(DRAFT)
+  priceSnapshot Json
+  midtransOrderId String?  @unique
+  snapUrl      String?
+  activatedAt  DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  invitation   Invitation  @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  items        OrderItem[]
+  events       PaymentEvent[]
+  entitlements Entitlement[]
+  @@index([invitationId, createdAt])
+}
+
+model OrderItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  orderId   String   @db.Uuid
+  packageId String?
+  addonId   String?
+  name      String
+  price     Int
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  package   Package? @relation(fields: [packageId], references: [id])
+  addon     Addon?    @relation(fields: [addonId], references: [id])
+}
+
+model PaymentEvent {
+  id             String        @id @default(uuid()) @db.Uuid
+  providerEventId String       @unique
+  orderId        String        @db.Uuid
+  status         PaymentStatus
+  grossAmount    Int
+  payload        Json
+  verifiedAt     DateTime?
+  createdAt      DateTime      @default(now())
+  order          Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Entitlement {
+  id           String     @id @default(uuid()) @db.Uuid
+  invitationId String     @db.Uuid
+  orderId      String?    @db.Uuid
+  featureId    String
+  activeUntil  DateTime?
+  grantedAt    DateTime   @default(now())
+  revokedAt    DateTime?
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  order        Order?     @relation(fields: [orderId], references: [id])
+  feature      Feature    @relation(fields: [featureId], references: [id])
+  @@unique([invitationId, featureId])
+}
+
+model Guest {
+  id            String   @id @default(uuid()) @db.Uuid
+  invitationId  String   @db.Uuid
+  displayName   String
+  phone         String?
+  email         String?
+  groupName     String?
+  category      String?
+  quota         Int      @default(1)
+  tokenHash     String   @unique
+  tokenCiphertext String
+  tokenVersion  Int      @default(1)
+  revision      Int      @default(1)
+  openedAt      DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  invitation    Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  events        GuestEvent[]
+  rsvps         RSVP[]
+  wishes        Wish[]
+  @@index([invitationId, displayName])
+}
+
+model GuestEvent {
+  guestId String @db.Uuid
+  eventId String @db.Uuid
+  guest   Guest  @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  @@id([guestId, eventId])
+}
+
+model RSVP {
+  id         String         @id @default(uuid()) @db.Uuid
+  guestId    String         @db.Uuid
+  eventId    String?        @db.Uuid
+  attendance RSVPAttendance
+  count      Int            @default(1)
+  message    String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  guest      Guest          @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  event      Event?         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  @@unique([guestId, eventId])
+}
+
+model Wish {
+  id           String     @id @default(uuid()) @db.Uuid
+  invitationId String     @db.Uuid
+  guestId      String?    @db.Uuid
+  authorName   String
+  message      String
+  approved     Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  guest        Guest?     @relation(fields: [guestId], references: [id], onDelete: SetNull)
+}
+
+model ImportJob {
+  id             String       @id @default(uuid()) @db.Uuid
+  invitationId   String       @db.Uuid
+  createdById    String       @db.Uuid
+  status         ImportStatus @default(PREVIEW)
+  source         String
+  idempotencyKey String?      @unique
+  rows           Json
+  validCount     Int
+  importedCount  Int?
+  errorReport    Json?
+  createdAt      DateTime     @default(now())
+  committedAt    DateTime?
+  invitation     Invitation   @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  @@index([invitationId, createdAt])
+}
+
+model MediaAsset {
+  id           String        @id @default(uuid()) @db.Uuid
+  invitationId String        @db.Uuid
+  provider     MediaProvider
+  key          String        @unique
+  contentType  String
+  bytes        Int
+  originalName String
+  createdAt    DateTime      @default(now())
+  invitation   Invitation    @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+}
+
+model AuditEvent {
+  id           String      @id @default(uuid()) @db.Uuid
+  actorId      String?     @db.Uuid
+  invitationId String?     @db.Uuid
+  action       String
+  targetType   String
+  targetId     String?
+  metadata     Json?
+  createdAt    DateTime    @default(now())
+  actor        User?       @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  invitation   Invitation? @relation(fields: [invitationId], references: [id], onDelete: SetNull)
+  @@index([invitationId, createdAt])
+}

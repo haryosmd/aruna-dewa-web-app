@@ -1,0 +1,345 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   Aruna Dewa design tokens. Authority: DESIGN.md at the repository root.
+   Application surfaces are white; invitation themes carry their own palette.
+--------------------------------------------------------------------------- */
+
+@theme {
+  /* Surfaces */
+  --color-surface: #ffffff;
+  --color-surface-2: #fbf9f6;
+  --color-surface-3: #f4efe8;
+  --color-surface-inverse: #17110d;
+
+  /* Ink */
+  --color-ink: #17110d;
+  --color-ink-muted: #6b5b52;
+  --color-ink-subtle: #7d6e64;
+  --color-ink-inverse: #fbf9f6;
+
+  /* Brand */
+  --color-primary: #b4472a;
+  --color-primary-strong: #8e3319;
+  --color-primary-soft: #fcefe9;
+  --color-gold: #c08a2e;
+  --color-gold-soft: #fbf2e0;
+  --color-sage: #46756c;
+  --color-sage-soft: #edf3f1;
+
+  /* Status */
+  --color-success: #1f7a4d;
+  --color-danger: #b3261e;
+  --color-danger-soft: #fdeceb;
+  --color-warning: #8a5a00;
+
+  /* Lines */
+  --color-border: #e7ded4;
+  --color-border-strong: #c9bcb0;
+  --color-border-input: #8e7f72;
+  --color-ring: #b4472a;
+
+  /* Type families */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-garamond: 'Cormorant Garamond', Georgia, serif;
+  --font-italiana: 'Italiana', Georgia, serif;
+  --font-jost: 'Jost', system-ui, sans-serif;
+
+  /* Fluid type scale */
+  --text-display-1: clamp(2.6rem, 1.55rem + 3.6vw, 4.5rem);
+  --text-display-1--line-height: 1.08;
+  --text-display-1--letter-spacing: -0.032em;
+  --text-display-2: clamp(2.15rem, 1.5rem + 2.4vw, 3.4rem);
+  --text-display-2--line-height: 1.1;
+  --text-display-2--letter-spacing: -0.028em;
+  --text-h1: clamp(2.1rem, 1.5rem + 2.6vw, 3.4rem);
+  --text-h1--line-height: 1.06;
+  --text-h1--letter-spacing: -0.025em;
+  --text-h2: clamp(1.65rem, 1.3rem + 1.6vw, 2.5rem);
+  --text-h2--line-height: 1.12;
+  --text-h2--letter-spacing: -0.02em;
+  --text-h3: clamp(1.25rem, 1.1rem + 0.7vw, 1.625rem);
+  --text-h3--line-height: 1.24;
+  --text-h3--letter-spacing: -0.012em;
+  --text-body-lg: 1.0625rem;
+  --text-body-lg--line-height: 1.65;
+  --text-body: 1rem;
+  --text-body--line-height: 1.62;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.45;
+
+  /* Radius */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+
+  /* Shadows built on warm ink, never neutral black */
+  --shadow-hairline: 0 1px 0 0 rgb(23 17 13 / 0.06);
+  --shadow-lift: 0 1px 2px rgb(23 17 13 / 0.05), 0 6px 16px -6px rgb(23 17 13 / 0.1);
+  --shadow-float: 0 2px 4px rgb(23 17 13 / 0.04), 0 16px 36px -12px rgb(23 17 13 / 0.16);
+  --shadow-veil: 0 4px 8px rgb(23 17 13 / 0.05), 0 32px 64px -20px rgb(23 17 13 / 0.24);
+  --shadow-glow-primary: 0 10px 30px -10px rgb(180 71 42 / 0.5);
+
+  /* Motion */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Containers */
+  --container-shell: 1280px;
+  --container-prose: 42rem;
+}
+
+@layer base {
+  :root {
+    --duration-fast: 120ms;
+    --duration-base: 200ms;
+    --duration-slow: 320ms;
+    --duration-slower: 520ms;
+    --duration-slowest: 840ms;
+
+    --z-raised: 10;
+    --z-sticky: 20;
+    --z-dock: 30;
+    --z-overlay: 40;
+    --z-modal: 50;
+    --z-toast: 60;
+
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    background: var(--color-surface);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    font-synthesis-weight: none;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4 {
+    margin-top: 0;
+    font-family: var(--font-display);
+    font-weight: 600;
+    text-wrap: balance;
+  }
+
+  p {
+    margin-top: 0;
+    text-wrap: pretty;
+  }
+
+  a { color: inherit; }
+
+  button, input, select, textarea { font: inherit; color: inherit; }
+
+  fieldset {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  :where(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid var(--color-ring);
+    outline-offset: 3px;
+    border-radius: var(--radius-xs);
+  }
+
+  ::selection {
+    background: var(--color-primary);
+    color: #fff;
+  }
+
+  img, svg, video { max-width: 100%; }
+
+  /* Anything that GSAP animates in stays visible when JS never runs. */
+  [data-reveal], [data-hero] { opacity: 1; }
+}
+
+@layer components {
+  .shell {
+    width: min(var(--container-shell), calc(100% - 40px));
+    margin-inline: auto;
+  }
+
+  .section {
+    padding-block: 4rem;
+    scroll-margin-top: 5rem;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-primary);
+  }
+
+  /* Masked line reveal target used by SplitText.
+     Kotak klip mengikuti line-box, sedangkan ekor glyph (g, y, j) jatuh di bawahnya.
+     Padding memberi ruang untuk descender; margin negatif membatalkannya dari layout
+     supaya jarak antarbaris tidak berubah. */
+  .split-line-wrap {
+    overflow: hidden;
+    padding-block-end: 0.18em;
+    margin-block-end: -0.18em;
+  }
+
+  .grain {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /*
+   * Dashboard chrome. These mirror the components in `components/ui/` for the dense,
+   * form-heavy screens where a class is less noise than a wrapper component.
+   */
+  .heading {
+    font-family: var(--font-display);
+    font-size: var(--text-h1);
+    line-height: var(--text-h1--line-height);
+    letter-spacing: var(--text-h1--letter-spacing);
+    font-weight: 600;
+  }
+
+  .copy {
+    max-width: var(--container-prose);
+    color: var(--color-ink-muted);
+  }
+
+  .button {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    padding: 0.6rem 1.1rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 200ms, color 200ms, border-color 200ms, box-shadow 200ms;
+  }
+  .button:disabled { opacity: 0.55; cursor: not-allowed; }
+  .button-primary { background: var(--color-primary); color: #fff; box-shadow: var(--shadow-lift); }
+  .button-primary:hover:not(:disabled) { background: var(--color-primary-strong); }
+  .button-secondary { border-color: var(--color-border-strong); background: var(--color-surface); color: var(--color-ink); }
+  .button-secondary:hover:not(:disabled) { border-color: var(--color-ink); background: var(--color-surface-2); }
+  .button-quiet { padding-inline: 0.35rem; color: var(--color-primary); background: transparent; }
+  .button-quiet:hover:not(:disabled) { text-decoration: underline; text-underline-offset: 4px; }
+
+  .field {
+    display: grid;
+    gap: 0.4rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+  .field small { font-weight: 400; font-size: 0.8125rem; color: var(--color-ink-subtle); }
+
+  .control {
+    min-height: 2.75rem;
+    width: 100%;
+    border: 1px solid var(--color-border-input);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    padding: 0.6rem 0.8rem;
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--color-ink);
+    transition: border-color 200ms, box-shadow 200ms;
+  }
+  .control:hover { border-color: color-mix(in srgb, var(--color-ink) 55%, transparent); }
+  .control:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-soft); outline: none; }
+  .control[aria-invalid='true'] { border-color: var(--color-danger); }
+  .control[type='color'] { padding: 0.25rem; min-height: 2.75rem; cursor: pointer; }
+
+  .error {
+    margin: 0;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-danger);
+  }
+
+  .notice {
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-2);
+    padding: 0.9rem 1.1rem;
+    color: var(--color-ink-muted);
+  }
+
+  .card {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-hairline);
+  }
+
+  /*
+   * `position: relative` matters: `.sr-only` cells are absolutely positioned, and without
+   * a positioned ancestor they resolve against the viewport and widen the whole document
+   * instead of scrolling inside the table.
+   */
+  .table-wrap { position: relative; overflow-x: auto; }
+  .table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
+  .table-wrap th, .table-wrap td { padding: 0.75rem 0.85rem; text-align: left; border-bottom: 1px solid var(--color-border); }
+  .table-wrap th { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-ink-subtle); }
+}
+
+@media (min-width: 768px) {
+  .shell { width: min(var(--container-shell), calc(100% - 64px)); }
+  .section { padding-block: 7rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
