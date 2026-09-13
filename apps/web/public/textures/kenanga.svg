@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
+  <!-- Tile kenanga untuk mask-image: kuntum berkelopak enam, diselingi kuncup. -->
+  <g fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(45 45)">
+      <path d="M0 -2 C-5 -16 -4 -26 1 -31" /><path d="M0 -2 C-13 -11 -20 -20 -20 -28" />
+      <path d="M0 -2 C13 -11 20 -20 20 -28" /><path d="M0 -2 C-12 4 -18 14 -18 25" />
+      <path d="M0 -2 C12 4 18 14 18 25" /><circle cx="0" cy="-2" r="3.5" />
+    </g>
+    <g transform="translate(135 135)">
+      <path d="M0 -2 C-5 -16 -4 -26 1 -31" /><path d="M0 -2 C-13 -11 -20 -20 -20 -28" />
+      <path d="M0 -2 C13 -11 20 -20 20 -28" /><path d="M0 -2 C-12 4 -18 14 -18 25" />
+      <path d="M0 -2 C12 4 18 14 18 25" /><circle cx="0" cy="-2" r="3.5" />
+    </g>
+    <g transform="translate(135 45)"><ellipse cx="0" cy="0" rx="6" ry="11" /><path d="M0 11 V26" /></g>
+    <g transform="translate(45 135)"><ellipse cx="0" cy="0" rx="6" ry="11" /><path d="M0 11 V26" /></g>
+  </g>
+</svg>

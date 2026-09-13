@@ -205,6 +205,9 @@ undangan, bukan hanya paletnya. Tidak ada direktori layout per tema; satu render
 | **aruna-alba** | Minimalis modern, putih tulang, garis tegas | `#F4F3F1` / `#15161A` / `#4A5560` / `#9AA3A8` | Instrument Serif + Plus Jakarta Sans | mosaic |
 | **aruna-sogan** | Terinspirasi adat Jawa: sogan, kunir, kawung | `#F6EEE2` / `#241809` / `#7A4A18` / `#A9833F` | Cormorant Garamond + Plus Jakarta Sans | masonry |
 | **aruna-gonjong** | Terinspirasi adat Minang: marun, songket | `#FBF1E7` / `#25101A` / `#8E2433` / `#BE9440` | Fraunces + Plus Jakarta Sans | rail |
+| **aruna-mendung** | Mega mendung Cirebon: awan berundak, biru laut | `#F2F6F8` / `#10222E` / `#1F4E68` / `#B8842B` | Cormorant Garamond + Jost | mosaic |
+| **aruna-kenanga** | Blush kenanga: merah jambu pudar, kupu-kupu | `#FBF1EF` / `#2A1A1C` / `#97364A` / `#C08A7A` | Italiana + Plus Jakarta Sans | rail |
+| **aruna-bentar** | Terinspirasi adat Bali: candi bentar, poleng, padas | `#F5F1E8` / `#1C211E` / `#2B6252` / `#B08A3C` | Instrument Serif + Jost | masonry |
 
 **Ladang ornamen.** Section tidak lagi memasang satu `frame` 34rem di tengah pada `opacity-[0.18]`.
 `<InvitationOrnamentField>` memasang 2–6 keping kategori `layer` pada jangkar tepi (`top-left`,
@@ -217,9 +220,16 @@ Kepadatannya diatur `document.sections[cover].data.ornamentIntensity`
 Field ini hidup di `section.data`, **bukan** di `tokens`: menambah key ke `tokens` menggerbangi
 perubahannya di balik entitlement `design` dan membuat `tests/contracts.test.ts` gagal.
 
-Frame, divider, corner, motif, dan symbol **tidak pernah berulang antar tema** — kalau dua tema
+Frame, divider, corner, motif, symbol, dan seal **tidak pernah berulang antar tema** — kalau dua tema
 memakai glyph yang sama pada salah satu slot itu, salah satunya belum benar-benar punya wajah.
 Floral, monogram, dan garland boleh berbagi.
+
+**Tema gelap belum mungkin.** Tinta tombol dipanggang sebagai `#FFFDF7` di
+`MusicPlayer.vue` dan di `contrast.ts`, jadi pasangan `button` menuntut `primary` cukup gelap
+untuk menampung teks nyaris putih; sementara pasangan `accent` menuntut `primary` cukup terang
+di atas latar. Pada latar gelap kedua tuntutan itu saling meniadakan — diuji, bahkan latar hitam
+murni hanya mencapai 3,55:1 pada `accent`. Tema gelap karena itu menunggu tinta tombol diturunkan
+dari tema (mis. `--iv-on-primary`), bukan menunggu palet yang lebih pintar.
 
 `primary` bloom dan lumine dikoreksi pada 2026-09-12: `#B4472A` hanya 4,45:1 di atas tone `tint`
 dan `#9C7C38` hanya 3,60:1 di atas latarnya sendiri, padahal keduanya dipakai sebagai teks biasa.

@@ -16,7 +16,7 @@ export function buildGuestUrl(base: string, slug: string, displayName: string, t
 
 export const sectionTypes = ['cover', 'couple', 'events', 'countdown', 'gallery', 'story', 'rundown', 'dresscode', 'video', 'gift', 'rsvp', 'wishes', 'closing', 'music'] as const
 
-export const templateIds = ['aruna-bloom', 'aruna-lumine', 'aruna-senja', 'aruna-alba', 'aruna-sogan', 'aruna-gonjong'] as const
+export const templateIds = ['aruna-bloom', 'aruna-lumine', 'aruna-senja', 'aruna-alba', 'aruna-sogan', 'aruna-gonjong', 'aruna-mendung', 'aruna-kenanga', 'aruna-bentar'] as const
 export type TemplateId = (typeof templateIds)[number]
 
 /** `dm-sans` is retained so documents written before the theme system still validate. */
@@ -42,6 +42,9 @@ export const templates: { id: TemplateId; name: string; version: number; tagline
   { id: 'aruna-alba', name: 'Aruna Alba', version: 1, tagline: 'Minimalis modern: putih tulang, garis tegas, tanpa hiasan berlebih.', accent: '#9AA3A8', tokens: { background: '#F4F3F1', foreground: '#15161A', primary: '#4A5560', font: 'instrument' } },
   { id: 'aruna-sogan', name: 'Aruna Sogan', version: 1, tagline: 'Terinspirasi adat Jawa: sogan, kunir, dan kawung.', accent: '#A9833F', tokens: { background: '#F6EEE2', foreground: '#241809', primary: '#7A4A18', font: 'cormorant' } },
   { id: 'aruna-gonjong', name: 'Aruna Gonjong', version: 1, tagline: 'Terinspirasi adat Minang: marun rumah gadang dan kilau songket.', accent: '#BE9440', tokens: { background: '#FBF1E7', foreground: '#25101A', primary: '#8E2433', font: 'fraunces' } },
+  { id: 'aruna-mendung', name: 'Aruna Mendung', version: 1, tagline: 'Mega mendung Cirebon: awan berundak di atas biru laut.', accent: '#B8842B', tokens: { background: '#F2F6F8', foreground: '#10222E', primary: '#1F4E68', font: 'cormorant' } },
+  { id: 'aruna-kenanga', name: 'Aruna Kenanga', version: 1, tagline: 'Blush kenanga: merah jambu pudar, kelopak pita, dan kupu-kupu.', accent: '#C08A7A', tokens: { background: '#FBF1EF', foreground: '#2A1A1C', primary: '#97364A', font: 'italiana' } },
+  { id: 'aruna-bentar', name: 'Aruna Bentar', version: 1, tagline: 'Terinspirasi adat Bali: candi bentar, poleng, dan batu padas.', accent: '#B08A3C', tokens: { background: '#F5F1E8', foreground: '#1C211E', primary: '#2B6252', font: 'instrument' } },
 ]
 
 export function templateById(id: string) {

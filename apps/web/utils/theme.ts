@@ -46,7 +46,7 @@ export interface ThemePresentation {
  *
  * `ornaments` adalah yang membuat tema benar-benar berbeda: masing-masing membawa bingkai,
  * pemisah, sudut, motif, dan simbolnya sendiri — bukan sekadar tiga warna yang ditukar.
- * Keenam frame, divider, corner, motif, dan symbol di bawah ini tidak ada yang berulang.
+ * Kesembilan frame, divider, corner, motif, dan symbol di bawah ini tidak ada yang berulang.
  */
 export const themePresentation: Record<TemplateId, ThemePresentation> = {
   'aruna-bloom': {
@@ -175,6 +175,75 @@ export const themePresentation: Record<TemplateId, ThemePresentation> = {
       garland: 'garland',
       seal: 'seal-gonjong',
       layers: ['layer-bloom-songket', 'layer-cascade-songket', 'layer-crown-songket', 'layer-cluster-songket', 'layer-swag-songket'],
+    },
+  },
+  'aruna-mendung': {
+    body: 'jost',
+    cover: '/images/venue.webp',
+    mood: 'Pesisiran · Biru · Awan',
+    script: scriptStack,
+    gallery: 'mosaic',
+    backdrop: {
+      motif: { src: '/textures/mega-mendung.svg', size: '220px', opacity: 0.05 },
+    },
+    ornaments: {
+      frame: 'frame-mendung',
+      divider: 'divider-wave',
+      corner: 'corner-wadasan',
+      floral: 'bloom',
+      floralAlt: 'sprig',
+      monogram: 'monogram-shield',
+      motif: 'motif-mega-mendung',
+      symbol: 'symbol-wadasan',
+      garland: 'garland-slim',
+      seal: 'seal-mendung',
+      layers: ['layer-bloom-mendung', 'layer-cascade-mendung', 'layer-crown-mendung', 'layer-cluster-mendung', 'layer-swag-mendung'],
+    },
+  },
+  'aruna-kenanga': {
+    body: 'jakarta',
+    cover: '/images/couple.webp',
+    mood: 'Blush · Kenanga · Lembut',
+    script: scriptStack,
+    gallery: 'rail',
+    backdrop: {
+      motif: { src: '/textures/kenanga.svg', size: '180px', opacity: 0.05 },
+    },
+    ornaments: {
+      frame: 'frame-kenanga',
+      divider: 'divider-row',
+      corner: 'corner-kenanga',
+      floral: 'jasmine',
+      floralAlt: 'bloom',
+      monogram: 'monogram-laurel',
+      motif: 'motif-kenanga',
+      symbol: 'symbol-kupu',
+      garland: 'garland',
+      seal: 'seal-kenanga',
+      layers: ['layer-bloom-kenanga', 'layer-cascade-kenanga', 'layer-crown-kenanga', 'layer-cluster-kenanga', 'layer-swag-kenanga'],
+    },
+  },
+  'aruna-bentar': {
+    body: 'jost',
+    cover: '/images/hero.webp',
+    mood: 'Bali · Padas · Poleng',
+    script: scriptStack,
+    gallery: 'masonry',
+    backdrop: {
+      motif: { src: '/textures/poleng.svg', size: '160px', opacity: 0.04 },
+    },
+    ornaments: {
+      frame: 'frame-bentar',
+      divider: 'divider-knot',
+      corner: 'corner-poleng',
+      floral: 'frangipani',
+      floralAlt: 'jasmine',
+      monogram: 'monogram-diamond',
+      motif: 'motif-poleng',
+      symbol: 'symbol-payung',
+      garland: 'garland',
+      seal: 'seal-bentar',
+      layers: ['layer-bloom-bentar', 'layer-cascade-bentar', 'layer-crown-bentar', 'layer-cluster-bentar', 'layer-swag-bentar'],
     },
   },
 }

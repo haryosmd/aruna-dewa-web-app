@@ -51,6 +51,9 @@ export const ornamentBank = {
   'frame-line': { component: 'OrnamentFrameLine', name: 'Garis polos', category: 'frame', ratio: 300 / 420 },
   'frame-gunungan': { component: 'OrnamentFrameGunungan', name: 'Gunungan', category: 'frame', ratio: 300 / 420 },
   'frame-gonjong': { component: 'OrnamentFrameGonjong', name: 'Gerbang gonjong', category: 'frame', ratio: 300 / 420 },
+  'frame-mendung': { component: 'OrnamentFrameMendung', name: 'Gerbang mendung', category: 'frame', ratio: 300 / 420 },
+  'frame-kenanga': { component: 'OrnamentFrameKenanga', name: 'Gerbang kenanga', category: 'frame', ratio: 300 / 420 },
+  'frame-bentar': { component: 'OrnamentFrameBentar', name: 'Candi bentar', category: 'frame', ratio: 300 / 420 },
 
   // Divider
   'divider-leaf': { component: 'OrnamentDivider', name: 'Daun', category: 'divider', ratio: 8 },
@@ -71,6 +74,9 @@ export const ornamentBank = {
   'corner-batik': { component: 'OrnamentCornerBatik', name: 'Siku batik', category: 'corner', ratio: 1 },
   'corner-fan': { component: 'OrnamentCornerFan', name: 'Kipas sudut', category: 'corner', ratio: 1 },
   'corner-pucuak-rabuang': { component: 'OrnamentCornerPucuakRabuang', name: 'Pucuak rabuang', category: 'corner', ratio: 1 },
+  'corner-wadasan': { component: 'OrnamentCornerWadasan', name: 'Karang wadasan', category: 'corner', ratio: 1 },
+  'corner-kenanga': { component: 'OrnamentCornerKenanga', name: 'Sulur kenanga', category: 'corner', ratio: 1 },
+  'corner-poleng': { component: 'OrnamentCornerPoleng', name: 'Siku poleng', category: 'corner', ratio: 1 },
 
   // Floral
   'sprig': { component: 'OrnamentSprig', name: 'Ranting berdaun', category: 'floral', ratio: 120 / 168 },
@@ -92,6 +98,9 @@ export const ornamentBank = {
   'motif-arabesque': { component: 'OrnamentMotifArabesque', name: 'Arabesque', category: 'motif', ratio: 3 },
   'motif-geometric': { component: 'OrnamentMotifGeometric', name: 'Geometris', category: 'motif', ratio: 3 },
   'motif-rule': { component: 'OrnamentMotifRule', name: 'Rel hairline', category: 'motif', ratio: 3 },
+  'motif-mega-mendung': { component: 'OrnamentMotifMegaMendung', name: 'Mega mendung', category: 'motif', ratio: 3 },
+  'motif-kenanga': { component: 'OrnamentMotifKenanga', name: 'Kenanga', category: 'motif', ratio: 3 },
+  'motif-poleng': { component: 'OrnamentMotifPoleng', name: 'Poleng', category: 'motif', ratio: 3 },
 
   // Symbol
   'symbol-rings': { component: 'OrnamentSymbolRings', name: 'Dua cincin', category: 'symbol', ratio: 1.4 },
@@ -100,6 +109,9 @@ export const ornamentBank = {
   'symbol-lotus': { component: 'OrnamentSymbolLotus', name: 'Lotus', category: 'symbol', ratio: 1.4 },
   'symbol-fan': { component: 'OrnamentSymbolFan', name: 'Kipas', category: 'symbol', ratio: 140 / 110 },
   'symbol-candle': { component: 'OrnamentSymbolCandle', name: 'Lilin', category: 'symbol', ratio: 90 / 140 },
+  'symbol-wadasan': { component: 'OrnamentSymbolWadasan', name: 'Karang & awan', category: 'symbol', ratio: 140 / 110 },
+  'symbol-kupu': { component: 'OrnamentSymbolKupu', name: 'Kupu-kupu', category: 'symbol', ratio: 140 / 120 },
+  'symbol-payung': { component: 'OrnamentSymbolPayung', name: 'Payung pagut', category: 'symbol', ratio: 110 / 140 },
 
   // Monogram — semuanya menerima prop `initials`.
   'monogram-laurel': { component: 'OrnamentMonogram', name: 'Laurel', category: 'monogram', ratio: 1 },
@@ -148,6 +160,24 @@ export const ornamentBank = {
   'layer-cluster-songket': layer('OrnamentLayerClusterSongket', 'Rumpun pucuak rabuang', 'cluster', 1),
   'layer-swag-songket': layer('OrnamentLayerSwagSongket', 'Penutup songket', 'swag', 600 / 220),
 
+  'layer-bloom-mendung': layer('OrnamentLayerBloomMendung', 'Mekar mendung', 'bloom', 480 / 260),
+  'layer-cascade-mendung': layer('OrnamentLayerCascadeMendung', 'Pilinan mendung', 'cascade', 260 / 480),
+  'layer-crown-mendung': layer('OrnamentLayerCrownMendung', 'Mahkota mendung', 'crown', 480 / 200),
+  'layer-cluster-mendung': layer('OrnamentLayerClusterMendung', 'Rumpun sudut mendung', 'cluster', 1),
+  'layer-swag-mendung': layer('OrnamentLayerSwagMendung', 'Penutup mendung', 'swag', 600 / 220),
+
+  'layer-bloom-kenanga': layer('OrnamentLayerBloomKenanga', 'Mekar kenanga', 'bloom', 480 / 260),
+  'layer-cascade-kenanga': layer('OrnamentLayerCascadeKenanga', 'Untaian kenanga', 'cascade', 260 / 480),
+  'layer-crown-kenanga': layer('OrnamentLayerCrownKenanga', 'Mahkota kenanga', 'crown', 480 / 200),
+  'layer-cluster-kenanga': layer('OrnamentLayerClusterKenanga', 'Rumpun sudut kenanga', 'cluster', 1),
+  'layer-swag-kenanga': layer('OrnamentLayerSwagKenanga', 'Penutup kenanga', 'swag', 600 / 220),
+
+  'layer-bloom-bentar': layer('OrnamentLayerBloomBentar', 'Undakan bentar', 'bloom', 480 / 260),
+  'layer-cascade-bentar': layer('OrnamentLayerCascadeBentar', 'Pita poleng', 'cascade', 260 / 480),
+  'layer-crown-bentar': layer('OrnamentLayerCrownBentar', 'Mahkota bentar', 'crown', 480 / 200),
+  'layer-cluster-bentar': layer('OrnamentLayerClusterBentar', 'Rumpun sudut bentar', 'cluster', 1),
+  'layer-swag-bentar': layer('OrnamentLayerSwagBentar', 'Penutup bentar', 'swag', 600 / 220),
+
   /*
    * Seal — penutup amplop di cover gate. Menerima prop `initials` dan mengukir tembus
    * dengan `var(--iv-bg)`, jadi ukirannya selalu senada latar tema.
@@ -158,6 +188,9 @@ export const ornamentBank = {
   'seal-tumpal': { component: 'OrnamentSealTumpal', name: 'Tumpal', category: 'seal', ratio: 120 / 160 },
   'seal-ring': { component: 'OrnamentSealRing', name: 'Cakram', category: 'seal', ratio: 120 / 160 },
   'seal-gonjong': { component: 'OrnamentSealGonjong', name: 'Gonjong', category: 'seal', ratio: 120 / 160 },
+  'seal-mendung': { component: 'OrnamentSealMendung', name: 'Mendung', category: 'seal', ratio: 120 / 160 },
+  'seal-kenanga': { component: 'OrnamentSealKenanga', name: 'Kenanga', category: 'seal', ratio: 120 / 160 },
+  'seal-bentar': { component: 'OrnamentSealBentar', name: 'Bentar', category: 'seal', ratio: 120 / 160 },
 
   // Venue — ilustrasi gedung untuk kartu acara. Dipilih pasangan, bukan tema.
   'venue-joglo': { component: 'OrnamentVenueJoglo', name: 'Joglo', category: 'venue', ratio: 1.5 },

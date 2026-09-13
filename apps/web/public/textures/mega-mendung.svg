@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220">
+  <!-- Tile mega mendung untuk mask-image. Warnanya datang dari CSS, bukan dari berkas ini. -->
+  <g fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <g>
+      <path d="M10 70 C10 50 22 38 42 38 C48 20 64 10 82 14 C92 2 98 20 88 28 C72 24 62 32 58 48 C40 46 28 56 28 70 Z" />
+      <path d="M18 84 C18 72 28 64 44 64 C48 52 60 46 74 48" />
+    </g>
+    <g transform="translate(110 110)">
+      <path d="M10 70 C10 50 22 38 42 38 C48 20 64 10 82 14 C92 2 98 20 88 28 C72 24 62 32 58 48 C40 46 28 56 28 70 Z" />
+      <path d="M18 84 C18 72 28 64 44 64 C48 52 60 46 74 48" />
+    </g>
+    <g transform="translate(110 0)">
+      <path d="M10 70 C10 50 22 38 42 38 C48 20 64 10 82 14" />
+    </g>
+    <g transform="translate(0 110)">
+      <path d="M10 70 C10 50 22 38 42 38 C48 20 64 10 82 14" />
+    </g>
+  </g>
+</svg>
