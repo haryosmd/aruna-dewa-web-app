@@ -66,11 +66,11 @@ const stats = heroStats
         </p>
 
         <div data-hero-step class="flex flex-wrap items-center gap-3">
-          <UiButton as="NuxtLink" to="/order" size="lg">
+          <UiButton id="landing-hero-order" as="NuxtLink" to="/order" size="lg">
             Mulai buat undangan
             <ArrowRight :size="18" aria-hidden="true" />
           </UiButton>
-          <UiButton as="NuxtLink" to="/i/demo" tone="outline" size="lg">
+          <UiButton id="landing-hero-demo" as="NuxtLink" to="/i/demo" tone="outline" size="lg">
             <Play :size="16" aria-hidden="true" />
             Buka contohnya
           </UiButton>

@@ -58,7 +58,7 @@ useHead({ title: 'Atur ulang kata sandi — Aruna Dewa' })
       </p>
     </header>
 
-    <UiButton v-if="done" as="NuxtLink" to="/login" size="lg" block>
+    <UiButton v-if="done" id="auth-reset-to-login" as="NuxtLink" to="/login" size="lg" block>
       Masuk sekarang
       <ArrowRight :size="17" aria-hidden="true" />
     </UiButton>
@@ -67,12 +67,12 @@ useHead({ title: 'Atur ulang kata sandi — Aruna Dewa' })
       <p class="notice m-0" role="alert">
         Tautan pemulihan tidak lengkap. Buka kembali tautan dari email, atau minta tautan baru.
       </p>
-      <UiButton as="NuxtLink" to="/forgot-password" tone="outline" size="lg" block>Minta tautan baru</UiButton>
+      <UiButton id="auth-reset-request-new" as="NuxtLink" to="/forgot-password" tone="outline" size="lg" block>Minta tautan baru</UiButton>
     </template>
 
     <form v-else class="grid gap-5" @submit.prevent="submit">
       <fieldset :disabled="!ready || pending" class="grid gap-4">
-        <UiField v-slot="{ id }" label="Kata sandi baru" required>
+        <UiField id="auth-reset-password" v-slot="{ id }" label="Kata sandi baru" required>
           <div class="grid gap-2">
             <div class="relative">
               <UiInput
@@ -85,6 +85,7 @@ useHead({ title: 'Atur ulang kata sandi — Aruna Dewa' })
                 required
               />
               <button
+                id="auth-reset-reveal"
                 type="button"
                 class="absolute right-1 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-md text-ink-muted hover:text-ink"
                 :aria-label="revealed ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
@@ -114,7 +115,7 @@ useHead({ title: 'Atur ulang kata sandi — Aruna Dewa' })
           {{ error }}
         </p>
 
-        <UiButton type="submit" size="lg" block :loading="pending">
+        <UiButton id="auth-reset-submit" type="submit" size="lg" block :loading="pending">
           {{ pending ? 'Menyimpan…' : 'Simpan kata sandi' }}
           <ShieldCheck v-if="!pending" :size="17" aria-hidden="true" />
         </UiButton>

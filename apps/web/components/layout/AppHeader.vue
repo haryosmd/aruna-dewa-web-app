@@ -55,13 +55,14 @@ const dashboardLabel = computed(() => (auth.me ? 'Dashboard' : 'Masuk'))
     )"
   >
     <div class="shell flex h-[4.5rem] items-center justify-between gap-6">
-      <NuxtLink to="/" class="no-underline" aria-label="Aruna Dewa, ke beranda">
+      <NuxtLink id="nav-home" to="/" class="no-underline" aria-label="Aruna Dewa, ke beranda">
         <BrandLogo />
       </NuxtLink>
 
       <nav class="hidden items-center gap-1 lg:flex" aria-label="Bagian halaman">
         <a
           v-for="section in props.sections"
+          :id="`nav-section-${section.href.replace('#', '')}`"
           :key="section.href"
           :href="section.href"
           :aria-current="active === section.href ? 'true' : undefined"
@@ -74,19 +75,21 @@ const dashboardLabel = computed(() => (auth.me ? 'Dashboard' : 'Masuk'))
 
       <div class="flex items-center gap-2">
         <NuxtLink
+          id="nav-dashboard"
           :to="dashboardHref"
           class="hidden rounded-full px-3.5 py-2 text-[0.875rem] font-semibold text-ink no-underline transition-colors duration-200 hover:text-primary sm:inline-flex"
         >
           {{ dashboardLabel }}
         </NuxtLink>
 
-        <UiButton as="NuxtLink" to="/order" size="sm" class="hidden sm:inline-flex">
+        <UiButton id="nav-order" as="NuxtLink" to="/order" size="sm" class="hidden sm:inline-flex">
           Buat undangan
           <ArrowRight :size="16" aria-hidden="true" />
         </UiButton>
 
         <DialogRoot v-model:open="open">
           <DialogTrigger
+            id="nav-menu-toggle"
             class="grid h-11 w-11 place-items-center rounded-full border border-border-strong text-ink disabled:opacity-60 lg:hidden"
             aria-label="Menu"
             :disabled="!ready"
@@ -121,10 +124,10 @@ const dashboardLabel = computed(() => (auth.me ? 'Dashboard' : 'Masuk'))
               </nav>
 
               <div class="mt-auto grid gap-3">
-                <UiButton as="NuxtLink" :to="dashboardHref" tone="outline" block @click="open = false">
+                <UiButton id="nav-menu-dashboard" as="NuxtLink" :to="dashboardHref" tone="outline" block @click="open = false">
                   {{ dashboardLabel }}
                 </UiButton>
-                <UiButton as="NuxtLink" to="/order" block @click="open = false">
+                <UiButton id="nav-menu-order" as="NuxtLink" to="/order" block @click="open = false">
                   Buat undangan
                   <ArrowRight :size="16" aria-hidden="true" />
                 </UiButton>

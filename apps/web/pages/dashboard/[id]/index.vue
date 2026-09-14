@@ -52,6 +52,7 @@ useHead({ title: () => invitation.value?.title
       <div class="mt-1 flex flex-wrap items-center gap-3">
         <UiBadge :tone="isPublished ? 'sage' : 'gold'" size="md">{{ isPublished ? 'Tayang' : 'Draf' }}</UiBadge>
         <NuxtLink
+          id="dash-view-public"
           :to="`/i/${invitation.slug}`"
           target="_blank"
           class="inline-flex min-h-11 items-center gap-1.5 text-[0.9375rem] font-semibold text-primary no-underline underline-offset-4 hover:underline"
@@ -93,13 +94,13 @@ useHead({ title: () => invitation.value?.title
 
     <div v-if="!isPublished" class="notice grid gap-3">
       <p class="m-0"><strong class="text-ink">Undangan belum tayang.</strong> Selesaikan pembayaran, lalu terbitkan saat kalian siap.</p>
-      <UiButton v-if="auth.isOperator" class="justify-self-start" :loading="actionPending" @click="activate">
+      <UiButton v-if="auth.isOperator" id="dash-operator-activate" class="justify-self-start" :loading="actionPending" @click="activate">
         {{ actionPending ? 'Mengaktifkan…' : 'Aktifkan sebagai operator' }}
       </UiButton>
       <p v-else class="m-0 text-caption">Aktivasi operator hanya tersedia untuk role yang diizinkan.</p>
     </div>
 
-    <UiButton as="NuxtLink" :to="`/dashboard/${invitation.id}/editor`" size="lg" class="justify-self-start">
+    <UiButton id="dash-open-editor" as="NuxtLink" :to="`/dashboard/${invitation.id}/editor`" size="lg" class="justify-self-start">
       <PencilLine :size="17" aria-hidden="true" />
       Edit undangan
     </UiButton>
@@ -108,7 +109,7 @@ useHead({ title: () => invitation.value?.title
   <div v-else class="shell section grid gap-4">
     <p v-if="error" class="notice m-0" role="alert">
       {{ error }}
-      <button class="button button-secondary ml-2" type="button" @click="load">Coba lagi</button>
+      <button id="dash-retry" class="button button-secondary ml-2" type="button" @click="load">Coba lagi</button>
     </p>
     <p v-else class="m-0 text-ink-muted">Memuat undangan…</p>
   </div>

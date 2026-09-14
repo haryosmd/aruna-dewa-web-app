@@ -101,6 +101,7 @@ useArunaMotion(root, ({ revealText, revealUp }) => {
           </p>
 
           <UiButton
+            :id="`landing-package-${pack.id}`"
             as="NuxtLink"
             :to="`/order?package=${pack.id}`"
             :tone="pack.id === recommended ? 'gold' : 'primary'"

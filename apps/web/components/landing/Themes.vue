@@ -49,7 +49,7 @@ useArunaMotion(root, ({ revealText, revealUp, bloomIn, cascadeIn }) => {
         </p>
       </header>
 
-      <UiCarousel label="Tema undangan" align="start">
+      <UiCarousel label="Tema undangan" align="start" control-id="landing-themes">
         <article
           v-for="theme in themes"
           :key="theme.id"
@@ -118,6 +118,7 @@ useArunaMotion(root, ({ revealText, revealUp, bloomIn, cascadeIn }) => {
                 memuat teks yang terlihat, sesuai WCAG "Label in Name".
               -->
               <NuxtLink
+                :id="`landing-theme-${theme.id}`"
                 :to="`/i/demo?tema=${theme.id}`"
                 class="mt-1 inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-border-strong px-4 text-[0.875rem] font-semibold text-ink no-underline transition-colors duration-200 hover:border-primary hover:text-primary"
               >

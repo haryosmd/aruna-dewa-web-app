@@ -56,7 +56,7 @@ useHead({ title: 'Masuk — Aruna Dewa' })
       </p>
     </header>
 
-    <UiGoogleButton :href="googleHref" />
+    <UiGoogleButton id="auth-login-google" :href="googleHref" />
 
     <div class="flex items-center gap-4" aria-hidden="true">
       <span class="h-px flex-1 bg-border" />
@@ -66,11 +66,11 @@ useHead({ title: 'Masuk — Aruna Dewa' })
 
     <form class="grid gap-5" @submit.prevent="submit">
       <fieldset :disabled="!ready || pending" class="grid gap-4">
-        <UiField v-slot="{ id }" label="Email" required>
+        <UiField id="auth-login-email" v-slot="{ id }" label="Email" required>
           <UiInput :id="id" v-model="email" type="email" autocomplete="email" placeholder="nama@email.com" required />
         </UiField>
 
-        <UiField v-slot="{ id }" label="Kata sandi" required>
+        <UiField id="auth-login-password" v-slot="{ id }" label="Kata sandi" required>
           <div class="relative">
             <UiInput
               :id="id"
@@ -82,6 +82,7 @@ useHead({ title: 'Masuk — Aruna Dewa' })
               required
             />
             <button
+              id="auth-login-reveal"
               type="button"
               class="absolute right-1 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-md text-ink-muted hover:text-ink"
               :aria-label="revealed ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
@@ -93,6 +94,7 @@ useHead({ title: 'Masuk — Aruna Dewa' })
         </UiField>
 
         <NuxtLink
+          id="auth-login-forgot"
           to="/forgot-password"
           class="justify-self-end text-[0.875rem] font-medium text-ink-muted no-underline underline-offset-4 hover:text-ink hover:underline"
         >
@@ -103,7 +105,7 @@ useHead({ title: 'Masuk — Aruna Dewa' })
           {{ error }}
         </p>
 
-        <UiButton type="submit" size="lg" block :loading="pending">
+        <UiButton id="auth-login-submit" type="submit" size="lg" block :loading="pending">
           {{ pending ? 'Memeriksa…' : 'Masuk' }}
           <ArrowRight v-if="!pending" :size="17" aria-hidden="true" />
         </UiButton>
@@ -112,7 +114,7 @@ useHead({ title: 'Masuk — Aruna Dewa' })
 
     <p class="m-0 text-center text-[0.9375rem] text-ink-muted">
       Belum punya akun?
-      <NuxtLink :to="registerLink" class="font-semibold text-primary underline-offset-4 hover:underline">Daftar di sini</NuxtLink>
+      <NuxtLink id="auth-login-to-register" :to="registerLink" class="font-semibold text-primary underline-offset-4 hover:underline">Daftar di sini</NuxtLink>
     </p>
   </div>
 </template>

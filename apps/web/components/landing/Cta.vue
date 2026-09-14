@@ -38,11 +38,12 @@ useArunaMotion(root, ({ revealText, revealUp, parallax, drawSvg }) => {
       </p>
 
       <div data-cta-reveal class="flex flex-wrap justify-center gap-3">
-        <UiButton as="NuxtLink" to="/order" tone="gold" size="lg">
+        <UiButton id="landing-cta-order" as="NuxtLink" to="/order" tone="gold" size="lg">
           Mulai buat undangan
           <ArrowRight :size="18" aria-hidden="true" />
         </UiButton>
         <UiButton
+          id="landing-cta-demo"
           as="NuxtLink"
           to="/i/demo"
           size="lg"

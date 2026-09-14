@@ -176,7 +176,7 @@ useHead({ title: () => invitation.value?.title
       </div>
 
       <div class="relative">
-        <UiButton :aria-expanded="addOpen" @click="addOpen = !addOpen">
+        <UiButton id="guest-add-toggle" :aria-expanded="addOpen" @click="addOpen = !addOpen">
           <Plus :size="17" aria-hidden="true" />
           Tambah tamu
         </UiButton>
@@ -186,17 +186,17 @@ useHead({ title: () => invitation.value?.title
           class="card absolute right-0 z-10 mt-2 grid w-[min(20rem,90vw)] gap-3 p-4 shadow-float"
           @submit.prevent="addGuest"
         >
-          <UiField v-slot="{ id }" label="Nama undangan" hint="Tulis lengkap dengan gelar bila ada.">
+          <UiField id="guest-new-name" v-slot="{ id }" label="Nama undangan" hint="Tulis lengkap dengan gelar bila ada.">
             <UiInput :id="id" v-model="newName" maxlength="200" required />
           </UiField>
-          <UiButton type="submit" block :loading="adding">{{ adding ? 'Menyimpan…' : 'Simpan tamu' }}</UiButton>
+          <UiButton id="guest-add-submit" type="submit" block :loading="adding">{{ adding ? 'Menyimpan…' : 'Simpan tamu' }}</UiButton>
         </form>
       </div>
     </div>
 
     <p v-if="error" class="notice m-0" role="alert">
       {{ error }}
-      <button class="button button-secondary ml-2" type="button" @click="load">Coba lagi</button>
+      <button id="guest-retry" class="button button-secondary ml-2" type="button" @click="load">Coba lagi</button>
     </p>
 
     <div class="card table-wrap">
@@ -247,6 +247,7 @@ useHead({ title: () => invitation.value?.title
             <td>
               <div class="flex">
                 <button
+                  :id="`guest-row-copy-${row.original.id}`"
                   type="button"
                   class="grid h-11 w-11 place-items-center rounded-md text-ink-muted transition-colors hover:bg-surface-3 hover:text-primary"
                   :aria-label="`Salin tautan untuk ${row.original.displayName}`"
@@ -255,6 +256,7 @@ useHead({ title: () => invitation.value?.title
                   <Link :size="17" aria-hidden="true" />
                 </button>
                 <button
+                  :id="`guest-row-copy-personal-${row.original.id}`"
                   type="button"
                   class="grid h-11 w-11 place-items-center rounded-md text-ink-muted transition-colors hover:bg-surface-3 hover:text-primary"
                   :aria-label="`Salin tautan RSVP personal untuk ${row.original.displayName}`"
@@ -263,6 +265,7 @@ useHead({ title: () => invitation.value?.title
                   <Clipboard :size="17" aria-hidden="true" />
                 </button>
                 <button
+                  :id="`guest-row-delete-${row.original.id}`"
                   type="button"
                   class="grid h-11 w-11 place-items-center rounded-md text-ink-muted transition-colors hover:bg-danger-soft hover:text-danger"
                   :aria-label="`Hapus ${row.original.displayName}`"
@@ -280,9 +283,9 @@ useHead({ title: () => invitation.value?.title
     <div class="flex flex-wrap items-center justify-between gap-3 text-[0.9375rem] text-ink-muted">
       <span>{{ result.total }} tamu</span>
       <div class="flex items-center gap-3">
-        <UiButton tone="outline" size="sm" :disabled="result.page <= 1" @click="result.page--; load()">Sebelumnya</UiButton>
+        <UiButton id="guest-page-prev" tone="outline" size="sm" :disabled="result.page <= 1" @click="result.page--; load()">Sebelumnya</UiButton>
         <span>Halaman {{ result.page }}</span>
-        <UiButton tone="outline" size="sm" :disabled="result.items.length < result.pageSize" @click="result.page++; load()">Berikutnya</UiButton>
+        <UiButton id="guest-page-next" tone="outline" size="sm" :disabled="result.items.length < result.pageSize" @click="result.page++; load()">Berikutnya</UiButton>
       </div>
     </div>
 
@@ -300,9 +303,9 @@ useHead({ title: () => invitation.value?.title
       </div>
 
       <div class="grid gap-3">
-        <label class="sr-only" for="import-text">Tempel data tamu</label>
+        <label class="sr-only" for="guest-import-text">Tempel data tamu</label>
         <textarea
-          id="import-text"
+          id="guest-import-text"
           v-model="previewText"
           class="control font-mono text-[0.875rem]"
           rows="7"
@@ -310,13 +313,13 @@ useHead({ title: () => invitation.value?.title
         />
 
         <div class="flex flex-wrap gap-2">
-          <UiButton tone="outline" :disabled="!previewText.trim()" @click="makePreview">
+          <UiButton id="guest-import-preview-text" tone="outline" :disabled="!previewText.trim()" @click="makePreview">
             <Upload :size="17" aria-hidden="true" />
             Tinjau teks
           </UiButton>
           <label class="button button-secondary cursor-pointer">
             Pilih CSV atau XLSX
-            <input class="sr-only" type="file" accept=".csv,.xlsx" @change="previewFile">
+            <input id="guest-import-file" class="sr-only" type="file" accept=".csv,.xlsx" @change="previewFile">
           </label>
         </div>
 
@@ -334,7 +337,7 @@ useHead({ title: () => invitation.value?.title
               <span v-else-if="row.warnings.length">— {{ row.warnings.join(', ') }}</span>
             </li>
           </ul>
-          <UiButton class="justify-self-start" :disabled="importing || preview.validCount === 0" :loading="importing" @click="commitImport">
+          <UiButton id="guest-import-commit" class="justify-self-start" :disabled="importing || preview.validCount === 0" :loading="importing" @click="commitImport">
             {{ importing ? 'Mengimpor…' : 'Konfirmasi impor' }}
           </UiButton>
         </div>

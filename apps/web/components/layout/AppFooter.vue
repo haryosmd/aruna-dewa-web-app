@@ -42,10 +42,10 @@ const columns = computed<{ title: string; links: FooterLink[] }[]>(() => [
         <p class="text-caption font-semibold uppercase tracking-[0.14em] text-ink-inverse/50">{{ column.title }}</p>
         <ul class="grid gap-2.5 p-0 m-0 list-none">
           <li v-for="[label, href] in column.links" :key="label">
-            <NuxtLink v-if="href" :to="href" class="text-[0.9375rem] text-ink-inverse/80 no-underline transition-colors duration-200 hover:text-ink-inverse">
+            <NuxtLink v-if="href" :id="`nav-footer-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`" :to="href" class="text-[0.9375rem] text-ink-inverse/80 no-underline transition-colors duration-200 hover:text-ink-inverse">
               {{ label }}
             </NuxtLink>
-            <button v-else type="button" class="cursor-pointer border-0 bg-transparent p-0 text-left font-inherit text-[0.9375rem] text-ink-inverse/80 no-underline transition-colors duration-200 hover:text-ink-inverse" @click="auth.logout()">
+            <button v-else id="nav-footer-logout" type="button" class="cursor-pointer border-0 bg-transparent p-0 text-left font-inherit text-[0.9375rem] text-ink-inverse/80 no-underline transition-colors duration-200 hover:text-ink-inverse" @click="auth.logout()">
               {{ label }}
             </button>
           </li>

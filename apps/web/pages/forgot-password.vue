@@ -50,8 +50,8 @@ useHead({ title: 'Lupa kata sandi — Aruna Dewa' })
         <MailOpen :size="17" class="mt-0.5 shrink-0" aria-hidden="true" />
         Belum sampai juga setelah beberapa menit? Periksa folder spam, lalu coba kirim ulang.
       </p>
-      <UiButton tone="outline" size="lg" block @click="sent = false">Kirim ulang</UiButton>
-      <UiButton as="NuxtLink" to="/login" tone="ghost" size="lg" block>
+      <UiButton id="auth-forgot-resend" tone="outline" size="lg" block @click="sent = false">Kirim ulang</UiButton>
+      <UiButton id="auth-forgot-to-login" as="NuxtLink" to="/login" tone="ghost" size="lg" block>
         <ArrowLeft :size="17" aria-hidden="true" />
         Kembali ke halaman masuk
       </UiButton>
@@ -59,7 +59,7 @@ useHead({ title: 'Lupa kata sandi — Aruna Dewa' })
 
     <form v-else class="grid gap-5" @submit.prevent="submit">
       <fieldset :disabled="!ready || pending" class="grid gap-4">
-        <UiField v-slot="{ id }" label="Email" required>
+        <UiField id="auth-forgot-email" v-slot="{ id }" label="Email" required>
           <UiInput :id="id" v-model="email" type="email" autocomplete="email" placeholder="nama@email.com" required />
         </UiField>
 
@@ -67,7 +67,7 @@ useHead({ title: 'Lupa kata sandi — Aruna Dewa' })
           {{ error }}
         </p>
 
-        <UiButton type="submit" size="lg" block :loading="pending">
+        <UiButton id="auth-forgot-submit" type="submit" size="lg" block :loading="pending">
           {{ pending ? 'Mengirim…' : 'Kirim tautan' }}
           <Send v-if="!pending" :size="17" aria-hidden="true" />
         </UiButton>
@@ -76,7 +76,7 @@ useHead({ title: 'Lupa kata sandi — Aruna Dewa' })
 
     <p v-if="!sent" class="m-0 text-center text-[0.9375rem] text-ink-muted">
       Ingat kata sandinya?
-      <NuxtLink to="/login" class="font-semibold text-primary underline-offset-4 hover:underline">Masuk</NuxtLink>
+      <NuxtLink id="auth-forgot-login-link" to="/login" class="font-semibold text-primary underline-offset-4 hover:underline">Masuk</NuxtLink>
     </p>
   </div>
 </template>

@@ -483,25 +483,25 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
-        <UiButton as="NuxtLink" :to="`/i/${invitation.slug}`" target="_blank" tone="outline" size="sm">
+        <UiButton id="editor-view-public" as="NuxtLink" :to="`/i/${invitation.slug}`" target="_blank" tone="outline" size="sm">
           <Eye :size="16" aria-hidden="true" />
           Lihat publik
         </UiButton>
-        <UiButton tone="ghost" size="sm" :disabled="!undoStack.length" aria-label="Undo" @click="undo">
+        <UiButton id="editor-undo" tone="ghost" size="sm" :disabled="!undoStack.length" aria-label="Undo" @click="undo">
           <Undo2 :size="16" aria-hidden="true" />
         </UiButton>
-        <UiButton tone="ghost" size="sm" :disabled="!redoStack.length" aria-label="Redo" @click="redo">
+        <UiButton id="editor-redo" tone="ghost" size="sm" :disabled="!redoStack.length" aria-label="Redo" @click="redo">
           <Redo2 :size="16" aria-hidden="true" />
         </UiButton>
-        <UiButton tone="outline" size="sm" @click="reset">
+        <UiButton id="editor-reset" tone="outline" size="sm" @click="reset">
           <RotateCcw :size="16" aria-hidden="true" />
           Reset
         </UiButton>
-        <UiButton size="sm" :loading="saving" @click="() => save()">
+        <UiButton id="editor-save" size="sm" :loading="saving" @click="() => save()">
           <Save v-if="!saving" :size="16" aria-hidden="true" />
           {{ saving ? 'Menyimpan…' : 'Simpan draft' }}
         </UiButton>
-        <UiButton tone="ink" size="sm" :loading="publishing" @click="publish">
+        <UiButton id="editor-publish" tone="ink" size="sm" :loading="publishing" @click="publish">
           <Send v-if="!publishing" :size="16" aria-hidden="true" />
           {{ publishing ? 'Menerbitkan…' : 'Publikasikan' }}
         </UiButton>
@@ -510,13 +510,14 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
 
     <p v-if="error" class="notice m-0" role="alert">
       {{ error }}
-      <button v-if="conflict" class="button button-secondary ml-2" type="button" @click="load">Muat ulang versi server</button>
+      <button v-if="conflict" id="editor-reload-server" class="button button-secondary ml-2" type="button" @click="load">Muat ulang versi server</button>
     </p>
 
     <!-- Mobile can only show one pane at a time. -->
     <div class="flex gap-1 rounded-full bg-surface-3 p-1 xl:hidden" role="tablist" aria-label="Panel editor">
       <button
         v-for="tab in [{ id: 'settings', label: 'Pengaturan' }, { id: 'preview', label: 'Pratinjau' }]"
+        :id="`editor-panel-${tab.id}`"
         :key="tab.id"
         type="button"
         role="tab"
@@ -567,6 +568,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
               berapa pun panjang namanya, `truncate` yang menanggungnya.
             -->
             <button
+              :id="`editor-section-${section.id}`"
               type="button"
               class="flex min-h-11 min-w-0 items-center gap-2 rounded-md px-1.5 text-left text-[0.875rem] font-medium text-ink"
               @click="selectedId = section.id; mobilePanel = 'settings'"
@@ -587,11 +589,12 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
             <!-- Target sentuh tetap 44px tingginya; yang dirapikan lebarnya, bukan jangkauannya. -->
             <div class="flex items-center">
               <label class="grid h-11 w-9 shrink-0 cursor-pointer place-items-center">
-                <input v-model="section.enabled" type="checkbox" class="h-4 w-4 accent-[var(--color-primary)]">
+                <input :id="`editor-section-toggle-${section.id}`" v-model="section.enabled" type="checkbox" class="h-4 w-4 accent-[var(--color-primary)]">
                 <span class="sr-only">Tampilkan {{ sectionLabels[section.type] ?? section.type }}</span>
               </label>
 
               <button
+                :id="`editor-section-up-${section.id}`"
                 type="button"
                 class="grid h-11 w-7 shrink-0 place-items-center rounded-md text-ink-subtle hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
                 :disabled="!canEditDesign || index === 0"
@@ -602,6 +605,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
                 <ArrowUp :size="15" aria-hidden="true" />
               </button>
               <button
+                :id="`editor-section-down-${section.id}`"
                 type="button"
                 class="grid h-11 w-7 shrink-0 place-items-center rounded-md text-ink-subtle hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
                 :disabled="!canEditDesign || index === document.sections.length - 1"
@@ -650,13 +654,13 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
               <p class="m-0 text-caption text-ink-subtle">Menentukan bagaimana foto kalian dipajang, bukan sekadar warnanya.</p>
             </div>
 
-            <UiField v-slot="{ id }" label="Komposisi cover" :hint="selectableCoverLayouts.find(option => option.id === coverLayout)?.hint">
+            <UiField id="editor-cover-layout" v-slot="{ id }" label="Komposisi cover" :hint="selectableCoverLayouts.find(option => option.id === coverLayout)?.hint">
               <UiSelect :id="id" :model-value="coverLayout" @update:model-value="value => writeOption('layout', String(value))">
                 <option v-for="option in selectableCoverLayouts" :key="option.id" :value="option.id">{{ option.label }}</option>
               </UiSelect>
             </UiField>
 
-            <UiField v-slot="{ id }" label="Kepekatan ornamen" :hint="selectableIntensities.find(option => option.id === coverIntensity)?.hint">
+            <UiField id="editor-cover-intensity" v-slot="{ id }" label="Kepekatan ornamen" :hint="selectableIntensities.find(option => option.id === coverIntensity)?.hint">
               <UiSelect :id="id" :model-value="coverIntensity" @update:model-value="value => writeOption('ornamentIntensity', String(value))">
                 <option v-for="option in selectableIntensities" :key="option.id" :value="option.id">{{ option.label }}</option>
               </UiSelect>
@@ -675,6 +679,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
               <div class="flex flex-wrap gap-x-5 gap-y-2">
                 <label v-for="option in selectableAttire" :key="option.id" class="flex min-h-11 cursor-pointer items-center gap-2.5 text-[0.9375rem] text-ink">
                   <input
+                    :id="`editor-dresscode-attire-${option.id}`"
                     type="checkbox"
                     class="h-4 w-4 accent-[var(--color-primary)]"
                     :checked="attire.includes(option.id)"
@@ -693,13 +698,14 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
                 pernah boleh jadi satu-satunya penanda.
               -->
               <article v-for="(color, index) in dresscodeColors" :key="index" class="card flex flex-wrap items-end gap-3 p-4">
-                <UiField v-slot="{ id }" label="Warna" class="basis-24">
+                <UiField :id="`editor-dresscode-color-${index + 1}`" v-slot="{ id }" label="Warna" class="basis-24">
                   <input :id="id" class="control" type="color" :value="String(color.hex || '#E8DCC8')" @input="color.hex = ($event.target as HTMLInputElement).value">
                 </UiField>
-                <UiField v-slot="{ id }" label="Nama warna" hint="Wajib — tamu harus bisa membacanya, bukan hanya melihatnya." class="min-w-0 flex-1 basis-full @xs:basis-48">
+                <UiField :id="`editor-dresscode-name-${index + 1}`" v-slot="{ id }" label="Nama warna" hint="Wajib — tamu harus bisa membacanya, bukan hanya melihatnya." class="min-w-0 flex-1 basis-full @xs:basis-48">
                   <UiInput :id="id" :model-value="String(color.name || '')" placeholder="Terakota" @update:model-value="value => color.name = value" />
                 </UiField>
                 <button
+                  :id="`editor-dresscode-remove-${index + 1}`"
                   type="button"
                   class="grid h-12 w-11 place-items-center rounded-md text-ink-subtle hover:bg-danger-soft hover:text-danger"
                   :aria-label="`Hapus warna ${index + 1}`"
@@ -709,7 +715,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
                 </button>
               </article>
 
-              <UiButton tone="outline" class="justify-self-start" @click="addColor">
+              <UiButton id="editor-dresscode-add" tone="outline" class="justify-self-start" @click="addColor">
                 <Plus :size="16" aria-hidden="true" />
                 Tambah warna
               </UiButton>
@@ -729,6 +735,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
               <div class="flex items-center justify-between gap-3">
                 <strong class="text-ink">Langkah {{ index + 1 }}</strong>
                 <button
+                  :id="`editor-story-remove-${index + 1}`"
                   type="button"
                   class="grid h-11 w-11 place-items-center rounded-md text-ink-subtle hover:bg-danger-soft hover:text-danger"
                   :aria-label="`Hapus langkah ${index + 1}`"
@@ -739,10 +746,10 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
               </div>
 
               <div class="grid gap-3 @xs:grid-cols-2">
-                <UiField v-slot="{ id }" label="Judul langkah">
+                <UiField :id="`editor-story-title-${index + 1}`" v-slot="{ id }" label="Judul langkah">
                   <UiInput :id="id" :model-value="String(step.title || '')" placeholder="Perpustakaan kecil, 2022" @update:model-value="value => step.title = value" />
                 </UiField>
-                <UiField v-slot="{ id }" label="Sisi masuk">
+                <UiField :id="`editor-story-side-${index + 1}`" v-slot="{ id }" label="Sisi masuk">
                   <UiSelect :id="id" :model-value="String(step.side || 'kiri')" @update:model-value="value => step.side = value">
                     <option value="kiri">Kiri</option>
                     <option value="kanan">Kanan</option>
@@ -750,15 +757,15 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
                 </UiField>
               </div>
 
-              <UiField v-slot="{ id }" label="Cerita">
+              <UiField id="editor-story-text" v-slot="{ id }" label="Cerita">
                 <UiTextarea :id="id" rows="3" :model-value="String(step.text || '')" @update:model-value="value => step.text = value" />
               </UiField>
-              <UiField v-slot="{ id }" label="URL foto" hint="Opsional. Kosongkan untuk memakai foto galeri.">
+              <UiField id="editor-story-image" v-slot="{ id }" label="URL foto" hint="Opsional. Kosongkan untuk memakai foto galeri.">
                 <UiInput :id="id" type="url" :model-value="String(step.image || '')" placeholder="https://…" @update:model-value="value => step.image = value" />
               </UiField>
             </article>
 
-            <UiButton tone="outline" class="justify-self-start" @click="addStoryStep">
+            <UiButton id="editor-story-add" tone="outline" class="justify-self-start" @click="addStoryStep">
               <Plus :size="16" aria-hidden="true" />
               Tambah langkah
             </UiButton>
@@ -766,7 +773,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
 
           <!-- Events -->
           <div v-if="selected.type === 'events'" class="grid gap-4">
-            <UiField v-slot="{ id }" label="Ilustrasi gedung" hint="Ditampilkan di atas kartu acara, mengikuti warna tema.">
+            <UiField id="editor-events-venue" v-slot="{ id }" label="Ilustrasi gedung" hint="Ditampilkan di atas kartu acara, mengikuti warna tema.">
               <UiSelect :id="id" :model-value="venueIllustration" @update:model-value="value => writeOption('venueIllustration', String(value))">
                 <option value="">Tanpa ilustrasi</option>
                 <option v-for="option in selectableVenues" :key="option.id" :value="option.id">{{ option.label }}</option>
@@ -777,6 +784,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
               <div class="flex items-center justify-between gap-3">
                 <strong class="text-ink">Acara {{ index + 1 }}</strong>
                 <button
+                  :id="`editor-event-remove-${index + 1}`"
                   type="button"
                   class="grid h-11 w-11 place-items-center rounded-md text-ink-subtle hover:bg-danger-soft hover:text-danger"
                   :aria-label="`Hapus acara ${index + 1}`"
@@ -787,16 +795,16 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
               </div>
 
               <div class="grid gap-3 @xs:grid-cols-2">
-                <UiField v-slot="{ id }" label="Nama acara">
+                <UiField :id="`editor-event-name-${index + 1}`" v-slot="{ id }" label="Nama acara">
                   <UiInput :id="id" :model-value="String(event.name || '')" @update:model-value="value => event.name = value" />
                 </UiField>
-                <UiField v-slot="{ id }" label="Tanggal">
+                <UiField :id="`editor-event-date-${index + 1}`" v-slot="{ id }" label="Tanggal">
                   <UiInput :id="id" type="date" :model-value="String(event.date || '')" @update:model-value="value => event.date = value" />
                 </UiField>
-                <UiField v-slot="{ id }" label="Waktu">
+                <UiField :id="`editor-event-time-${index + 1}`" v-slot="{ id }" label="Waktu">
                   <UiInput :id="id" :model-value="String(event.time || '')" placeholder="09.00 WIB" @update:model-value="value => event.time = value" />
                 </UiField>
-                <UiField v-slot="{ id }" label="Lokasi">
+                <UiField :id="`editor-event-venue-${index + 1}`" v-slot="{ id }" label="Lokasi">
                   <UiInput
                     :id="id"
                     :model-value="String(event.venue || '')"
@@ -806,7 +814,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
                 </UiField>
               </div>
 
-              <UiField v-slot="{ id }" label="Alamat">
+              <UiField :id="`editor-event-address-${index + 1}`" v-slot="{ id }" label="Alamat">
                 <UiTextarea
                   :id="id"
                   rows="2"
@@ -815,7 +823,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
                   @update:model-value="value => writeVenue(index, 'address', value ?? '')"
                 />
               </UiField>
-              <UiField v-slot="{ id }" label="Tautan peta" hint="Tempel tautan Google Maps lokasinya. Tamu akan melihat tombol “Buka peta”.">
+              <UiField :id="`editor-event-map-${index + 1}`" v-slot="{ id }" label="Tautan peta" hint="Tempel tautan Google Maps lokasinya. Tamu akan melihat tombol “Buka peta”.">
                 <UiInput
                   :id="id"
                   type="url"
@@ -831,6 +839,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
 
               <label class="flex min-h-11 cursor-pointer items-center gap-2.5 text-[0.9375rem] text-ink">
                 <input
+                  :id="`editor-event-public-${index + 1}`"
                   type="checkbox"
                   class="h-4 w-4 accent-[var(--color-primary)]"
                   :checked="Boolean(event.public)"
@@ -842,6 +851,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
 
             <label v-if="eventRows.length > 1" class="flex min-h-11 cursor-pointer items-center gap-2.5 text-[0.9375rem] text-ink">
               <input
+                id="editor-event-same-venue"
                 type="checkbox"
                 class="h-4 w-4 accent-[var(--color-primary)]"
                 :checked="sameVenue"
@@ -850,7 +860,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
               Lokasi akad dan resepsi sama
             </label>
 
-            <UiButton tone="outline" class="justify-self-start" @click="addEvent">
+            <UiButton id="editor-event-add" tone="outline" class="justify-self-start" @click="addEvent">
               <Plus :size="16" aria-hidden="true" />
               Tambah acara
             </UiButton>
@@ -858,7 +868,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
 
           <!-- Gallery -->
           <div v-else-if="selected.type === 'gallery'" class="grid gap-4">
-            <UiField v-slot="{ id }" label="Gaya galeri" :hint="selectableGalleryMotions.find(option => option.id === galleryMotion)?.hint">
+            <UiField id="editor-gallery-motion" v-slot="{ id }" label="Gaya galeri" :hint="selectableGalleryMotions.find(option => option.id === galleryMotion)?.hint">
               <UiSelect :id="id" :model-value="galleryMotion" @update:model-value="value => writeOption('motion', String(value))">
                 <option v-for="option in selectableGalleryMotions" :key="option.id" :value="option.id">{{ option.label }}</option>
               </UiSelect>
@@ -871,8 +881,9 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
             <ul class="m-0 grid gap-2 p-0 list-none">
               <li v-for="(image, index) in galleryImages" :key="image" class="card flex items-center gap-3 p-2.5">
                 <img :src="image" alt="" class="h-14 w-14 shrink-0 rounded-md object-cover">
-                <input v-model="galleryImages[index]" class="control min-w-0 flex-1" aria-label="URL foto">
+                <input :id="`editor-gallery-url-${index + 1}`" v-model="galleryImages[index]" class="control min-w-0 flex-1" aria-label="URL foto">
                 <button
+                  :id="`editor-gallery-remove-${index + 1}`"
                   type="button"
                   class="grid h-11 w-11 shrink-0 place-items-center rounded-md text-ink-subtle hover:bg-danger-soft hover:text-danger"
                   :aria-label="`Hapus foto ${index + 1}`"
@@ -885,12 +896,12 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
 
             <form class="flex flex-wrap gap-2" @submit.prevent="addGalleryUrl">
               <label class="sr-only" for="gallery-url">URL foto baru</label>
-              <input id="gallery-url" v-model="galleryUrl" class="control min-w-0 flex-1 basis-56" type="url" placeholder="https://…">
-              <UiButton type="submit" tone="outline">Tambah URL</UiButton>
+              <input id="editor-gallery-url" v-model="galleryUrl" class="control min-w-0 flex-1 basis-56" type="url" placeholder="https://…">
+              <UiButton id="editor-gallery-add-url" type="submit" tone="outline">Tambah URL</UiButton>
               <label class="button button-secondary cursor-pointer">
                 <Upload :size="16" aria-hidden="true" />
                 {{ uploadPending ? 'Mengunggah…' : 'Unggah foto' }}
-                <input class="sr-only" type="file" accept="image/*" :disabled="uploadPending" @change="uploadMedia">
+                <input id="editor-gallery-upload" class="sr-only" type="file" accept="image/*" :disabled="uploadPending" @change="uploadMedia">
               </label>
             </form>
           </div>
@@ -898,16 +909,17 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
           <!-- Rundown -->
           <div v-else-if="selected.type === 'rundown'" class="grid gap-3">
             <article v-for="(item, index) in rundownRows" :key="String(item.id)" class="card flex flex-wrap items-end gap-3 p-4">
-              <UiField v-slot="{ id }" label="Waktu" class="basis-28">
+              <UiField :id="`editor-rundown-time-${index + 1}`" v-slot="{ id }" label="Waktu" class="basis-28">
                 <UiInput :id="id" :model-value="String(item.time || '')" placeholder="09.00" @update:model-value="value => item.time = value" />
               </UiField>
-              <UiField v-slot="{ id }" label="Kegiatan" class="min-w-0 flex-1 basis-56">
+              <UiField :id="`editor-rundown-title-${index + 1}`" v-slot="{ id }" label="Kegiatan" class="min-w-0 flex-1 basis-56">
                 <UiInput :id="id" :model-value="String(item.title || '')" @update:model-value="value => item.title = value" />
               </UiField>
-              <UiField v-slot="{ id }" label="Keterangan" class="min-w-0 basis-full">
+              <UiField :id="`editor-rundown-note-${index + 1}`" v-slot="{ id }" label="Keterangan" class="min-w-0 basis-full">
                 <UiInput :id="id" :model-value="String(item.description || '')" placeholder="Opsional — mis. “Tamu dipersilakan menempati kursi”" @update:model-value="value => item.description = value" />
               </UiField>
               <button
+                :id="`editor-rundown-remove-${index + 1}`"
                 type="button"
                 class="grid h-12 w-11 place-items-center rounded-md text-ink-subtle hover:bg-danger-soft hover:text-danger"
                 :aria-label="`Hapus bagian ${index + 1}`"
@@ -917,7 +929,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
               </button>
             </article>
 
-            <UiButton tone="outline" class="justify-self-start" @click="addRundown">
+            <UiButton id="editor-rundown-add" tone="outline" class="justify-self-start" @click="addRundown">
               <Plus :size="16" aria-hidden="true" />
               Tambah bagian
             </UiButton>
@@ -930,10 +942,10 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
               Tamu melihat logo banknya dan tombol salin nomor rekening.
             </p>
 
-            <UiField v-slot="{ id }" label="Judul bagian">
+            <UiField id="editor-gift-title" v-slot="{ id }" label="Judul bagian">
               <UiInput :id="id" :model-value="String(selected.data.title || '')" placeholder="Hadiah untuk kami" @update:model-value="next => updateValue('title', next ?? '')" />
             </UiField>
-            <UiField v-slot="{ id }" label="Kalimat pengantar" hint="Kosongkan untuk memakai kalimat bawaan.">
+            <UiField id="editor-gift-note" v-slot="{ id }" label="Kalimat pengantar" hint="Kosongkan untuk memakai kalimat bawaan.">
               <UiTextarea :id="id" rows="3" :model-value="String(selected.data.note || '')" @update:model-value="next => updateValue('note', next ?? '')" />
             </UiField>
 
@@ -941,6 +953,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
               <div class="flex items-center justify-between gap-3">
                 <strong class="text-ink">Rekening {{ index + 1 }}</strong>
                 <button
+                  :id="`editor-gift-remove-${index + 1}`"
                   type="button"
                   class="grid h-11 w-11 place-items-center rounded-md text-ink-subtle hover:bg-danger-soft hover:text-danger"
                   :aria-label="`Hapus rekening ${index + 1}`"
@@ -956,40 +969,40 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
                 mengubah apa pun yang dilihat tamu. Key `owner` tetap dibaca dan ditulis
                 ulang apa adanya supaya dokumen lama tidak rusak.
               -->
-              <UiField v-slot="{ id }" label="Bank">
+              <UiField :id="`editor-gift-bank-${index + 1}`" v-slot="{ id }" label="Bank">
                 <UiSelect :id="id" :model-value="String(account.bankId || 'bca')" @update:model-value="value => account.bankId = value">
                   <option v-for="option in bankOptions" :key="option.id" :value="option.id">{{ option.label }}</option>
                 </UiSelect>
               </UiField>
 
-              <UiField v-if="account.bankId === 'other'" v-slot="{ id }" label="Nama bank" hint="Ditulis apa adanya pada kartu.">
+              <UiField v-if="account.bankId === 'other'" :id="`editor-gift-bank-label-${index + 1}`" v-slot="{ id }" label="Nama bank" hint="Ditulis apa adanya pada kartu.">
                 <UiInput :id="id" :model-value="String(account.bankLabel || '')" @update:model-value="value => account.bankLabel = value" />
               </UiField>
 
               <div class="grid gap-3 @xs:grid-cols-2">
-                <UiField v-slot="{ id }" label="Nomor rekening">
+                <UiField :id="`editor-gift-number-${index + 1}`" v-slot="{ id }" label="Nomor rekening">
                   <UiInput :id="id" inputmode="numeric" :model-value="String(account.number || '')" @update:model-value="value => account.number = value" />
                 </UiField>
-                <UiField v-slot="{ id }" label="Atas nama">
+                <UiField :id="`editor-gift-holder-${index + 1}`" v-slot="{ id }" label="Atas nama">
                   <UiInput :id="id" :model-value="String(account.holder || '')" @update:model-value="value => account.holder = value" />
                 </UiField>
               </div>
             </article>
 
-            <UiButton v-if="giftAccounts.length < giftAccountLimit" tone="outline" class="justify-self-start" @click="addGiftAccount">
+            <UiButton v-if="giftAccounts.length < giftAccountLimit" id="editor-gift-add" tone="outline" class="justify-self-start" @click="addGiftAccount">
               <Plus :size="16" aria-hidden="true" />
               Tambah rekening
             </UiButton>
             <p v-else class="notice m-0">Sudah {{ giftAccountLimit }} rekening — batasnya di sini supaya bagian hadiah tidak berubah jadi daftar bank.</p>
 
-            <UiField v-slot="{ id }" label="Alamat kirim hadiah" hint="Opsional, untuk tamu yang ingin mengirim kado fisik.">
+            <UiField id="editor-gift-address" v-slot="{ id }" label="Alamat kirim hadiah" hint="Opsional, untuk tamu yang ingin mengirim kado fisik.">
               <UiTextarea :id="id" rows="2" :model-value="String(selected.data.address || '')" @update:model-value="next => updateValue('address', next ?? '')" />
             </UiField>
           </div>
 
           <!-- Plain text fields -->
           <div v-else class="grid gap-4">
-            <UiField v-for="[key, value] in textFields" :key="key" v-slot="{ id }" :label="label(key)">
+            <UiField v-for="[key, value] in textFields" :id="`editor-text-${key}`" :key="key" v-slot="{ id }" :label="label(key)">
               <UiTextarea
                 v-if="key === 'description' || key === 'text'"
                 :id="id"
@@ -1031,6 +1044,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
             <div class="grid gap-2 @xs:grid-cols-2 @md:grid-cols-3">
               <button
                 v-for="theme in invitationThemes"
+                :id="`editor-theme-${theme.id}`"
                 :key="theme.id"
                 type="button"
                 :aria-pressed="document.templateId === theme.id"
@@ -1058,13 +1072,13 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
             </div>
 
             <div class="grid gap-3 @xs:grid-cols-3">
-              <UiField v-slot="{ id }" label="Latar belakang">
+              <UiField id="editor-color-background" v-slot="{ id }" label="Latar belakang">
                 <input :id="id" v-model="document.tokens.background" class="control disabled:cursor-not-allowed disabled:opacity-60" type="color" :disabled="!canEditDesign" :aria-describedby="canEditDesign ? undefined : 'design-locked'">
               </UiField>
-              <UiField v-slot="{ id }" label="Warna teks">
+              <UiField id="editor-color-foreground" v-slot="{ id }" label="Warna teks">
                 <input :id="id" v-model="document.tokens.foreground" class="control disabled:cursor-not-allowed disabled:opacity-60" type="color" :disabled="!canEditDesign" :aria-describedby="canEditDesign ? undefined : 'design-locked'">
               </UiField>
-              <UiField v-slot="{ id }" label="Warna aksi">
+              <UiField id="editor-color-primary" v-slot="{ id }" label="Warna aksi">
                 <input :id="id" v-model="document.tokens.primary" class="control disabled:cursor-not-allowed disabled:opacity-60" type="color" :disabled="!canEditDesign" :aria-describedby="canEditDesign ? undefined : 'design-locked'">
               </UiField>
             </div>
@@ -1112,13 +1126,13 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
                 </li>
               </ul>
 
-              <button v-if="paletteIssues.length && canEditDesign" type="button" class="button button-secondary justify-self-start" @click="repairPaletteColors">
+              <button v-if="paletteIssues.length && canEditDesign" id="editor-repair-palette" type="button" class="button button-secondary justify-self-start" @click="repairPaletteColors">
                 <Wand2 :size="15" aria-hidden="true" />
                 Perbaiki warna otomatis
               </button>
             </div>
 
-            <UiField v-slot="{ id }" label="Jenis huruf judul">
+            <UiField id="editor-font" v-slot="{ id }" label="Jenis huruf judul">
               <UiSelect :id="id" v-model="(document.tokens.font as FontChoice)" :disabled="!canEditDesign" :aria-describedby="canEditDesign ? undefined : 'design-locked'">
                 <option v-for="font in selectableFonts" :key="font.id" :value="font.id">{{ font.label }}</option>
               </UiSelect>
@@ -1155,6 +1169,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
             >
               <button
                 v-for="device in previewDevices"
+                :id="`editor-preview-${device.id}`"
                 :key="device.id"
                 type="button"
                 :aria-pressed="previewDevice === device.id"
@@ -1226,7 +1241,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
     <p v-if="loading" class="m-0 text-ink-muted">Memuat editor…</p>
     <p v-else class="notice m-0" role="alert">
       {{ error }}
-      <button class="button button-secondary ml-2" type="button" @click="load">Coba lagi</button>
+      <button id="editor-retry" class="button button-secondary ml-2" type="button" @click="load">Coba lagi</button>
     </p>
   </div>
 </template>

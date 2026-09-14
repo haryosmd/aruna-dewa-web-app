@@ -14,7 +14,7 @@ import {
 } from '@aruna/contracts/api';
 import { AuthService } from './auth.service.js';
 import { CurrentUser, JwtAuthGuard, OriginGuard, type AuthenticatedUser } from '../common/auth.js';
-import { IdentityRateLimit, identityRateLimits } from '../common/rate-limit.js';
+import { IdentityRateLimit, forgiveIdentityAttempt, identityRateLimits } from '../common/rate-limit.js';
 import { zodBody } from '../common/zod-validation.pipe.js';
 import { sessionContext } from './session-context.js';
 import { PrismaService } from '../database/prisma.service.js';
@@ -30,7 +30,10 @@ export class AuthController {
   @UseGuards(OriginGuard)
   @IdentityRateLimit(identityRateLimits.login)
   async login(@Body(zodBody(loginBodySchema)) body: LoginBody, @Req() request: Request, @Res({ passthrough: true }) response: Response) {
-    return { user: await this.auth.login(body.email, body.password, response, sessionContext(request)) };
+    const user = await this.auth.login(body.email, body.password, response, sessionContext(request));
+    // Hanya percobaan yang gagal yang membebani ember; `login` yang lolos mengembalikan jatahnya.
+    forgiveIdentityAttempt(request);
+    return { user };
   }
 
   @Post('refresh')

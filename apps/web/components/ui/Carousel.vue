@@ -3,8 +3,15 @@ import emblaCarouselVue from 'embla-carousel-vue'
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 
 const props = withDefaults(
-  defineProps<{ label: string; align?: 'start' | 'center'; loop?: boolean; controls?: boolean }>(),
-  { align: 'start', loop: false, controls: true },
+  defineProps<{
+    label: string
+    align?: 'start' | 'center'
+    loop?: boolean
+    controls?: boolean
+    /** Awalan id untuk tombol internal; tanpa ini titik dan panah tak terjangkau dari luar. */
+    controlId?: string
+  }>(),
+  { align: 'start', loop: false, controls: true, controlId: undefined },
 )
 
 const [container, embla] = emblaCarouselVue({ align: props.align, loop: props.loop, containScroll: 'trimSnaps', skipSnaps: false })
@@ -45,6 +52,7 @@ defineExpose({ scrollTo: (index: number) => embla.value?.scrollTo(index) })
       <div class="flex items-center gap-2" role="tablist" :aria-label="`Posisi ${label}`">
         <button
           v-for="(_, index) in snaps"
+          :id="controlId ? `${controlId}-dot-${index + 1}` : undefined"
           :key="index"
           type="button"
           role="tab"
@@ -60,6 +68,7 @@ defineExpose({ scrollTo: (index: number) => embla.value?.scrollTo(index) })
 
       <div class="flex gap-2">
         <button
+          :id="controlId ? `${controlId}-prev` : undefined"
           type="button"
           aria-label="Sebelumnya"
           :disabled="!canPrev"
@@ -69,6 +78,7 @@ defineExpose({ scrollTo: (index: number) => embla.value?.scrollTo(index) })
           <ChevronLeft :size="19" aria-hidden="true" />
         </button>
         <button
+          :id="controlId ? `${controlId}-next` : undefined"
           type="button"
           aria-label="Berikutnya"
           :disabled="!canNext"

@@ -214,7 +214,7 @@ useHead({ title: 'Buat undangan — Aruna Dewa' })
   <div class="min-h-svh bg-surface">
     <header class="sticky top-0 z-20 border-b border-border bg-surface/90 backdrop-blur-xl">
       <div class="shell flex h-[4.5rem] items-center justify-between gap-6">
-        <NuxtLink to="/" class="no-underline" aria-label="Aruna Dewa, ke beranda">
+        <NuxtLink id="order-home" to="/" class="no-underline" aria-label="Aruna Dewa, ke beranda">
           <BrandLogo />
         </NuxtLink>
 
@@ -263,19 +263,20 @@ useHead({ title: 'Buat undangan — Aruna Dewa' })
             <!-- Step 1 — couple ------------------------------------------------>
             <template v-if="step === 1">
               <div class="grid gap-5 sm:grid-cols-2">
-                <UiField v-slot="{ id, invalid }" label="Nama pasangan 1" :error="fieldErrors.partner1" required>
+                <UiField id="order-partner1" v-slot="{ id, invalid }" label="Nama pasangan 1" :error="fieldErrors.partner1" required>
                   <UiInput :id="id" v-model="form.partner1" :invalid="invalid" placeholder="Aruna" required @blur="autoSlug" />
                 </UiField>
-                <UiField v-slot="{ id, invalid }" label="Nama pasangan 2" :error="fieldErrors.partner2" required>
+                <UiField id="order-partner2" v-slot="{ id, invalid }" label="Nama pasangan 2" :error="fieldErrors.partner2" required>
                   <UiInput :id="id" v-model="form.partner2" :invalid="invalid" placeholder="Dewa" required @blur="autoSlug" />
                 </UiField>
               </div>
 
-              <UiField v-slot="{ id }" label="Judul undangan" hint="Kosongkan untuk memakai nama kalian berdua.">
+              <UiField id="order-title" v-slot="{ id }" label="Judul undangan" hint="Kosongkan untuk memakai nama kalian berdua.">
                 <UiInput :id="id" v-model="form.title" placeholder="Aruna & Dewa" />
               </UiField>
 
               <UiField
+id="order-slug"
                 v-slot="{ id, invalid }"
                 label="Alamat undangan"
                 :error="fieldErrors.slug"
@@ -288,33 +289,33 @@ useHead({ title: 'Buat undangan — Aruna Dewa' })
 
             <!-- Step 2 — event -------------------------------------------------->
             <template v-else-if="step === 2">
-              <UiField v-slot="{ id }" label="Tanggal acara" hint="Bisa diubah kapan saja dari dashboard.">
+              <UiField id="order-date" v-slot="{ id }" label="Tanggal acara" hint="Bisa diubah kapan saja dari dashboard.">
                 <UiInput :id="id" v-model="form.date" type="date" />
               </UiField>
-              <UiField v-slot="{ id }" label="Nama tempat">
+              <UiField id="order-venue" v-slot="{ id }" label="Nama tempat">
                 <UiInput :id="id" v-model="form.venue" placeholder="Pendopo Aruna" />
               </UiField>
-              <UiField v-slot="{ id }" label="Alamat lengkap">
+              <UiField id="order-address" v-slot="{ id }" label="Alamat lengkap">
                 <UiTextarea :id="id" v-model="form.address" rows="3" placeholder="Jl. Kaliurang KM 9, Sleman, Yogyakarta" />
               </UiField>
-              <UiField v-slot="{ id }" label="Tautan Google Maps" hint="Opsional. Tamu akan melihat tombol “Buka peta” di undangan.">
+              <UiField id="order-map-url" v-slot="{ id }" label="Tautan Google Maps" hint="Opsional. Tamu akan melihat tombol “Buka peta” di undangan.">
                 <UiInput :id="id" v-model="form.mapUrl" type="url" placeholder="https://maps.google.com/…" />
               </UiField>
 
               <label class="flex min-h-11 cursor-pointer items-center gap-2.5 text-[0.9375rem] text-ink">
-                <input v-model="form.sameVenue" type="checkbox" class="h-4 w-4 accent-[var(--color-primary)]">
+                <input id="order-same-venue" v-model="form.sameVenue" type="checkbox" class="h-4 w-4 accent-[var(--color-primary)]">
                 Lokasi akad dan resepsi sama
               </label>
 
               <template v-if="!form.sameVenue">
                 <p class="m-0 text-[0.9375rem] font-semibold text-ink">Lokasi resepsi</p>
-                <UiField v-slot="{ id }" label="Nama tempat resepsi">
+                <UiField id="order-venue2" v-slot="{ id }" label="Nama tempat resepsi">
                   <UiInput :id="id" v-model="form.venue2" placeholder="Gedung Kartika" />
                 </UiField>
-                <UiField v-slot="{ id }" label="Alamat resepsi">
+                <UiField id="order-address2" v-slot="{ id }" label="Alamat resepsi">
                   <UiTextarea :id="id" v-model="form.address2" rows="3" />
                 </UiField>
-                <UiField v-slot="{ id }" label="Tautan Google Maps resepsi">
+                <UiField id="order-map-url2" v-slot="{ id }" label="Tautan Google Maps resepsi">
                   <UiInput :id="id" v-model="form.mapUrl2" type="url" placeholder="https://maps.google.com/…" />
                 </UiField>
               </template>
@@ -331,7 +332,7 @@ useHead({ title: 'Buat undangan — Aruna Dewa' })
                     form.templateId === theme.id ? 'border-primary shadow-lift' : 'border-border hover:border-border-strong',
                   )"
                 >
-                  <input v-model="form.templateId" type="radio" name="tema" :value="theme.id" class="peer sr-only">
+                  <input :id="`order-theme-${theme.id}`" v-model="form.templateId" type="radio" name="tema" :value="theme.id" class="peer sr-only">
 
                   <span
                     class="grid aspect-[3/4] place-items-center rounded-md px-3 text-center"
@@ -369,7 +370,7 @@ useHead({ title: 'Buat undangan — Aruna Dewa' })
               </div>
 
               <div v-else class="grid gap-3">
-                <UiRadioCard v-for="pack in catalog.packages" :key="pack.id" v-model="form.packageId" :value="pack.id" name="paket">
+                <UiRadioCard v-for="pack in catalog.packages" :id="`order-package-${pack.id}`" :key="pack.id" v-model="form.packageId" :value="pack.id" name="paket">
                   <span class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                     <span class="text-[1.0625rem] font-semibold text-ink">{{ pack.name }}</span>
                     <span class="font-display text-[1.5rem] font-semibold text-ink">{{ formatRupiah(pack.price) }}</span>
@@ -389,7 +390,7 @@ useHead({ title: 'Buat undangan — Aruna Dewa' })
                       form.addonIds.includes(addon.id) ? 'border-primary bg-primary-soft text-primary-strong' : 'border-border-strong text-ink hover:border-ink/40',
                     )"
                   >
-                    <input v-model="form.addonIds" type="checkbox" :value="addon.id" class="sr-only">
+                    <input :id="`order-addon-${addon.id}`" v-model="form.addonIds" type="checkbox" :value="addon.id" class="sr-only">
                     <Check v-if="form.addonIds.includes(addon.id)" :size="14" aria-hidden="true" />
                     {{ addon.name }}
                     <span class="font-semibold">{{ formatRupiah(addon.price) }}</span>
@@ -421,13 +422,13 @@ useHead({ title: 'Buat undangan — Aruna Dewa' })
             </p>
 
             <div class="flex items-center justify-between gap-3 pt-1">
-              <UiButton v-if="step > 1" type="button" tone="ghost" @click="step--">
+              <UiButton v-if="step > 1" id="order-back" type="button" tone="ghost" @click="step--">
                 <ArrowLeft :size="17" aria-hidden="true" />
                 Kembali
               </UiButton>
               <span v-else />
 
-              <UiButton type="submit" size="lg" :loading="pending">
+              <UiButton id="order-submit" type="submit" size="lg" :loading="pending">
                 <template v-if="step === STEPS.length">
                   <CreditCard v-if="!pending" :size="17" aria-hidden="true" />
                   {{ pending ? 'Menyiapkan pembayaran…' : 'Lanjut ke pembayaran' }}

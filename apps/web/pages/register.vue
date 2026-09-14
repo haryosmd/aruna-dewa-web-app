@@ -71,7 +71,7 @@ useHead({ title: 'Buat akun — Aruna Dewa' })
       <p class="m-0 text-ink-muted">Gratis. Draft undangan tersimpan sampai kalian siap membayar.</p>
     </header>
 
-    <UiGoogleButton :href="googleHref" label="Daftar dengan Google" />
+    <UiGoogleButton id="auth-register-google" :href="googleHref" label="Daftar dengan Google" />
 
     <div class="flex items-center gap-4" aria-hidden="true">
       <span class="h-px flex-1 bg-border" />
@@ -81,15 +81,15 @@ useHead({ title: 'Buat akun — Aruna Dewa' })
 
     <form class="grid gap-5" @submit.prevent="submit">
       <fieldset :disabled="!ready || pending" class="grid gap-4">
-        <UiField v-slot="{ id }" label="Nama" required>
+        <UiField id="auth-register-name" v-slot="{ id }" label="Nama" required>
           <UiInput :id="id" v-model="name" autocomplete="name" placeholder="Nama lengkap kamu" required />
         </UiField>
 
-        <UiField v-slot="{ id }" label="Email" required>
+        <UiField id="auth-register-email" v-slot="{ id }" label="Email" required>
           <UiInput :id="id" v-model="email" type="email" autocomplete="email" placeholder="nama@email.com" required />
         </UiField>
 
-        <UiField v-slot="{ id }" label="Kata sandi" required>
+        <UiField id="auth-register-password" v-slot="{ id }" label="Kata sandi" required>
           <div class="grid gap-2">
             <div class="relative">
               <UiInput
@@ -102,6 +102,7 @@ useHead({ title: 'Buat akun — Aruna Dewa' })
                 required
               />
               <button
+                id="auth-register-reveal"
                 type="button"
                 class="absolute right-1 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-md text-ink-muted hover:text-ink"
                 :aria-label="revealed ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
@@ -131,7 +132,7 @@ useHead({ title: 'Buat akun — Aruna Dewa' })
           {{ error }}
         </p>
 
-        <UiButton type="submit" size="lg" block :loading="pending">
+        <UiButton id="auth-register-submit" type="submit" size="lg" block :loading="pending">
           {{ pending ? 'Membuat akun…' : 'Buat akun' }}
           <ArrowRight v-if="!pending" :size="17" aria-hidden="true" />
         </UiButton>
@@ -140,7 +141,7 @@ useHead({ title: 'Buat akun — Aruna Dewa' })
 
     <p class="m-0 text-center text-[0.9375rem] text-ink-muted">
       Sudah punya akun?
-      <NuxtLink :to="loginLink" class="font-semibold text-primary underline-offset-4 hover:underline">Masuk</NuxtLink>
+      <NuxtLink id="auth-register-to-login" :to="loginLink" class="font-semibold text-primary underline-offset-4 hover:underline">Masuk</NuxtLink>
     </p>
   </div>
 </template>

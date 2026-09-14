@@ -8,10 +8,17 @@ const props = defineProps<{
   required?: boolean
   /** Render the label for a control the caller owns, e.g. a radio group. */
   as?: 'label' | 'fieldset'
+  /**
+   * Id stabil untuk kontrol di dalamnya. `useId()` hanya menjamin label dan kontrolnya
+   * berpasangan; nilainya berubah tiap render, jadi tidak bisa jadi sandaran tes atau
+   * tautan dalam. Satu prop di sini membuat 52 `:id="id"` yang sudah ada jadi stabil.
+   */
+  id?: string
 }>()
 
-const id = useId()
-const describedBy = computed(() => [props.hint ? `${id}-hint` : null, props.error ? `${id}-error` : null].filter(Boolean).join(' ') || undefined)
+const generatedId = useId()
+const id = computed(() => props.id ?? generatedId)
+const describedBy = computed(() => [props.hint ? `${id.value}-hint` : null, props.error ? `${id.value}-error` : null].filter(Boolean).join(' ') || undefined)
 </script>
 
 <template>

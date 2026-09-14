@@ -51,7 +51,7 @@ useHead({ title: () => invitation.value?.title
 
     <p v-else-if="error" class="notice m-0" role="alert">
       {{ error }}
-      <button class="button button-secondary ml-2" type="button" @click="load">Coba lagi</button>
+      <button id="dash-orders-retry" class="button button-secondary ml-2" type="button" @click="load">Coba lagi</button>
     </p>
 
     <p v-else-if="!orders.length" class="notice m-0">Belum ada pesanan untuk undangan ini.</p>

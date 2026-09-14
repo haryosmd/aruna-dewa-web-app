@@ -152,7 +152,11 @@ test('gift section shows every account with its bank and no owner label', async 
 test('section order follows the document', async ({ page }) => {
   await page.goto('/i/demo')
   await page.getByRole('button', { name: 'Buka Undangan' }).click()
-  const ids = await page.locator('[id^="iv-"]').evaluateAll(nodes => nodes.map(node => node.id))
+  // `[data-iv-section]`, bukan `[id^="iv-"]` polos: sejak tiap elemen klik di undangan
+  // punya id berawalan sama (`iv-rsvp-yes`, `iv-gallery-tile-1`, …), pemilih lama ikut
+  // menangkap kontrol dan bukan lagi daftar section. Yang dijaga tes ini tetap sama —
+  // urutan bagian seperti yang dilihat tamu.
+  const ids = await page.locator('[data-iv-section][id^="iv-"]').evaluateAll(nodes => nodes.map(node => node.id))
   expect(ids).toEqual([
     'iv-cover', 'iv-couple', 'iv-events', 'iv-countdown', 'iv-gallery', 'iv-story',
     'iv-rundown', 'iv-dresscode', 'iv-gift', 'iv-rsvp', 'iv-wishes', 'iv-closing',

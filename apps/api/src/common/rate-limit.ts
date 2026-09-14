@@ -54,6 +54,16 @@ export class FixedWindowCounter {
     return current.count <= rule.limit ? { allowed: true, retryAfterMs: 0 } : { allowed: false, retryAfterMs: current.resetAt - now };
   }
 
+  /**
+   * Kembalikan satu jatah. Dipakai saat percobaan ternyata **berhasil**: yang dibatasi
+   * adalah menebak, bukan memakai. Tanpa ini pasangan yang wajar — masuk dari ponsel, lalu
+   * laptop, lalu ponsel lagi — ikut menghabiskan anggaran yang disediakan untuk penyerang.
+   */
+  forgive(key: string): void {
+    const window = this.windows.get(key);
+    if (window && window.count > 0) window.count -= 1;
+  }
+
   /** Dipakai tes; juga jaring pengaman kalau sebuah proses hidup sangat lama. */
   prune(now: number = Date.now()): void {
     for (const [key, window] of this.windows) {
@@ -84,29 +94,47 @@ export function IdentityRateLimit(limit: IdentityRateLimit): MethodDecorator & C
   return applyDecorators(SetMetadata(IDENTITY_RATE_LIMIT, limit), UseGuards(IdentityRateLimitGuard));
 }
 
+/** Kunci ember yang dipakai permintaan ini, dititipkan supaya bisa dikembalikan kalau berhasil. */
+const CHARGED_KEYS = Symbol('aruna:rate-limit-keys');
+
+type ChargedRequest = { [CHARGED_KEYS]?: string[] };
+
 @Injectable()
 export class IdentityRateLimitGuard implements CanActivate {
-  private static readonly counter = new FixedWindowCounter();
+  static readonly counter = new FixedWindowCounter();
 
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
     const limit = this.reflector.get<IdentityRateLimit | undefined>(IDENTITY_RATE_LIMIT, context.getHandler());
     if (!limit) return true;
-    const request = context.switchToHttp().getRequest<{ ip?: string; body?: { email?: unknown } }>();
+    const request = context.switchToHttp().getRequest<{ ip?: string; body?: { email?: unknown } } & ChargedRequest>();
     // `request.ip` hanya benar kalau `trust proxy` sudah disetel sesuai bentuk deploy-nya;
     // salah setel berarti seluruh dunia berbagi satu ember di sini.
     const address = request.ip ?? 'unknown';
     const email = typeof request.body?.email === 'string' ? request.body.email.trim().toLowerCase().slice(0, 320) : '';
     const route = `${context.getClass().name}.${context.getHandler().name}`;
-    const verdicts = [
-      IdentityRateLimitGuard.counter.hit(`${route}|pair|${address}|${email}`, limit.perIdentity),
-      IdentityRateLimitGuard.counter.hit(`${route}|addr|${address}`, limit.perAddress),
-    ];
+    const keys = [`${route}|pair|${address}|${email}`, `${route}|addr|${address}`];
+    const rules = [limit.perIdentity, limit.perAddress];
+    const verdicts = keys.map((key, index) => IdentityRateLimitGuard.counter.hit(key, rules[index]!));
+    request[CHARGED_KEYS] = keys;
     const blocked = verdicts.find((verdict) => !verdict.allowed);
     if (blocked) throw rateLimited(blocked.retryAfterMs);
     return true;
   }
+}
+
+/**
+ * Kembalikan jatah yang baru saja dipakai permintaan ini.
+ *
+ * Yang dibatasi adalah **menebak**, bukan memakai: login yang berhasil tidak boleh
+ * menghabiskan anggaran yang disediakan untuk menahan penyerang. Tanpa ini sebuah suite
+ * e2e — atau pasangan yang berpindah perangkat beberapa kali — terkunci dari akunnya
+ * sendiri, dan itulah yang terjadi saat 87 tes e2e dijalankan pertama kalinya.
+ */
+export function forgiveIdentityAttempt(request: unknown): void {
+  const keys = (request as ChargedRequest | null | undefined)?.[CHARGED_KEYS];
+  for (const key of keys ?? []) IdentityRateLimitGuard.counter.forgive(key);
 }
 
 /** 429 yang membawa kode, seperti galat lain di API ini — bukan `HTTP_429` generik. */

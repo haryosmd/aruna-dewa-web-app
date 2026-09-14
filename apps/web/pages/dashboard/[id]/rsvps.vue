@@ -65,7 +65,7 @@ useHead({ title: () => invitation.value?.title
 
     <p v-else-if="error" class="notice m-0" role="alert">
       {{ error }}
-      <button class="button button-secondary ml-2" type="button" @click="load">Coba lagi</button>
+      <button id="dash-rsvps-retry" class="button button-secondary ml-2" type="button" @click="load">Coba lagi</button>
     </p>
 
     <template v-else>
@@ -103,6 +103,7 @@ useHead({ title: () => invitation.value?.title
             <div class="flex items-center gap-1.5">
               <UiBadge :tone="wish.approved ? 'sage' : 'gold'">{{ wish.approved ? 'Tampil' : 'Ditinjau' }}</UiBadge>
               <button
+                :id="`dash-wish-approve-${wish.id}`"
                 type="button"
                 class="grid h-11 w-11 place-items-center rounded-md text-ink-muted transition-colors hover:bg-sage-soft hover:text-sage"
                 :aria-label="`Tampilkan ucapan dari ${wish.authorName || 'tamu'}`"
@@ -111,6 +112,7 @@ useHead({ title: () => invitation.value?.title
                 <Check :size="18" aria-hidden="true" />
               </button>
               <button
+                :id="`dash-wish-hide-${wish.id}`"
                 type="button"
                 class="grid h-11 w-11 place-items-center rounded-md text-ink-muted transition-colors hover:bg-danger-soft hover:text-danger"
                 :aria-label="`Sembunyikan ucapan dari ${wish.authorName || 'tamu'}`"

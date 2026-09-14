@@ -68,9 +68,9 @@ async function copyDemo() {
         <!-- Disabled until hydration so a pre-hydration click cannot silently do nothing. -->
         <form data-demo-reveal class="grid sm:max-w-md" @submit.prevent="openDemo">
           <fieldset :disabled="!ready" class="grid gap-3">
-            <label for="demo-nama" class="text-[0.8125rem] font-semibold text-ink-inverse/85">Tulis nama tamu (opsional)</label>
+            <label for="landing-demo-name" class="text-[0.8125rem] font-semibold text-ink-inverse/85">Tulis nama tamu (opsional)</label>
             <input
-              id="demo-nama"
+              id="landing-demo-name"
               v-model="demoName"
               type="text"
               maxlength="200"
@@ -79,11 +79,12 @@ async function copyDemo() {
             >
 
             <div class="flex flex-wrap gap-3">
-              <UiButton type="submit" tone="gold">
+              <UiButton id="landing-demo-open" type="submit" tone="gold">
                 Buka demo
                 <ArrowRight :size="17" aria-hidden="true" />
               </UiButton>
               <button
+                id="landing-demo-copy"
                 type="button"
                 class="inline-flex min-h-12 items-center gap-2 rounded-md border border-ink-inverse/25 px-5 text-[0.9375rem] font-semibold text-ink-inverse transition-colors duration-200 hover:bg-ink-inverse/10"
                 @click="copyDemo"

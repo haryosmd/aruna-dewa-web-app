@@ -73,6 +73,7 @@ function react(id: string, emoji: string) {
         <div class="iv-wish-reacts">
           <button
             v-for="emoji in emojis"
+            :id="`iv-wish-react-${wish.id}-${emoji.codePointAt(0)}`"
             :key="emoji"
             type="button"
             class="iv-react"
@@ -89,6 +90,7 @@ function react(id: string, emoji: string) {
 
     <nav v-if="pageCount > 1" class="flex items-center gap-3" aria-label="Halaman ucapan">
       <button
+        id="iv-wish-page-prev"
         type="button"
         class="iv-page-btn"
         :disabled="page === 0"
@@ -99,6 +101,7 @@ function react(id: string, emoji: string) {
       </button>
       <p class="iv-body m-0 text-caption tabular-nums">Halaman {{ page + 1 }} dari {{ pageCount }}</p>
       <button
+        id="iv-wish-page-next"
         type="button"
         class="iv-page-btn"
         :disabled="page >= pageCount - 1"
@@ -112,9 +115,9 @@ function react(id: string, emoji: string) {
     <form v-if="!compact && guest" class="grid w-full max-w-md gap-3 text-left" @submit.prevent="send">
       <label class="grid gap-1.5">
         <span class="iv-kicker">Tambahkan ucapan</span>
-        <textarea v-model="message" rows="3" maxlength="500" class="iv-control resize-y" />
+        <textarea id="iv-wish-message" v-model="message" rows="3" maxlength="500" class="iv-control resize-y" />
       </label>
-      <button type="submit" class="iv-submit" :disabled="wishPending || !message.trim()">
+      <button id="iv-wish-submit" type="submit" class="iv-submit" :disabled="wishPending || !message.trim()">
         <Heart :size="16" aria-hidden="true" />
         {{ wishPending ? 'Mengirim…' : 'Kirim ucapan' }}
       </button>

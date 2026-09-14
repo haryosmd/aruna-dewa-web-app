@@ -55,7 +55,7 @@ useHead({ title: 'Verifikasi email — Aruna Dewa' })
     </header>
 
     <div class="grid gap-3">
-      <UiButton v-if="state === 'verified'" as="NuxtLink" to="/dashboard" size="lg" block>
+      <UiButton v-if="state === 'verified'" id="auth-verify-to-dashboard" as="NuxtLink" to="/dashboard" size="lg" block>
         Ke ruang persiapan
         <ArrowRight :size="17" aria-hidden="true" />
       </UiButton>
@@ -64,7 +64,7 @@ useHead({ title: 'Verifikasi email — Aruna Dewa' })
           Tautan verifikasi berlaku 24 jam dan hanya sekali pakai. Kalau sudah lewat, daftar ulang dengan email yang sama
           selama akunnya belum pernah terverifikasi — kami kirim tautan baru.
         </p>
-        <UiButton as="NuxtLink" to="/login" tone="outline" size="lg" block>Masuk</UiButton>
+        <UiButton id="auth-verify-to-login" as="NuxtLink" to="/login" tone="outline" size="lg" block>Masuk</UiButton>
       </template>
     </div>
   </div>

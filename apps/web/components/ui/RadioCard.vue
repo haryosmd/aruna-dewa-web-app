@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { Check } from 'lucide-vue-next'
 
+/**
+ * Root komponen ini `<label>`, jadi tanpa `inheritAttrs: false` sebuah `id` dari luar
+ * mendarat di label — bukan di `<input type="radio">` yang sebenarnya diklik. Polanya
+ * mengikuti `Input.vue`: attr diteruskan ke kontrolnya sendiri.
+ */
+defineOptions({ inheritAttrs: false })
+
 defineProps<{ value: string; name: string }>()
 const model = defineModel<string>({ default: '' })
 </script>
@@ -15,6 +22,7 @@ const model = defineModel<string>({ default: '' })
     )"
   >
     <input
+      v-bind="$attrs"
       v-model="model"
       type="radio"
       :name="name"

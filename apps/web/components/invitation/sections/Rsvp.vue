@@ -105,7 +105,7 @@ useArunaMotion(root, ({ gsap, bloomIn }) => {
 
         <p v-if="demo" class="iv-ribbon m-0">Ini pratinjau — jawaban tidak tersimpan.</p>
 
-        <button type="button" class="iv-chip" @click="again">
+        <button id="iv-rsvp-again" type="button" class="iv-chip" @click="again">
           <RotateCcw :size="15" aria-hidden="true" /> Ubah jawaban
         </button>
       </template>
@@ -119,6 +119,7 @@ useArunaMotion(root, ({ gsap, bloomIn }) => {
           <legend class="sr-only">Kehadiran</legend>
 
           <button
+            id="iv-rsvp-yes"
             type="button"
             class="iv-rsvp-card"
             data-choice="yes"
@@ -134,6 +135,7 @@ useArunaMotion(root, ({ gsap, bloomIn }) => {
           </button>
 
           <button
+            id="iv-rsvp-no"
             type="button"
             class="iv-rsvp-card"
             data-choice="no"
@@ -150,11 +152,11 @@ useArunaMotion(root, ({ gsap, bloomIn }) => {
         <div v-if="attendance === 'yes'" class="grid justify-items-center gap-2">
           <span id="iv-seats-label" class="iv-kicker">Jumlah yang hadir</span>
           <div class="iv-stepper" role="group" aria-labelledby="iv-seats-label">
-            <button type="button" class="iv-page-btn" :disabled="seats <= 1" aria-label="Kurangi jumlah kursi" @click="step(-1)">
+            <button id="iv-rsvp-seats-minus" type="button" class="iv-page-btn" :disabled="seats <= 1" aria-label="Kurangi jumlah kursi" @click="step(-1)">
               <Minus :size="16" aria-hidden="true" />
             </button>
             <output class="iv-display text-[1.8rem] tabular-nums" aria-live="polite">{{ seats }}</output>
-            <button type="button" class="iv-page-btn" :disabled="seats >= quota" aria-label="Tambah jumlah kursi" @click="step(1)">
+            <button id="iv-rsvp-seats-plus" type="button" class="iv-page-btn" :disabled="seats >= quota" aria-label="Tambah jumlah kursi" @click="step(1)">
               <Plus :size="16" aria-hidden="true" />
             </button>
           </div>
@@ -162,12 +164,12 @@ useArunaMotion(root, ({ gsap, bloomIn }) => {
 
         <label v-if="attendance" class="grid w-full max-w-md gap-1.5 text-left">
           <span class="iv-kicker">Pesan untuk pasangan (opsional)</span>
-          <textarea v-model="message" rows="3" maxlength="500" class="iv-control resize-y" />
+          <textarea id="iv-rsvp-message" v-model="message" rows="3" maxlength="500" class="iv-control resize-y" />
         </label>
 
         <p v-if="demo" class="iv-ribbon m-0">Ini pratinjau — jawaban tidak tersimpan.</p>
 
-        <button type="button" class="iv-submit" :disabled="!attendance || rsvpPending" @click="send">
+        <button id="iv-rsvp-submit" type="button" class="iv-submit" :disabled="!attendance || rsvpPending" @click="send">
           <Send :size="16" aria-hidden="true" />
           {{ rsvpPending ? 'Menyimpan…' : 'Kirim konfirmasi' }}
         </button>

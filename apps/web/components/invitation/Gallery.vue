@@ -82,6 +82,7 @@ function onKey(event: KeyboardEvent) {
     <div v-if="spotlight" data-spotlight-stage class="iv-spotlight">
       <button
         v-for="(image, at) in props.images"
+        :id="`iv-gallery-tile-${at + 1}`"
         :key="image"
         type="button"
         data-spotlight-tile
@@ -96,6 +97,7 @@ function onKey(event: KeyboardEvent) {
     <div v-else :class="['iv-gallery', `iv-gallery--${props.layout === 'spotlight' ? 'masonry' : props.layout}`]">
       <button
         v-for="(image, at) in props.images"
+        :id="`iv-gallery-tile-${at + 1}`"
         :key="image"
         type="button"
         data-iv-reveal
@@ -132,6 +134,7 @@ function onKey(event: KeyboardEvent) {
 
           <button
             v-if="props.images.length > 1"
+            id="iv-gallery-prev"
             type="button"
             aria-label="Foto sebelumnya"
             class="absolute left-3 top-1/2 grid h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20"
@@ -141,6 +144,7 @@ function onKey(event: KeyboardEvent) {
           </button>
           <button
             v-if="props.images.length > 1"
+            id="iv-gallery-next"
             type="button"
             aria-label="Foto berikutnya"
             class="absolute right-3 top-1/2 grid h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20"

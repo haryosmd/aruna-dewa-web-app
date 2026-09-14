@@ -33,6 +33,26 @@ describe('penghitung jendela tetap', () => {
   });
 });
 
+describe('jatah yang dikembalikan', () => {
+  it('percobaan yang berhasil tidak ikut membebani ember', () => {
+    // Yang dibatasi adalah menebak, bukan memakai. Tanpa aturan ini suite e2e — dan pasangan
+    // yang berpindah perangkat beberapa kali — terkunci dari akunnya sendiri.
+    const counter = new FixedWindowCounter();
+    for (let attempt = 1; attempt <= 100; attempt += 1) {
+      expect(counter.hit('k', rule, 0).allowed).toBe(true);
+      counter.forgive('k');
+    }
+  });
+
+  it('tidak pernah turun di bawah nol, jadi forgive berlebih tidak memberi jatah gratis', () => {
+    const counter = new FixedWindowCounter();
+    counter.hit('k', rule, 0);
+    for (let index = 0; index < 5; index += 1) counter.forgive('k');
+    for (let attempt = 1; attempt <= 3; attempt += 1) expect(counter.hit('k', rule, 0).allowed).toBe(true);
+    expect(counter.hit('k', rule, 0).allowed).toBe(false);
+  });
+});
+
 describe('dua ember jalur identitas', () => {
   it('ember per-IP selalu lebih longgar daripada ember per (IP, email)', () => {
     // Kalau terbalik, satu kantor ber-NAT mengunci seluruh penghuninya dari halaman login —

@@ -168,7 +168,7 @@ useHead({
       class="sticky top-0 z-40 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 bg-ink px-4 py-2.5 text-center text-caption text-ink-inverse"
     >
       <p class="m-0">Ini contoh undangan. Silakan coba semuanya — tidak ada yang tersimpan.</p>
-      <NuxtLink to="/order" class="font-semibold text-gold underline-offset-4 hover:underline">
+      <NuxtLink id="iv-footer-order" to="/order" class="font-semibold text-gold underline-offset-4 hover:underline">
         Buat undangan seperti ini
       </NuxtLink>
     </div>
@@ -176,7 +176,7 @@ useHead({
     <div v-if="pageError" class="mx-auto grid max-w-md gap-4 px-5 py-24 text-center" role="alert">
       <h1 class="m-0 font-display text-h2 text-ink">Undangan belum dapat dibuka</h1>
       <p class="m-0 text-ink-muted">{{ pageError }}</p>
-      <UiButton class="justify-self-center" @click="loadPublic">Coba lagi</UiButton>
+      <UiButton id="iv-retry" class="justify-self-center" @click="loadPublic">Coba lagi</UiButton>
     </div>
 
     <InvitationRenderer
