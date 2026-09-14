@@ -355,7 +355,18 @@ useArunaMotion(root, ({ gsap, revealUp, parallax, drawSvg, orchestrate }) => {
   border-radius: inherit;
 }
 
+/*
+ * Undangan mengukur dirinya sendiri, bukan layar.
+ *
+ * Nyaris seluruh undangan sudah bekerja begitu — `OrnamentField` memakai `cqw`, sisanya
+ * memakai `clamp()`. Yang tersisa cuma lima utilitas ber-`md:`/`sm:`, dan lima itu cukup
+ * untuk membuat pratinjau perangkat berbohong: di editor pada layar 1440, `md:` selalu
+ * benar, jadi pratinjau "Ponsel" akan menampilkan cover dua kolom yang tidak akan pernah
+ * dilihat tamu di ponselnya. Ambangnya tetap 640/768px persis seperti sebelumnya —
+ * yang berubah hanya apa yang diukur, jadi yang dilihat tamu tidak bergeser sedikit pun.
+ */
 .iv-root {
+  container-type: inline-size;
   background: var(--iv-bg);
   color: var(--iv-fg);
   font-family: var(--iv-body);

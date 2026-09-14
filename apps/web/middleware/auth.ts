@@ -1,7 +1,9 @@
 export default defineNuxtRouteMiddleware(async (to) => {
   const auth = useAuthStore()
-  if (!auth.loaded) await auth.load()
-  // Bawa tujuan lengkap beserta query-nya, supaya paket yang sudah dipilih di landing
-  // tidak hilang saat pengunjung dialihkan untuk masuk.
-  if (!auth.me) return navigateTo(`/login?next=${encodeURIComponent(to.fullPath)}`)
+  await auth.loadOnce()
+  if (auth.me) return
+  // Sebab berakhirnya sesi ikut terbawa: tanpa ini, orang yang baru saja tertendang karena
+  // login di perangkat lain mendarat di form login tanpa penjelasan apa pun.
+  const reason = auth.endedCode ? `&reason=${auth.endedCode}` : ''
+  return navigateTo(`/login?next=${encodeURIComponent(to.fullPath)}${reason}`)
 })

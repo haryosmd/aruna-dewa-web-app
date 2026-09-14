@@ -14,19 +14,63 @@ const fallbackPhoto = computed(() => text(props.section, 'image') || galleryImag
 
 const photoOf = (step: { image: string }, at: number) => step.image || galleryImages.value[at % Math.max(1, galleryImages.value.length)] || ''
 
+const stepCount = computed(() => Math.max(1, steps.value.length))
+
 /**
- * Rel melengkung. Dibangun sekali dari jumlah langkah, bukan digambar tangan, supaya
- * pasangan yang menulis tiga langkah dan yang menulis tujuh sama-sama mendapat lengkung
- * yang rapat. Dua ratus satuan tinggi per langkah adalah jarak yang membuat titiknya
- * bergerak terasa, tanpa membuat rel jadi garis lurus.
+ * Tinggi istirahat rel. Dua ratus piksel per langkah adalah jarak yang membuat titiknya
+ * terasa bergerak tanpa membuat rel jadi garis lurus; dipakai sebagai `min-height` rel
+ * dan sebagai ukuran cadangan saat server merender, sebelum ada yang bisa diukur.
  */
-const railHeight = computed(() => Math.max(1, steps.value.length) * 200)
+const railHeight = computed(() => stepCount.value * 200)
+
+/**
+ * Rel digambar di **ruang piksel yang terukur**, bukan di kotak 100 satuan yang diregangkan.
+ *
+ * Versi sebelumnya memakai `preserveAspectRatio="none"` (X teregang ~4x, Y 1:1) plus
+ * `vector-effect="non-scaling-stroke"` untuk menahan strokenya ikut gepeng. Dua atribut itu
+ * bersama-sama membuat panjang path tidak bisa diukur: browser menolak mengukurnya, dan
+ * `stroke-dasharray` milik DrawSVG dibaca di ruang terender sementara `getTotalLength()`
+ * mengembalikan panjang user-space — jadi gambar relnya dan titik yang menyusurinya memang
+ * meleset, bukan cuma memicu peringatan di console. Dengan viewBox yang sama persis dengan
+ * kotak terender, skalanya 1:1 ke dua arah: lengkungnya jujur, strokenya rata, dan kedua
+ * plugin mengukur hal yang sama.
+ */
+const rail = ref<SVGSVGElement | null>(null)
+const measured = ref({ width: 0, height: 0 })
+const railBox = computed(() => ({
+  width: Math.round(measured.value.width) || 320,
+  height: Math.round(measured.value.height) || railHeight.value,
+}))
+
+let railObserver: ResizeObserver | undefined
+// Didaftarkan sebelum `useArunaMotion` supaya hook-nya berjalan lebih dulu: setup motion
+// menunda dirinya sampai modul GSAP tiba, jadi DrawSVG selalu membaca path ukuran final.
+onMounted(() => {
+  const node = rail.value
+  if (!node) return
+  const read = () => {
+    const box = node.getBoundingClientRect()
+    measured.value = { width: box.width, height: box.height }
+  }
+  read()
+  railObserver = new ResizeObserver(read)
+  railObserver.observe(node)
+})
+onBeforeUnmount(() => {
+  railObserver?.disconnect()
+  railObserver = undefined
+})
+
 const railPath = computed(() => {
-  const segments = ['M50 0']
-  for (let at = 0; at < Math.max(1, steps.value.length); at += 1) {
-    const top = at * 200
-    const bend = at % 2 === 0 ? 96 : 4
-    segments.push(`C${bend} ${top + 70} ${bend} ${top + 130} 50 ${top + 200}`)
+  const { width, height } = railBox.value
+  const round = (value: number) => Math.round(value * 10) / 10
+  const middle = round(width / 2)
+  const span = height / stepCount.value
+  const segments = [`M${middle} 0`]
+  for (let at = 0; at < stepCount.value; at += 1) {
+    const top = at * span
+    const bend = round(at % 2 === 0 ? width * 0.96 : width * 0.04)
+    segments.push(`C${bend} ${round(top + span * 0.35)} ${bend} ${round(top + span * 0.65)} ${middle} ${round(top + span)}`)
   }
   return segments.join(' ')
 })
@@ -106,9 +150,9 @@ useArunaMotion(root, ({ gsap, drawSvg, travelPath }) => {
             path yang sama, bukan dua animasi yang kebetulan searah.
           -->
           <svg
+            ref="rail"
             class="iv-story-rail"
-            :viewBox="`0 0 100 ${railHeight}`"
-            preserveAspectRatio="none"
+            :viewBox="`0 0 ${railBox.width} ${railBox.height}`"
             aria-hidden="true"
           >
             <path
@@ -118,7 +162,6 @@ useArunaMotion(root, ({ gsap, drawSvg, travelPath }) => {
               stroke="currentColor"
               stroke-width="2"
               stroke-linecap="round"
-              vector-effect="non-scaling-stroke"
               opacity="0.55"
             />
           </svg>

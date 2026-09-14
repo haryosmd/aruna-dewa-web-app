@@ -66,6 +66,14 @@ enum TokenPurpose {
   OAUTH_STATE
 }
 
+enum SessionRevokeReason {
+  LOGOUT
+  REPLACED
+  REUSE_DETECTED
+  PASSWORD_RESET
+  ACCOUNT_RECLAIMED
+}
+
 model User {
   id                 String              @id @default(uuid()) @db.Uuid
   email              String              @unique
@@ -94,18 +102,31 @@ model OAuthIdentity {
   @@unique([provider, providerUserId])
 }
 
+/// Satu baris = satu login, bukan satu token. Rotasi menulis ulang `refreshTokenHash`
+/// di tempat sehingga `id`-nya tetap: itulah yang membuat `sid` di access token bertahan
+/// melewati penyegaran, dan yang membuat "satu sesi per akun" bisa ditegakkan sama sekali.
 model Session {
-  id               String   @id @default(uuid()) @db.Uuid
-  userId           String   @db.Uuid
-  refreshTokenHash String
-  expiresAt        DateTime
-  rotatedAt        DateTime?
-  revokedAt        DateTime?
-  userAgent        String?
-  ip               String?
-  createdAt        DateTime @default(now())
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  @@index([userId, expiresAt])
+  id                String               @id @default(uuid()) @db.Uuid
+  userId            String               @db.Uuid
+  refreshTokenHash  String
+  /// Token-token yang sudah digantikan tapi masih dilayani sampai `graceExpiresAt`. Daftar,
+  /// bukan satu slot: satu rentetan penyegaran menerbitkan beberapa token yang sama-sama
+  /// beredar, dan yang kalah balapan pun tetap dipegang tab yang menerimanya.
+  graceTokenHashes  String[]
+  graceExpiresAt    DateTime?
+  graceUses         Int                  @default(0)
+  /// Digeser tiap rotasi, tapi tak pernah melewati `absoluteExpiresAt`.
+  idleExpiresAt     DateTime
+  /// Tetap sejak login: batas atas yang memaksa login ulang berkala.
+  absoluteExpiresAt DateTime
+  rotatedAt         DateTime?
+  revokedAt         DateTime?
+  revokedReason     SessionRevokeReason?
+  userAgent         String?
+  ip                String?
+  createdAt         DateTime             @default(now())
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, idleExpiresAt])
 }
 
 model OneTimeToken {

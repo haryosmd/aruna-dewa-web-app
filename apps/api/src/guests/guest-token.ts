@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
+import { requireJwtSecret } from '../common/env.js';
 
 export function createGuestToken(): { token: string; hash: string; ciphertext: string } {
   const token = randomBytes(32).toString('base64url');
@@ -22,8 +23,7 @@ function encryptGuestToken(token: string): string {
   return `${iv.toString('base64url')}.${cipher.getAuthTag().toString('base64url')}.${encrypted.toString('base64url')}`;
 }
 
+/** Jaring terakhir: aturan yang sama sudah ditegakkan saat boot oleh `assertRuntimeEnv`. */
 function encryptionKey(): Buffer {
-  const secret = process.env.JWT_SECRET;
-  if (!secret || secret === 'development-only-change-me') throw new Error('JWT_SECRET wajib dikonfigurasi untuk mengenkripsi token tamu');
-  return createHash('sha256').update(secret).digest();
+  return createHash('sha256').update(requireJwtSecret()).digest();
 }

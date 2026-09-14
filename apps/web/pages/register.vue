@@ -6,6 +6,7 @@ definePageMeta({ layout: 'auth' })
 
 const { request } = useApi()
 const route = useRoute()
+const auth = useAuthStore()
 /** Pendaftar baru yang datang dari tombol paket dikembalikan ke wizard, bukan ke dashboard. */
 const nextPath = computed(() => safeNextPath(route.query.next, '/order'))
 const loginLink = computed(() => (typeof route.query.next === 'string' ? `/login?next=${encodeURIComponent(nextPath.value)}` : '/login'))
@@ -43,6 +44,10 @@ async function submit() {
     // Mendaftar tidak membuat sesi. Tanpa langkah masuk ini, tujuan yang sudah dipilih
     // pendaftar langsung dipantulkan kembali ke /login oleh middleware auth.
     await request('/auth/login', { method: 'POST', body: { email: email.value, password: password.value } })
+    // Sama seperti di /login: sesi dipastikan hidup dulu, supaya cookie yang ditolak browser
+    // jatuh ke cabang di bawah — bukan ke middleware yang memantulkan tanpa penjelasan.
+    await auth.load()
+    if (!auth.me) throw new Error('Sesi tidak tersimpan di browser ini.')
     toast.success(`Akun siap. Email verifikasi dikirim ke ${email.value}.`)
     await navigateTo(nextPath.value)
   } catch {

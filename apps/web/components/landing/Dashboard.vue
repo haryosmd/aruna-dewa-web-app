@@ -30,7 +30,7 @@ const screens = [
     id: 'editor',
     title: 'Sunting sambil melihat hasilnya',
     body: 'Pilih bagian di kiri, isi di tengah, dan undangannya tersusun di kanan saat itu juga. Tidak ada simpan-lalu-tebak.',
-    callout: { label: 'Pratinjau ikut berubah saat kalian mengetik', x: 79, y: 46 },
+    callout: { label: 'Pratinjau ikut berubah saat kalian mengetik', x: 85, y: 45 },
   },
   {
     id: 'tamu',

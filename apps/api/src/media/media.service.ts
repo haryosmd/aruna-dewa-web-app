@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../database/prisma.service.js';
 import { MembershipService } from '../common/membership.service.js';
@@ -10,6 +10,7 @@ const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'audio/mp
 
 @Injectable()
 export class MediaService {
+  private readonly logger = new Logger(MediaService.name);
   constructor(private readonly prisma: PrismaService, private readonly memberships: MembershipService) {}
   async upload(user: AuthenticatedUser, invitationId: string, file: Express.Multer.File) {
     await this.memberships.requireInvitationRole(user, invitationId, 'EDITOR');
@@ -23,7 +24,12 @@ export class MediaService {
     const extension = extensionFor(file.mimetype);
     const key = `${invitationId}/${randomUUID()}${extension}`;
     try { await createMediaStorage().put(key, file.buffer, file.mimetype); }
-    catch (error) { throw new ServiceUnavailableException(`Media tidak dapat disimpan: ${error instanceof Error ? error.message : 'storage tidak tersedia'}`); }
+    catch (error) {
+      // Galat S3/filesystem membawa nama bucket, path, dan kadang keterangan kredensial.
+      // Semuanya masuk log; yang mengunggah cukup tahu unggahannya belum berhasil.
+      this.logger.error(`Media gagal disimpan (${key})`, error instanceof Error ? error.stack : String(error));
+      throw new ServiceUnavailableException('Media tidak dapat disimpan saat ini. Coba lagi beberapa saat lagi.');
+    }
     const asset = await this.prisma.mediaAsset.create({ data: { invitationId, provider: (process.env.MEDIA_PROVIDER ?? 'local') === 's3' ? 'S3' : 'LOCAL', key, contentType: file.mimetype, bytes: file.size, originalName: file.originalname } });
     const apiOrigin = process.env.API_ORIGIN ?? 'http://127.0.0.1:3001';
     return { ...asset, draftUrl: `${apiOrigin}/v1/media/${asset.id}`, publicUrl: `${apiOrigin}/v1/public/media/${asset.id}` };

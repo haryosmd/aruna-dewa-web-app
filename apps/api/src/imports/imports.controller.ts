@@ -1,6 +1,8 @@
 import { Body, Controller, Param, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { googleSheetsPreviewBodySchema, type GoogleSheetsPreviewBody } from '@aruna/contracts/api';
 import { CurrentUser, JwtAuthGuard, OriginGuard, type AuthenticatedUser } from '../common/auth.js';
+import { zodBody } from '../common/zod-validation.pipe.js';
 import { MAX_IMPORT_BYTES } from './import-parser.js';
 import { ImportsService } from './imports.service.js';
 
@@ -18,7 +20,7 @@ export class ImportsController {
 
   @Post('google-sheets-preview')
   @UseGuards(OriginGuard)
-  googleSheetsPreview(@CurrentUser() user: AuthenticatedUser, @Param('invitationId') invitationId: string, @Body() body: { spreadsheetId: string; range: string; accessToken: string }) {
+  googleSheetsPreview(@CurrentUser() user: AuthenticatedUser, @Param('invitationId') invitationId: string, @Body(zodBody(googleSheetsPreviewBodySchema)) body: GoogleSheetsPreviewBody) {
     return this.imports.previewGoogleSheet(user, invitationId, body);
   }
 }

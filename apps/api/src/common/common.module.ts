@@ -1,7 +1,17 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtAuthGuard, OriginGuard } from './auth.js';
+import { requireJwtSecret } from './env.js';
 import { MembershipService } from './membership.service.js';
 
-@Module({ imports: [JwtModule.register({ secret: process.env.JWT_SECRET ?? 'development-only-change-me' })], providers: [MembershipService, JwtAuthGuard, OriginGuard], exports: [JwtModule, MembershipService, JwtAuthGuard, OriginGuard] })
+/**
+ * Satu-satunya tempat rahasia penandatangan dibaca. `IdentityModule` dulu mendaftarkan
+ * `JwtModule` keduanya dengan literal cadangannya sendiri — dua sumber yang bisa melenceng
+ * tanpa ada yang menyadarinya; sekarang ia mengimpor modul ini.
+ */
+@Module({
+  imports: [JwtModule.registerAsync({ useFactory: () => ({ secret: requireJwtSecret() }) })],
+  providers: [MembershipService, JwtAuthGuard, OriginGuard],
+  exports: [JwtModule, MembershipService, JwtAuthGuard, OriginGuard],
+})
 export class CommonModule {}

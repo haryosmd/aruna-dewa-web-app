@@ -6,7 +6,7 @@ import {
 } from '~/utils/invitation-options'
 import { selectableIntensities, toIntensity } from '~/utils/ornaments'
 import type { Catalog, Invitation, InvitationDocument } from '~/types/aruna'
-import { AlertCircle, ArrowDown, ArrowUp, Check, Eye, Lock, Plus, Redo2, RotateCcw, Save, Send, Trash2, Undo2, Upload, Wand2 } from 'lucide-vue-next'
+import { AlertCircle, ArrowDown, ArrowUp, Check, Eye, Laptop, Lock, Plus, Redo2, RotateCcw, Save, Send, Smartphone, Tablet, Trash2, Undo2, Upload, Wand2 } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
 definePageMeta({ middleware: 'auth', layout: false })
@@ -26,6 +26,47 @@ const publishing = ref(false)
 const error = ref('')
 const conflict = ref(false)
 const mobilePanel = ref<'settings' | 'preview'>('settings')
+
+/*
+ * Pratinjau perangkat.
+ *
+ * Pertanyaan yang sebenarnya dipegang pasangan saat menyunting bukan "apa yang saya lihat",
+ * melainkan "apa yang dilihat tamu saya". Tamu hampir selalu membuka dari ponsel, jadi
+ * bawaannya ponsel — bukan lebar rel yang kebetulan tersedia.
+ *
+ * Lebarnya dirender sungguhan lalu diperkecil, bukan diperkecil lalu dirender: undangannya
+ * memakai container query di seluruh badannya (`.iv-root`), jadi render selebar 390px
+ * berperilaku persis seperti ponsel selebar 390px. Skalanya tidak pernah melebihi 1 —
+ * memperbesar render hanya akan mengaburkan gambar dan berbohong soal ukuran huruf.
+ */
+const previewDevices = [
+  { id: 'ponsel', label: 'Ponsel', width: 390, icon: Smartphone },
+  { id: 'tablet', label: 'Tablet', width: 834, icon: Tablet },
+  { id: 'laptop', label: 'Laptop', width: 1280, icon: Laptop },
+] as const
+type PreviewDevice = (typeof previewDevices)[number]['id']
+
+const previewDevice = ref<PreviewDevice>('ponsel')
+const previewWidth = computed(() => previewDevices.find(d => d.id === previewDevice.value)!.width)
+
+/*
+ * Diukur pada viewport yang menggulung, bukan pada rel di luarnya.
+ *
+ * Selisihnya selebar scrollbar, dan itu cukup: skala yang dihitung dari lebar rel membuat
+ * render Tablet dan Laptop persis selebar rel, lalu tergunting belasan piksel di kanan oleh
+ * scrollbar-nya sendiri. `scrollbar-gutter: stable` memastikan lebar itu tidak lagi berubah
+ * saat isinya cukup pendek untuk tidak menggulung — tanpa itu, tinggi mengubah lebar,
+ * lebar mengubah skala, dan skala mengubah tinggi lagi.
+ */
+const previewViewport = ref<HTMLElement | null>(null)
+const previewStage = ref<HTMLElement | null>(null)
+const { width: viewportWidth } = useElementSize(previewViewport)
+const { height: stageHeight } = useElementSize(previewStage)
+
+const previewScale = computed(() =>
+  viewportWidth.value ? Math.min(1, viewportWidth.value / previewWidth.value) : 1,
+)
+const previewScalePct = computed(() => Math.round(previewScale.value * 100))
 const galleryUrl = ref('')
 const uploadPending = ref(false)
 const watchReady = ref(false)
@@ -433,7 +474,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
 </script>
 
 <template>
-  <DashboardShell v-if="invitation" :invitation-id="invitation.id" :title="invitation.title">
+  <DashboardShell v-if="invitation" :invitation-id="invitation.id" :title="invitation.title" width="wide">
     <header class="flex flex-wrap items-start justify-between gap-4">
       <div class="grid gap-1.5">
         <p class="eyebrow">Editor undangan</p>
@@ -492,9 +533,20 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
 </button>
     </div>
 
-    <div class="grid gap-5 xl:grid-cols-[15rem_1fr_22rem]">
+    <!--
+      Tiga tingkat, bukan dua.
+
+      Sebelumnya lompatannya langsung dari tata letak ponsel ke tiga kolom di `xl` (1280px),
+      jadi laptop 13" — 1024 sampai 1280 — melihat satu panel bertab padahal ruangnya cukup
+      untuk dua. Jalur tengah memakai `minmax(0, 1fr)` supaya isinya benar-benar boleh
+      menyusut; `1fr` polos punya `min-width: auto` dan akan menolak menyempit di bawah lebar
+      isi terlebarnya.
+    -->
+    <div
+      class="grid gap-5 lg:grid-cols-[14.5rem_minmax(0,1fr)] lg:gap-x-8 xl:grid-cols-[14.5rem_minmax(0,1fr)_minmax(18rem,20rem)] lg:items-start"
+    >
       <!-- Section list -->
-      <aside :class="cn('grid content-start gap-2', mobilePanel === 'preview' && 'hidden xl:grid')">
+      <aside :class="cn('grid content-start gap-2', mobilePanel === 'preview' && 'hidden lg:grid')">
         <p class="eyebrow">Bagian undangan</p>
         <p v-if="!canEditDesign" id="design-locked-order" class="m-0 flex items-start gap-1.5 text-caption text-ink-muted">
           <Lock :size="13" class="mt-0.5 shrink-0" aria-hidden="true" />
@@ -505,57 +557,88 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
             v-for="(section, index) in document.sections"
             :key="section.id"
             :class="cn(
-              'flex items-center gap-1 rounded-md border px-1.5 transition-colors duration-200',
+              'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-md border px-1.5 transition-colors duration-200',
               selectedId === section.id ? 'border-primary bg-primary-soft' : 'border-transparent hover:bg-surface-2',
             )"
           >
+            <!--
+              `minmax(0, 1fr)` untuk label, `auto` untuk kluster kontrol. Dulu barisnya `flex`
+              dan muatnya kebetulan: centang 36px + dua panah 28px + jarak dan padding menyisakan
+              ~94px teks di jalur 240px, dan label yang lebih panjang mendorong panahnya keluar
+              jalur sampai menempel ke kolom sebelah. Dengan grid, kolom label yang menyusut —
+              berapa pun panjang namanya, `truncate` yang menanggungnya.
+            -->
             <button
               type="button"
-              class="flex min-h-11 flex-1 items-center gap-2 rounded-md px-1.5 text-left text-[0.875rem] font-medium text-ink"
+              class="flex min-h-11 min-w-0 items-center gap-2 rounded-md px-1.5 text-left text-[0.875rem] font-medium text-ink"
               @click="selectedId = section.id; mobilePanel = 'settings'"
             >
               <span
                 :class="cn('h-2 w-2 shrink-0 rounded-full', section.enabled ? 'bg-sage' : 'bg-border-strong')"
                 aria-hidden="true"
               />
-              <span class="truncate">{{ sectionLabels[section.type] ?? section.type }}</span>
+              <!--
+                Membungkus, bukan dipotong. `truncate` memotong tiga dari tiga belas nama jadi
+                "Video & live str…" — persis nama bagian yang sedang dicari pasangan. Dua baris
+                pada `leading-snug` masih muat di dalam tinggi baris 44px yang sudah ada, jadi
+                nama utuh tidak menukar apa pun.
+              -->
+              <span class="leading-snug">{{ sectionLabels[section.type] ?? section.type }}</span>
             </button>
 
-            <label class="grid h-11 w-9 shrink-0 cursor-pointer place-items-center">
-              <input v-model="section.enabled" type="checkbox" class="h-4 w-4 accent-[var(--color-primary)]">
-              <span class="sr-only">Tampilkan {{ sectionLabels[section.type] ?? section.type }}</span>
-            </label>
+            <!-- Target sentuh tetap 44px tingginya; yang dirapikan lebarnya, bukan jangkauannya. -->
+            <div class="flex items-center">
+              <label class="grid h-11 w-9 shrink-0 cursor-pointer place-items-center">
+                <input v-model="section.enabled" type="checkbox" class="h-4 w-4 accent-[var(--color-primary)]">
+                <span class="sr-only">Tampilkan {{ sectionLabels[section.type] ?? section.type }}</span>
+              </label>
 
-            <button
-              type="button"
-              class="grid h-11 w-7 place-items-center rounded-md text-ink-subtle hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
-              :disabled="!canEditDesign || index === 0"
-              :aria-label="`Naikkan ${sectionLabels[section.type] ?? section.type}`"
-              :aria-describedby="canEditDesign ? undefined : 'design-locked-order'"
-              @click="move(index, -1)"
-            >
-              <ArrowUp :size="15" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              class="grid h-11 w-7 place-items-center rounded-md text-ink-subtle hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
-              :disabled="!canEditDesign || index === document.sections.length - 1"
-              :aria-label="`Turunkan ${sectionLabels[section.type] ?? section.type}`"
-              :aria-describedby="canEditDesign ? undefined : 'design-locked-order'"
-              @click="move(index, 1)"
-            >
-              <ArrowDown :size="15" aria-hidden="true" />
-            </button>
+              <button
+                type="button"
+                class="grid h-11 w-7 shrink-0 place-items-center rounded-md text-ink-subtle hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
+                :disabled="!canEditDesign || index === 0"
+                :aria-label="`Naikkan ${sectionLabels[section.type] ?? section.type}`"
+                :aria-describedby="canEditDesign ? undefined : 'design-locked-order'"
+                @click="move(index, -1)"
+              >
+                <ArrowUp :size="15" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                class="grid h-11 w-7 shrink-0 place-items-center rounded-md text-ink-subtle hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
+                :disabled="!canEditDesign || index === document.sections.length - 1"
+                :aria-label="`Turunkan ${sectionLabels[section.type] ?? section.type}`"
+                :aria-describedby="canEditDesign ? undefined : 'design-locked-order'"
+                @click="move(index, 1)"
+              >
+                <ArrowDown :size="15" aria-hidden="true" />
+              </button>
+            </div>
           </li>
         </ul>
       </aside>
 
       <!-- Settings -->
-      <section :class="cn('grid content-start gap-5', mobilePanel === 'preview' && 'hidden xl:grid')">
+      <!--
+        `@container`, bukan breakpoint viewport.
+
+        Lebar panel ini datang dari jalur grid di atas, bukan dari lebar layar. `sm:grid-cols-2`
+        di sini benar pada viewport 1440 sekalipun kolomnya cuma 312px — dan itulah yang dulu
+        terjadi: `input[type=date]` selebar 128px, kartu tema selebar 80px. Setiap varian di
+        dalam sini wajib bertanya pada wadahnya, tidak pernah pada layar.
+
+        Ambangnya `@xs` (320px), bukan `@sm` (384px). Diukur, bukan ditaksir: jalur pratinjau
+        mengambil lebar maksimumnya lebih dulu, jadi kolom ini justru lebih sempit di 1280
+        daripada di 1024. Dengan `@sm`, pasangan yang melebarkan jendelanya dari 1024 ke 1280
+        akan melihat kolomnya mundur jadi satu-up. Ambang yang dipilih dari satu lebar saja
+        selalu salah di lebar yang lain.
+      -->
+      <section :class="cn('@container grid content-start gap-5', mobilePanel === 'preview' && 'hidden xl:grid')">
         <template v-if="selected">
           <div class="grid gap-1">
             <p class="eyebrow">Pengaturan bagian</p>
-            <h2 class="m-0 font-display text-h2 font-semibold text-ink">{{ sectionLabels[selected.type] ?? selected.type }}</h2>
+            <!-- `text-h3`: ini judul panel. Judul halaman adalah nama undangan di atas, dan `text-h2` (40px di 1440) membuat keduanya berebut. -->
+            <h2 class="m-0 font-display text-h3 font-semibold text-ink">{{ sectionLabels[selected.type] ?? selected.type }}</h2>
           </div>
 
           <!--
@@ -615,7 +698,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
                 <UiField v-slot="{ id }" label="Warna" class="basis-24">
                   <input :id="id" class="control" type="color" :value="String(color.hex || '#E8DCC8')" @input="color.hex = ($event.target as HTMLInputElement).value">
                 </UiField>
-                <UiField v-slot="{ id }" label="Nama warna" hint="Wajib — tamu harus bisa membacanya, bukan hanya melihatnya." class="min-w-0 flex-1 basis-48">
+                <UiField v-slot="{ id }" label="Nama warna" hint="Wajib — tamu harus bisa membacanya, bukan hanya melihatnya." class="min-w-0 flex-1 basis-full @xs:basis-48">
                   <UiInput :id="id" :model-value="String(color.name || '')" placeholder="Terakota" @update:model-value="value => color.name = value" />
                 </UiField>
                 <button
@@ -657,7 +740,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
                 </button>
               </div>
 
-              <div class="grid gap-3 sm:grid-cols-2">
+              <div class="grid gap-3 @xs:grid-cols-2">
                 <UiField v-slot="{ id }" label="Judul langkah">
                   <UiInput :id="id" :model-value="String(step.title || '')" placeholder="Perpustakaan kecil, 2022" @update:model-value="value => step.title = value" />
                 </UiField>
@@ -705,7 +788,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
                 </button>
               </div>
 
-              <div class="grid gap-3 sm:grid-cols-2">
+              <div class="grid gap-3 @xs:grid-cols-2">
                 <UiField v-slot="{ id }" label="Nama acara">
                   <UiInput :id="id" :model-value="String(event.name || '')" @update:model-value="value => event.name = value" />
                 </UiField>
@@ -885,7 +968,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
                 <UiInput :id="id" :model-value="String(account.bankLabel || '')" @update:model-value="value => account.bankLabel = value" />
               </UiField>
 
-              <div class="grid gap-3 sm:grid-cols-2">
+              <div class="grid gap-3 @xs:grid-cols-2">
                 <UiField v-slot="{ id }" label="Nomor rekening">
                   <UiInput :id="id" inputmode="numeric" :model-value="String(account.number || '')" @update:model-value="value => account.number = value" />
                 </UiField>
@@ -947,7 +1030,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
               </span>
             </p>
 
-            <div class="grid gap-2 sm:grid-cols-3">
+            <div class="grid gap-2 @xs:grid-cols-2 @md:grid-cols-3">
               <button
                 v-for="theme in invitationThemes"
                 :key="theme.id"
@@ -976,7 +1059,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
               </button>
             </div>
 
-            <div class="grid gap-3 sm:grid-cols-3">
+            <div class="grid gap-3 @xs:grid-cols-3">
               <UiField v-slot="{ id }" label="Latar belakang">
                 <input :id="id" v-model="document.tokens.background" class="control disabled:cursor-not-allowed disabled:opacity-60" type="color" :disabled="!canEditDesign" :aria-describedby="canEditDesign ? undefined : 'design-locked'">
               </UiField>
@@ -1047,9 +1130,53 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
       </section>
 
       <!-- Preview -->
-      <aside :class="cn('xl:sticky xl:top-8 xl:self-start', mobilePanel === 'settings' && 'hidden xl:block')">
-        <div class="grid gap-2.5">
-          <p class="eyebrow">Pratinjau draft</p>
+      <!--
+        `xl:col-start-3` wajib ada: tanpa itu `lg:col-start-2` ikut berlaku di `xl` dan
+        pratinjau mendarat menindih panel pengaturan.
+      -->
+      <aside
+        :class="cn(
+          'lg:col-start-2 lg:sticky lg:top-8 lg:self-start xl:col-start-3',
+          mobilePanel === 'settings' && 'hidden xl:block',
+        )"
+      >
+        <div class="grid gap-3">
+          <div class="grid gap-2">
+            <p class="eyebrow">Pratinjau draft</p>
+
+            <!--
+              Pemilih perangkat, bukan sakelar zoom. Labelnya nama benda yang dipegang tamu,
+              dan lebar sungguhannya ikut ditulis — tanpa angka itu, pratinjau yang diperkecil
+              jadi misteri: pasangan tidak tahu apakah hurufnya memang sekecil itu di ponsel
+              atau hanya kelihatan kecil di sini.
+            -->
+            <div
+              class="flex gap-1 rounded-full bg-surface-3 p-1"
+              role="group"
+              aria-label="Lebar pratinjau"
+            >
+              <button
+                v-for="device in previewDevices"
+                :key="device.id"
+                type="button"
+                :aria-pressed="previewDevice === device.id"
+                :class="cn(
+                  'flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-[0.8125rem] font-semibold transition-colors duration-200',
+                  previewDevice === device.id ? 'bg-surface text-ink shadow-hairline' : 'text-ink-muted hover:text-ink',
+                )"
+                @click="previewDevice = device.id"
+              >
+                <component :is="device.icon" :size="15" aria-hidden="true" />
+                {{ device.label }}
+              </button>
+            </div>
+
+            <p class="m-0 flex items-center justify-between gap-2 text-caption text-ink-subtle">
+              <span>Selebar {{ previewWidth }}px</span>
+              <span v-if="previewScalePct < 100" class="tabular-nums">diperkecil {{ previewScalePct }}%</span>
+            </p>
+          </div>
+
           <!--
             Tingginya mengikuti layar, bukan angka tetap. `36rem` dulu berarti panel ini
             berhenti di 576px bahkan di layar 1000px — pasangan melihat 40% lebih sedikit
@@ -1060,8 +1187,36 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
             potongannya terbaca sebagai render yang rusak, bukan sebagai "masih ada lagi".
           -->
           <div class="relative overflow-hidden rounded-xl border border-border shadow-float after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-10 after:bg-gradient-to-t after:from-ink/12 after:to-transparent">
-            <div class="max-h-[36rem] overflow-y-auto xl:max-h-[calc(100svh-9rem)]">
-              <InvitationRenderer :document="document" compact />
+            <div
+              ref="previewViewport"
+              class="max-h-[36rem] overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] xl:max-h-[calc(100svh-14rem)]"
+            >
+              <!--
+                `transform` tidak mengubah tata letak, jadi pembungkus ini yang memegang ukuran
+                hasil perkecilan. Tanpa itu panel menyisakan ruang kosong setinggi undangan yang
+                belum diperkecil — di Laptop yang diperkecil ke 25%, tiga perempat panelnya jadi
+                kosong. Lebarnya ikut ditulis supaya render yang lebih sempit dari relnya —
+                Ponsel 390px di rel 424px — berdiri di tengah, bukan menempel ke kiri.
+              -->
+              <div
+                :style="{
+                  width: `${Math.round(previewWidth * previewScale)}px`,
+                  height: `${Math.round(stageHeight * previewScale)}px`,
+                  marginInline: 'auto',
+                }"
+              >
+                <div
+                  ref="previewStage"
+                  data-preview-stage
+                  :style="{
+                    width: `${previewWidth}px`,
+                    transform: `scale(${previewScale})`,
+                    transformOrigin: 'top left',
+                  }"
+                >
+                  <InvitationRenderer :document="document" compact />
+                </div>
+              </div>
             </div>
           </div>
         </div>

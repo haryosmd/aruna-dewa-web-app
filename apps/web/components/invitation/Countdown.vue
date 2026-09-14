@@ -37,12 +37,12 @@ const pad = (value: number) => String(value).padStart(2, '0')
   <div v-if="units" class="grid w-full gap-4">
     <p v-if="passed" class="iv-display m-0 text-[1.75rem]">Hari bahagia telah tiba.</p>
 
-    <ul v-else class="m-0 grid grid-cols-4 gap-2 p-0 list-none sm:gap-3">
+    <ul v-else class="m-0 grid grid-cols-4 gap-2 p-0 list-none @min-[40rem]:gap-3">
       <li
         v-for="unit in units"
         :key="unit.label"
         data-iv-reveal
-        class="iv-card grid justify-items-center gap-1 rounded-md px-1 py-4 sm:py-5"
+        class="iv-card grid justify-items-center gap-1 rounded-md px-1 py-4 @min-[40rem]:py-5"
       >
         <span class="iv-display text-[clamp(1.6rem,7vw,2.4rem)] leading-none tabular-nums">{{ pad(unit.value) }}</span>
         <span class="iv-kicker m-0 text-[0.5625rem]">{{ unit.label }}</span>

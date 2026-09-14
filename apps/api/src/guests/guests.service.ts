@@ -1,8 +1,8 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { normalizeDisplayName, parseGuestText, type ImportRow } from '@aruna/contracts';
 import { PrismaService } from '../database/prisma.service.js';
 import { MembershipService } from '../common/membership.service.js';
-import type { AuthenticatedUser } from '../common/auth.js';
+import { isOperator, type AuthenticatedUser } from '../common/auth.js';
 import { createGuestToken, decryptGuestToken } from './guest-token.js';
 
 type GuestInput = { displayName: string; phone?: string; group?: string; quota?: number };
@@ -13,8 +13,8 @@ export class GuestsService {
 
   async list(user: AuthenticatedUser, invitationId: string, query: { q?: string; page?: number; pageSize?: number }) {
     await this.memberships.requireInvitationRole(user, invitationId);
-    const membership = user.role === 'OPERATOR' ? null : await this.prisma.invitationMember.findUnique({ where: { invitationId_userId: { invitationId, userId: user.sub } }, select: { role: true } });
-    const revealTokens = user.role === 'OPERATOR' || membership?.role !== 'VIEWER';
+    const membership = isOperator(user) ? null : await this.prisma.invitationMember.findUnique({ where: { invitationId_userId: { invitationId, userId: user.sub } }, select: { role: true } });
+    const revealTokens = isOperator(user) || membership?.role !== 'VIEWER';
     const page = Math.max(1, Number(query.page) || 1);
     const pageSize = Math.min(100, Math.max(1, Number(query.pageSize) || 25));
     const where = { invitationId, ...(query.q ? { displayName: { contains: query.q.trim(), mode: 'insensitive' as const } } : {}) };
@@ -50,7 +50,6 @@ export class GuestsService {
 
   async preview(user: AuthenticatedUser, invitationId: string, text: string, format: 'csv' | 'tsv') {
     await this.memberships.requireInvitationRole(user, invitationId, 'EDITOR');
-    if (typeof text !== 'string' || (format !== 'csv' && format !== 'tsv')) throw new BadRequestException('Format impor tidak valid');
     const rows = parseGuestText(text, format);
     const job = await this.prisma.importJob.create({ data: { invitationId, createdById: user.sub, status: 'READY', source: format, rows, validCount: rows.filter((row) => row.errors.length === 0).length } });
     return { id: job.id, rows, validCount: job.validCount };
@@ -58,7 +57,6 @@ export class GuestsService {
 
   async commit(user: AuthenticatedUser, invitationId: string, jobId: string, idempotencyKey: string) {
     await this.memberships.requireInvitationRole(user, invitationId, 'EDITOR');
-    if (!idempotencyKey || idempotencyKey.length > 200) throw new BadRequestException('Idempotency key wajib diisi');
     return this.prisma.$transaction(async (tx) => {
       const job = await tx.importJob.findFirst({ where: { id: jobId, invitationId } });
       if (!job) throw new NotFoundException('Preview impor tidak ditemukan');
@@ -82,9 +80,7 @@ export class GuestsService {
   }
 }
 
+/** Bentuk dan batasnya dijamin `createGuestBodySchema`/`updateGuestBodySchema` di batas controller. */
 function prepareGuest(input: GuestInput): { displayName: string; phone: string | null; groupName: string | null; quota: number } {
-  if (!input || typeof input.displayName !== 'string') throw new BadRequestException('Nama undangan wajib diisi');
-  const quota = input.quota ?? 1;
-  if (!Number.isInteger(quota) || quota < 1 || quota > 20) throw new BadRequestException('Kuota harus 1–20 orang');
-  return { displayName: normalizeDisplayName(input.displayName), phone: typeof input.phone === 'string' ? input.phone.trim() || null : null, groupName: typeof input.group === 'string' ? input.group.trim() || null : null, quota };
+  return { displayName: normalizeDisplayName(input.displayName), phone: input.phone?.trim() || null, groupName: input.group?.trim() || null, quota: input.quota ?? 1 };
 }

@@ -1,7 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import type { CreateOrderBody, MidtransWebhookBody } from '@aruna/contracts/api';
+import { Prisma } from '@aruna/database';
 import { PrismaService } from '../database/prisma.service.js';
 import { MembershipService } from '../common/membership.service.js';
-import { assertOperator, type AuthenticatedUser } from '../common/auth.js';
+import { assertOperator, isOperator, type AuthenticatedUser } from '../common/auth.js';
 import { MidtransService } from './midtrans.service.js';
 import { decideCheckoutRecovery } from './checkout-recovery.js';
 import { entitlementGrants, featuresFromSnapshot, paymentStatusFor, shouldActivate } from './payment-activation.js';
@@ -10,7 +12,7 @@ import { entitlementGrants, featuresFromSnapshot, paymentStatusFor, shouldActiva
 export class OrdersService {
   constructor(private readonly prisma: PrismaService, private readonly memberships: MembershipService, private readonly midtrans: MidtransService) {}
 
-  async create(user: AuthenticatedUser, invitationId: string, input: { packageId: string; addonIds: string[] }) {
+  async create(user: AuthenticatedUser, invitationId: string, input: CreateOrderBody) {
     await this.memberships.requireInvitationRole(user, invitationId, 'OWNER');
     if (new Set(input.addonIds).size !== input.addonIds.length) throw new BadRequestException('Add-on duplikat tidak diizinkan');
     const packagePlan = await this.prisma.package.findFirst({ where: { id: input.packageId, active: true }, include: { features: { include: { feature: true } } } });
@@ -32,7 +34,7 @@ export class OrdersService {
     if (order.status !== 'PENDING') throw new BadRequestException('Pesanan tidak dapat dibayar pada status saat ini');
     // Operator menembus gerbang pembayaran: pesanan langsung lunas tanpa Midtrans, dan setiap
     // pemakaiannya tercatat di audit log.
-    if (user.role === 'OPERATOR') return this.activateWithoutPayment(user, order);
+    if (isOperator(user)) return this.activateWithoutPayment(user, order);
     if (order.snapUrl) return { snapUrl: order.snapUrl };
     const customer = await this.prisma.user.findUniqueOrThrow({ where: { id: user.sub } });
     const midtransOrderId = `aruna-${order.id}`;
@@ -68,7 +70,7 @@ export class OrdersService {
     return this.prisma.order.findMany({ where: { invitationId }, orderBy: { createdAt: 'desc' }, select: { id: true, total: true, status: true, snapUrl: true, createdAt: true, activatedAt: true } });
   }
 
-  async applyWebhook(notification: { order_id: string; status_code: string; gross_amount: string; signature_key: string; transaction_status: string; transaction_id?: string; fraud_status?: string }) {
+  async applyWebhook(notification: MidtransWebhookBody) {
     if (!this.midtrans.verifySignature(notification)) throw new BadRequestException('Signature Midtrans tidak valid');
     const order = await this.prisma.order.findUnique({ where: { midtransOrderId: notification.order_id } });
     if (!order) throw new NotFoundException('Order Midtrans tidak ditemukan');
@@ -79,10 +81,13 @@ export class OrdersService {
       const duplicate = await tx.paymentEvent.findUnique({ where: { providerEventId } });
       if (duplicate) return { accepted: true, duplicate: true };
       const status = paymentStatusFor(notification.transaction_status, notification.fraud_status);
-      await tx.paymentEvent.create({ data: { providerEventId, orderId: order.id, status, grossAmount, payload: notification, verifiedAt: new Date() } });
+      await tx.paymentEvent.create({ data: { providerEventId, orderId: order.id, status, grossAmount, payload: notification as unknown as Prisma.InputJsonValue, verifiedAt: new Date() } });
       if (status === 'REFUNDED') {
-        await tx.entitlement.updateMany({ where: { orderId: order.id, revokedAt: null }, data: { revokedAt: new Date() } });
+        // Mencabut akses adalah peristiwa yang sama pentingnya dengan memberikannya; aktivasi
+        // tepat di bawah sini menulis audit sejak dulu, pencabutan tidak pernah.
+        const revoked = await tx.entitlement.updateMany({ where: { orderId: order.id, revokedAt: null }, data: { revokedAt: new Date() } });
         await tx.order.update({ where: { id: order.id }, data: { status: 'REFUNDED' } });
+        await tx.auditEvent.create({ data: { invitationId: order.invitationId, action: 'PAYMENT_REFUNDED', targetType: 'Order', targetId: order.id, metadata: { providerEventId, revoked: revoked.count } } });
         return { accepted: true, duplicate: false };
       }
       if (!shouldActivate(status, order.activatedAt)) return { accepted: true, duplicate: false };

@@ -112,6 +112,33 @@ Body minimal 16px. Heading pakai `text-balance`, paragraf pakai `text-pretty`. S
 - **Durasi** `120 · 200 · 320 · 520 · 840ms`.
 - **Z-index** `base 0 · raised 10 · sticky 20 · dock 30 · overlay 40 · modal 50 · toast 60`.
 - **Container** maks 1280px; gutter 20 / 32 / 48px. Ruang section 64px mobile → 112px desktop.
+- **Lebar konten dasbor** dua tingkat, lewat prop `width` di `DashboardShell`. `reading` (1024px)
+  untuk layar yang dibaca — ringkasan, tamu, RSVP, pesanan; `wide` (1536px) untuk layar yang
+  dikerjakan, sejauh ini cuma editor. Satu angka untuk semuanya selalu salah di salah satu sisi:
+  1024px membuat kolom pengaturan editor tinggal 312px, 1536px membuat tabel tamu jadi baris
+  sepanjang layar.
+
+**Panel yang lebarnya datang dari jalur grid memakai container query, bukan breakpoint viewport.**
+
+Ini aturan, bukan preferensi. `sm:grid-cols-2` bertanya pada lebar layar; panel di dalam jalur
+grid tidak tahu apa-apa soal lebar layar. Editor pernah menjalankan `sm:grid-cols-3` di dalam
+kolom selebar 312px pada viewport 1440 — benar menurut breakpoint-nya, dan menghasilkan kartu
+tema selebar 80px serta `input[type=date]` selebar 128px. Pasang `@container` pada panelnya lalu
+pakai `@xs:` / `@sm:` / `@lg:` di dalamnya; ambangnya **diukur dari lebar jalur yang sebenarnya**,
+bukan ditaksir. Ukur di beberapa lebar sekaligus: jalur bermaksimum (`minmax(16rem,19rem)`)
+mengambil jatahnya lebih dulu, jadi kolom `1fr` bisa lebih sempit di 1280 daripada di 1024, dan
+ambang yang dipilih dari satu lebar saja akan membuat layar yang lebih besar terasa lebih sempit.
+
+**Undangannya sendiri sepenuhnya container query — nol breakpoint viewport.** `OrnamentField`
+memakai `cqw`, tipografinya `clamp()`, dan `.iv-root` adalah `container-type: inline-size`, jadi
+lima utilitas `md:`/`sm:` terakhir (cover split, padding section, jarak hitung mundur) diukur
+dari lebar undangan, bukan lebar layar. Ambangnya tetap 640/768px lewat `@min-[40rem]:` dan
+`@min-[48rem]:` — di halaman publik `.iv-root` selebar viewport, jadi yang dilihat tamu tidak
+bergeser sedikit pun. Yang berubah adalah undangan itu bisa dirender di lebar berapa pun dan
+tetap jujur, dan **itulah yang membuat pratinjau perangkat di editor bukan sekadar zoom**:
+render 390px berperilaku seperti ponsel 390px, termasuk cover yang menumpuk alih-alih membelah.
+Jangan pernah kembalikan salah satunya ke `md:` — di editor pada layar 1440, `md:` selalu benar,
+dan pratinjau "Ponsel" akan menampilkan tata letak yang tidak akan pernah dilihat tamu.
 
 ---
 

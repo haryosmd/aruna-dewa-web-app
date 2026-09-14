@@ -3,11 +3,29 @@ import { ArrowUpRight, Instagram, Mail, MessageCircle } from 'lucide-vue-next'
 
 const year = new Date().getFullYear()
 const contact = useRuntimeConfig().public
+const auth = useAuthStore()
 
-const columns: { title: string; links: [string, string][] }[] = [
+/** `href: null` berarti tindakan, bukan tujuan — dirender sebagai tombol. */
+type FooterLink = [label: string, href: string | null]
+
+/**
+ * Peta situs tetap peta situs, tapi tidak boleh menawarkan "Masuk" kepada orang yang jelas
+ * sudah masuk. Plugin `auth.server` sudah mengisi store sebelum render, jadi sisi server dan
+ * sisi browser menyepakati isi yang sama dan tidak ada kedipan saat hidrasi.
+ */
+const columns = computed<{ title: string; links: FooterLink[] }[]>(() => [
   { title: 'Produk', links: [['Tema undangan', '/#tema'], ['Fitur', '/#fitur'], ['Harga', '/#harga'], ['Lihat demo', '/i/demo']] },
-  { title: 'Bantuan', links: [['Cara kerja', '/#cara-kerja'], ['Pertanyaan umum', '/#faq'], ['Masuk', '/login'], ['Daftar', '/register']] },
-]
+  {
+    title: 'Bantuan',
+    links: [
+      ['Cara kerja', '/#cara-kerja'],
+      ['Pertanyaan umum', '/#faq'],
+      ...(auth.me
+        ? ([['Dashboard', '/dashboard'], ['Keluar', null]] satisfies FooterLink[])
+        : ([['Masuk', '/login'], ['Daftar', '/register']] satisfies FooterLink[])),
+    ],
+  },
+])
 </script>
 
 <template>
@@ -23,10 +41,13 @@ const columns: { title: string; links: [string, string][] }[] = [
       <div v-for="column in columns" :key="column.title" class="grid content-start gap-4">
         <p class="text-caption font-semibold uppercase tracking-[0.14em] text-ink-inverse/50">{{ column.title }}</p>
         <ul class="grid gap-2.5 p-0 m-0 list-none">
-          <li v-for="[label, href] in column.links" :key="href">
-            <NuxtLink :to="href" class="text-[0.9375rem] text-ink-inverse/80 no-underline transition-colors duration-200 hover:text-ink-inverse">
+          <li v-for="[label, href] in column.links" :key="label">
+            <NuxtLink v-if="href" :to="href" class="text-[0.9375rem] text-ink-inverse/80 no-underline transition-colors duration-200 hover:text-ink-inverse">
               {{ label }}
             </NuxtLink>
+            <button v-else type="button" class="cursor-pointer border-0 bg-transparent p-0 text-left font-inherit text-[0.9375rem] text-ink-inverse/80 no-underline transition-colors duration-200 hover:text-ink-inverse" @click="auth.logout()">
+              {{ label }}
+            </button>
           </li>
         </ul>
       </div>

@@ -26,6 +26,12 @@ services:
     command: ['pnpm', '--filter', '@aruna/api', 'start']
     env_file: apps/api/.env
     environment:
+      # `cookieOptions()` menggantungkan `Secure` pada nilai ini: tanpa disetel, cookie sesi
+      # berangkat lewat plaintext di deploy yang mengira dirinya produksi.
+      NODE_ENV: production
+      # API di sini dipublikasikan langsung, tanpa proxy di depan. Menyalakannya berarti
+      # `X-Forwarded-For` karangan siapa pun jadi `request.ip`.
+      TRUST_PROXY: '0'
       DATABASE_URL: postgresql://aruna:${POSTGRES_PASSWORD:-aruna-local-only}@postgres:5432/aruna
       SMTP_HOST: mailpit
       PORT: 3001
@@ -58,6 +64,7 @@ services:
     command: ['pnpm', '--filter', '@aruna/worker', 'start']
     env_file: apps/api/.env
     environment:
+      NODE_ENV: production
       API_ORIGIN: http://api:3001
       DATABASE_URL: postgresql://aruna:${POSTGRES_PASSWORD:-aruna-local-only}@postgres:5432/aruna
     depends_on:

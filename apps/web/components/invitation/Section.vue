@@ -30,7 +30,7 @@ withDefaults(
     :id="id"
     :data-tone="tone"
     data-iv-section
-    :class="cn('iv-section relative overflow-hidden px-5 text-center', compact ? 'py-12' : 'py-20 md:py-28')"
+    :class="cn('iv-section relative overflow-hidden px-5 text-center', compact ? 'py-12' : 'py-20 @min-[48rem]:py-28')"
   >
     <InvitationOrnamentField
       v-if="ornaments"

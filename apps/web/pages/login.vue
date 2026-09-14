@@ -6,6 +6,7 @@ definePageMeta({ layout: 'auth' })
 
 const route = useRoute()
 const { request } = useApi()
+const auth = useAuthStore()
 
 const email = ref('')
 const password = ref('')
@@ -15,6 +16,8 @@ const error = ref('')
 const ready = useInteractiveReady()
 const apiOrigin = useRuntimeConfig().public.apiBase.replace(/\/v1$/, '')
 const nextPath = computed(() => safeNextPath(route.query.next))
+/** Kalau kedatangan ke sini adalah tendangan, katakan sebabnya — bukan biarkan orang menebak. */
+const endedNotice = computed(() => sessionEndedMessage(route.query.reason))
 /** Tautan daftar meneruskan tujuan, jadi niat pengunjung selamat lewat dua halaman. */
 const registerLink = computed(() => (nextPath.value === '/dashboard' ? '/register' : `/register?next=${encodeURIComponent(nextPath.value)}`))
 /** Jalur Google membawa tujuan yang sama; API menitipkannya di cookie sampai callback kembali. */
@@ -25,6 +28,11 @@ async function submit() {
   pending.value = true
   try {
     await request('/auth/login', { method: 'POST', body: { email: email.value, password: password.value } })
+    // Sesi dipastikan hidup sebelum pindah halaman. Tanpa langkah ini, cookie yang ditolak
+    // browser berakhir sebagai pantulan senyap: middleware `/dashboard` mengembalikan orang
+    // ke sini dengan toast sukses masih terpampang, tanpa satu pun kalimat yang menjelaskan.
+    await auth.load()
+    if (!auth.me) throw { message: 'Login berhasil, tapi sesi tidak tersimpan di browser ini. Pastikan cookie tidak diblokir, lalu coba lagi.' }
     toast.success('Kamu sudah masuk.')
     await navigateTo(nextPath.value)
   } catch (cause) {
@@ -43,6 +51,9 @@ useHead({ title: 'Masuk — Aruna Dewa' })
       <p class="eyebrow">Kembali ke ruang persiapan</p>
       <h1 class="m-0 font-display text-h1 font-semibold text-ink">Masuk</h1>
       <p class="m-0 text-ink-muted">Lanjutkan menyusun undangan dan memantau RSVP tamu.</p>
+      <p v-if="endedNotice" role="status" class="m-0 rounded-md border border-border bg-surface-2 px-3.5 py-2.5 text-[0.875rem] text-ink-muted">
+        {{ endedNotice }}
+      </p>
     </header>
 
     <UiGoogleButton :href="googleHref" />

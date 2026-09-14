@@ -89,6 +89,9 @@ async function loadGuest() {
 }
 
 async function loadWishes() {
+  // Demo tidak punya baris di database; menembaknya hanya menghasilkan 404 di console
+  // tamu. Daftar yang kosong sudah membuat bagian Ucapan memakai contoh bawaannya.
+  if (isDemo.value) return
   try { wishes.value = await request<Wish[]>(`/public/${slug}/wishes`) } catch { wishes.value = [] }
 }
 

@@ -1,9 +1,10 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { canEditDesign, createDefaultDocument, invitationDocumentSchema, templateIds, type InvitationDocument, type TemplateId } from '@aruna/contracts';
+import { canEditDesign, createDefaultDocument, templateIds, type InvitationDocument, type TemplateId } from '@aruna/contracts';
+import type { CreateInvitationBody } from '@aruna/contracts/api';
 import { PrismaService } from '../database/prisma.service.js';
 import { Prisma } from '@aruna/database';
 import { MembershipService } from '../common/membership.service.js';
-import type { AuthenticatedUser } from '../common/auth.js';
+import { isOperator, type AuthenticatedUser } from '../common/auth.js';
 import { validatePublishableDocument } from './document-validation.js';
 
 @Injectable()
@@ -11,13 +12,13 @@ export class InvitationsService {
   constructor(private readonly prisma: PrismaService, private readonly memberships: MembershipService) {}
 
   async list(user: AuthenticatedUser) {
-    const rows = user.role === 'OPERATOR'
+    const rows = isOperator(user)
       ? await this.prisma.invitation.findMany({ orderBy: { updatedAt: 'desc' } })
       : await this.prisma.invitation.findMany({ where: { members: { some: { userId: user.sub } } }, orderBy: { updatedAt: 'desc' } });
     return rows.map((row) => ({ id: row.id, slug: row.slug, title: row.title, status: row.status }));
   }
 
-  async create(user: AuthenticatedUser, input: { title: string; slug: string; partner1: string; partner2: string; date?: string; venue?: string; address?: string; templateId?: string }) {
+  async create(user: AuthenticatedUser, input: CreateInvitationBody) {
     const slug = input.slug.trim().toLowerCase();
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(slug)) throw new BadRequestException('Slug tidak valid');
     const templateId = (input.templateId?.trim() || 'aruna-bloom') as TemplateId;
@@ -48,22 +49,21 @@ export class InvitationsService {
     return { id: invitation.id, slug: invitation.slug, title: invitation.title, status: invitation.status, document: invitation.draftDocument, revision: invitation.draftRevision, features: invitation.entitlements.map((item) => item.featureId), activeUntil: invitation.entitlements.reduce<Date | null>((latest, item) => !latest || (item.activeUntil && item.activeUntil > latest) ? item.activeUntil : latest, null), publishedAt: invitation.publishedAt };
   }
 
-  async saveDraft(user: AuthenticatedUser, invitationId: string, document: unknown, revision: number) {
+  /** `document` dan `revision` sudah lolos `saveDraftBodySchema` di batas controller. */
+  async saveDraft(user: AuthenticatedUser, invitationId: string, document: InvitationDocument, revision: number) {
     await this.memberships.requireInvitationRole(user, invitationId, 'EDITOR');
-    const parsed = invitationDocumentSchema.safeParse(document);
-    if (!parsed.success) throw new BadRequestException({ code: 'INVALID_DOCUMENT', message: 'Dokumen undangan tidak valid', fieldErrors: parsed.error.flatten() });
     const existing = await this.prisma.invitation.findUnique({ where: { id: invitationId }, select: { draftDocument: true, entitlements: { where: { revokedAt: null, OR: [{ activeUntil: null }, { activeUntil: { gt: new Date() } }] }, select: { featureId: true } } } });
     if (!existing) throw new NotFoundException('Undangan tidak ditemukan');
     // Aturan yang sama persis dipakai editor untuk mematikan kontrolnya, supaya kontrol
     // yang terlihat hidup tidak pernah berujung pada autosave yang ditolak.
-    const designUnlocked = canEditDesign({ isOperator: user.role === 'OPERATOR', features: existing.entitlements.map((item) => item.featureId) });
-    if (!designUnlocked && hasDesignChange(existing.draftDocument, parsed.data)) throw new BadRequestException('Perubahan warna, font, atau urutan section memerlukan add-on desain');
-    const update = await this.prisma.invitation.updateMany({ where: { id: invitationId, draftRevision: revision }, data: { draftDocument: toJson(parsed.data), draftRevision: { increment: 1 } } });
+    const designUnlocked = canEditDesign({ isOperator: isOperator(user), features: existing.entitlements.map((item) => item.featureId) });
+    if (!designUnlocked && hasDesignChange(existing.draftDocument, document)) throw new BadRequestException('Perubahan warna, font, atau urutan section memerlukan add-on desain');
+    const update = await this.prisma.invitation.updateMany({ where: { id: invitationId, draftRevision: revision }, data: { draftDocument: toJson(document), draftRevision: { increment: 1 } } });
     if (!update.count) {
       const current = await this.prisma.invitation.findUnique({ where: { id: invitationId }, select: { draftRevision: true, draftDocument: true } });
       throw new ConflictException({ code: 'REVISION_CONFLICT', message: 'Draft telah diubah di tempat lain', current });
     }
-    return { document: parsed.data, revision: revision + 1 };
+    return { document, revision: revision + 1 };
   }
 
   async publish(user: AuthenticatedUser, invitationId: string) {
@@ -78,7 +78,7 @@ export class InvitationsService {
       const document = validatePublishableDocument(invitation.draftDocument);
       const enabledTypes = document.sections.filter((section) => section.enabled).map((section) => section.type);
       const granted = new Set(invitation.entitlements.map((item) => item.featureId));
-      if (user.role !== 'OPERATOR' && enabledTypes.some((feature) => !granted.has(feature))) throw new BadRequestException('Paket aktif belum mencakup seluruh section yang diaktifkan');
+      if (!isOperator(user) && enabledTypes.some((feature) => !granted.has(feature))) throw new BadRequestException('Paket aktif belum mencakup seluruh section yang diaktifkan');
       const snapshot = await tx.publishedRevision.create({ data: { invitationId, revision: invitation.draftRevision, document: toJson(document) } });
       const publishedAt = new Date();
       await tx.invitation.update({ where: { id: invitationId }, data: { activeRevisionId: snapshot.id, status: 'PUBLISHED', publishedAt } });

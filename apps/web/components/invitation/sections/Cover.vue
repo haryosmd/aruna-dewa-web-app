@@ -59,7 +59,7 @@ void coverLayouts
     <div
       :class="cn(
         'relative w-full',
-        layout === 'split-editorial' ? 'mx-auto grid max-w-5xl items-center gap-8 md:grid-cols-2 md:text-left' : 'grid justify-items-center gap-4',
+        layout === 'split-editorial' ? 'mx-auto grid max-w-5xl items-center gap-8 @min-[48rem]:grid-cols-2 @min-[48rem]:text-left' : 'grid justify-items-center gap-4',
       )"
     >
       <!-- Potret berbingkai: mask arch, sudut ornamen menempel padanya. -->
@@ -87,7 +87,7 @@ void coverLayouts
         <img :src="photo" :alt="`Foto ${coupleNames}`" class="h-full w-full object-cover">
       </div>
 
-      <div :class="cn('grid gap-4', layout === 'split-editorial' ? 'justify-items-center md:justify-items-start' : 'justify-items-center')">
+      <div :class="cn('grid gap-4', layout === 'split-editorial' ? 'justify-items-center @min-[48rem]:justify-items-start' : 'justify-items-center')">
         <OrnamentGlyph
           v-if="layout !== 'split-editorial'"
           :glyph="orn.garland"

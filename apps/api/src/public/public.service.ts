@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import type { PublicRsvpBody, PublicWishBody } from '@aruna/contracts/api';
 import { hashGuestToken } from '../guests/guest-token.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { publicDocument } from '../invitations/document-validation.js';
@@ -23,7 +24,6 @@ export class PublicService {
   }
 
   async markOpened(slug: string, token: string): Promise<{ opened: boolean }> {
-    if (typeof token !== 'string' || !token) return { opened: false };
     const invitation = await this.publishedInvitation(slug);
     const updated = await this.prisma.guest.updateMany({ where: { invitationId: invitation.id, tokenHash: hashGuestToken(token), openedAt: null }, data: { openedAt: new Date() } });
     if (updated.count) return { opened: true };
@@ -31,8 +31,7 @@ export class PublicService {
     return { opened: exists > 0 };
   }
 
-  async rsvp(slug: string, input: { token: string; attendance: 'yes' | 'no'; count?: number; message?: string; eventId?: string }) {
-    if (!input || typeof input.token !== 'string' || (input.attendance !== 'yes' && input.attendance !== 'no')) throw new BadRequestException('RSVP tidak valid');
+  async rsvp(slug: string, input: PublicRsvpBody) {
     const invitation = await this.publishedInvitation(slug);
     const document = publicDocument(invitation.activeRevision!.document as never);
     const rsvpSection = document.sections.find((section) => section.type === 'rsvp');
@@ -42,8 +41,8 @@ export class PublicService {
     const guest = await this.prisma.guest.findFirst({ where: { invitationId: invitation.id, tokenHash: hashGuestToken(input.token) }, include: { events: { include: { event: true } } } });
     if (!guest) throw new BadRequestException('Tautan RSVP personal tidak valid');
     const count = input.attendance === 'no' ? 0 : (input.count ?? 1);
-    if (!Number.isInteger(count) || (input.attendance === 'yes' && count < 1) || count < 0 || count > guest.quota) throw new BadRequestException(`Jumlah kehadiran maksimal ${guest.quota}`);
-    if (typeof input.message === 'string' && input.message.length > 1000) throw new BadRequestException('Pesan RSVP maksimal 1.000 karakter');
+    // Batas yang hanya bisa diketahui setelah tamunya ditemukan; skema tidak kenal kuotanya.
+    if ((input.attendance === 'yes' && count < 1) || count > guest.quota) throw new BadRequestException(`Jumlah kehadiran maksimal ${guest.quota}`);
     let eventId: string | null = null;
     if (input.eventId) {
       const access = guest.events.find(({ event }) => event.id === input.eventId);
@@ -70,8 +69,7 @@ export class PublicService {
     return this.prisma.wish.findMany({ where: { invitationId: invitation.id, approved: true }, select: { id: true, authorName: true, message: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: 100 });
   }
 
-  async createWish(slug: string, input: { token: string; message: string }) {
-    if (!input || typeof input.token !== 'string' || typeof input.message !== 'string' || !input.message.trim() || input.message.length > 1000) throw new BadRequestException('Ucapan harus 1–1.000 karakter');
+  async createWish(slug: string, input: PublicWishBody) {
     const invitation = await this.publishedInvitation(slug);
     const guest = await this.prisma.guest.findFirst({ where: { invitationId: invitation.id, tokenHash: hashGuestToken(input.token) } });
     if (!guest) throw new BadRequestException('Tautan RSVP personal tidak valid');
