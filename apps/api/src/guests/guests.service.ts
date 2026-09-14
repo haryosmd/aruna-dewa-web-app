@@ -3,6 +3,7 @@ import { normalizeDisplayName, parseGuestText, type ImportRow } from '@aruna/con
 import { PrismaService } from '../database/prisma.service.js';
 import { MembershipService } from '../common/membership.service.js';
 import { isOperator, type AuthenticatedUser } from '../common/auth.js';
+import { serializeRsvp, type StoredRsvp } from '../rsvp/attendance.js';
 import { createGuestToken, decryptGuestToken } from './guest-token.js';
 
 type GuestInput = { displayName: string; phone?: string; group?: string; quota?: number };
@@ -75,8 +76,8 @@ export class GuestsService {
     });
   }
 
-  private serializeGuest(guest: { id: string; displayName: string; phone: string | null; groupName: string | null; quota: number; revision: number; tokenCiphertext: string; rsvps?: unknown[] }, revealToken = true) {
-    return { id: guest.id, displayName: guest.displayName, ...(revealToken ? { token: decryptGuestToken(guest.tokenCiphertext) } : {}), revision: guest.revision, phone: guest.phone ?? undefined, group: guest.groupName ?? undefined, quota: guest.quota, rsvp: guest.rsvps?.[0] };
+  private serializeGuest(guest: { id: string; displayName: string; phone: string | null; groupName: string | null; quota: number; revision: number; tokenCiphertext: string; rsvps?: StoredRsvp[] }, revealToken = true) {
+    return { id: guest.id, displayName: guest.displayName, ...(revealToken ? { token: decryptGuestToken(guest.tokenCiphertext) } : {}), revision: guest.revision, phone: guest.phone ?? undefined, group: guest.groupName ?? undefined, quota: guest.quota, rsvp: serializeRsvp(guest.rsvps?.[0]) };
   }
 }
 

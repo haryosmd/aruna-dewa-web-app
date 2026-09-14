@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ArrowRight, ShieldCheck } from 'lucide-vue-next'
 import { catalog as catalogFallback } from '@aruna/contracts'
-import type { Catalog } from '~/types/aruna'
 
 const root = ref<HTMLElement | null>(null)
-const { request } = useApi()
+const { catalog: catalogData } = useCatalog()
 const { label: featureLabel, icon: featureIcon } = useFeatureLabels()
 
-const { data: catalog, error } = await useAsyncData('catalog', () => request<Catalog>('/catalog'))
+// Kunci `catalog` yang sama dipakai wizard `/order` dan editor: satu pengambilan, bukan tiga.
+const { data: catalog, error } = await catalogData()
 
 // Harga berasal dari sumber yang sama dengan API, jadi blok harga tidak pernah kosong
 // hanya karena permintaan katalog gagal.

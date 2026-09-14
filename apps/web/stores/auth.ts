@@ -1,17 +1,15 @@
-import type { Invitation } from '~/types/aruna'
-
-type Me = { user: { id: string; email: string; name: string; role: string }; invitations: Invitation[] }
+import type { CurrentAccount } from '@aruna/contracts/api'
 
 export const useAuthStore = defineStore('auth', () => {
-  const me = ref<Me | null>(null)
+  const me = ref<CurrentAccount | null>(null)
   const loaded = ref(false)
   /** Kode sebab sesi terakhir berakhir, dibawa ke `/login` supaya ada kalimat penjelasnya. */
   const endedCode = ref<string | null>(null)
-  const { request } = useApi()
+  const authApi = useAuthApi()
   const isOperator = computed(() => me.value?.user.role === 'r_7c91')
 
   async function load() {
-    try { me.value = await request<Me>('/auth/me') } catch { me.value = null } finally { loaded.value = true }
+    try { me.value = await authApi.me() } catch { me.value = null } finally { loaded.value = true }
     if (me.value) endedCode.value = null
   }
   /** Sekali per kunjungan. Plugin server sudah mengisinya sebelum middleware sempat bertanya. */
@@ -21,7 +19,7 @@ export const useAuthStore = defineStore('auth', () => {
   /** Sesi berakhir di tengah pemakaian; sebabnya disimpan, bukan dibuang diam-diam. */
   function endSession(code: unknown) { me.value = null; loaded.value = true; endedCode.value = sessionEndedReason(code) }
   async function logout() {
-    await request('/auth/logout', { method: 'POST' })
+    await authApi.logout()
     me.value = null
     endedCode.value = null
     await navigateTo('/')

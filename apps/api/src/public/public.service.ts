@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { PublicRsvpBody, PublicWishBody } from '@aruna/contracts/api';
 import { hashGuestToken } from '../guests/guest-token.js';
+import { publicAttendance, serializeRsvp } from '../rsvp/attendance.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { publicDocument } from '../invitations/document-validation.js';
 import { Prisma } from '@aruna/database';
@@ -20,7 +21,7 @@ export class PublicService {
     const invitation = await this.publishedInvitation(slug);
     const guest = await this.prisma.guest.findFirst({ where: { invitationId: invitation.id, tokenHash: hashGuestToken(token) }, include: { events: { include: { event: true } }, rsvps: true } });
     if (!guest) return { personal: false };
-    return { personal: true, displayName: guest.displayName, quota: guest.quota, rsvp: guest.rsvps[0] ?? null, events: guest.events.map(({ event }) => ({ id: event.id, name: event.name, startsAt: event.startsAt, endsAt: event.endsAt, rsvpDeadline: event.rsvpDeadline })) };
+    return { personal: true, displayName: guest.displayName, quota: guest.quota, rsvp: serializeRsvp(guest.rsvps[0]), events: guest.events.map(({ event }) => ({ id: event.id, name: event.name, startsAt: event.startsAt, endsAt: event.endsAt, rsvpDeadline: event.rsvpDeadline })) };
   }
 
   async markOpened(slug: string, token: string): Promise<{ opened: boolean }> {
@@ -61,7 +62,7 @@ export class PublicService {
         ? tx.rSVP.update({ where: { id: existing.id }, data: { attendance, count, message: input.message?.trim() || null } })
         : tx.rSVP.create({ data: { guestId: guest.id, eventId, attendance, count, message: input.message?.trim() || null } });
     });
-    return { attendance: rsvp.attendance.toLowerCase(), count: rsvp.count, message: rsvp.message };
+    return { attendance: publicAttendance(rsvp.attendance), count: rsvp.count, message: rsvp.message };
   }
 
   async wishes(slug: string) {

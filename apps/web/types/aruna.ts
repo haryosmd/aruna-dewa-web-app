@@ -1,34 +1,40 @@
+/**
+ * Re-export, bukan definisi kedua.
+ *
+ * Berkas ini dulu mendefinisikan ulang bentuk yang sudah dikirim API, dan definisinya boleh
+ * menyimpang tanpa ada yang menyadarinya — `Wish` sempat punya tiga versi yang saling berbeda,
+ * dua di antaranya menyebut kolom (`name`, `guestName`) yang tidak pernah dikirim API, jadi
+ * nama penulis ucapan dan nama tamu di daftar RSVP selalu jatuh ke teks cadangan.
+ *
+ * Sekarang semuanya berasal dari `@aruna/contracts`, yang juga dipakai API untuk memvalidasi
+ * body dan menyusun jawabannya. Nama lokal yang sudah dipakai 27 berkas dipertahankan sebagai
+ * alias supaya perpindahannya tidak menyentuh tiap komponen section.
+ */
+
 import type { InvitationDocument, InvitationSection } from '@aruna/contracts'
-export type { InvitationDocument, InvitationSection as Section }
 
-export type Invitation = { id: string; slug: string; title: string; status: string; document?: InvitationDocument; revision?: number; features?: string[]; publishedAt?: string | null }
-export type Guest = { id: string; displayName: string; token: string; revision: number; phone?: string; group?: string; quota: number; rsvp?: { attendance: string; count?: number } | null }
-export type ApiError = { code?: string; message: string; fieldErrors?: Record<string, string[]>; requestId?: string }
+export type { InvitationDocument }
+export type { InvitationSection as Section }
 
-export type CatalogPackage = { id: string; name: string; price: number; features: string[] }
-export type CatalogAddon = { id: string; name: string; price: number }
-export type CatalogTemplate = { id: string; name: string; version: number; tagline?: string; accent?: string }
-export type Catalog = { packages: CatalogPackage[]; addons: CatalogAddon[]; templates: CatalogTemplate[]; sandbox: boolean }
+export type {
+  ApiError,
+  CatalogAddon,
+  CatalogPackage,
+  CatalogTemplate,
+  Guest,
+  GuestProfile,
+  RsvpEntry,
+  Wish,
+} from '@aruna/contracts/api'
+
+export type { CatalogResponse as Catalog } from '@aruna/contracts/api'
 
 /**
- * Tamu yang membuka tautan personalnya. Dulu tipe ini hidup di dalam `Renderer.vue`;
- * dipindahkan ke sini saat renderer dipecah jadi satu komponen per section, supaya
- * section tidak perlu mengimpor dari induknya sendiri.
+ * Undangan seperti yang dilihat dasbor: ringkasan dari `GET /invitations` maupun detail dari
+ * `GET /invitations/:id` masuk ke ref yang sama, jadi bagian detailnya opsional.
  */
-export type GuestProfile = {
-  displayName: string
-  quota: number
-  rsvp?: { attendance: 'yes' | 'no'; count?: number; message?: string } | null
-}
+export type { InvitationSummary } from '@aruna/contracts/api'
+export type Invitation = import('@aruna/contracts/api').InvitationSummary & Partial<Omit<import('@aruna/contracts/api').InvitationDetail, keyof import('@aruna/contracts/api').InvitationSummary>>
 
-export type Wish = {
-  id: string
-  /** Nama kolom milik Prisma. Sebelumnya klien menyebutnya `name`, jadi atribusi tidak pernah muncul. */
-  authorName?: string | null
-  message: string
-  createdAt?: string
-  /** Baris optimistik milik penulisnya sendiri; belum terlihat oleh tamu lain. */
-  approved?: boolean
-}
-
+/** Bentuk yang dikirim `Renderer.vue` ke atas saat tamu menekan kirim; bukan bentuk API. */
 export type RsvpPayload = { attendance: 'yes' | 'no'; count: number; message: string }

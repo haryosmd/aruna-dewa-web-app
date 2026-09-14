@@ -5,7 +5,7 @@ import { toast } from 'vue-sonner'
 definePageMeta({ layout: 'auth' })
 
 const route = useRoute()
-const { request } = useApi()
+const authApi = useAuthApi()
 const auth = useAuthStore()
 
 const email = ref('')
@@ -27,7 +27,7 @@ async function submit() {
   error.value = ''
   pending.value = true
   try {
-    await request('/auth/login', { method: 'POST', body: { email: email.value, password: password.value } })
+    await authApi.login({ email: email.value, password: password.value })
     // Sesi dipastikan hidup sebelum pindah halaman. Tanpa langkah ini, cookie yang ditolak
     // browser berakhir sebagai pantulan senyap: middleware `/dashboard` mengembalikan orang
     // ke sini dengan toast sukses masih terpampang, tanpa satu pun kalimat yang menjelaskan.
@@ -36,7 +36,7 @@ async function submit() {
     toast.success('Kamu sudah masuk.')
     await navigateTo(nextPath.value)
   } catch (cause) {
-    error.value = (cause as { message: string }).message
+    error.value = apiErrorMessage(cause)
   } finally {
     pending.value = false
   }

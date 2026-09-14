@@ -1,54 +1,42 @@
 <script setup lang="ts">
 import { getCoreRowModel, useVueTable, type ColumnDef } from '@tanstack/vue-table'
+import type { GuestPage, ImportPreviewResult } from '@aruna/contracts/api'
 import type { Guest, Invitation } from '~/types/aruna'
 import { Clipboard, Link, Plus, Search, Trash2, Upload } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
 definePageMeta({ middleware: 'auth', layout: false })
 
-type GuestResult = { items: Guest[]; total: number; page: number; pageSize: number }
-type ImportPreview = {
-  id: string
-  source?: 'csv' | 'xlsx' | 'google-sheets'
-  rows: { row: number; displayName: string; phone?: string; group?: string; quota?: number; errors: string[]; warnings: string[] }[]
-  validCount: number
-}
-
 const route = useRoute()
-const { request } = useApi()
+const invitationsApi = useInvitations()
+const guestsApi = useGuests()
 const { build } = useGuestLink()
 
 const invitation = ref<Invitation | null>(null)
-const result = ref<GuestResult>({ items: [], total: 0, page: 1, pageSize: 20 })
+const result = ref<GuestPage>({ items: [], total: 0, page: 1, pageSize: 20 })
 const q = ref('')
-const loading = ref(false)
-const error = ref('')
+const { pending: loading, error, run } = useLoader()
 const drafts = reactive<Record<string, string>>({})
 const adding = ref(false)
 const addOpen = ref(false)
 const newName = ref('')
 const previewText = ref('')
-const preview = ref<ImportPreview | null>(null)
+const preview = ref<ImportPreviewResult | null>(null)
 const importError = ref('')
 const importing = ref(false)
 
 let timer: ReturnType<typeof setTimeout> | undefined
 
 async function load() {
-  loading.value = true
-  error.value = ''
-  try {
-    const current = await request<GuestResult>(`/invitations/${route.params.id}/guests`, {
-      query: { q: q.value || undefined, page: result.value.page },
-    })
-    result.value = current
-    if (!invitation.value) invitation.value = await request<Invitation>(`/invitations/${route.params.id}`)
-    current.items.forEach((guest) => { drafts[guest.id] = guest.displayName })
-  } catch (cause) {
-    error.value = (cause as { message: string }).message
-  } finally {
-    loading.value = false
-  }
+  const id = String(route.params.id)
+  const current = await run(async () => {
+    const page = await guestsApi.list(id, { q: q.value, page: result.value.page })
+    if (!invitation.value) invitation.value = await invitationsApi.get(id)
+    return page
+  })
+  if (!current) return
+  result.value = current
+  current.items.forEach((guest) => { drafts[guest.id] = guest.displayName })
 }
 await load()
 
@@ -60,10 +48,7 @@ watch(q, () => {
 async function save(guest: Guest) {
   const displayName = drafts[guest.id]?.trim() ?? guest.displayName
   if (displayName === guest.displayName) return guest
-  const updated = await request<Guest>(`/invitations/${route.params.id}/guests/${guest.id}`, {
-    method: 'PUT',
-    body: { displayName, revision: guest.revision, phone: guest.phone, group: guest.group, quota: guest.quota },
-  })
+  const updated = await guestsApi.update(String(route.params.id), guest.id, { displayName, revision: guest.revision, phone: guest.phone, group: guest.group, quota: guest.quota })
   const index = result.value.items.findIndex(item => item.id === guest.id)
   if (index >= 0) result.value.items[index] = updated
   drafts[guest.id] = updated.displayName
@@ -77,7 +62,7 @@ async function copyLink(guest: Guest, personal = false) {
     await navigator.clipboard.writeText(url)
     toast.success(`Tautan untuk ${saved.displayName} berhasil disalin`)
   } catch (cause) {
-    toast.error((cause as { message: string }).message || 'Tautan tidak dapat disalin.')
+    toast.error(apiErrorMessage(cause))
   }
 }
 
@@ -85,13 +70,13 @@ async function addGuest() {
   if (!newName.value.trim()) return
   adding.value = true
   try {
-    await request(`/invitations/${route.params.id}/guests`, { method: 'POST', body: { displayName: newName.value, quota: 1 } })
+    await guestsApi.create(String(route.params.id), { displayName: newName.value, quota: 1 })
     newName.value = ''
     addOpen.value = false
     toast.success('Tamu ditambahkan.')
     await load()
   } catch (cause) {
-    error.value = (cause as { message: string }).message
+    error.value = apiErrorMessage(cause)
   } finally {
     adding.value = false
   }
@@ -100,11 +85,11 @@ async function addGuest() {
 async function remove(guest: Guest) {
   if (!window.confirm(`Hapus ${guest.displayName}?`)) return
   try {
-    await request(`/invitations/${route.params.id}/guests/${guest.id}`, { method: 'DELETE' })
+    await guestsApi.remove(String(route.params.id), guest.id)
     toast.success('Tamu dihapus.')
     await load()
   } catch (cause) {
-    toast.error((cause as { message: string }).message)
+    toast.error(apiErrorMessage(cause))
   }
 }
 
@@ -112,12 +97,9 @@ async function makePreview() {
   importError.value = ''
   preview.value = null
   try {
-    preview.value = await request<ImportPreview>(`/invitations/${route.params.id}/imports/preview`, {
-      method: 'POST',
-      body: { text: previewText.value, format: previewText.value.includes('\t') ? 'tsv' : 'csv' },
-    })
+    preview.value = await guestsApi.previewText(String(route.params.id), { text: previewText.value, format: previewText.value.includes('\t') ? 'tsv' : 'csv' })
   } catch (cause) {
-    importError.value = (cause as { message: string }).message
+    importError.value = apiErrorMessage(cause)
   }
 }
 
@@ -129,9 +111,9 @@ async function previewFile(event: Event) {
   try {
     const data = new FormData()
     data.append('file', file)
-    preview.value = await request<ImportPreview>(`/invitations/${route.params.id}/imports/file-preview`, { method: 'POST', body: data })
+    preview.value = await guestsApi.previewFile(String(route.params.id), data)
   } catch (cause) {
-    importError.value = (cause as { message: string }).message
+    importError.value = apiErrorMessage(cause)
   } finally {
     (event.target as HTMLInputElement).value = ''
   }
@@ -141,17 +123,13 @@ async function commitImport() {
   if (!preview.value) return
   importing.value = true
   try {
-    const key = crypto.randomUUID()
-    const outcome = await request<{ imported: number }>(`/invitations/${route.params.id}/imports/${preview.value.id}/commit`, {
-      method: 'POST',
-      body: { idempotencyKey: key },
-    })
+    const outcome = await guestsApi.commitImport(String(route.params.id), preview.value.id, crypto.randomUUID())
     toast.success(`${outcome.imported} tamu diimpor.`)
     preview.value = null
     previewText.value = ''
     await load()
   } catch (cause) {
-    importError.value = (cause as { message: string }).message
+    importError.value = apiErrorMessage(cause)
   } finally {
     importing.value = false
   }

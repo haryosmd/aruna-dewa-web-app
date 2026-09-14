@@ -2,11 +2,14 @@
 import { ArrowLeft, ArrowRight, Check, CreditCard, Loader2 } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import { createDefaultDocument, priceOrder, type TemplateId } from '@aruna/contracts'
+import type { ApiError } from '@aruna/contracts/api'
 import type { Catalog, InvitationDocument } from '~/types/aruna'
 
 definePageMeta({ middleware: 'auth', layout: false })
 
-const { request } = useApi()
+const invitationsApi = useInvitations()
+const ordersApi = useOrders()
+const { fetchCatalog } = useCatalog()
 const route = useRoute()
 const ready = useInteractiveReady()
 
@@ -58,7 +61,7 @@ onMounted(() => {
 watch(form, () => localStorage.setItem(storageKey, JSON.stringify(form)), { deep: true })
 
 async function loadCatalog() {
-  try { catalog.value = await request<Catalog>('/catalog') } catch (cause) { error.value = (cause as { message: string }).message }
+  try { catalog.value = await fetchCatalog() } catch (cause) { error.value = apiErrorMessage(cause) }
 }
 
 const selectedPackage = computed(() => catalog.value?.packages.find(item => item.id === form.packageId))
@@ -87,6 +90,25 @@ function validate(target: number) {
   return Object.keys(fieldErrors).length === 0
 }
 
+/**
+ * Kolom yang ditolak server dibawa kembali ke tahap tempat ia diisi. Tanpa ini pesannya
+ * hanya muncul sebagai banner di tahap paket, jauh dari kolom yang harus diperbaiki.
+ */
+const stepOfField: Record<string, number> = { partner1: 1, partner2: 1, title: 1, slug: 1, date: 2, venue: 2, address: 2, templateId: 3, packageId: 4, addonIds: 4 }
+
+function applyServerFieldErrors(cause: unknown) {
+  const reported = (cause as Partial<ApiError> | undefined)?.fieldErrors
+  if (!reported) return
+  let earliest = STEPS.length
+  for (const [field, messages] of Object.entries(reported)) {
+    const message = messages?.[0]
+    if (!message) continue
+    fieldErrors[field] = message
+    earliest = Math.min(earliest, stepOfField[field] ?? STEPS.length)
+  }
+  step.value = earliest
+}
+
 function next() {
   error.value = ''
   if (!validate(step.value)) return
@@ -98,29 +120,23 @@ async function checkout() {
   pending.value = true
   try {
     if (!form.invitationId) {
-      const invitation = await request<{ id: string }>('/invitations', {
-        method: 'POST',
-        body: {
-          title: form.title || `${form.partner1} & ${form.partner2}`,
-          slug: form.slug,
-          partner1: form.partner1,
-          partner2: form.partner2,
-          date: form.date || undefined,
-          venue: form.venue || undefined,
-          address: form.address || undefined,
-          templateId: form.templateId,
-        },
+      const invitation = await invitationsApi.create({
+        title: form.title || `${form.partner1} & ${form.partner2}`,
+        slug: form.slug,
+        partner1: form.partner1,
+        partner2: form.partner2,
+        date: form.date || undefined,
+        venue: form.venue || undefined,
+        address: form.address || undefined,
+        templateId: form.templateId,
       })
       form.invitationId = invitation.id
     }
     if (!form.orderId) {
-      const order = await request<{ id: string }>(`/invitations/${form.invitationId}/orders`, {
-        method: 'POST',
-        body: { packageId: form.packageId, addonIds: form.addonIds },
-      })
+      const order = await ordersApi.create(form.invitationId, { packageId: form.packageId, addonIds: form.addonIds })
       form.orderId = order.id
     }
-    const payment = await request<{ snapUrl?: string; paid?: boolean }>(`/orders/${form.orderId}/checkout`, { method: 'POST' })
+    const payment = await ordersApi.checkout(form.orderId)
     localStorage.removeItem(storageKey)
     // Operator melewati gerbang pembayaran, jadi tidak ada halaman bayar yang perlu dibuka.
     if (payment.paid) {
@@ -131,7 +147,10 @@ async function checkout() {
     if (!payment.snapUrl) throw new Error('Halaman pembayaran belum bisa dibuka. Coba lagi sebentar lagi.')
     window.location.assign(payment.snapUrl)
   } catch (cause) {
-    error.value = (cause as { message: string }).message
+    // API akhirnya mengirim `fieldErrors`, jadi penolakannya bisa menunjuk kolomnya —
+    // bukan lagi banner tanpa arah di tahap terakhir untuk, misalnya, slug yang sudah dipakai.
+    applyServerFieldErrors(cause)
+    error.value = apiErrorMessage(cause)
     toast.error(error.value)
   } finally {
     pending.value = false

@@ -8,7 +8,7 @@ import { ArrowLeft, MailOpen, Send } from 'lucide-vue-next'
 
 definePageMeta({ layout: 'auth' })
 
-const { request } = useApi()
+const authApi = useAuthApi()
 const email = ref('')
 const pending = ref(false)
 const sent = ref(false)
@@ -19,10 +19,10 @@ async function submit() {
   error.value = ''
   pending.value = true
   try {
-    await request('/auth/forgot-password', { method: 'POST', body: { email: email.value } })
+    await authApi.forgotPassword(email.value)
     sent.value = true
   } catch (cause) {
-    error.value = (cause as { message: string }).message
+    error.value = apiErrorMessage(cause)
   } finally {
     pending.value = false
   }

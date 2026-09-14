@@ -9,7 +9,7 @@ import { toast } from 'vue-sonner'
 definePageMeta({ layout: 'auth' })
 
 const route = useRoute()
-const { request } = useApi()
+const authApi = useAuthApi()
 
 const token = computed(() => (typeof route.query.token === 'string' ? route.query.token : ''))
 const password = ref('')
@@ -31,11 +31,11 @@ async function submit() {
   error.value = ''
   pending.value = true
   try {
-    await request('/auth/reset-password', { method: 'POST', body: { token: token.value, password: password.value } })
+    await authApi.resetPassword(token.value, password.value)
     done.value = true
     toast.success('Kata sandi diperbarui.')
   } catch (cause) {
-    error.value = (cause as { message: string }).message
+    error.value = apiErrorMessage(cause)
   } finally {
     pending.value = false
   }

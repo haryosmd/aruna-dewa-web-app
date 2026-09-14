@@ -9,7 +9,7 @@ import { ArrowRight, MailCheck, MailOpen } from 'lucide-vue-next'
 definePageMeta({ layout: 'auth' })
 
 const route = useRoute()
-const { request } = useApi()
+const authApi = useAuthApi()
 const auth = useAuthStore()
 
 const token = computed(() => (typeof route.query.token === 'string' ? route.query.token : ''))
@@ -19,13 +19,13 @@ const error = ref(token.value ? '' : 'Tautan verifikasi tidak lengkap. Buka kemb
 onMounted(async () => {
   if (!token.value) return
   try {
-    await request('/auth/verify-email', { method: 'POST', body: { token: token.value } })
+    await authApi.verifyEmail(token.value)
     state.value = 'verified'
     // Nama di header ikut menyegar kalau pemilik tautan memang sedang masuk.
     if (auth.me) await auth.load()
   } catch (cause) {
     state.value = 'failed'
-    error.value = (cause as { message: string }).message
+    error.value = apiErrorMessage(cause)
   }
 })
 

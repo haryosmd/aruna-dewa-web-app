@@ -5,14 +5,15 @@ import {
   toAttire, toCoverLayout, toGalleryMotion,
 } from '~/utils/invitation-options'
 import { selectableIntensities, toIntensity } from '~/utils/ornaments'
-import type { Catalog, Invitation, InvitationDocument } from '~/types/aruna'
+import type { Invitation, InvitationDocument } from '~/types/aruna'
 import { AlertCircle, ArrowDown, ArrowUp, Check, Eye, Laptop, Lock, Plus, Redo2, RotateCcw, Save, Send, Smartphone, Tablet, Trash2, Undo2, Upload, Wand2 } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
 definePageMeta({ middleware: 'auth', layout: false })
 
 const route = useRoute()
-const { request } = useApi()
+const invitationsApi = useInvitations()
+const { fetchCatalog } = useCatalog()
 const auth = useAuthStore()
 const { label: featureLabel } = useFeatureLabels()
 
@@ -110,7 +111,7 @@ const canEditDesign = computed(() => designUnlocked({
 async function loadDesignAddon() {
   if (canEditDesign.value || designAddon.value) return
   try {
-    const catalog = await request<Catalog>('/catalog')
+    const catalog = await fetchCatalog()
     designAddon.value = catalog.addons.find(addon => addon.id === designFeatureId) ?? null
   } catch {
     // Harga hanya pelengkap; panel tetap menjelaskan kuncinya tanpa katalog.
@@ -123,7 +124,7 @@ async function load() {
   error.value = ''
   watchReady.value = false
   try {
-    const result = await request<Invitation>(`/invitations/${route.params.id}`)
+    const result = await invitationsApi.get(String(route.params.id))
     invitation.value = result
     document.value = result.document ?? createDefaultDocument()
     revision.value = result.revision ?? 0
@@ -135,7 +136,7 @@ async function load() {
     // di sana selesai setelah HTML terkirim — harganya tidak pernah sampai ke klien.
     await loadDesignAddon()
   } catch (cause) {
-    error.value = (cause as { message: string }).message
+    error.value = apiErrorMessage(cause)
   } finally {
     loading.value = false
     nextTick(() => { watchReady.value = true })
@@ -213,10 +214,7 @@ async function save(silent = false) {
   }
   saving.value = true
   try {
-    const result = await request<{ document: InvitationDocument; revision: number }>(`/invitations/${route.params.id}/draft`, {
-      method: 'PUT',
-      body: { document: parsed.data, revision: revision.value },
-    })
+    const result = await invitationsApi.saveDraft(String(route.params.id), { document: parsed.data, revision: revision.value })
     document.value = result.document
     revision.value = result.revision
     if (!silent) toast.success('Draft tersimpan.')
@@ -241,11 +239,11 @@ async function publish() {
   if (error.value) return
   publishing.value = true
   try {
-    await request(`/invitations/${route.params.id}/publish`, { method: 'POST' })
+    await invitationsApi.publish(String(route.params.id))
     toast.success('Versi publik diperbarui.')
     await load()
   } catch (cause) {
-    error.value = (cause as { message: string }).message
+    error.value = apiErrorMessage(cause)
     toast.error(error.value)
   } finally {
     publishing.value = false
@@ -439,12 +437,12 @@ async function uploadMedia(event: Event) {
   try {
     const data = new FormData()
     data.append('file', file)
-    const result = await request<{ publicUrl: string }>(`/invitations/${route.params.id}/media`, { method: 'POST', body: data })
+    const result = await invitationsApi.uploadMedia(String(route.params.id), data)
     checkpoint()
     galleryImages.value.push(result.publicUrl)
     toast.success('Foto ditambahkan. Foto tampil publik setelah undangan diterbitkan.')
   } catch (cause) {
-    error.value = (cause as { message: string }).message
+    error.value = apiErrorMessage(cause)
   } finally {
     uploadPending.value = false
     ;(event.target as HTMLInputElement).value = ''

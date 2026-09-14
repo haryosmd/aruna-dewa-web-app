@@ -4,7 +4,7 @@ import { toast } from 'vue-sonner'
 
 definePageMeta({ layout: 'auth' })
 
-const { request } = useApi()
+const authApi = useAuthApi()
 const route = useRoute()
 const auth = useAuthStore()
 /** Pendaftar baru yang datang dari tombol paket dikembalikan ke wizard, bukan ke dashboard. */
@@ -34,16 +34,16 @@ async function submit() {
   error.value = ''
   pending.value = true
   try {
-    await request('/auth/register', { method: 'POST', body: { name: name.value, email: email.value, password: password.value } })
+    await authApi.register({ name: name.value, email: email.value, password: password.value })
   } catch (cause) {
-    error.value = (cause as { message: string }).message
+    error.value = apiErrorMessage(cause)
     pending.value = false
     return
   }
   try {
     // Mendaftar tidak membuat sesi. Tanpa langkah masuk ini, tujuan yang sudah dipilih
     // pendaftar langsung dipantulkan kembali ke /login oleh middleware auth.
-    await request('/auth/login', { method: 'POST', body: { email: email.value, password: password.value } })
+    await authApi.login({ email: email.value, password: password.value })
     // Sama seperti di /login: sesi dipastikan hidup dulu, supaya cookie yang ditolak browser
     // jatuh ke cabang di bawah — bukan ke middleware yang memantulkan tanpa penjelasan.
     await auth.load()

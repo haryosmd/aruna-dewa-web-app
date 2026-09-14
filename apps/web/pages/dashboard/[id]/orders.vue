@@ -1,32 +1,23 @@
 <script setup lang="ts">
+import type { Order } from '@aruna/contracts/api'
 import type { Invitation } from '~/types/aruna'
 
 definePageMeta({ middleware: 'auth', layout: false })
 
-type Order = { id: string; total: number; status: string; createdAt?: string; packageName?: string }
-
 const route = useRoute()
-const { request } = useApi()
+const invitationsApi = useInvitations()
+const ordersApi = useOrders()
 const invitation = ref<Invitation | null>(null)
 const orders = ref<Order[]>([])
-const loading = ref(true)
-const error = ref('')
+const { pending: loading, error, run } = useLoader(true)
 
 async function load() {
-  loading.value = true
-  error.value = ''
-  try {
-    const [data, orderData] = await Promise.all([
-      request<Invitation>(`/invitations/${route.params.id}`),
-      request<Order[]>(`/invitations/${route.params.id}/orders`),
-    ])
-    invitation.value = data
-    orders.value = orderData
-  } catch (cause) {
-    error.value = (cause as { message: string }).message
-  } finally {
-    loading.value = false
-  }
+  const id = String(route.params.id)
+  const loaded = await run(() => Promise.all([invitationsApi.get(id), ordersApi.list(id)]))
+  if (!loaded) return
+  const [data, orderData] = loaded
+  invitation.value = data
+  orders.value = orderData
 }
 await load()
 

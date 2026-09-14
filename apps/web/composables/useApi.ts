@@ -1,4 +1,4 @@
-import type { ApiError } from '~/types/aruna'
+import type { ApiError } from '@aruna/contracts/api'
 
 let browserRefreshFlight: Promise<void> | undefined
 

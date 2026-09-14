@@ -4,21 +4,12 @@ import { ArrowRight, Plus } from 'lucide-vue-next'
 
 definePageMeta({ middleware: 'auth', layout: false })
 
-const { request } = useApi()
-const loading = ref(true)
-const error = ref('')
+const invitationsApi = useInvitations()
+const { pending: loading, error, run } = useLoader(true)
 const invitations = ref<Invitation[]>([])
 
 async function load() {
-  loading.value = true
-  error.value = ''
-  try {
-    invitations.value = await request<Invitation[]>('/invitations')
-  } catch (cause) {
-    error.value = (cause as { message: string }).message
-  } finally {
-    loading.value = false
-  }
+  invitations.value = (await run(() => invitationsApi.list())) ?? []
 }
 await load()
 

@@ -67,7 +67,10 @@ export class OrdersService {
 
   async list(user: AuthenticatedUser, invitationId: string) {
     await this.memberships.requireInvitationRole(user, invitationId);
-    return this.prisma.order.findMany({ where: { invitationId }, orderBy: { createdAt: 'desc' }, select: { id: true, total: true, status: true, snapUrl: true, createdAt: true, activatedAt: true } });
+    const orders = await this.prisma.order.findMany({ where: { invitationId }, orderBy: { createdAt: 'desc' }, select: { id: true, total: true, status: true, snapUrl: true, createdAt: true, activatedAt: true, priceSnapshot: true } });
+    // Nama paketnya sudah tersimpan di snapshot harga sejak pesanan dibuat; ia cuma tidak
+    // pernah ikut dikirim, jadi daftar pesanan selamanya menampilkan label cadangan.
+    return orders.map(({ priceSnapshot, ...order }) => ({ ...order, packageName: packageNameFromSnapshot(priceSnapshot) }));
   }
 
   async applyWebhook(notification: MidtransWebhookBody) {
@@ -111,6 +114,12 @@ export class OrdersService {
     });
     return { activated: true };
   }
+}
+
+function packageNameFromSnapshot(snapshot: unknown): string | undefined {
+  if (!snapshot || typeof snapshot !== 'object') return undefined;
+  const plan = (snapshot as { package?: { name?: unknown } }).package;
+  return typeof plan?.name === 'string' ? plan.name : undefined;
 }
 
 function parseRupiah(value: string): number { const amount = Number(value); if (!Number.isInteger(amount) || amount < 0) throw new BadRequestException('Nominal Midtrans tidak valid'); return amount; }

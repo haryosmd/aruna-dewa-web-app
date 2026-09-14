@@ -6,32 +6,27 @@ import { toast } from 'vue-sonner'
 definePageMeta({ middleware: 'auth', layout: false })
 
 const route = useRoute()
-const { request } = useApi()
+const invitationsApi = useInvitations()
 const auth = useAuthStore()
 const invitation = ref<Invitation | null>(null)
-const error = ref('')
+const { error, run } = useLoader()
 const actionPending = ref(false)
 /** Status di database adalah DRAFT | PUBLISHED | ARCHIVED — tidak pernah 'ACTIVE'. */
 const isPublished = computed(() => invitation.value?.status === 'PUBLISHED')
 
 async function load() {
-  error.value = ''
-  try {
-    invitation.value = await request<Invitation>(`/invitations/${route.params.id}`)
-  } catch (cause) {
-    error.value = (cause as { message: string }).message
-  }
+  invitation.value = (await run(() => invitationsApi.get(String(route.params.id)))) ?? invitation.value
 }
 await load()
 
 async function activate() {
   actionPending.value = true
   try {
-    await request(`/invitations/${route.params.id}/activate`, { method: 'POST' })
+    await invitationsApi.activate(String(route.params.id))
     toast.success('Undangan diaktifkan.')
     await load()
   } catch (cause) {
-    toast.error((cause as { message: string }).message)
+    toast.error(apiErrorMessage(cause))
   } finally {
     actionPending.value = false
   }

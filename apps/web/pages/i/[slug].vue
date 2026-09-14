@@ -2,17 +2,15 @@
 import { normalizeDisplayName, templateIds, type TemplateId } from '@aruna/contracts'
 import { galleryMotions, type GalleryMotion } from '~/utils/invitation-options'
 import { toast } from 'vue-sonner'
-import type { InvitationDocument } from '~/types/aruna'
-import type { GuestProfile, Wish } from '~/components/invitation/Renderer.vue'
+import type { InvitationDocument } from '@aruna/contracts'
+import type { GuestProfile, PublicInvitation, Wish } from '@aruna/contracts/api'
 import { fallbackDocument } from '~/composables/useDocument'
 
 definePageMeta({ layout: false })
 
-type PublicInvitation = { document: InvitationDocument; title: string; slug: string; publishedAt: string }
-
 const route = useRoute()
 const config = useRuntimeConfig()
-const { request } = useApi()
+const publicApi = usePublicInvitation()
 const slug = String(route.params.slug)
 const isDemo = computed(() => slug === 'demo')
 
@@ -67,9 +65,9 @@ async function loadPublic() {
     return
   }
   try {
-    publicData.value = await request<PublicInvitation>(`/public/${slug}`)
+    publicData.value = await publicApi.invitation(slug)
   } catch (cause) {
-    pageError.value = (cause as { message: string }).message
+    pageError.value = apiErrorMessage(cause)
   }
 }
 
@@ -77,12 +75,13 @@ async function loadGuest() {
   if (!token.value || isDemo.value) return
   guestError.value = ''
   try {
-    guest.value = await $fetch<GuestProfile>(`/public/${slug}/guest`, {
-      baseURL: config.public.apiBase,
-      credentials: 'include',
-      query: { g: token.value },
-      cache: 'no-store',
-    })
+    // Dulu `$fetch` mentah di sini: ia melewati `apiBaseForPage()` (ejaan host loopback),
+    // melewati penerusan cookie saat render server, dan melewati jalur 401 → refresh → ulang.
+    const found = await publicApi.guest(slug, token.value)
+    // Token yang tidak dikenal dijawab `{ personal: false }`, bukan galat. Menyempitkan dulu
+    // di sini menghentikan `quota` yang undefined merembes ke `Math.min()` di panel RSVP.
+    if (found.personal) guest.value = found
+    else { guest.value = null; guestError.value = 'RSVP personal tidak tersedia untuk tautan ini.' }
   } catch {
     guestError.value = 'RSVP personal tidak tersedia untuk tautan ini.'
   }
@@ -92,7 +91,7 @@ async function loadWishes() {
   // Demo tidak punya baris di database; menembaknya hanya menghasilkan 404 di console
   // tamu. Daftar yang kosong sudah membuat bagian Ucapan memakai contoh bawaannya.
   if (isDemo.value) return
-  try { wishes.value = await request<Wish[]>(`/public/${slug}/wishes`) } catch { wishes.value = [] }
+  try { wishes.value = await publicApi.wishes(slug) } catch { wishes.value = [] }
 }
 
 await loadPublic()
@@ -108,19 +107,16 @@ async function sendRsvp(payload: { attendance: 'yes' | 'no'; count: number; mess
   if (!token.value) return
   rsvpPending.value = true
   try {
-    await request(`/public/${slug}/rsvp`, {
-      method: 'POST',
-      body: {
-        token: token.value,
-        attendance: payload.attendance,
-        count: payload.attendance === 'yes' ? payload.count : undefined,
-        message: payload.message || undefined,
-      },
+    await publicApi.rsvp(slug, {
+      token: token.value,
+      attendance: payload.attendance,
+      count: payload.attendance === 'yes' ? payload.count : undefined,
+      message: payload.message || undefined,
     })
     toast.success('Konfirmasi kehadiran tersimpan.')
     await loadGuest()
   } catch (cause) {
-    toast.error((cause as { message: string }).message)
+    toast.error(apiErrorMessage(cause))
   } finally {
     rsvpPending.value = false
   }
@@ -135,16 +131,13 @@ async function sendWish(message: string) {
   if (!token.value) return
   wishPending.value = true
   try {
-    const created = await request<Wish>(`/public/${slug}/wishes`, {
-      method: 'POST',
-      body: { token: token.value, message },
-    })
+    const created = await publicApi.createWish(slug, { token: token.value, message })
     toast.success('Ucapan dikirim untuk ditinjau pasangan.')
     // Muat ulang yang sudah disetujui, lalu sisipkan milik penulisnya di paling atas.
     await loadWishes()
     if (created?.id && !wishes.value.some(wish => wish.id === created.id)) wishes.value = [created, ...wishes.value]
   } catch (cause) {
-    toast.error((cause as { message: string }).message)
+    toast.error(apiErrorMessage(cause))
   } finally {
     wishPending.value = false
   }
@@ -154,7 +147,7 @@ async function recordOpened() {
   if (!token.value || isDemo.value || openedRecorded.value) return
   openedRecorded.value = true
   try {
-    await request(`/public/${slug}/opened`, { method: 'POST', body: { token: token.value } })
+    await publicApi.markOpened(slug, token.value)
   } catch {
     openedRecorded.value = false
   }
