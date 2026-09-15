@@ -213,6 +213,30 @@ Aturan wajib:
 - Setiap kontrol form punya `<label>` terkait, `aria-invalid`, dan pesan galat ber-`role="alert"` yang terhubung lewat `aria-describedby`.
 - Tombol OAuth memakai logo resmi provider, tinggi 48px, di halaman login **dan** register.
 
+### Popup (`AtomicPopup`)
+
+Satu popup untuk seluruh aplikasi, dipasang sekali di `app.vue` — bukan di layout, karena editor
+undangan memakai `layout: false` dan justru di sanalah ia paling dibutuhkan. Halaman tidak pernah
+menyentuh store-nya: `usePopup()` adalah satu-satunya permukaan, dan `await`-nya menghasilkan `id`
+aksi yang dipilih.
+
+- **`window.confirm` dilarang.** Ia tidak mengenal satu pun token kita, tidak bisa menaruh tiga
+  pilihan, dan tidak bisa membedakan "tinggalkan halaman" dari "buang perubahan".
+- **Daftar aksi, bukan ya/tidak.** Pertanyaan yang taruhannya pekerjaan orang hampir selalu punya
+  tiga jalan keluar, dan yang ketiga adalah "kembali".
+- **Aksi pertama mendapat fokus awal**, bukan tombol silang — kalau tidak, Enter membatalkan
+  pertanyaannya. Aksi pertama juga yang dipakai saat `tone` tidak ditentukan (`primary`).
+- **Escape, klik overlay, dan tombol silang berarti hal yang sama**, dan jawabannya ditentukan
+  pemanggil lewat `dismissId`. Untuk tindakan yang membuang pekerjaan, `dismissId` menunjuk aksi
+  yang **aman**, bukan yang merusak.
+- Fondasinya primitif `Dialog*` reka-ui: jebakan fokus, `aria-modal`, kunci gulir badan, dan
+  pengembalian fokus ke pemicunya. Dialog buatan sendiri di atas `<div>` adalah cara paling umum
+  membuat sapuan axe merah.
+- Z-index mengikuti tabel di atas: overlay `40`, isi `50`. Tombolnya menumpuk di ponsel dan
+  berjajar di layar lebar — tiga pilihan berjajar di 390px memaksa labelnya jadi satu kata, dan
+  "Tinggalkan" yang dipendekkan jadi "Buang" adalah cara yang bagus untuk kehilangan pekerjaan
+  orang.
+
 ---
 
 ## Tema undangan

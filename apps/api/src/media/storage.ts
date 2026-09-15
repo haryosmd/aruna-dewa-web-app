@@ -1,10 +1,12 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 export interface MediaStorage {
   put(key: string, body: Buffer, contentType: string): Promise<void>;
   get(key: string): Promise<Buffer>;
+  /** Idempoten: berkas yang sudah tidak ada bukan galat. Baris DB-nya yang menentukan aset itu masih hidup atau tidak. */
+  delete(key: string): Promise<void>;
 }
 
 export interface S3StorageConfig {
@@ -28,6 +30,7 @@ export class LocalMediaStorage implements MediaStorage {
   constructor(private readonly directory: string) {}
   async put(key: string, body: Buffer): Promise<void> { await mkdir(join(this.directory, key.split('/')[0]!), { recursive: true }); await writeFile(join(this.directory, key), body, { flag: 'wx' }); }
   async get(key: string): Promise<Buffer> { return readFile(join(this.directory, key)); }
+  async delete(key: string): Promise<void> { await rm(join(this.directory, key), { force: true }); }
 }
 
 export class S3MediaStorage implements MediaStorage {
@@ -39,6 +42,7 @@ export class S3MediaStorage implements MediaStorage {
     if (!response.Body) throw new Error('Objek S3 tidak memiliki body');
     return Buffer.from(await response.Body.transformToByteArray());
   }
+  async delete(key: string): Promise<void> { await this.client.send(new DeleteObjectCommand({ Bucket: this.config.bucket, Key: key })); }
 }
 
 export function createMediaStorage(environment: Environment = process.env): MediaStorage {

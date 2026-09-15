@@ -215,7 +215,7 @@ function onKey(event: KeyboardEvent) {
 
 /* Masonry — proporsi asli tiap foto dipertahankan. */
 .iv-gallery--masonry { column-count: 2; column-gap: 0.75rem; }
-@media (min-width: 40rem) { .iv-gallery--masonry { column-count: 3; } }
+@container (min-width: 40rem) { .iv-gallery--masonry { column-count: 3; } }
 .iv-gallery--masonry .iv-gallery-tile { margin-bottom: 0.75rem; break-inside: avoid; }
 .iv-gallery--masonry .iv-gallery-img { height: auto; object-fit: fill; }
 
@@ -226,7 +226,7 @@ function onKey(event: KeyboardEvent) {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-auto-flow: dense;
 }
-@media (min-width: 40rem) { .iv-gallery--mosaic { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@container (min-width: 40rem) { .iv-gallery--mosaic { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .iv-gallery--mosaic .iv-gallery-tile { aspect-ratio: 1; }
 .iv-gallery--mosaic .iv-gallery-tile:first-child { grid-column: span 2; grid-row: span 2; }
 
@@ -251,7 +251,7 @@ function onKey(event: KeyboardEvent) {
   scroll-snap-align: center;
   scroll-margin-inline: 0.5rem;
 }
-@media (min-width: 40rem) {
+@container (min-width: 40rem) {
   .iv-gallery--rail .iv-gallery-tile { width: 15rem; }
 }
 </style>

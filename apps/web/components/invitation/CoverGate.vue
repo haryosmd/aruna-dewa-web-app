@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { MailOpen } from 'lucide-vue-next'
+import { MailOpen, Volume2 } from 'lucide-vue-next'
 import type { OrnamentSet } from '~/utils/ornaments'
 import type { OrnamentIntensity } from '~/utils/ornaments'
 
@@ -13,8 +13,10 @@ const props = withDefaults(
     /** Set ornamen tema, supaya amplopnya ikut berganti wajah saat tema diganti. */
     ornaments: OrnamentSet
     intensity?: OrnamentIntensity
+    /** Mengumumkan musiknya sebelum dibuka, bukan mengejutkan tamu sesudahnya. */
+    hasMusic?: boolean
   }>(),
-  { greeting: '', image: '', intensity: 'seimbang' },
+  { greeting: '', image: '', intensity: 'seimbang', hasMusic: false },
 )
 
 const emit = defineEmits<{ open: [] }>()
@@ -164,6 +166,15 @@ function finish() {
         <MailOpen :size="18" aria-hidden="true" />
         Buka Undangan
       </button>
+
+      <!--
+        Diumumkan sebelum dibuka, bukan sesudahnya. Tamu yang dikejutkan suara di ruang rapat
+        menutup tab — ia tidak mencari tombol kecil di pojok untuk mengecilkannya.
+      -->
+      <p v-if="props.hasMusic" class="iv-body m-0 -mt-4 mx-auto flex max-w-[19rem] items-start justify-center gap-1.5 text-center text-[0.8125rem] opacity-75">
+        <Volume2 :size="15" class="mt-0.5 shrink-0" aria-hidden="true" />
+        <span>Undangan ini memakai musik latar — nyalakan suara ponselmu.</span>
+      </p>
     </div>
   </div>
 </template>

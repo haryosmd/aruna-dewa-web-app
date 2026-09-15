@@ -43,7 +43,7 @@ withDefaults(
     <div :class="cn('relative mx-auto grid justify-items-center', compact ? 'gap-4' : 'gap-6')" style="width: min(100%, 42rem)">
       <p v-if="kicker" data-iv-lead class="iv-kicker m-0">{{ kicker }}</p>
 
-      <h2 v-if="title" data-iv-lead :class="cn('iv-display m-0', compact ? 'text-[2rem]' : 'text-[clamp(2.1rem,7vw,3.4rem)]')">
+      <h2 v-if="title" data-iv-lead :class="cn('iv-display m-0', 'text-[clamp(2.1rem,7cqw,3.4rem)]')">
         {{ title }}
       </h2>
 

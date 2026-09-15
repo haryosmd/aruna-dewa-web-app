@@ -49,7 +49,7 @@ const note = computed(() => text(props.section, 'text'))
     </ul>
 
     <p v-if="note" data-iv-reveal class="iv-body m-0 max-w-md">{{ note }}</p>
-    <p v-else-if="!attire.length && !colors.length" data-iv-reveal class="iv-display m-0 text-[clamp(1.6rem,6vw,2.4rem)]">
+    <p v-else-if="!attire.length && !colors.length" data-iv-reveal class="iv-display m-0 text-[clamp(1.6rem,6cqw,2.4rem)]">
       Kenakan yang membuat Anda nyaman.
     </p>
   </InvitationSection>

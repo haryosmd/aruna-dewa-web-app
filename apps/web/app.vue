@@ -15,6 +15,12 @@ onMounted(() => { ready.value = true })
     </NuxtLayout>
   </div>
 
+  <!--
+    Dipasang di sini, bukan di layout: editor undangan memakai `layout: false`, dan halaman
+    itulah yang paling butuh popup "perubahan belum tersimpan".
+  -->
+  <AtomicPopup />
+
   <Toaster
     position="top-center"
     :toast-options="{

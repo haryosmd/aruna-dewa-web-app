@@ -37,7 +37,7 @@ const entrance = computed(() => ['rise', 'sweep-left', 'sweep-right', 'iris'][Ma
       <OrnamentGlyph :glyph="orn.corner" data-iv-ornament class="iv-portrait-corner iv-portrait-corner--br" aria-hidden="true" />
     </div>
 
-    <h2 data-iv-reveal class="iv-display iv-script m-0" :class="compact ? 'text-[2.2rem]' : 'text-[clamp(2.4rem,9vw,4rem)]'">
+    <h2 data-iv-reveal class="iv-display iv-script m-0" :class="'text-[clamp(2.4rem,9cqw,4rem)]'">
       {{ coupleNames }}
     </h2>
     <p data-iv-reveal class="iv-body m-0">

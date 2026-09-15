@@ -50,7 +50,6 @@ const emit = defineEmits<{
 }>()
 
 const root = ref<HTMLElement | null>(null)
-const opened = ref(props.compact)
 
 const style = computed(() => themeStyle(props.document))
 const visible = computed(() => props.document.sections.filter(section => section.enabled))
@@ -123,10 +122,16 @@ function submitWish(message: string) {
   emit('wish', message)
 }
 
+const player = ref<{ arm: () => void; pause: () => void } | null>(null)
+const musicSection = computed(() => sectionOf('music'))
+const musicUrl = computed(() => (has('music') ? text(musicSection.value, 'url') : ''))
+
 function onGateOpen() {
-  opened.value = true
+  // Sinkron, di dalam tumpukan panggilan klik gerbang — itulah izin autoplay yang sesungguhnya.
+  player.value?.arm()
   emit('coverOpen')
 }
+
 
 /*
  * Konteks bersama, bukan tiga belas daftar prop. Setiap section mengambil potongan yang
@@ -151,6 +156,8 @@ provideInvitation({
   sectionOf,
   submitRsvp,
   submitWish,
+  // Saat `compact`, pemutarnya memang tidak dirender — `?.` di sini bukan kemalasan.
+  pauseMusic: () => player.value?.pause(),
 })
 
 // --- Motion ------------------------------------------------------------------
@@ -192,6 +199,12 @@ useArunaMotion(root, ({ gsap, revealUp, parallax, drawSvg, orchestrate }) => {
 
 <template>
   <div ref="root" class="iv-root" :style="style" :class="{ 'pb-24': !compact }">
+    <!--
+      Gerbang selalu ada pada undangan yang terbit, jadi musik selalu punya gestur untuk
+      menumpang: `validatePublishableDocument` menolak publish kalau section `cover` mati.
+      Sempat ada pendengar `pointerdown` di sini sebagai cadangan untuk undangan tanpa gerbang —
+      dibuang setelah diuji, karena keadaan itu tidak bisa dicapai lewat publish.
+    -->
     <InvitationCoverGate
       v-if="!compact && has('cover')"
       :couple="coupleNames"
@@ -201,6 +214,7 @@ useArunaMotion(root, ({ gsap, revealUp, parallax, drawSvg, orchestrate }) => {
       :image="coverImage"
       :ornaments="orn"
       :intensity="intensity"
+      :has-music="Boolean(musicUrl)"
       @open="onGateOpen"
     />
 
@@ -218,9 +232,11 @@ useArunaMotion(root, ({ gsap, revealUp, parallax, drawSvg, orchestrate }) => {
 
     <template v-if="!compact">
       <InvitationMusicPlayer
-        v-if="has('music') && text(sectionOf('music'), 'url')"
-        :url="text(sectionOf('music'), 'url')"
-        :autostart="opened"
+        v-if="musicUrl"
+        ref="player"
+        :url="musicUrl"
+        :title="text(musicSection, 'title')"
+        :credit="text(musicSection, 'credit')"
       />
       <InvitationDock :available="visible.map(section => section.type)" />
     </template>
@@ -264,7 +280,7 @@ useArunaMotion(root, ({ gsap, revealUp, parallax, drawSvg, orchestrate }) => {
   gap: 0.875rem;
   grid-template-columns: 1fr;
 }
-@media (min-width: 40rem) {
+@container (min-width: 40rem) {
   .iv-gift-grid:has(> li + li) { grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); }
 }
 .iv-gift-card { padding: 0; }

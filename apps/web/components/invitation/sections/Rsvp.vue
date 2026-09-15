@@ -186,7 +186,7 @@ useArunaMotion(root, ({ gsap, bloomIn }) => {
   max-width: 30rem;
   margin-inline: auto;
 }
-@media (min-width: 30rem) { .iv-rsvp-choices { grid-template-columns: 1fr 1fr; } }
+@container (min-width: 30rem) { .iv-rsvp-choices { grid-template-columns: 1fr 1fr; } }
 
 .iv-rsvp-card {
   position: relative;

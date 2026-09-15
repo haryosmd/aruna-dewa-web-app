@@ -89,6 +89,71 @@ export function createDefaultDocument(partner1 = 'Aruna', partner2 = 'Dewa', tem
   }
 }
 
+/* ── Media: foto dan musik ─────────────────────────────────────────────────── */
+
+/**
+ * Satu-satunya tempat jenis dan ukuran media ditulis.
+ *
+ * Sebelumnya daftar MIME hidup di `media.service.ts`, batas ukuran hidup dua kali (service dan
+ * multer), dan editor menulis `accept="image/*"` — yang meloloskan GIF, AVIF, dan SVG sampai
+ * server menolaknya. Pasangan baru tahu berkasnya salah setelah 12 MB selesai naik lewat data
+ * seluler. Aturannya di kontrak supaya kedua sisi menolak hal yang sama, pada saat yang sama.
+ *
+ * Ekstensi ikut dicantumkan karena MIME saja tidak cukup di klien: sebagian ponsel melaporkan
+ * `.webp` sebagai `application/octet-stream`, dan `accept` yang hanya berisi MIME membuat
+ * berkasnya tidak bisa dipilih sama sekali di pemilih berkas.
+ */
+export const mediaRules = {
+  image: {
+    mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+    extensions: ['.jpg', '.jpeg', '.png', '.webp'],
+    maxBytes: 10 * 1024 * 1024,
+    label: 'JPG, JPEG, PNG, atau WebP',
+  },
+  audio: {
+    mimeTypes: ['audio/mpeg'],
+    extensions: ['.mp3'],
+    maxBytes: 10 * 1024 * 1024,
+    label: 'MP3',
+  },
+} as const
+
+export type MediaKind = keyof typeof mediaRules
+
+/** Batas foto galeri. Paket menjanjikan 15/30/60, tapi `Invitation` belum menyimpan paketnya — sampai itu ada, satu angka untuk semua, ditulis sekali. */
+export const galleryPhotoLimit = 15
+
+/** Aset audio per undangan. Bukan fitur, cuma pagar: tanpa ini unggah ulang lagu menumpuk tanpa batas. */
+export const audioAssetLimit = 5
+
+/** `accept` untuk `<input type="file">` — MIME dan ekstensi sekaligus. */
+export function mediaAccept(kind: MediaKind): string {
+  return [...mediaRules[kind].mimeTypes, ...mediaRules[kind].extensions].join(',')
+}
+
+export function isAllowedMediaType(kind: MediaKind, mimeType: string): boolean {
+  return (mediaRules[kind].mimeTypes as readonly string[]).includes(mimeType)
+}
+
+/** Semua jenis yang boleh masuk, apa pun jenisnya — dipakai penjaga unggah di server. */
+export const allowedMediaTypes: readonly string[] = [...mediaRules.image.mimeTypes, ...mediaRules.audio.mimeTypes]
+
+export function mediaKindOf(mimeType: string): MediaKind | null {
+  if (isAllowedMediaType('image', mimeType)) return 'image'
+  if (isAllowedMediaType('audio', mimeType)) return 'audio'
+  return null
+}
+
+/** Batas terbesar di antara semua jenis — hanya untuk menyetel penjaga multer, bukan untuk validasi. */
+export const maxMediaBytes = Math.max(mediaRules.image.maxBytes, mediaRules.audio.maxBytes)
+
+/** "14,2 MB" — koma desimal, karena pesannya dibaca orang Indonesia. */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0).replace('.', ',')} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} MB`
+}
+
 /* ── Hadiah: rekening pasangan ─────────────────────────────────────────────── */
 
 /**

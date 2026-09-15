@@ -1,12 +1,11 @@
 import { BadRequestException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
+import { allowedMediaTypes, audioAssetLimit, formatBytes, galleryPhotoLimit, mediaKindOf, mediaRules } from '@aruna/contracts';
 import { PrismaService } from '../database/prisma.service.js';
 import { MembershipService } from '../common/membership.service.js';
 import type { AuthenticatedUser } from '../common/auth.js';
 import { createMediaStorage } from './storage.js';
-import { publicDocument } from '../invitations/document-validation.js';
-
-const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'audio/mpeg']);
+import { apiOrigin, publicMediaUrl, referencesAsset, servesAsset } from './asset-usage.js';
 
 @Injectable()
 export class MediaService {
@@ -14,13 +13,16 @@ export class MediaService {
   constructor(private readonly prisma: PrismaService, private readonly memberships: MembershipService) {}
   async upload(user: AuthenticatedUser, invitationId: string, file: Express.Multer.File) {
     await this.memberships.requireInvitationRole(user, invitationId, 'EDITOR');
-    if (!file || !allowedTypes.has(file.mimetype)) throw new BadRequestException('Jenis media harus JPEG, PNG, WebP, atau MP3');
-    if (file.size <= 0 || file.size > 20 * 1024 * 1024) throw new BadRequestException('Ukuran media maksimal 20 MB');
+    if (!file || !allowedMediaTypes.includes(file.mimetype)) throw new BadRequestException('Jenis media harus JPEG, PNG, WebP, atau MP3');
+    const kind = mediaKindOf(file.mimetype)!;
+    const rules = mediaRules[kind];
+    if (file.size <= 0 || file.size > rules.maxBytes) throw new BadRequestException(`Ukuran ${rules.label} maksimal ${formatBytes(rules.maxBytes)}`);
     if (!hasMatchingSignature(file.buffer, file.mimetype)) throw new BadRequestException('Isi berkas tidak cocok dengan jenis media yang diklaim');
-    if (file.mimetype.startsWith('image/')) {
-      const photoCount = await this.prisma.mediaAsset.count({ where: { invitationId, contentType: { startsWith: 'image/' } } });
-      if (photoCount >= 15) throw new BadRequestException('Batas awal galeri adalah 15 foto');
-    }
+    // Batasnya dihitung dari aset yang benar-benar tersimpan, bukan dari isi dokumen — itulah
+    // sebabnya menghapus foto wajib ikut menghapus asetnya, kalau tidak kuotanya bocor.
+    const kept = await this.prisma.mediaAsset.count({ where: { invitationId, contentType: { startsWith: kind === 'image' ? 'image/' : 'audio/' } } });
+    if (kind === 'image' && kept >= galleryPhotoLimit) throw new BadRequestException(`Batas foto per undangan adalah ${galleryPhotoLimit}. Hapus foto yang tidak dipakai lebih dulu.`);
+    if (kind === 'audio' && kept >= audioAssetLimit) throw new BadRequestException(`Batas lagu terunggah adalah ${audioAssetLimit}. Hapus lagu lama lebih dulu.`);
     const extension = extensionFor(file.mimetype);
     const key = `${invitationId}/${randomUUID()}${extension}`;
     try { await createMediaStorage().put(key, file.buffer, file.mimetype); }
@@ -31,8 +33,29 @@ export class MediaService {
       throw new ServiceUnavailableException('Media tidak dapat disimpan saat ini. Coba lagi beberapa saat lagi.');
     }
     const asset = await this.prisma.mediaAsset.create({ data: { invitationId, provider: (process.env.MEDIA_PROVIDER ?? 'local') === 's3' ? 'S3' : 'LOCAL', key, contentType: file.mimetype, bytes: file.size, originalName: file.originalname } });
-    const apiOrigin = process.env.API_ORIGIN ?? 'http://127.0.0.1:3001';
-    return { ...asset, draftUrl: `${apiOrigin}/v1/media/${asset.id}`, publicUrl: `${apiOrigin}/v1/public/media/${asset.id}` };
+    return { ...asset, draftUrl: `${apiOrigin()}/v1/media/${asset.id}`, publicUrl: publicMediaUrl(asset.id) };
+  }
+
+  /**
+   * Menghapus aset, bukan sekadar melepasnya dari dokumen.
+   *
+   * Penjaganya satu dan penting: aset yang masih dipakai revisi aktif tidak boleh hilang.
+   * Undangan yang sudah disebar ke ratusan tamu tidak boleh berubah jadi kotak gambar rusak
+   * karena pasangan merapikan drafnya.
+   */
+  async remove(user: AuthenticatedUser, invitationId: string, assetId: string) {
+    await this.memberships.requireInvitationRole(user, invitationId, 'EDITOR');
+    const asset = await this.prisma.mediaAsset.findUnique({ where: { id: assetId }, include: { invitation: { include: { activeRevision: true } } } });
+    if (!asset || asset.invitationId !== invitationId) throw new BadRequestException('Media tidak ditemukan');
+    if (referencesAsset(asset.invitation.activeRevision?.document, asset.id)) throw new BadRequestException('Foto ini masih dipakai versi yang sudah diterbitkan. Terbitkan ulang undangan tanpa foto itu lebih dulu.');
+    try { await createMediaStorage().delete(asset.key); }
+    catch (error) {
+      // Baris DB tetap dihapus: berkas yatim di storage jauh lebih murah daripada kuota yang
+      // macet selamanya karena satu penghapusan gagal.
+      this.logger.error(`Berkas media gagal dihapus (${asset.key})`, error instanceof Error ? error.stack : String(error));
+    }
+    await this.prisma.mediaAsset.delete({ where: { id: asset.id } });
+    return { deleted: true };
   }
 
   async readForMember(user: AuthenticatedUser, assetId: string): Promise<{ contentType: string; body: Buffer }> {
@@ -45,8 +68,7 @@ export class MediaService {
   async readForPublic(assetId: string): Promise<{ contentType: string; body: Buffer }> {
     const asset = await this.prisma.mediaAsset.findUnique({ where: { id: assetId }, include: { invitation: { include: { activeRevision: true } } } });
     if (!asset?.invitation.activeRevision || asset.invitation.status !== 'PUBLISHED') throw new BadRequestException('Media publik tidak ditemukan');
-    const publicUrl = `${process.env.API_ORIGIN ?? 'http://127.0.0.1:3001'}/v1/public/media/${asset.id}`;
-    if (!JSON.stringify(publicDocument(asset.invitation.activeRevision.document as never)).includes(publicUrl)) throw new BadRequestException('Media belum dipakai pada undangan publik');
+    if (!servesAsset(asset.invitation.activeRevision.document, asset.id)) throw new BadRequestException('Media belum dipakai pada undangan publik');
     return { contentType: asset.contentType, body: await this.read(asset.key) };
   }
 

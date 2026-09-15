@@ -44,7 +44,7 @@ const pad = (value: number) => String(value).padStart(2, '0')
         data-iv-reveal
         class="iv-card grid justify-items-center gap-1 rounded-md px-1 py-4 @min-[40rem]:py-5"
       >
-        <span class="iv-display text-[clamp(1.6rem,7vw,2.4rem)] leading-none tabular-nums">{{ pad(unit.value) }}</span>
+        <span class="iv-display text-[clamp(1.6rem,7cqw,2.4rem)] leading-none tabular-nums">{{ pad(unit.value) }}</span>
         <span class="iv-kicker m-0 text-[0.5625rem]">{{ unit.label }}</span>
       </li>
     </ul>

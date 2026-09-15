@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { canEditDesign as designUnlocked, createDefaultDocument, designFeatureId, giftAccountLimit, invitationDocumentSchema, normalizeGift, selectableFonts, type FontChoice, type TemplateId } from '@aruna/contracts'
+import { canEditDesign as designUnlocked, createDefaultDocument, designFeatureId, galleryPhotoLimit, giftAccountLimit, invitationDocumentSchema, normalizeGift, selectableFonts, type FontChoice, type TemplateId } from '@aruna/contracts'
 import {
   selectableAttire, selectableCoverLayouts, selectableGalleryMotions, selectableVenues,
   toAttire, toCoverLayout, toGalleryMotion,
 } from '~/utils/invitation-options'
 import { selectableIntensities, toIntensity } from '~/utils/ornaments'
 import type { Invitation, InvitationDocument } from '~/types/aruna'
-import { AlertCircle, ArrowDown, ArrowUp, Check, Eye, Laptop, Lock, Plus, Redo2, RotateCcw, Save, Send, Smartphone, Tablet, Trash2, Undo2, Upload, Wand2 } from 'lucide-vue-next'
+import type { MusicTrack } from '~/utils/music-library'
+import { AlertCircle, ArrowDown, ArrowUp, Check, Eye, Laptop, Lock, Pause, Play, Plus, Redo2, RotateCcw, Save, Send, Smartphone, Tablet, Trash2, Undo2, Wand2 } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
 definePageMeta({ middleware: 'auth', layout: false })
@@ -69,13 +70,36 @@ const previewScale = computed(() =>
 )
 const previewScalePct = computed(() => Math.round(previewScale.value * 100))
 const galleryUrl = ref('')
-const uploadPending = ref(false)
 const watchReady = ref(false)
 const designAddon = ref<{ name: string; price: number } | null>(null)
 const undoStack = ref<InvitationDocument[]>([])
 const redoStack = ref<InvitationDocument[]>([])
 
-let autosaveTimer: ReturnType<typeof setTimeout> | undefined
+const { confirm } = usePopup()
+
+/*
+ * Autosave dicabut di fase 18, dan ini yang menggantikannya.
+ *
+ * Yang lama menyimpan sendiri 900ms setelah tiap perubahan, lalu menimpa dokumen lokal dengan
+ * jawaban server. Jawaban itu nol informasi — `saveDraft` cuma menggemakan dokumen yang baru
+ * dikirim — tapi penugasannya mengubah identitas ref, memicu watcher yang sama, dan penjaganya
+ * selalu lolos karena `saving` sudah `false` sebelum antrean watcher Vue di-flush. Terukur:
+ * satu suntingan menghasilkan 13 revisi dalam 12 detik, lalu terus begitu selamanya, sambil
+ * menghidupkan kembali foto yang baru dihapus.
+ *
+ * Sekarang simpan hanya berangkat lewat tombol, dan keadaannya dibaca dari cuplikan ini.
+ * Cuplikannya diambil **sebelum** permintaan berangkat dan baru dipasang setelah berhasil,
+ * jadi suntingan yang datang selagi permintaan terbang tetap terhitung belum tersimpan.
+ */
+const savedSnapshot = ref('')
+const dirty = computed(() => JSON.stringify(document.value) !== savedSnapshot.value)
+
+/**
+ * URL aset yang sudah lepas dari dokumen tapi berkasnya belum dihapus.
+ *
+ * Penghapusan menunggu simpan berhasil; alasannya di `utils/asset-release.ts`.
+ */
+const pendingReleases = ref<string[]>([])
 
 const selected = computed(() => document.value.sections.find(section => section.id === selectedId.value) ?? document.value.sections[0])
 
@@ -139,7 +163,17 @@ async function load() {
     error.value = apiErrorMessage(cause)
   } finally {
     loading.value = false
-    nextTick(() => { watchReady.value = true })
+    /*
+     * Cuplikan "tersimpan" diambil di sini, bukan tepat setelah `document.value` diisi.
+     * `watch(selected, …, { immediate: true })` di bawah menulis ulang `section.data` hadiah
+     * berbentuk lama begitu section-nya terpilih; cuplikan yang diambil lebih dini membuat
+     * editor lahir dalam keadaan "belum tersimpan", dan tiap perpindahan halaman memunculkan
+     * popup yang tidak dimengerti siapa pun.
+     */
+    nextTick(() => {
+      watchReady.value = true
+      savedSnapshot.value = JSON.stringify(document.value)
+    })
   }
 }
 await load()
@@ -204,7 +238,10 @@ function repairPaletteColors() {
   toast.success('Warna disetel ke versi terdekat yang terbaca.')
 }
 
-async function save(silent = false) {
+async function save() {
+  // Tombolnya sudah ter-disable selagi `saving`, tapi `publish()` juga lewat sini: tanpa
+  // penjaga ini dua permintaan bisa berbarengan, dan yang kedua membawa `revision` basi.
+  if (saving.value) return
   error.value = ''
   conflict.value = false
   const parsed = invitationDocumentSchema.safeParse(document.value)
@@ -212,12 +249,21 @@ async function save(silent = false) {
     error.value = parsed.error.issues[0]?.message ?? 'Rancangan belum valid.'
     return
   }
+  // Diambil sebelum berangkat. Suntingan yang datang selagi permintaan terbang tidak ikut
+  // tertandai tersimpan — dan tidak pula ditimpa, karena dokumen lokal tidak disentuh.
+  const snapshot = JSON.stringify(document.value)
   saving.value = true
   try {
     const result = await invitationsApi.saveDraft(String(route.params.id), { document: parsed.data, revision: revision.value })
-    document.value = result.document
+    /*
+     * Hanya `revision` yang diambil dari jawaban. `result.document` adalah gema dari dokumen
+     * yang baru saja dikirim — klien sudah mem-parse-nya dengan skema yang sama sebelum
+     * berangkat — jadi menugaskannya kembali bukan sinkronisasi, melainkan penimpaan.
+     */
     revision.value = result.revision
-    if (!silent) toast.success('Draft tersimpan.')
+    savedSnapshot.value = snapshot
+    toast.success('Draft tersimpan.')
+    await flushReleases(snapshot)
   } catch (cause) {
     const apiError = cause as { code?: string; message: string }
     conflict.value = apiError.code === 'CONFLICT' || apiError.code === 'REVISION_CONFLICT'
@@ -235,7 +281,8 @@ async function publish() {
     toast.error('Perbaiki kontras warna dulu sebelum menerbitkan.')
     return
   }
-  await save()
+  // Draf yang sudah bersih tidak perlu revisi baru hanya untuk diterbitkan.
+  if (dirty.value) await save()
   if (error.value) return
   publishing.value = true
   try {
@@ -250,8 +297,18 @@ async function publish() {
   }
 }
 
-function reset() {
-  if (!window.confirm('Kembalikan seluruh draft ke preset awal? Perubahan belum tersimpan akan hilang.')) return
+async function reset() {
+  const jawaban = await confirm({
+    title: 'Kembalikan ke preset awal?',
+    description: 'Seluruh isi draft diganti preset tema ini. Perubahan yang belum tersimpan akan hilang.',
+    tone: 'danger',
+    actions: [
+      { id: 'kembali', label: 'Kembali', tone: 'outline' },
+      { id: 'reset', label: 'Ya, kembalikan', tone: 'ink' },
+    ],
+    dismissId: 'kembali',
+  })
+  if (jawaban !== 'reset') return
   checkpoint()
   document.value = createDefaultDocument('Aruna', 'Dewa', document.value.templateId)
   toast.message('Preset dimuat kembali. Simpan untuk menerapkannya.')
@@ -265,8 +322,11 @@ function reset() {
  * mengetik apa saja ke dalamnya — `section.data` adalah `z.record(z.unknown())` dan tidak
  * divalidasi zod, jadi nilai ngawur akan tersimpan dengan senang hati dan section-nya
  * diam-diam jatuh ke bawaan.
+ *
+ * `image` dan `credit` ikut dikecualikan bukan karena tertutup, melainkan karena sudah punya
+ * panel sendiri di atas — tanpa ini keduanya muncul dua kali di layar yang sama.
  */
-const enumKeys = new Set(['layout', 'ornamentIntensity', 'motion', 'venueIllustration'])
+const enumKeys = new Set(['layout', 'ornamentIntensity', 'motion', 'venueIllustration', 'image', 'credit'])
 
 const textFields = computed(() => {
   const data = selected.value?.data ?? {}
@@ -426,28 +486,127 @@ function addGalleryUrl() {
   galleryUrl.value = ''
 }
 
-async function uploadMedia(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file || !selected.value || selected.value.type !== 'gallery') return
-  if (galleryImages.value.length >= 15) {
-    error.value = 'Galeri maksimal berisi 15 foto.'
-    return
-  }
-  uploadPending.value = true
+/* ── Unggahan media ─────────────────────────────────────────────────────────── */
+
+const media = useMediaUploads(() => String(route.params.id))
+const gallerySlotsLeft = computed(() => Math.max(0, galleryPhotoLimit - galleryImages.value.length))
+
+/**
+ * Satu jatuhan, satu langkah undo.
+ *
+ * `checkpoint()` dipanggil sekali untuk seluruh jatuhan, bukan per foto: menjatuhkan sepuluh
+ * foto terasa seperti satu tindakan, dan undo yang mengembalikannya satu per satu akan
+ * menghabiskan seluruh tumpukan 30-langkah untuk satu gerakan tangan.
+ */
+async function onGalleryFiles(files: File[]) {
+  if (!selected.value || selected.value.type !== 'gallery') return
+  const urls = await media.upload(files)
+  if (!urls.length) return
+  checkpoint()
+  galleryImages.value.push(...urls)
+  toast.success(urls.length === 1
+    ? 'Foto ditambahkan. Foto tampil publik setelah undangan diterbitkan.'
+    : `${urls.length} foto ditambahkan. Foto tampil publik setelah undangan diterbitkan.`)
+}
+
+/**
+ * Melepas berkasnya, bukan cuma tautannya — tapi menunggu gilirannya.
+ *
+ * Batas foto dihitung dari aset yang tersimpan di server, jadi tanpa penghapusan ini pasangan
+ * yang mengunggah lalu berganti pikiran lima belas kali akan mentok selamanya tanpa punya satu
+ * pun foto. Yang berubah di fase 18 adalah **kapan**: dulu berkasnya dihapus begitu URL-nya
+ * lepas dari dokumen di layar, dan draf di server menyusul 900ms kemudian lewat autosave.
+ * Tanpa autosave, urutan itu meninggalkan draf tersimpan yang menunjuk aset mati sampai
+ * pasangan menekan Simpan. Jadi URL-nya mengantre di sini dan dilepas sesudah simpan berhasil.
+ */
+function queueRelease(url: string) {
+  if (!url || !mediaAssetIdFromUrl(url)) return
+  if (pendingReleases.value.includes(url)) return
+  pendingReleases.value = [...pendingReleases.value, url]
+}
+
+/** Dipanggil hanya dari `save()` yang berhasil, dengan dokumen yang benar-benar tersimpan. */
+async function flushReleases(savedDocumentJson: string) {
+  const releasing = releasableUrls(pendingReleases.value, savedDocumentJson)
+  // Yang masih disebut dokumen tetap mengantre; pasangan boleh melepasnya lagi nanti.
+  pendingReleases.value = stillQueued(pendingReleases.value, savedDocumentJson)
+  for (const url of releasing) await media.release(url)
+}
+
+function removeGalleryImage(index: number) {
+  const url = String(galleryImages.value[index] ?? '')
+  removeRow(galleryImages.value, index)
+  queueRelease(url)
+}
+
+/* ── Musik latar ────────────────────────────────────────────────────────────── */
+
+/**
+ * Tiga jalur masuk, berurutan dari yang paling ramah: pustaka, unggah, tempel URL.
+ *
+ * Pustakanya ada karena kebanyakan pasangan tidak punya berkas MP3 dan tidak tahu harus
+ * mencarinya di mana. Sebelum ini section `music` jatuh ke kotak teks berlabel "URL" — fitur
+ * yang backend-nya sudah menerima `audio/mpeg` sejak awal tapi tidak punya satu pun jalan masuk.
+ */
+const musicUpload = useMediaUploads(() => String(route.params.id))
+const musicUrl = computed(() => String(selected.value?.data.url ?? ''))
+const musicCredit = computed(() => String(selected.value?.data.credit ?? ''))
+const musicTitle = computed(() => String(selected.value?.data.title ?? ''))
+const preview = ref<HTMLAudioElement | null>(null)
+const previewing = ref('')
+
+function writeMusic(url: string, title: string, credit: string) {
+  const section = selected.value
+  if (!section) return
+  const previous = String(section.data.url ?? '')
+  checkpoint()
+  section.data.url = url
+  section.data.title = title
+  section.data.credit = credit
+  // Memilih lagu lalu bertanya-tanya kenapa senyap adalah jebakan yang tidak perlu ada.
+  if (url) section.enabled = true
+  if (previous && previous !== url) queueRelease(previous)
+}
+
+function selectTrack(track: MusicTrack) {
+  writeMusic(track.url, track.title, track.credit)
+}
+
+async function onMusicFiles(files: File[]) {
+  const [url] = await musicUpload.upload(files, 'audio')
+  if (!url) return
+  writeMusic(url, files[0]?.name.replace(/\.[^.]+$/u, '') ?? 'Lagu pilihan kami', '')
+}
+
+function clearMusic() {
+  stopPreview()
+  writeMusic('', '', '')
+  const section = selected.value
+  if (section) section.enabled = false
+}
+
+function stopPreview() {
+  preview.value?.pause()
+  previewing.value = ''
+}
+
+async function togglePreview(url: string) {
+  const player = preview.value
+  if (!player) return
+  if (previewing.value === url) { stopPreview(); return }
+  player.src = url
   try {
-    const data = new FormData()
-    data.append('file', file)
-    const result = await invitationsApi.uploadMedia(String(route.params.id), data)
-    checkpoint()
-    galleryImages.value.push(result.publicUrl)
-    toast.success('Foto ditambahkan. Foto tampil publik setelah undangan diterbitkan.')
-  } catch (cause) {
-    error.value = apiErrorMessage(cause)
-  } finally {
-    uploadPending.value = false
-    ;(event.target as HTMLInputElement).value = ''
+    await player.play()
+    previewing.value = url
+  } catch {
+    // Diblokir browser atau berkasnya tidak terjangkau; pasangan tetap bisa menyimpan pilihannya.
+    previewing.value = ''
   }
 }
+
+// Berpindah bagian tidak boleh meninggalkan lagu yang masih berbunyi di latar.
+watch(selectedId, stopPreview)
+onBeforeUnmount(stopPreview)
 
 function undo() {
   const previous = undoStack.value.pop()
@@ -462,13 +621,40 @@ function redo() {
   document.value = next
 }
 
-watch(document, () => {
-  if (!watchReady.value || saving.value) return
-  clearTimeout(autosaveTimer)
-  autosaveTimer = setTimeout(() => save(true), 900)
-}, { deep: true })
+/* ── Perubahan yang belum tersimpan ─────────────────────────────────────────── */
 
-onBeforeUnmount(() => clearTimeout(autosaveTimer))
+/**
+ * Pengganti autosave: pasangan diberi tahu, bukan disimpankan diam-diam.
+ *
+ * Dua permukaan, karena dua kejadian yang berbeda. Berpindah halaman bisa kita tahan sendiri
+ * dan tawarkan tiga jalan keluar. Menutup tab tidak bisa — dialognya milik browser, tanpa
+ * kalimat kita dan tanpa tombol kita — tapi membiarkannya lewat tanpa peringatan sama sekali
+ * berarti seluruh sore penyuntingan hilang tanpa satu pun kalimat.
+ */
+onBeforeRouteLeave(async () => {
+  if (!dirty.value) return true
+  const jawaban = await confirm({
+    title: 'Perubahan belum tersimpan',
+    description: 'Draft ini punya perubahan yang belum dikirim ke server. Mau disimpan dulu sebelum pindah halaman?',
+    actions: [
+      { id: 'simpan', label: 'Simpan perubahan' },
+      { id: 'tinggalkan', label: 'Tinggalkan halaman', tone: 'outline' },
+      { id: 'kembali', label: 'Kembali menyunting', tone: 'ghost' },
+    ],
+    dismissId: 'kembali',
+  })
+  if (jawaban === 'tinggalkan') return true
+  if (jawaban !== 'simpan') return false
+  await save()
+  // Simpan yang ditolak server (revisi bentrok, dokumen tidak valid) tidak boleh berakhir
+  // sebagai kepindahan diam-diam: pesannya ada di halaman ini, jadi pasangan tetap di sini.
+  return !error.value
+})
+
+useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
+  if (!dirty.value) return
+  event.preventDefault()
+})
 </script>
 
 <template>
@@ -479,6 +665,15 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
         <h1 class="m-0 font-display text-h1 font-semibold text-ink">{{ invitation.title }}</h1>
         <p class="m-0 text-caption text-ink-subtle">
           Draft r{{ revision }} · versi publik hanya berubah saat kalian menerbitkan.
+        </p>
+        <!--
+          Tanpa autosave, keadaan "sudah tersimpan atau belum" tidak boleh ditebak-tebak.
+          Karena itu ia tertulis, bukan disiratkan lewat tombol yang aktif atau tidak.
+        -->
+        <p id="editor-save-state" class="m-0 flex items-center gap-1.5 text-caption" :class="dirty ? 'text-primary-strong' : 'text-ink-subtle'">
+          <AlertCircle v-if="dirty" :size="14" aria-hidden="true" />
+          <Check v-else :size="14" aria-hidden="true" />
+          {{ dirty ? 'Ada perubahan yang belum tersimpan' : 'Semua perubahan tersimpan' }}
         </p>
       </div>
 
@@ -497,7 +692,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
           <RotateCcw :size="16" aria-hidden="true" />
           Reset
         </UiButton>
-        <UiButton id="editor-save" size="sm" :loading="saving" @click="() => save()">
+        <UiButton id="editor-save" size="sm" :loading="saving" :disabled="!dirty" @click="() => save()">
           <Save v-if="!saving" :size="16" aria-hidden="true" />
           {{ saving ? 'Menyimpan…' : 'Simpan draft' }}
         </UiButton>
@@ -666,6 +861,32 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
               </UiSelect>
             </UiField>
             <p class="m-0 text-caption text-ink-subtle">Berlaku untuk seluruh undangan, bukan hanya bagian pembuka.</p>
+
+            <DashboardPhotoField
+              id="editor-cover-image"
+              :invitation-id="invitation.id"
+              label="Foto cover"
+              hint="Gambar pertama yang dilihat tamu. Potret lebih aman daripada lanskap — hampir semua tamu membuka dari ponsel."
+              :model-value="String(selected.data.image || '')"
+              @update:model-value="next => updateValue('image', next)"
+              @release="queueRelease"
+            />
+          </div>
+
+          <div v-else-if="selected.type === 'couple'" class="card grid gap-4 p-5">
+            <div class="grid gap-1">
+              <p class="eyebrow">Potret mempelai</p>
+              <p class="m-0 text-caption text-ink-subtle">Opsional. Tanpa foto, bagian ini memakai ladang ornamen temanya.</p>
+            </div>
+
+            <DashboardPhotoField
+              id="editor-couple-image"
+              :invitation-id="invitation.id"
+              label="Foto mempelai"
+              :model-value="String(selected.data.image || '')"
+              @update:model-value="next => updateValue('image', next)"
+              @release="queueRelease"
+            />
           </div>
 
           <div v-else-if="selected.type === 'dresscode'" class="card grid gap-4 p-5">
@@ -757,12 +978,19 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
                 </UiField>
               </div>
 
-              <UiField id="editor-story-text" v-slot="{ id }" label="Cerita">
+              <UiField :id="`editor-story-text-${index + 1}`" v-slot="{ id }" label="Cerita">
                 <UiTextarea :id="id" rows="3" :model-value="String(step.text || '')" @update:model-value="value => step.text = value" />
               </UiField>
-              <UiField id="editor-story-image" v-slot="{ id }" label="URL foto" hint="Opsional. Kosongkan untuk memakai foto galeri.">
-                <UiInput :id="id" type="url" :model-value="String(step.image || '')" placeholder="https://…" @update:model-value="value => step.image = value" />
-              </UiField>
+
+              <DashboardPhotoField
+                :id="`editor-story-image-${index + 1}`"
+                :invitation-id="invitation.id"
+                label="Foto langkah"
+                hint="Opsional. Kosongkan untuk memakai foto galeri."
+                :model-value="String(step.image || '')"
+                @update:model-value="value => step.image = value"
+                @release="queueRelease"
+              />
             </article>
 
             <UiButton id="editor-story-add" tone="outline" class="justify-self-start" @click="addStoryStep">
@@ -875,8 +1103,26 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
             </UiField>
 
             <p class="m-0 text-[0.9375rem] text-ink-muted">
-              Maksimal 15 foto. Foto yang diunggah baru tampil publik setelah undangan diterbitkan.
+              Maksimal {{ galleryPhotoLimit }} foto — terpakai {{ galleryImages.length }}.
+              Foto yang diunggah baru tampil publik setelah undangan diterbitkan.
             </p>
+
+            <UiDropzone
+              id="editor-gallery-upload"
+              kind="image"
+              multiple
+              :pending="media.pending.value"
+              :remaining="gallerySlotsLeft"
+              @files="onGalleryFiles"
+            />
+
+            <p v-if="media.pending.value && media.total.value > 1" class="m-0 text-caption text-ink-muted">
+              Foto {{ media.done.value + 1 }} dari {{ media.total.value }}…
+            </p>
+
+            <ul v-if="media.failures.value.length" role="alert" class="m-0 grid gap-1 p-0 list-none">
+              <li v-for="message in media.failures.value" :key="message" class="text-caption font-medium text-danger">{{ message }}</li>
+            </ul>
 
             <ul class="m-0 grid gap-2 p-0 list-none">
               <li v-for="(image, index) in galleryImages" :key="image" class="card flex items-center gap-3 p-2.5">
@@ -887,7 +1133,7 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
                   type="button"
                   class="grid h-11 w-11 shrink-0 place-items-center rounded-md text-ink-subtle hover:bg-danger-soft hover:text-danger"
                   :aria-label="`Hapus foto ${index + 1}`"
-                  @click="removeRow(galleryImages, index)"
+                  @click="removeGalleryImage(index)"
                 >
                   <Trash2 :size="16" aria-hidden="true" />
                 </button>
@@ -895,14 +1141,9 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
             </ul>
 
             <form class="flex flex-wrap gap-2" @submit.prevent="addGalleryUrl">
-              <label class="sr-only" for="gallery-url">URL foto baru</label>
+              <label class="sr-only" for="editor-gallery-url">URL foto baru</label>
               <input id="editor-gallery-url" v-model="galleryUrl" class="control min-w-0 flex-1 basis-56" type="url" placeholder="https://…">
               <UiButton id="editor-gallery-add-url" type="submit" tone="outline">Tambah URL</UiButton>
-              <label class="button button-secondary cursor-pointer">
-                <Upload :size="16" aria-hidden="true" />
-                {{ uploadPending ? 'Mengunggah…' : 'Unggah foto' }}
-                <input id="editor-gallery-upload" class="sr-only" type="file" accept="image/*" :disabled="uploadPending" @change="uploadMedia">
-              </label>
             </form>
           </div>
 
@@ -997,6 +1238,116 @@ onBeforeUnmount(() => clearTimeout(autosaveTimer))
 
             <UiField id="editor-gift-address" v-slot="{ id }" label="Alamat kirim hadiah" hint="Opsional, untuk tamu yang ingin mengirim kado fisik.">
               <UiTextarea :id="id" rows="2" :model-value="String(selected.data.address || '')" @update:model-value="next => updateValue('address', next ?? '')" />
+            </UiField>
+          </div>
+
+          <!-- Music -->
+          <div v-else-if="selected.type === 'music'" class="grid gap-5">
+            <p class="m-0 text-[0.9375rem] text-ink-muted">
+              Musik mulai setelah tamu menekan “Buka Undangan”, tidak pernah sebelum itu — browser
+              memang melarangnya, dan tamu yang dikejutkan suara akan menutup tab, bukan mengecilkan
+              volume. Tombol jeda selalu tersedia buat mereka.
+            </p>
+
+            <!-- Satu elemen audio dipakai bersama: memutar satu lagu menghentikan yang lain. -->
+            <audio ref="preview" preload="none" @ended="previewing = ''" />
+
+            <div v-if="musicUrl" class="card grid gap-2 p-4">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="grid min-w-0 gap-0.5">
+                  <strong class="truncate text-ink">{{ musicTitle || 'Lagu pilihan kalian' }}</strong>
+                  <span v-if="musicCredit" class="truncate text-caption text-ink-subtle">{{ musicCredit }}</span>
+                </div>
+                <div class="flex shrink-0 gap-2">
+                  <UiButton id="editor-music-preview" tone="outline" @click="togglePreview(musicUrl)">
+                    <Pause v-if="previewing === musicUrl" :size="16" aria-hidden="true" />
+                    <Play v-else :size="16" aria-hidden="true" />
+                    {{ previewing === musicUrl ? 'Hentikan' : 'Dengarkan' }}
+                  </UiButton>
+                  <button
+                    id="editor-music-clear"
+                    type="button"
+                    class="grid h-11 w-11 place-items-center rounded-md text-ink-subtle hover:bg-danger-soft hover:text-danger"
+                    aria-label="Hapus musik"
+                    @click="clearMusic"
+                  >
+                    <Trash2 :size="16" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p v-else class="notice m-0">Belum ada musik. Undangan tetap bisa diterbitkan tanpa lagu.</p>
+
+            <div class="grid gap-2.5">
+              <div class="grid gap-1">
+                <p class="eyebrow">Pustaka lagu</p>
+                <p class="m-0 text-caption text-ink-subtle">
+                  Semuanya domain publik atau CC0 — aman dipakai tanpa izin siapa pun, dan sudah
+                  dipotong jadi dua menit karena pemutarnya mengulang.
+                </p>
+              </div>
+
+              <article
+                v-for="track in musicLibrary"
+                :key="track.id"
+                :class="cn(
+                  'card flex flex-wrap items-center gap-3 p-4',
+                  musicUrl === track.url && 'border-primary bg-primary-soft/40',
+                )"
+              >
+                <div class="grid min-w-0 flex-1 basis-48 gap-0.5">
+                  <strong class="truncate text-ink">{{ track.title }}</strong>
+                  <span class="truncate text-caption text-ink-subtle">{{ track.mood }} · {{ trackLength(track.seconds) }}</span>
+                  <span class="truncate text-caption text-ink-subtle">{{ track.credit }}</span>
+                </div>
+                <div class="flex shrink-0 gap-2">
+                  <UiButton :id="`editor-music-listen-${track.id}`" tone="ghost" @click="togglePreview(track.url)">
+                    <Pause v-if="previewing === track.url" :size="16" aria-hidden="true" />
+                    <Play v-else :size="16" aria-hidden="true" />
+                    {{ previewing === track.url ? 'Hentikan' : 'Dengarkan' }}
+                  </UiButton>
+                  <UiButton
+                    :id="`editor-music-pick-${track.id}`"
+                    :tone="musicUrl === track.url ? 'primary' : 'outline'"
+                    @click="selectTrack(track)"
+                  >
+                    <Check v-if="musicUrl === track.url" :size="16" aria-hidden="true" />
+                    {{ musicUrl === track.url ? 'Dipakai' : 'Pakai lagu ini' }}
+                  </UiButton>
+                </div>
+              </article>
+            </div>
+
+            <div class="grid gap-2.5">
+              <div class="grid gap-1">
+                <p class="eyebrow">Atau pakai lagu sendiri</p>
+                <p class="m-0 text-caption text-ink-subtle">
+                  Pastikan kalian punya hak memakai lagunya. Lagu komersial yang diunggah ke undangan
+                  publik tetap tanggung jawab kalian, bukan kami.
+                </p>
+              </div>
+
+              <UiDropzone
+                id="editor-music-upload"
+                kind="audio"
+                label="Jatuhkan MP3 di sini, atau pilih berkas"
+                :pending="musicUpload.pending.value"
+                @files="onMusicFiles"
+              />
+
+              <ul v-if="musicUpload.failures.value.length" role="alert" class="m-0 grid gap-1 p-0 list-none">
+                <li v-for="message in musicUpload.failures.value" :key="message" class="text-caption font-medium text-danger">{{ message }}</li>
+              </ul>
+            </div>
+
+            <UiField id="editor-music-url" v-slot="{ id }" label="atau tempel URL lagu" hint="Harus berupa tautan langsung ke berkas audio, bukan tautan halaman pemutar.">
+              <UiInput
+                :id="id"
+                type="url"
+                placeholder="https://…"
+                :model-value="musicUrl"
+                @update:model-value="next => writeMusic(next ?? '', musicTitle, musicCredit)"
+              />
             </UiField>
           </div>
 

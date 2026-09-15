@@ -246,7 +246,7 @@ useArunaMotion(root, ({ gsap, drawSvg, travelPath }) => {
   min-height: 200px;
   align-content: center;
 }
-@media (min-width: 40rem) {
+@container (min-width: 40rem) {
   /* Di layar lebar langkah benar-benar berpindah sisi, jadi relnya punya alasan melengkung. */
   .iv-story-step { width: 46%; text-align: left; justify-items: start; }
   .iv-story-step[data-side='kiri'] { justify-self: start; }

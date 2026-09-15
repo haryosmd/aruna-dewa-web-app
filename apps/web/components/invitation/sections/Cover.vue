@@ -102,7 +102,7 @@ void coverLayouts
           :is="compact ? 'h2' : 'h1'"
           data-iv-lead
           class="iv-display iv-script m-0"
-          :class="compact ? 'text-[2.6rem]' : 'text-[clamp(3rem,13vw,5.5rem)]'"
+          :class="'text-[clamp(3rem,13cqw,5.5rem)]'"
         >
           {{ title }}
         </component>
@@ -129,9 +129,19 @@ void coverLayouts
  * Pasangan yang punya prewed bagus pantas mendapat komposisi yang memajangnya, bukan
  * memakainya sebagai wallpaper di balik teks.
  */
+/*
+ * `cqw`, bukan `vw`.
+ *
+ * Tiga kotak foto cover ini adalah sisa terakhir yang membaca lebar layar, bukan lebar
+ * wadahnya — luput saat undangan dipindahkan ke container query. Akibatnya tidak terlihat di
+ * undangan sungguhan (di sana wadahnya memang selebar layar), tapi di pratinjau perangkat
+ * dasbor foto cover mengikuti lebar browser pasangan, bukan lebar ponsel yang sedang
+ * disimulasikan: render "Ponsel" dan "Tablet" bisa keluar dengan foto sebesar yang sama.
+ * Pratinjau yang berbohong tepat di bagian yang paling ingin dilihat pasangan.
+ */
 .iv-cover-arch {
   position: relative;
-  width: min(78vw, 20rem);
+  width: min(78cqw, 20rem);
   aspect-ratio: 3 / 4;
   overflow: hidden;
   border-radius: 999px 999px 0.75rem 0.75rem;
@@ -140,7 +150,7 @@ void coverLayouts
 
 .iv-cover-kayon {
   position: relative;
-  width: min(84vw, 22rem);
+  width: min(84cqw, 22rem);
   aspect-ratio: 300 / 420;
   display: grid;
   place-items: center;
@@ -164,7 +174,7 @@ void coverLayouts
 
 .iv-cover-collage {
   display: grid;
-  width: min(92vw, 28rem);
+  width: min(92cqw, 28rem);
   gap: 0.6rem;
   grid-template-columns: 2fr 1fr;
   grid-template-rows: repeat(2, 1fr);
@@ -187,7 +197,7 @@ void coverLayouts
 }
 
 .iv-cover-split-photo {
-  width: min(80vw, 24rem);
+  width: min(80cqw, 24rem);
   aspect-ratio: 4 / 5;
   overflow: hidden;
   border-radius: 0.75rem;

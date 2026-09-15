@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { canEditDesign, createDefaultDocument, templateIds, type InvitationDocument, type TemplateId } from '@aruna/contracts';
 import type { CreateInvitationBody } from '@aruna/contracts/api';
 import { PrismaService } from '../database/prisma.service.js';
@@ -6,9 +6,12 @@ import { Prisma } from '@aruna/database';
 import { MembershipService } from '../common/membership.service.js';
 import { isOperator, type AuthenticatedUser } from '../common/auth.js';
 import { validatePublishableDocument } from './document-validation.js';
+import { orphanAssetIds } from '../media/asset-usage.js';
+import { createMediaStorage } from '../media/storage.js';
 
 @Injectable()
 export class InvitationsService {
+  private readonly logger = new Logger(InvitationsService.name);
   constructor(private readonly prisma: PrismaService, private readonly memberships: MembershipService) {}
 
   async list(user: AuthenticatedUser) {
@@ -83,8 +86,34 @@ export class InvitationsService {
       const publishedAt = new Date();
       await tx.invitation.update({ where: { id: invitationId }, data: { activeRevisionId: snapshot.id, status: 'PUBLISHED', publishedAt } });
       await tx.auditEvent.create({ data: { actorId: user.sub, invitationId, action: 'INVITATION_PUBLISHED', targetType: 'PublishedRevision', targetId: snapshot.id } });
+      await this.sweepOrphanAssets(tx, invitationId, document, invitation.draftDocument);
       return { slug: invitation.slug, publishedAt };
     });
+  }
+
+  /**
+   * Menyapu aset yang menggantung setelah versi terbit berganti.
+   *
+   * Foto yang dihapus dari draf selagi undangan sudah terbit sengaja **tidak** langsung dibuang:
+   * tamu yang sudah memegang tautannya masih melihat versi lama. Penahan itu lepas di sini, dan
+   * kalau tidak disapu, berkasnya tinggal selamanya sambil tetap dihitung terhadap batas 15 foto.
+   *
+   * Sengaja tidak pernah menggagalkan publish. Penerbitan sudah tercatat di transaksi ini;
+   * berkas yatim di storage adalah kerugian yang jauh lebih kecil daripada undangan yang gagal
+   * terbit karena satu penghapusan berkas bermasalah.
+   */
+  private async sweepOrphanAssets(tx: Prisma.TransactionClient, invitationId: string, activeDocument: unknown, draftDocument: unknown): Promise<void> {
+    try {
+      const assets = await tx.mediaAsset.findMany({ where: { invitationId }, select: { id: true, key: true } });
+      const orphans = orphanAssetIds(assets.map((asset) => asset.id), activeDocument, draftDocument);
+      if (!orphans.length) return;
+      const storage = createMediaStorage();
+      const byId = new Map(assets.map((asset) => [asset.id, asset.key]));
+      for (const id of orphans) await storage.delete(byId.get(id)!);
+      await tx.mediaAsset.deleteMany({ where: { id: { in: orphans } } });
+    } catch (error) {
+      this.logger.error(`Sapuan aset yatim gagal (${invitationId})`, error instanceof Error ? error.stack : String(error));
+    }
   }
 }
 

@@ -11,5 +11,12 @@ export default defineConfig({
     { name: 'mobile', use: { viewport: { width: 360, height: 800 } } },
     { name: 'tablet', use: { viewport: { width: 768, height: 1024 } } },
     { name: 'desktop', use: { viewport: { width: 1440, height: 1000 } } },
+    /*
+     * Ketiga project di atas semuanya Chromium dengan lebar berbeda — "lebar layar ponsel",
+     * bukan mesin ponsel. Undangan dibagikan lewat WhatsApp dan dibuka di iPhone, dan setiap
+     * browser di iOS memakai WebKit, jadi tanpa baris ini klaim "jalan di iOS" tidak pernah
+     * punya bukti. Bug `Range` yang ditemukan lewat trace seharusnya tertangkap di sini.
+     */
+    { name: 'safari', use: { browserName: 'webkit', viewport: { width: 390, height: 844 } } },
   ],
 })

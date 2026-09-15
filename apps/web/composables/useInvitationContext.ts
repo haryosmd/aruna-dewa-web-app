@@ -31,6 +31,15 @@ export interface InvitationContext {
   sectionOf: (type: string) => Section | undefined
   submitRsvp: (payload: RsvpPayload) => void
   submitWish: (message: string) => void
+  /**
+   * Menjeda musik latar tanpa menandainya sebagai penolakan tamu.
+   *
+   * Ada di konteks, bukan di prop, karena yang membutuhkannya adalah section Video — tamu yang
+   * menekan "Buka siaran" membuka tab lain, dan tab undangan yang tersembunyi tetap berbunyi
+   * menimpa siarannya. Pemutarnya sendiri mengambang di luar daftar section, jadi tidak ada
+   * jalan lain ke sana selain lewat sini.
+   */
+  pauseMusic: () => void
 }
 
 export const invitationKey = Symbol('aruna-invitation') as InjectionKey<InvitationContext>

@@ -28,8 +28,10 @@ export function useInvitations() {
   /** Aktivasi operator: melunasi tanpa Midtrans, dan tiap pemakaiannya tercatat di audit log. */
   const activate = (id: string) => request<{ activated: boolean }>(`/invitations/${id}/activate`, { method: 'POST' })
   const uploadMedia = (id: string, file: FormData) => request<MediaUploadResult>(`/invitations/${id}/media`, { method: 'POST', body: file })
+  /** Menghapus berkasnya, bukan sekadar melepasnya dari dokumen — tanpa ini kuota foto bocor tiap kali pasangan berganti pikiran. */
+  const deleteMedia = (id: string, assetId: string) => request<{ deleted: boolean }>(`/invitations/${id}/media/${assetId}`, { method: 'DELETE' })
 
-  return { list, get, create, saveDraft, publish, activate, uploadMedia }
+  return { list, get, create, saveDraft, publish, activate, uploadMedia, deleteMedia }
 }
 
 /**

@@ -25,7 +25,7 @@ const { orn, intensity, compact, coupleNames, initials } = useInvitation()
     <p data-iv-reveal class="iv-body m-0">
       {{ text(props.section, 'text', 'Merupakan kebahagiaan bagi kami atas kehadiran dan doa Anda.') }}
     </p>
-    <p data-iv-reveal class="iv-display iv-script m-0 text-[clamp(2rem,8vw,3.2rem)]">{{ coupleNames }}</p>
+    <p data-iv-reveal class="iv-display iv-script m-0 text-[clamp(2rem,8cqw,3.2rem)]">{{ coupleNames }}</p>
     <OrnamentGlyph :glyph="orn.garland" data-iv-ornament class="h-14 w-64 opacity-75" :style="{ color: 'var(--iv-primary)' }" />
   </InvitationSection>
 </template>
