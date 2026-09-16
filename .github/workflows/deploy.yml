@@ -56,13 +56,13 @@ jobs:
       # (.dockerignore:24), jadi sampai sekarang tidak ada satu pun jalur yang membawanya ke
       # server: setiap perubahan pada berkas itu diam-diam tidak pernah berlaku. Dikirim ke
       # staging dulu — divalidasi di langkah berikutnya sebelum menimpa yang sedang dipakai.
-      - name: Kirim Caddyfile ke staging
+      - name: Kirim Caddyfile dan compose.prod.yaml ke staging
         uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: Caddyfile
+          source: Caddyfile,compose.prod.yaml
           target: /srv/aruna/.staging
 
       - name: Terapkan di server
@@ -84,6 +84,7 @@ jobs:
             # Kegagalan scp yang diam lebih buruk daripada deploy yang merah: Caddyfile lama
             # tetap dipakai dan perubahannya hilang tanpa jejak, persis bug yang baru ditutup.
             test -f .staging/Caddyfile || { echo "::error::Caddyfile tidak sampai ke staging."; exit 1; }
+            test -f .staging/compose.prod.yaml || { echo "::error::compose.prod.yaml tidak sampai ke staging."; exit 1; }
 
             # Validasi SEBELUM menimpa. Caddyfile rusak yang sudah mendarat di tempatnya tidak
             # menjatuhkan Caddy yang sedang jalan — ia mematikan situs pada restart berikutnya,
@@ -92,6 +93,25 @@ jobs:
             docker run --rm -v /srv/aruna/.staging/Caddyfile:/etc/caddy/Caddyfile:ro caddy:2-alpine \
               caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
             mv .staging/Caddyfile Caddyfile
+
+            # compose.prod.yaml punya bug yang sama persis dengan Caddyfile, dan lolos lebih lama:
+            # ia bind mount di /srv/aruna, dikecualikan dari image, dan sampai rilis ini tidak ada
+            # satu pun langkah yang membawanya ke server. Akibatnya blok `environment:` yang ditulis
+            # Fase 20 dan 23 -- HOST, MEDIA_LOCAL_DIR, ketiga NUXT_* -- tidak pernah berlaku, dan
+            # nilainya cuma selamat karena kebetulan juga ditulis tangan di berkas env yang tidak
+            # terlacak git. Itu persis keadaan yang Fase 20 ditulis untuk menghapus.
+            #
+            # Divalidasi dari /srv/aruna, BUKAN dari .staging: `env_file:` di-resolve relatif
+            # terhadap letak berkas compose, dan api.env tidak ada di .staging.
+            #
+            # `config -q` dan bukan `config`: yang kedua mengembangkan isi env_file ke stdout, dan
+            # log Actions akan memuat JWT_SECRET beserta password Postgres. Sudah pernah terjadi
+            # sekali di sesi manual; jangan pasang jebakannya di pipeline.
+            cp .staging/compose.prod.yaml .compose.prod.yaml.baru
+            docker compose -f .compose.prod.yaml.baru --env-file .env --env-file .image.env config -q
+            cp -p compose.prod.yaml compose.prod.yaml.previous
+            mv .compose.prod.yaml.baru compose.prod.yaml
+            rm -f .staging/compose.prod.yaml
 
             # Tag yang sedang jalan disalin apa adanya sebelum ditimpa. Membacanya lewat
             # `compose config --images` akan salah: yang keluar pertama belum tentu image
