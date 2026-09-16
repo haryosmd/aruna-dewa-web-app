@@ -82,6 +82,51 @@ Kalau nanti ada alasan nyata (kena serangan, atau bandwidth VPS terasa), urutann
 Sertifikat Let's Encrypt dari jalur sekarang tetap jadi jaring pengaman: matikan proxy dan
 situs kembali hidup tanpa perubahan kode.
 
+## Email keluar — dan port 587 yang tidak akan pernah tersambung
+
+Relay: **Resend**, `smtp.resend.com`, user `resend`, password = API key `re_...` (sending-only).
+Keempat `SMTP_*` wajib saat boot sejak Fase 23; API menolak menyala tanpanya.
+
+**Portnya 2587, dan itu bukan pilihan gaya.** IDCloudHost memblokir port SMTP keluar yang lazim.
+Diukur dari VPS ini 2026-09-16:
+
+| Port | |
+|---|---|
+| 25, 465, 587 | **di-drop diam-diam** — koneksi menggantung sampai timeout, bukan ditolak |
+| 2587 | terbuka |
+| 443 (pembanding) | terbuka — jadi bukan jaringan keluarnya yang mati |
+
+Bentuk kegagalannya yang mahal: paket di-*drop*, bukan di-*reject*. Tidak ada `ECONNREFUSED`
+yang muncul seketika — yang ada permintaan menggantung sampai batas waktu nodemailer. Artinya
+pendaftaran pelanggan pertama akan diam beberapa puluh detik lalu gagal, `/ready` tetap hijau
+karena ia memang sengaja tidak menyentuh SMTP, dan tidak ada satu pun log yang menyebut "port".
+
+Resend menyediakan 2587 persis untuk jaringan seperti ini. `mail.service.ts` menyetel
+`secure: port === 465`, jadi 2587 berjalan lewat STARTTLS tanpa perubahan kode.
+
+Menguji kredensial **tanpa mengirim satu email pun** — `verify()` hanya melakukan koneksi dan
+AUTH:
+
+```sh
+P=$(sed -n 's/^SMTP_PASS=//p' /srv/aruna/api.env)
+docker exec -w /app/apps/api -e P="$P" aruna-api-1 node -e '
+const nm = require("nodemailer");
+nm.createTransport({ host: "smtp.resend.com", port: 2587, secure: false,
+  auth: { user: "resend", pass: process.env.P } })
+  .verify().then(() => console.log("SMTP OK")).catch(e => console.log("GAGAL", e.code, e.message));'
+```
+
+Menguji apakah sebuah port diblokir, tanpa melibatkan kredensial sama sekali:
+
+```sh
+timeout 8 bash -c 'exec 3<>/dev/tcp/smtp.resend.com/2587' && echo TERBUKA || echo TERBLOKIR
+```
+
+**Domain pengirim harus terverifikasi di Resend** sebelum `noreply@arunadewa.id` boleh dipakai:
+tiga record (MX + SPF di `send`, DKIM di `resend._domainkey`) di panel DNS yang sama, Proxy
+"DNS saja". Tanpa itu AUTH tetap lolos dan yang gagal adalah kirimnya — 403 saat `sendMail`,
+bukan saat boot dan bukan saat `verify()`.
+
 ## Backup
 
 `ops/backup/` — dump Postgres harian + media inkremental, terenkripsi `age` ke bucket off-site,
