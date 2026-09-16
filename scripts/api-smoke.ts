@@ -108,13 +108,33 @@ try {
   check((await owner.call(jobPath, 'POST', { idempotencyKey })).status < 300, 'import commit')
   check((await owner.call(jobPath, 'POST', { idempotencyKey })).status < 300, 'import commit retry succeeds')
   check((await owner.call(`/invitations/${id}/guests`)).data.total === 4, 'import retry does not duplicate guests')
+  // Rotasi refresh token, dan tenggangnya. Asersi di sini pernah menuntut replay ditolak
+  // SEKETIKA, dan itu perilaku versi pra-git: `session-rotation.ts` sejak pengerasan Fase 13
+  // sengaja melayani token yang baru digantikan selama 30 detik / 5 pemakaian, supaya dua tab
+  // yang menyegarkan berbarengan tidak saling menendang. Yang basi asersinya, bukan kodenya --
+  // dan tidak ada yang tahu selama berkas ini tidak pernah dijalankan CI.
   const oldCookies = new Map(owner.cookies)
   check((await owner.call('/auth/refresh', 'POST')).status < 300, 'refresh rotates session')
   const rotatedCookies = new Map(owner.cookies)
-  owner.cookies = oldCookies
-  check((await owner.call('/auth/refresh', 'POST')).status === 401, 'old refresh token replay denied')
+
+  // Sisi pertama desain: replay dalam tenggang DILAYANI, tapi tiap pemakaian wajib menerbitkan
+  // token baru. Menyajikan ulang token lama akan membuat yang bocor hidup selamanya.
+  owner.cookies = new Map(oldCookies)
+  const graced = await owner.call('/auth/refresh', 'POST')
+  check(graced.status < 300, 'replay dalam tenggang dilayani')
+  check(owner.cookies.get('aruna_refresh') !== oldCookies.get('aruna_refresh'), 'pemakaian tenggang menerbitkan token baru')
+
+  // Sisi kedua, yang membuat tenggang bukan lubang tanpa dasar: kuotanya habis. Dikuras di sini
+  // (GRACE_MAX_USES = 5) supaya batasnya teruji tanpa menunggu 30 detik sungguhan. Batas 8 cuma
+  // penjaga supaya kegagalan muncul sebagai asersi, bukan sebagai gelung tak berujung.
+  let replayed = graced
+  for (let attempt = 0; attempt < 8 && replayed.status < 300; attempt += 1) {
+    owner.cookies = new Map(oldCookies)
+    replayed = await owner.call('/auth/refresh', 'POST')
+  }
+  check(replayed.status === 401, 'replay ditolak begitu kuota tenggang habis')
   owner.cookies = rotatedCookies
-  check((await owner.call('/auth/me')).status === 401, 'replay revokes replacement access session')
+  check((await owner.call('/auth/me')).status === 401, 'pencurian terdeteksi mencabut sesi pengganti')
   await owner.call('/auth/login', 'POST', { email: `qa-owner-${run}@example.test`, password })
   const beforeLogout = new Map(owner.cookies)
   await owner.call('/auth/logout', 'POST')
