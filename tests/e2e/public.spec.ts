@@ -20,6 +20,31 @@ const HEADLINE = 'Hari yang kalian tunggu bersama. Undangannya jangan seadanya.'
 const fitsViewport = (page: import('@playwright/test').Page) =>
   expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), { timeout: 5000 }).toBe(true)
 
+/*
+ * Buka gerbang sampul, lalu **tunggu ia benar-benar pergi** sebelum menyentuh apa pun di
+ * belakangnya.
+ *
+ * Mengklik "Buka Undangan" hanya memulai animasi amplop selama ~2,5 detik. Sepanjang itu
+ * `CoverGate` masih `fixed inset-0 z-50` — ia mencegat setiap klik — dan `document.body`
+ * masih `overflow: hidden`, jadi `scrollIntoViewIfNeeded` tidak bisa menggerakkan apa pun.
+ * Keduanya baru dilepas di `finish()`.
+ *
+ * Tes yang langsung lanjut setelah klik karena itu berlomba dengan animasi: di mesin cepat
+ * gerbangnya kebetulan sudah pergi, di runner CI yang sibuk belum. Yang terjadi bukan galat
+ * yang jelas melainkan klik yang mendarat entah di mana lalu tidak melakukan apa-apa —
+ * `wishes wall paginates five at a time` gagal begitu di safari, dua kali dari beberapa run,
+ * dengan trace berisi belasan "iv-gate intercepts pointer events" dan "element is not stable"
+ * sebelum kliknya akhirnya dilepas ke halaman yang sedang bergeser.
+ *
+ * Penantiannya bukan angka tebakan melainkan dua sinyal yang memang menandai selesainya:
+ * gerbangnya hilang dari DOM, dan kunci gulirnya dilepas.
+ */
+async function bukaGerbang(page: import('@playwright/test').Page) {
+  await page.getByRole('button', { name: 'Buka Undangan' }).click()
+  await expect(page.locator('.iv-gate')).toHaveCount(0)
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).overflow)).not.toBe('hidden')
+}
+
 test('landing, guest greeting and responsive layout', async ({ page }, testInfo) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
@@ -140,8 +165,7 @@ for (const template of templates) {
   test(`invitation accessibility after opening — ${template.id}`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto(`/i/demo?tema=${template.id}`)
-    await page.getByRole('button', { name: 'Buka Undangan' }).click()
-    await page.waitForTimeout(1500)
+    await bukaGerbang(page)
     const scan = await new AxeBuilder({ page }).exclude('nuxt-devtools-frame').withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
     expect(scan.violations.map(v => ({ id: v.id, impact: v.impact, targets: v.nodes.map(n => n.target) }))).toEqual([])
   })
@@ -155,7 +179,7 @@ for (const template of templates) {
 test('gallery stays visible and contained under reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/i/demo?tema=aruna-gonjong')
-  await page.getByRole('button', { name: 'Buka Undangan' }).click()
+  await bukaGerbang(page)
   const tile = page.locator('.iv-gallery img').first()
   await tile.scrollIntoViewIfNeeded()
   await expect(tile).toBeVisible()
@@ -170,7 +194,7 @@ test('gallery stays visible and contained under reduced motion', async ({ page }
  */
 test('gift section shows every account with its bank and no owner label', async ({ page }) => {
   await page.goto('/i/demo')
-  await page.getByRole('button', { name: 'Buka Undangan' }).click()
+  await bukaGerbang(page)
   const gift = page.locator('#iv-gift')
   await gift.scrollIntoViewIfNeeded()
   await expect(gift.getByText('8720 114 556', { exact: true })).toBeVisible()
@@ -187,7 +211,7 @@ test('gift section shows every account with its bank and no owner label', async 
  */
 test('section order follows the document', async ({ page }) => {
   await page.goto('/i/demo')
-  await page.getByRole('button', { name: 'Buka Undangan' }).click()
+  await bukaGerbang(page)
   // `[data-iv-section]`, bukan `[id^="iv-"]` polos: sejak tiap elemen klik di undangan
   // punya id berawalan sama (`iv-rsvp-yes`, `iv-gallery-tile-1`, …), pemilih lama ikut
   // menangkap kontrol dan bukan lagi daftar section. Yang dijaga tes ini tetap sama —
@@ -208,7 +232,7 @@ test('ornament field renders real mass in every theme', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   for (const template of templates) {
     await page.goto(`/i/demo?tema=${template.id}`)
-    await page.getByRole('button', { name: 'Buka Undangan' }).click()
+    await bukaGerbang(page)
     const pieces = page.locator('#iv-couple .iv-field-piece')
     expect(await pieces.count()).toBeGreaterThanOrEqual(2)
     const width = await pieces.first().evaluate(node => node.getBoundingClientRect().width)
@@ -219,7 +243,7 @@ test('ornament field renders real mass in every theme', async ({ page }) => {
 /** Dresscode: bundaran warna wajib membawa namanya tertulis, bukan warna saja. */
 test('dresscode colours are named, not colour-only', async ({ page }) => {
   await page.goto('/i/demo')
-  await page.getByRole('button', { name: 'Buka Undangan' }).click()
+  await bukaGerbang(page)
   const dresscode = page.locator('#iv-dresscode')
   await dresscode.scrollIntoViewIfNeeded()
   for (const name of ['Krem', 'Terakota', 'Sage']) {
@@ -230,7 +254,7 @@ test('dresscode colours are named, not colour-only', async ({ page }) => {
 /** Demo RSVP berjalan penuh tanpa menyimpan apa pun, dan mengatakannya. */
 test('demo rsvp answers and flips to an attendance ticket', async ({ page }) => {
   await page.goto('/i/demo')
-  await page.getByRole('button', { name: 'Buka Undangan' }).click()
+  await bukaGerbang(page)
   const rsvp = page.locator('#iv-rsvp')
   await rsvp.scrollIntoViewIfNeeded()
   await rsvp.getByRole('button', { name: /Hadir/ }).click()
@@ -245,7 +269,7 @@ test('demo rsvp answers and flips to an attendance ticket', async ({ page }) => 
 /** Dinding ucapan memberi contoh saat kosong, dan memaginasinya lima per halaman. */
 test('wishes wall paginates five at a time', async ({ page }) => {
   await page.goto('/i/demo')
-  await page.getByRole('button', { name: 'Buka Undangan' }).click()
+  await bukaGerbang(page)
   const wishes = page.locator('#iv-wishes')
   await wishes.scrollIntoViewIfNeeded()
   await expect(wishes.locator('.iv-wish')).toHaveCount(5)
@@ -258,7 +282,7 @@ test('wishes wall paginates five at a time', async ({ page }) => {
 test('spotlight gallery stays readable under reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/i/demo?galeri=satu-per-satu')
-  await page.getByRole('button', { name: 'Buka Undangan' }).click()
+  await bukaGerbang(page)
   const tile = page.locator('.iv-spotlight-tile img').first()
   await tile.scrollIntoViewIfNeeded()
   await expect(tile).toBeVisible()
