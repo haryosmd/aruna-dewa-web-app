@@ -1,0 +1,110 @@
+name: Deploy
+
+# Hanya setelah Verify hijau. `workflow_run` dipakai, bukan `needs:`, supaya gerbang PR dan
+# jalur rilis tetap dua berkas yang bisa dibaca sendiri-sendiri.
+on:
+  workflow_run:
+    workflows: ['Verify']
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  release:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - id: meta
+        run: echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Dibangun di sini, bukan di VPS: server minimum 2 vCPU / 4 GB tidak punya ruang untuk
+      # `nuxt build` dengan `typeCheck` menyala, dan build yang gagal di server berarti server
+      # yang sibuk, bukan pipeline yang merah.
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.meta.outputs.sha }}
+            ${{ env.IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Terapkan di server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script_stop: true
+          envs: IMAGE_REF
+          script: |
+            set -euo pipefail
+            cd /srv/aruna
+
+            # Tag yang sedang jalan disalin apa adanya sebelum ditimpa. Membacanya lewat
+            # `compose config --images` akan salah: yang keluar pertama belum tentu image
+            # aplikasi, bisa saja postgres atau caddy.
+            cp .image.env .image.env.previous 2>/dev/null || true
+            echo "ARUNA_IMAGE=$IMAGE_REF" > .image.env
+
+            compose="docker compose -f compose.prod.yaml --env-file .env --env-file .image.env"
+            $compose pull
+            # Migrasi tidak dijalankan terpisah di sini: `api` dan `worker` sudah menunggu
+            # `service_completed_successfully` dari service `migrate`, jadi `up -d` yang
+            # mengurutkannya. Menjalankannya dua kali aman (idempoten) tapi menyesatkan saat
+            # membaca log kegagalan.
+            $compose up -d
+        env:
+          IMAGE_REF: ${{ env.IMAGE }}:${{ steps.meta.outputs.sha }}
+
+      # Gerbangnya di sini, dan ia sengaja gagal dengan berisik. Rollback dilakukan sadar dengan
+      # satu perintah (lihat di bawah), bukan otomatis — lihat "Yang ditunda" di rencana.
+      - name: Tunggu /ready
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 18); do
+            if curl -fsS --max-time 5 "https://api.arunadewa.id/ready" > /dev/null; then
+              echo "Siap setelah $((attempt * 5)) detik."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::/ready tidak pernah membalas 200 dalam 90 detik."
+          echo "Rollback — ssh ke server, lalu tiga baris ini:"
+          echo "  cd /srv/aruna"
+          echo "  cp .image.env.previous .image.env"
+          echo "  docker compose -f compose.prod.yaml --env-file .env --env-file .image.env up -d"
+          echo "Aman selama migrasi rilis ini aditif; migrasi Prisma maju-saja."
+          exit 1
+
+      # Penyimpanan paket privat gratis GitHub 500 MB; tanpa ini kuotanya habis diam-diam.
+      - uses: actions/delete-package-versions@v5
+        continue-on-error: true
+        with:
+          package-name: ${{ github.event.repository.name }}
+          package-type: container
+          min-versions-to-keep: 3
+          delete-only-untagged-versions: false

@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "db:generate": "pnpm --filter @aruna/database generate",
     "db:migrate": "pnpm --filter @aruna/database migrate",
+    "db:deploy": "pnpm --filter @aruna/database deploy",
     "db:seed": "pnpm --filter @aruna/database seed",
     "db:local": "node scripts/local-postgres.mjs",
     "test:integration": "tsx --env-file-if-exists=packages/database/.env scripts/api-smoke.ts",

@@ -1,0 +1,121 @@
+# Bentuk produksi. `compose.yaml` yang sebelah tetap untuk pengembangan — nilai-nilai lokalnya
+# (Mailpit, TRUST_PROXY 0, bind ke 127.0.0.1) memang berguna di sana dan tidak boleh ikut ke sini.
+#
+# Perintah:
+#   docker compose -f compose.prod.yaml build           # verifikasi lokal
+#   docker compose -f compose.prod.yaml pull            # di server, image dari GHCR
+#   docker compose -f compose.prod.yaml run --rm migrate
+#   docker compose -f compose.prod.yaml up -d
+
+x-app: &app
+  image: ${ARUNA_IMAGE:-ghcr.io/haryosmd/aruna-dewa-web-app:latest}
+  restart: unless-stopped
+  # Tanpa batas ini, satu container yang restart-loop memenuhi disk dan mematikan Postgres —
+  # kegagalan yang tidak pulih sendiri dan tidak terlihat sampai semuanya sudah mati.
+  logging:
+    driver: json-file
+    options:
+      max-size: '10m'
+      max-file: '5'
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aruna
+      POSTGRES_USER: aruna
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD wajib disetel di .env}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U aruna -d aruna']
+      interval: 5s
+      timeout: 3s
+      retries: 15
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+
+  # Sekali jalan lalu keluar. Seed ikut di sini dan memang wajib: tabel katalog diisi darinya,
+  # dan tanpa itu halaman /order tidak punya apa pun untuk dijual. Isinya upsert idempoten.
+  migrate:
+    <<: *app
+    restart: 'no'
+    command: ['sh', '-c', 'pnpm db:deploy && pnpm db:seed']
+    env_file: ./api.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *app
+    command: ['pnpm', '--filter', '@aruna/api', 'start']
+    env_file: ./api.env
+    expose:
+      - '3001'
+    # MEDIA_PROVIDER=local menulis ke dalam container; tanpa volume ini setiap rilis menghapus
+    # foto yang sudah diunggah pelanggan. Pindah ke S3 nanti menjadikannya tidak terpakai, bukan salah.
+    volumes:
+      - media:/app/.data/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ['CMD-SHELL', 'node -e "fetch(''http://127.0.0.1:3001/ready'').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  web:
+    <<: *app
+    command: ['node', 'apps/web/.output/server/index.mjs']
+    env_file: ./web.env
+    expose:
+      - '3000'
+    depends_on:
+      api:
+        condition: service_started
+
+  worker:
+    <<: *app
+    command: ['pnpm', '--filter', '@aruna/worker', 'start']
+    env_file: ./worker.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  # Satu-satunya service yang menerbitkan port. ufw membatasi 80/443 ke rentang IP Cloudflare;
+  # lihat Bagian 2 rencana — itu yang membuat TRUST_PROXY=2 aman.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+      - api
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+
+volumes:
+  postgres:
+  media:
+  caddy-data:
+  caddy-config:

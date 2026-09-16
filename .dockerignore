@@ -3,8 +3,12 @@ node_modules
 **/.nuxt
 **/.output
 **/dist
+**/.turbo
+.turbo
 docs
 .git
+.github
+.claude
 .codex
 .data
 **/.env
@@ -12,3 +16,9 @@ docs
 !**/.env.example
 test-results
 playwright-report
+tests
+playwright.config.ts
+# Bentuk produksi dijalankan dari server, bukan dari dalam image.
+compose.yaml
+compose.prod.yaml
+Caddyfile

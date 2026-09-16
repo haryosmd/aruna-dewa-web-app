@@ -30,6 +30,16 @@ export default defineNuxtConfig({
         { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
       ],
       meta: [
+        // Tolak dulu, izinkan per halaman.
+        //
+        // Yang dilindungi bukan peringkat, tapi data orang: halaman undangan memuat nama
+        // pasangan, tanggal, dan alamat gedung, dan URL tamu membawa nama tamu di `?to=`.
+        // Bawaan "boleh indeks" berarti tiap halaman baru terindeks sampai ada yang ingat
+        // melarangnya — dan yang lupa dilarang tidak pernah menimbulkan error.
+        //
+        // Ditimpa jadi `index, follow` hanya di `/`, `/order`, dan `/i/demo`. Kalau ketiganya
+        // hilang dari indeks, itu gejala timpaannya terlepas — cutover memeriksanya.
+        { name: 'robots', content: 'noindex, nofollow' },
         { name: 'theme-color', content: '#ffffff' },
         { name: 'format-detection', content: 'telephone=no' },
         { property: 'og:site_name', content: 'Aruna Dewa' },

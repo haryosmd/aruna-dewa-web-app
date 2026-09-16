@@ -14,11 +14,11 @@
   },
   "dependencies": {
     "@aruna/contracts": "workspace:*",
-    "@prisma/client": "^6.16.2"
+    "@prisma/client": "^6.16.2",
+    "prisma": "^6.16.2",
+    "tsx": "^4.20.5"
   },
   "devDependencies": {
-    "prisma": "^6.16.2",
-    "tsx": "^4.20.5",
     "typescript": "~5.9.3"
   }
 }

@@ -1,0 +1,58 @@
+# Dua vhost, satu catch-all. Dipasangkan dengan compose.prod.yaml.
+#
+# Sertifikat datang dari Cloudflare Origin Certificate — pasang berkasnya di ./tls/ dan
+# lepaskan komentar `tls` di bawah. Tanpa itu Caddy menerbitkan sertifikat Let's Encrypt
+# sendiri, yang juga sah selama port 80 terbuka untuk tantangan ACME.
+
+{
+	email halo@arunadewa.id
+	# Caddy tidak mengirim nomor versi di header Server secara bawaan; jangan tambahkan.
+}
+
+(keamanan) {
+	header {
+		# API sudah memakai helmet; Nitro tidak punya apa pun, jadi header web dipasang di sini.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}
+
+arunadewa.id, www.arunadewa.id {
+	import keamanan
+	# tls /etc/caddy/tls/origin.pem /etc/caddy/tls/origin.key
+	encode zstd gzip
+	reverse_proxy web:3000
+}
+
+api.arunadewa.id {
+	import keamanan
+
+	# Tidak ada alasan foto pernikahan orang muncul di Google Images. Media disajikan lewat
+	# rute API, jadi penolakannya dipasang di host, bukan per rute.
+	header X-Robots-Tag "noindex, nofollow"
+
+	handle /robots.txt {
+		respond "User-agent: *
+Disallow: /
+" 200
+	}
+
+	handle {
+		# tls /etc/caddy/tls/origin.pem /etc/caddy/tls/origin.key
+		# Unggahan dibatasi 10 MiB di kontrak; 12 MiB memberi ruang untuk overhead multipart.
+		# Multer memakai memory storage, jadi tiap unggahan bersamaan menahan 10 MiB di RAM.
+		request_body {
+			max_size 12MiB
+		}
+		reverse_proxy api:3001
+	}
+}
+
+# Host yang tidak dikenal — IP mentah, atau domain orang lain yang diarahkan ke sini — diputus
+# tanpa jawaban. Menjawabnya memberi tahu pemindai bahwa ada sesuatu di sini.
+:80, :443 {
+	abort
+}

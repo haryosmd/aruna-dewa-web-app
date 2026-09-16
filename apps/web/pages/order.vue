@@ -207,6 +207,10 @@ const preview = computed<InvitationDocument>(() => {
   return document
 })
 
+// Sengaja tidak menimpa `noindex` bawaan. Halaman ini ada di balik middleware `auth`, jadi
+// perayap selalu menerima 302 ke `/login` dan tidak pernah melihat isinya — menandainya
+// `index, follow` hanya akan membuat orang berikutnya mengira ini permukaan SEO. Harga dan
+// paket sudah tayang di beranda, yang memang terindeks.
 useHead({ title: 'Buat undangan — Aruna Dewa' })
 </script>
 

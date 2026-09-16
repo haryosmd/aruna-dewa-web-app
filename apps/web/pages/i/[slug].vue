@@ -153,10 +153,22 @@ async function recordOpened() {
   }
 }
 
+/**
+ * Undangan sungguhan tidak pernah boleh terindeks: halamannya memuat nama pasangan, tanggal,
+ * dan alamat gedung, dan tautan tamu membawa nama tamu di `?to=`. Undangan dibagikan ke daftar
+ * tamu lewat WhatsApp, bukan dicari di Google.
+ *
+ * `/i/demo` adalah kekecualiannya — itu materi pemasaran, bukan hari pernikahan siapa pun.
+ * `robots.txt` sengaja tidak mem-`Disallow` `/i/*`: yang di-`Disallow` tidak pernah dibaca
+ * isinya, jadi `noindex` di bawah ini justru tidak akan pernah sampai ke perayapnya.
+ */
 useHead({
   title: () => publicData.value?.title ?? 'Undangan pernikahan',
   link: [{ rel: 'canonical', href: `${config.public.webBase}/i/${slug}` }],
-  meta: [{ name: 'referrer', content: 'no-referrer' }],
+  meta: [
+    { name: 'referrer', content: 'no-referrer' },
+    { name: 'robots', content: isDemo.value ? 'index, follow' : 'noindex, nofollow' },
+  ],
 })
 </script>
 
