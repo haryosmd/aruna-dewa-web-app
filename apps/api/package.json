@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "nest start --watch",
+    "dev": "nest start --watch --exec tsx",
     "build": "nest build",
     "start": "tsx dist/main.js",
     "typecheck": "tsc --noEmit",
