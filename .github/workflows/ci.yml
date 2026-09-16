@@ -186,15 +186,21 @@ jobs:
           PLAYWRIGHT_JSON_OUTPUT_NAME: ${{ runner.temp }}/pw.json
 
       # Exit code saja tidak cukup: `test.skip` menandai eksekusi sebagai skipped, bukan failed,
-      # dan Playwright tetap keluar 0. Angka 148 sengaja dipaku dan sengaja rapuh — menambah tes
+      # dan Playwright tetap keluar 0. Angka 152 sengaja dipaku dan sengaja rapuh — menambah tes
       # berarti mengubahnya dengan sadar, dan itulah momen seseorang harus memutuskan apakah tes
       # barunya ikut menjaga jalur rilis.
+      #
+      # 148 -> 152 di Fase 25: satu tes baru, "only the hero image is on the landing critical
+      # path", dikali empat project. Ia memang harus ikut menjaga jalur rilis — yang dikuncinya
+      # adalah atribut yang tidak punya gejala visual sama sekali (`loading`, `fetchpriority`,
+      # dan `rel=preload` yang menunjuk berkas yang sama), jadi regresinya hanya akan terlihat
+      # sebagai halaman yang pelan, bukan sebagai halaman yang rusak.
       - name: Tidak boleh ada yang skip
         run: |
           node -e '
             const { expected, skipped, unexpected, flaky } = require(process.env.REPORT).stats;
             console.log({ expected, skipped, unexpected, flaky });
-            const seharusnya = 148;
+            const seharusnya = 152;
             if (skipped) { console.error(`::error::${skipped} eksekusi di-skip; gerbang e2e hanya berguna kalau semuanya jalan.`); process.exit(1); }
             if (flaky) { console.error(`::error::${flaky} eksekusi lulus hanya setelah diulang; itu bukan hijau.`); process.exit(1); }
             if (expected !== seharusnya) { console.error(`::error::${expected} lulus, seharusnya ${seharusnya}. Perbarui angkanya dengan sadar kalau memang ada tes baru.`); process.exit(1); }
