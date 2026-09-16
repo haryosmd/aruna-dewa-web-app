@@ -55,7 +55,19 @@ jobs:
           docker run --rm -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2-alpine \
             caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
           docker compose -f compose.yaml config -q
+
+          # `api.env`, `web.env`, dan `worker.env` hanya ada di /srv/aruna, mode 600, dan memang
+          # tidak boleh ikut git. Tanpa ketiganya `config` berhenti di "env file not found" sebelum
+          # sempat membaca satu baris pun YAML — langkah ini merah karena berkas yang absennya
+          # disengaja, bukan karena ada yang salah.
+          #
+          # Yang diperiksa di sini adalah bentuk compose-nya, bukan isi rahasianya, jadi berkas
+          # kosong sudah cukup. `required: false` di compose.prod.yaml akan lebih ringkas dan justru
+          # itu bahayanya: ia ikut berlaku di produksi, dan api.env yang hilang akan menyalakan
+          # container tanpa satu pun konfigurasi alih-alih menolak menyala.
+          touch api.env web.env worker.env
           docker compose -f compose.prod.yaml config -q
+          rm -f api.env web.env worker.env
 
   # Sejajar dengan `verify`, dan sengaja TANPA `needs:`, `if:`, maupun `continue-on-error:`.
   # Ketiganya adalah cara job merah tetap menghasilkan `workflow_run.conclusion: success` — dan

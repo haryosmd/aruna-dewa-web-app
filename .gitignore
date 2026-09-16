@@ -21,3 +21,9 @@ test-results/
 # hari ini. Barisnya dipasang duluan karena kalau suatu saat CDN dipasang di depan (ops/README.md),
 # yang mendarat di sini adalah kunci privat — dan satu `git add .` sudah cukup untuk menerbitkannya.
 tls/
+
+# Berkas env produksi. Mereka hidup di /srv/aruna mode 600 dan tidak pernah di git; barisnya ada
+# di sini supaya satu salinan yang ditarik ke laptop untuk debugging tidak bisa ikut ter-commit.
+api.env
+web.env
+worker.env
