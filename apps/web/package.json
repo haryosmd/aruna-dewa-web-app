@@ -38,6 +38,7 @@
     "happy-dom": "^18.0.1",
     "tailwindcss": "^4.1.13",
     "typescript": "~5.9.3",
+    "unifont": "0.4.1",
     "vitest": "^3.2.4",
     "vue-tsc": "^2.2.12"
   }

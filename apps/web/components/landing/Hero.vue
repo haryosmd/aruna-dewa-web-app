@@ -95,12 +95,23 @@ const stats = heroStats
         <!-- Arch window: the single most legible "wedding" shape there is. -->
         <div class="relative overflow-hidden rounded-t-[999px] rounded-b-xl bg-surface-3 shadow-veil">
           <div class="aspect-[3/4] overflow-hidden">
+            <!--
+              Satu-satunya gambar di halaman ini yang dimuat eager, dan elemen LCP-nya.
+              `fetchpriority="high"` dipasangkan dengan `rel="preload"` di `pages/index.vue`:
+              tanpa keduanya browser menemukan berkas ini lewat parser lalu menahannya di
+              prioritas rendah sampai puluhan chunk JS dan berkas font selesai — terukur
+              2436 ms sebelum request-nya dikirim sama sekali.
+
+              Berkasnya varian 900 px dari `scripts/optimize-images.ts`, bukan
+              `/images/hero.webp` yang 1600 px. Yang asli tetap dipakai undangan demo.
+            -->
             <img
               data-hero-photo
-              src="/images/hero.webp"
+              src="/images/hero-landing.webp"
               alt="Pasangan pengantin berdiri di taman botani"
-              width="1600"
-              height="1067"
+              width="900"
+              height="600"
+              fetchpriority="high"
               class="h-[118%] w-full object-cover"
             >
           </div>

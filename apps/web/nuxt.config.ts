@@ -1,4 +1,5 @@
 import tailwindcss from '@tailwindcss/vite'
+import { googleWoff2 } from './providers/google-woff2'
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-09-11',
@@ -10,6 +11,10 @@ export default defineNuxtConfig({
     plugins: [tailwindcss()],
   },
   fonts: {
+    // Provider bawaan ikut menyertakan face woff full-range warisan yang selalu menang
+    // pemilihan @font-face dan membuat woff2 hasil build tidak pernah terpakai. Alasan
+    // lengkapnya di `providers/google-woff2.ts`.
+    providers: { google: googleWoff2 },
     families: [
       { name: 'Fraunces', provider: 'google', weights: [400, 500, 600, 700], styles: ['normal', 'italic'] },
       { name: 'Plus Jakarta Sans', provider: 'google', weights: [400, 500, 600, 700, 800] },

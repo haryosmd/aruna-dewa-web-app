@@ -41,6 +41,25 @@
 arunadewa.id, www.arunadewa.id {
 	import keamanan
 	encode zstd gzip
+
+	# Nitro memberi `immutable` setahun HANYA untuk /_nuxt/* dan /_fonts/*, yang namanya
+	# memang ber-hash isi. Segala yang datang dari `public/` pulang tanpa Cache-Control sama
+	# sekali, jadi browser jatuh ke heuristic caching — 10% dari umur Last-Modified, yang
+	# untuk berkas yang baru dideploy berarti segar sekitar dua menit. Akibatnya tiap
+	# kunjungan berikutnya merevalidasi tiap gambar satu per satu.
+	#
+	# Tujuh hari, dan BUKAN `immutable`: isi `public/` tidak ber-hash, jadi berkas yang
+	# diganti tanpa ganti nama akan tersangkut di cache pengunjung selama masa itu. Aturannya
+	# satu — ganti NAMA berkasnya kalau isinya berubah, jangan timpa di tempat.
+	#
+	# /dashboard/* sengaja dibatasi ke *.webp. Tanpa batasan itu matcher ini ikut menangkap
+	# rute halaman Nuxt /dashboard/<id>, dan dasbor orang akan disajikan basi seminggu.
+	#
+	# /_nuxt/* dan /_fonts/* sengaja TIDAK ada di sini: keduanya sudah punya setahun penuh,
+	# dan menariknya turun ke tujuh hari adalah kemunduran.
+	@aset path /images/* /textures/* /banks/* /audio/* /dashboard/*.webp /favicon.svg
+	header @aset Cache-Control "public, max-age=604800"
+
 	reverse_proxy web:3000
 }
 

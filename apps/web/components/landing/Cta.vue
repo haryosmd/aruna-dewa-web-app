@@ -14,12 +14,21 @@ useArunaMotion(root, ({ revealText, revealUp, parallax, drawSvg }) => {
 <template>
   <section ref="root" class="relative isolate overflow-hidden bg-ink text-ink-inverse">
     <div class="absolute inset-0" aria-hidden="true">
+      <!--
+        Section paling bawah halaman, dan gambarnya cuma latar `opacity-35` di balik
+        gradient. Dimuat eager, 191 KB ini berebut koneksi dengan foto hero di layar pertama
+        — padahal tidak ada yang melihatnya sampai seluruh halaman selesai digulir.
+
+        Tetap memakai berkas asli, bukan varian `card/`: yang ini tayang selebar viewport.
+      -->
       <img
         data-cta-photo
         src="/images/venue.webp"
         alt=""
         width="1000"
         height="666"
+        loading="lazy"
+        decoding="async"
         class="h-[118%] w-full object-cover opacity-35"
       >
       <div class="absolute inset-0 bg-gradient-to-b from-ink/80 via-ink/60 to-ink/90" />

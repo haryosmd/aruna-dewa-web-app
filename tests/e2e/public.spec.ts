@@ -66,6 +66,42 @@ test('theme carousel previews every published template', async ({ page }) => {
   }
 })
 
+/*
+ * Jalur kritis landing: satu gambar yang diutamakan, sisanya menunggu giliran.
+ *
+ * Sebelum ini keenam gambar landing (~1,1 MB) dimuat eager, dan foto hero — yang justru
+ * elemen LCP — ikut antre di prioritas rendah di belakang puluhan chunk JS dan berkas font.
+ * Terukur di produksi pada 2026-09-16: request hero baru dikirim 2436 ms setelah gambarnya
+ * ditemukan parser, dan LCP-nya 17,3 detik.
+ *
+ * Regresi yang paling mungkin bukan seseorang mencabut atributnya dengan sengaja, tapi
+ * menambah tema baru sambil menyalin `cover` lama yang menunjuk berkas asli, atau menulis
+ * ulang Hero.vue tanpa membawa serta dua atribut yang tidak kelihatan pengaruhnya.
+ */
+test('only the hero image is on the landing critical path', async ({ page }) => {
+  await page.goto('/')
+
+  const hero = page.locator('img[data-hero-photo]')
+  await expect(hero).toHaveAttribute('fetchpriority', 'high')
+  await expect(hero).toHaveAttribute('src', '/images/hero-landing.webp')
+  // Hero TIDAK boleh lazy: ia satu-satunya yang memang harus dimuat lebih dulu.
+  await expect(hero).not.toHaveAttribute('loading', 'lazy')
+
+  // Preload-nya harus menunjuk berkas yang sama persis; kalau meleset, ia justru menambah
+  // satu unduhan yang tidak pernah terpakai.
+  await expect(page.locator('link[rel="preload"][as="image"]')).toHaveAttribute('href', '/images/hero-landing.webp')
+
+  const covers = page.getByRole('region', { name: 'Tema undangan' }).locator('img')
+  await expect(covers).toHaveCount(templateIds.length)
+  for (const cover of await covers.all()) {
+    await expect(cover).toHaveAttribute('loading', 'lazy')
+    // Varian kecil dari `pnpm images:optimize`, bukan berkas asli yang dipakai undangan demo.
+    await expect(cover).toHaveAttribute('src', /^\/images\/card\//)
+  }
+
+  await expect(page.locator('img[data-cta-photo]')).toHaveAttribute('loading', 'lazy')
+})
+
 /** CTA utama pernah mati total karena `as="NuxtLink"` merender elemen `<nuxtlink>`. */
 test('primary calls to action are real links', async ({ page }) => {
   await page.goto('/')
