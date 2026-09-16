@@ -58,10 +58,14 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          script_stop: true
           envs: IMAGE_REF
+          # `sh`, bukan bash: ssh-action menjalankan skripnya lewat shell login bawaan server,
+          # dan di Ubuntu itu dash. `pipefail` tidak ada di sana — `set -euo pipefail` mati di
+          # baris pertama dengan "Illegal option", sebelum satu perintah pun jalan.
+          # `script_stop` juga dilepas: bukan lagi input yang sah di v1, jadi selama ini hanya
+          # jadi anotasi peringatan. `set -e` yang menghentikan di kegagalan pertama.
           script: |
-            set -euo pipefail
+            set -eu
             cd /srv/aruna
 
             # Tag yang sedang jalan disalin apa adanya sebelum ditimpa. Membacanya lewat
