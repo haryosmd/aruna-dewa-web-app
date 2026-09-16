@@ -36,13 +36,17 @@ services:
       SMTP_HOST: mailpit
       PORT: 3001
       HOST: 0.0.0.0
+      # Absolut, dan sama persis dengan compose.prod.yaml. `apps/api/.env` memberi nilai relatif
+      # (`./.data/media`) yang benar untuk mesin pengembang tapi salah di dalam image: cwd proses
+      # di sana /app/apps/api, sementara volume di bawah dan chown di Dockerfile menunjuk /app/.data.
+      MEDIA_LOCAL_DIR: /app/.data/media
     ports:
       - '127.0.0.1:3001:3001'
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
-      - media:/app/apps/api/.data/media
+      - media:/app/.data/media
     profiles: ['app']
   web:
     build:

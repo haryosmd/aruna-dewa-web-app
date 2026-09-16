@@ -1,6 +1,6 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 
 export interface MediaStorage {
   put(key: string, body: Buffer, contentType: string): Promise<void>;
@@ -27,7 +27,17 @@ export function s3ConfigFromEnvironment(environment: Environment = process.env):
 }
 
 export class LocalMediaStorage implements MediaStorage {
-  constructor(private readonly directory: string) {}
+  private readonly directory: string;
+  /**
+   * Di-resolve sekali di sini, bukan dibiarkan relatif sampai saat menulis. Path relatif
+   * diselesaikan terhadap cwd proses, dan cwd proses bukan akar repo: `pnpm --filter @aruna/api
+   * start` berjalan dari `apps/api`, sehingga `./.data/media` berarti `apps/api/.data/media`.
+   * Di dalam container itulah yang membuat volume media pernah dipasang di path yang tidak
+   * pernah ditulis — unggahan masuk ke lapisan container dan ikut hilang tiap rilis.
+   */
+  constructor(directory: string) {
+    this.directory = resolve(directory);
+  }
   async put(key: string, body: Buffer): Promise<void> { await mkdir(join(this.directory, key.split('/')[0]!), { recursive: true }); await writeFile(join(this.directory, key), body, { flag: 'wx' }); }
   async get(key: string): Promise<Buffer> { return readFile(join(this.directory, key)); }
   async delete(key: string): Promise<void> { await rm(join(this.directory, key), { force: true }); }
@@ -45,9 +55,14 @@ export class S3MediaStorage implements MediaStorage {
   async delete(key: string): Promise<void> { await this.client.send(new DeleteObjectCommand({ Bucket: this.config.bucket, Key: key })); }
 }
 
+/** Direktori media lokal, selalu absolut. Di produksi nilainya datang dari `compose.prod.yaml`. */
+export function localMediaDirectory(environment: Environment = process.env, cwd = process.cwd()): string {
+  return resolve(cwd, environment.MEDIA_LOCAL_DIR?.trim() || join(cwd, '.data/media'));
+}
+
 export function createMediaStorage(environment: Environment = process.env): MediaStorage {
   const provider = environment.MEDIA_PROVIDER ?? 'local';
   if (provider === 's3') return new S3MediaStorage(s3ConfigFromEnvironment(environment));
-  if (provider === 'local') return new LocalMediaStorage(environment.MEDIA_LOCAL_DIR ?? join(process.cwd(), '.data/media'));
+  if (provider === 'local') return new LocalMediaStorage(localMediaDirectory(environment));
   throw new Error('MEDIA_PROVIDER harus local atau s3');
 }

@@ -54,6 +54,20 @@ services:
     <<: *app
     command: ['pnpm', '--filter', '@aruna/api', 'start']
     env_file: ./api.env
+    # `environment:` menang atas `env_file:`, dan di sini itu memang yang diinginkan. Ketiga nilai
+    # berikut menentukan apakah container bisa dihubungi dan apakah unggahan bertahan, jadi
+    # tempatnya di berkas yang ikut git — bukan di `api.env` yang hanya ada di satu server dan
+    # ditulis tangan sekali.
+    environment:
+      # Bawaan `main.ts` adalah 127.0.0.1. Di dalam container itu loopback milik container ini
+      # sendiri, jadi Caddy — container lain — tidak akan pernah tersambung. Gejalanya 502 dari
+      # proxy, bukan galat saat boot: lognya bersih dan situsnya mati.
+      HOST: 0.0.0.0
+      PORT: '3001'
+      # Wajib absolut. Nilai relatif diselesaikan terhadap cwd proses, dan
+      # `pnpm --filter @aruna/api start` berjalan dari /app/apps/api — di luar volume di bawah,
+      # di lapisan container yang dibuang setiap rilis.
+      MEDIA_LOCAL_DIR: /app/.data/media
     expose:
       - '3001'
     # MEDIA_PROVIDER=local menulis ke dalam container; tanpa volume ini setiap rilis menghapus
@@ -76,6 +90,11 @@ services:
     <<: *app
     command: ['node', 'apps/web/.output/server/index.mjs']
     env_file: ./web.env
+    environment:
+      # Nitro memang bind ke semua antarmuka secara bawaan, tapi satu `HOST` di `web.env` bisa
+      # membalikkannya tanpa jejak. Ditulis di sini supaya Caddy selalu punya alamat untuk dituju.
+      HOST: 0.0.0.0
+      PORT: '3000'
     expose:
       - '3000'
     depends_on:

@@ -6,7 +6,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module.js';
 import { ApiExceptionFilter } from './common/http-exception.filter.js';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { assertRuntimeEnv, isProduction, loadEnvFileIfPresent, trustProxySetting } from './common/env.js';
+import { assertRuntimeEnv, bindHost, isLoopbackBind, isProduction, loadEnvFileIfPresent, trustProxySetting } from './common/env.js';
 import { isAllowedOrigin, webOrigins } from './common/web-origin.js';
 
 async function bootstrap(): Promise<void> {
@@ -32,8 +32,16 @@ async function bootstrap(): Promise<void> {
   }
   app.enableShutdownHooks();
   const port = Number(process.env.PORT ?? '3001');
-  await app.listen(port, process.env.HOST ?? '127.0.0.1');
-  new Logger('Bootstrap').log(`API listening on http://127.0.0.1:${port} — origin web: ${webOrigins().join(', ')}`);
+  const host = bindHost();
+  await app.listen(port, host);
+  // Alamat yang sungguh di-bind, bukan literal `127.0.0.1` seperti sebelumnya. Log yang mengarang
+  // alamatnya adalah setengah dari kenapa kegagalan pertama di produksi terlihat sehat: API
+  // menyala bersih di loopback container, dan satu-satunya gejala adalah 502 dari Caddy.
+  const logger = new Logger('Bootstrap');
+  logger.log(`API listening on http://${host}:${port} — origin web: ${webOrigins().join(', ')}`);
+  if (isProduction() && isLoopbackBind(host)) {
+    logger.warn(`HOST=${host} hanya bisa dihubungi dari dalam container ini; proxy di container lain akan menjawab 502. Setel HOST=0.0.0.0.`);
+  }
 }
 
 void bootstrap();

@@ -37,6 +37,26 @@ export function isProduction(env: RuntimeEnv = process.env): boolean {
 }
 
 /**
+ * Alamat bind server HTTP. Bawaannya loopback, dan itu benar di mesin pengembang: `pnpm dev`
+ * dan server tes tidak perlu terlihat dari jaringan sekitar.
+ *
+ * Di dalam container bawaan itu berarti loopback milik container itu sendiri — proxy yang
+ * berjalan di container lain tidak akan pernah tersambung, dan gejalanya 502 dari proxy, bukan
+ * galat saat boot. Karena itu orkestrator yang menyetelnya: `compose.prod.yaml` menulis
+ * `HOST=0.0.0.0` di `environment:` (yang menang atas `env_file:`), bukan menitipkannya ke
+ * `api.env` yang hanya ada di satu server.
+ */
+export function bindHost(env: RuntimeEnv = process.env): string {
+  return env.HOST?.trim() || '127.0.0.1';
+}
+
+/** Alamat yang hanya bisa dihubungi dari dalam container yang sama. `0.0.0.0` bukan salah satunya. */
+export function isLoopbackBind(host: string): boolean {
+  const address = host.trim().replace(/^\[|\]$/gu, '');
+  return address === 'localhost' || address === '::1' || address.startsWith('127.');
+}
+
+/**
  * Daftar keluhan; kosong berarti boleh menyala. Fungsi murni supaya bisa diuji tanpa
  * mengotori `process.env` milik proses tes.
  */
