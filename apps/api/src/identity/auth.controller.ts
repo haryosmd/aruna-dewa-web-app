@@ -1,15 +1,19 @@
-import { Body, Controller, Get, HttpCode, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import {
+  changePasswordBodySchema,
   forgotPasswordBodySchema,
   loginBodySchema,
   registerBodySchema,
   resetPasswordBodySchema,
+  updateProfileBodySchema,
   verifyEmailBodySchema,
+  type ChangePasswordBody,
   type ForgotPasswordBody,
   type LoginBody,
   type RegisterBody,
   type ResetPasswordBody,
+  type UpdateProfileBody,
   type VerifyEmailBody,
 } from '@aruna/contracts/api';
 import { AuthService } from './auth.service.js';
@@ -17,11 +21,10 @@ import { CurrentUser, JwtAuthGuard, OriginGuard, type AuthenticatedUser } from '
 import { IdentityRateLimit, forgiveIdentityAttempt, identityRateLimits } from '../common/rate-limit.js';
 import { zodBody } from '../common/zod-validation.pipe.js';
 import { sessionContext } from './session-context.js';
-import { PrismaService } from '../database/prisma.service.js';
 
 @Controller('v1/auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService, private readonly prisma: PrismaService) {}
+  constructor(private readonly auth: AuthService) {}
 
   @Post('register') @UseGuards(OriginGuard) @IdentityRateLimit(identityRateLimits.register)
   async register(@Body(zodBody(registerBodySchema)) body: RegisterBody) { return this.auth.register(body); }
@@ -51,9 +54,32 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async me(@CurrentUser() user: AuthenticatedUser) {
-    const account = await this.prisma.user.findUniqueOrThrow({ where: { id: user.sub }, include: { memberships: { include: { invitation: true } } } });
-    return { user: { id: account.id, email: account.email, name: account.name, role: account.role === 'OPERATOR' ? 'r_7c91' : 'user' }, invitations: account.memberships.map(({ invitation }) => ({ id: invitation.id, slug: invitation.slug, title: invitation.title, status: invitation.status })) };
+  async me(@CurrentUser() user: AuthenticatedUser) { return this.auth.currentAccount(user.sub); }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard, OriginGuard)
+  async updateProfile(@CurrentUser() user: AuthenticatedUser, @Body(zodBody(updateProfileBodySchema)) body: UpdateProfileBody) {
+    return this.auth.updateProfile(user.sub, body.name);
+  }
+
+  @Post('change-password')
+  @HttpCode(204)
+  @UseGuards(JwtAuthGuard, OriginGuard)
+  @IdentityRateLimit(identityRateLimits.changePassword)
+  async changePassword(@CurrentUser() user: AuthenticatedUser, @Body(zodBody(changePasswordBodySchema)) body: ChangePasswordBody): Promise<void> {
+    await this.auth.changePassword(user.sub, user.sid, body.currentPassword, body.newPassword);
+  }
+
+  @Get('sessions')
+  @UseGuards(JwtAuthGuard)
+  async sessions(@CurrentUser() user: AuthenticatedUser) { return this.auth.sessionHistory(user.sub, user.sid); }
+
+  @Post('resend-verification')
+  @HttpCode(204)
+  @UseGuards(JwtAuthGuard, OriginGuard)
+  @IdentityRateLimit(identityRateLimits.forgotPassword)
+  async resendVerification(@CurrentUser() user: AuthenticatedUser): Promise<void> {
+    await this.auth.resendVerification(user.sub);
   }
 
   @Post('verify-email')

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultDocument } from '@aruna/contracts';
 import {
+  changePasswordBodySchema,
   createGuestBodySchema,
   createOrderBodySchema,
   loginBodySchema,
@@ -8,6 +9,7 @@ import {
   publicRsvpBodySchema,
   saveDraftBodySchema,
   updateGuestBodySchema,
+  updateProfileBodySchema,
 } from '@aruna/contracts/api';
 import { ZodValidationPipe } from '../../src/common/zod-validation.pipe.js';
 
@@ -72,6 +74,34 @@ describe('batas panjang dan bentuk', () => {
   it('menjaga bentuk RSVP publik', () => {
     expect(publicRsvpBodySchema.safeParse({ token: 'abc', attendance: 'mungkin' }).success).toBe(false);
     expect(publicRsvpBodySchema.safeParse({ token: 'abc', attendance: 'yes', count: 2 }).success).toBe(true);
+  });
+});
+
+describe('ubah akun sendiri', () => {
+  it('memakai aturan ketat hanya untuk kata sandi baru', () => {
+    expect(changePasswordBodySchema.safeParse({ currentPassword: 'pendek', newPassword: 'sembilan1' }).success).toBe(false);
+    expect(changePasswordBodySchema.safeParse({ currentPassword: 'pendek', newPassword: 'sepuluhhuruf' }).success).toBe(true);
+  });
+
+  /**
+   * Kata sandi lama sengaja longgar, persis seperti `loginBodySchema`: akun yang lahir sebelum
+   * aturan panjang mana pun tetap harus bisa membuktikan dirinya untuk bisa keluar dari aturan
+   * lama itu. Menolaknya di sini berarti mengunci mereka dari satu-satunya jalan memperbaikinya.
+   */
+  it('tidak mengunci akun lama dari jalan memperbaiki kata sandinya', () => {
+    expect(changePasswordBodySchema.safeParse({ currentPassword: 'lama', newPassword: 'kata sandi panjang' }).success).toBe(true);
+  });
+
+  it('tidak memangkas spasi di ujung kata sandi baru — itu bagian sah dari rahasianya', () => {
+    const parsed = changePasswordBodySchema.safeParse({ currentPassword: 'x', newPassword: ' sepuluhhuruf ' });
+    expect(parsed.success && parsed.data.newPassword).toBe(' sepuluhhuruf ');
+  });
+
+  it('menolak nama kosong dan merapikan yang berspasi', () => {
+    expect(updateProfileBodySchema.safeParse({ name: '   ' }).success).toBe(false);
+    expect(updateProfileBodySchema.safeParse({ name: 'a'.repeat(121) }).success).toBe(false);
+    const parsed = updateProfileBodySchema.safeParse({ name: '  Rara Dewi  ' });
+    expect(parsed.success && parsed.data.name).toBe('Rara Dewi');
   });
 });
 
