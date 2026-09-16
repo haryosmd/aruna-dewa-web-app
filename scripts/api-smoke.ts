@@ -123,6 +123,9 @@ try {
   await mkdir('.data', { recursive: true })
   await writeFile('.data/qa-account.json', JSON.stringify({ email: `qa-owner-${run}@example.test`, password, invitationId: id, slug }), { mode: 0o600 })
   await mkdir('docs/features/operations/verification', { recursive: true })
-  await writeFile('docs/features/operations/verification/api-smoke.json', JSON.stringify({ date: new Date().toISOString(), database: 'PostgreSQL 18.4 local', checks: results }, null, 2))
+  // Versi dibaca dari database yang benar-benar dipakai, bukan diketik. Literal 'PostgreSQL 18.4
+  // local' salah di CI (postgres:17-alpine) — dan satu-satunya guna berkas ini adalah jadi bukti.
+  const [{ version }] = await prisma.$queryRaw<{ version: string }[]>`SELECT version()`
+  await writeFile('docs/features/operations/verification/api-smoke.json', JSON.stringify({ date: new Date().toISOString(), database: version, checks: results }, null, 2))
   console.log(`Completed ${results.length} integration checks. Test account saved in ignored .data/qa-account.json.`)
 } finally { await prisma.$disconnect() }

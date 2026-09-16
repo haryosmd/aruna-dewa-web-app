@@ -1,5 +1,15 @@
 name: Verify
 on: [push, pull_request]
+
+# `on: [push, pull_request]` menjalankan workflow ini dua kali untuk tiap push ke branch yang
+# punya PR terbuka. Dengan job e2e yang ~15 menit, itu setengah jam runner terbuang per push.
+# Dikelompokkan supaya push berikutnya membatalkan yang sedang jalan, bukan mengantre di
+# belakangnya. Aman terhadap deploy.yml: run yang dibatalkan berakhir `cancelled`, bukan
+# `success`, jadi commit yang sudah tersalip memang tidak dirilis.
+concurrency:
+  group: verify-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -29,3 +39,189 @@ jobs:
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build
+
+      # Caddyfile dan compose.prod.yaml sampai sekarang tidak diuji apa pun, padahal keduanya
+      # menentukan apakah situsnya bisa dihubungi. Keduanya juga gagal dengan cara yang paling
+      # tidak enak: bukan saat di-merge, tapi saat container berikutnya restart.
+      #
+      # Pemeriksaan ini murah (~15 detik) dan menangkap yang nyata. Dua contoh dari repo ini:
+      # `reverse_prox` salah ketik, dan `tls` diletakkan di dalam `handle {}` — yang ditolak
+      # Caddy dengan "directive 'tls' is not an ordered HTTP handler". Bentuk kedua itu persis
+      # yang pernah ditinggalkan sebagai komentar di Caddyfile, menunggu seseorang melepasnya.
+      - name: Validasi berkas infrastruktur
+        env:
+          POSTGRES_PASSWORD: ci-only
+        run: |
+          docker run --rm -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2-alpine \
+            caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+          docker compose -f compose.yaml config -q
+          docker compose -f compose.prod.yaml config -q
+
+  # Sejajar dengan `verify`, dan sengaja TANPA `needs:`, `if:`, maupun `continue-on-error:`.
+  # Ketiganya adalah cara job merah tetap menghasilkan `workflow_run.conclusion: success` — dan
+  # deploy.yml digerbangi tepat oleh nilai itu. Sebelum ini, 148 eksekusi Playwright tidak pernah
+  # jalan di CI sama sekali: investasi terbesar repo ini tidak menjaga jalur rilisnya.
+  e2e:
+    runs-on: ubuntu-latest
+    # Bukan 360 menit bawaan: suite yang menggantung tidak boleh membakar enam jam runner.
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: aruna
+          POSTGRES_PASSWORD: ci-only
+          POSTGRES_DB: aruna_e2e
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://aruna:ci-only@127.0.0.1:5432/aruna_e2e
+      # NODE_ENV sengaja TIDAK disetel. `production` menyalakan `secure: true` pada cookie sesi
+      # (identity/auth.service.ts), CI berbicara http, browser membuang cookie-nya diam-diam, dan
+      # setiap tes dasbor gagal 401 tanpa satu pun galat yang menyebut kata cookie.
+      JWT_SECRET: ci-only-secret-at-least-32-characters-long
+      WEB_ORIGIN: http://127.0.0.1:3000
+      API_ORIGIN: http://127.0.0.1:3001
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: '1025'
+      MEDIA_PROVIDER: local
+      NUXT_API_BASE: http://127.0.0.1:3001/v1
+      NUXT_PUBLIC_API_BASE: http://127.0.0.1:3001/v1
+      # Dikirim sebagai header `origin` saat render server; kalau meleset, OriginGuard menjawab
+      # 403 pada tiap halaman dasbor yang dirender server.
+      NUXT_PUBLIC_WEB_BASE: http://127.0.0.1:3000
+      E2E_BASE_URL: http://127.0.0.1:3000
+      E2E_API_ORIGIN: http://127.0.0.1:3001
+      # Di dalam workspace, bukan ~/.cache: path yang sama persis di langkah cache dan install.
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.cache/ms-playwright
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.8.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Kunci cache adalah versi Playwright yang benar-benar ter-resolve, bukan hash lockfile:
+      # hash berubah tiap kali dependency apa pun bergeser dan membatalkan ~250 MB browser
+      # tanpa satu pun alasan.
+      - id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ${{ github.workspace }}/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      # Hanya chromium dan webkit: tiga project pertama tidak menyebut browserName (bawaannya
+      # chromium) dan hanya `safari` yang webkit. Firefox tidak pernah dipakai.
+      # Dua langkah, bukan satu: `--with-deps` mengunduh browser DAN memasang pustaka sistem,
+      # tapi yang di-cache hanya yang pertama. Melewatinya saat cache hit membuat WebKit gagal
+      # menyala dengan galat pustaka bersama yang tidak menyebut sebabnya.
+      - if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install --with-deps chromium webkit
+      - if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium webkit
+
+      - run: pnpm db:generate
+      - run: pnpm db:deploy
+      # Wajib, bukan opsional: payments/orders.service.ts membaca katalog dari database, bukan
+      # dari @aruna/contracts. Tanpa seed, api-smoke gagal di pemeriksaan harga.
+      - run: pnpm db:seed
+      - run: pnpm build
+
+      - name: Nyalakan SMTP sink, API, dan web
+        run: |
+          set -euo pipefail
+          # PORT disetel inline per proses, TIDAK di `env:` job: dua proses akan memperebutkan
+          # satu nama variabel dan web akan bind di 3001 menimpa API. Inline juga yang paling
+          # jujur dibaca — port tiap proses tertulis di baris proses itu.
+          pnpm mail:local > "$RUNNER_TEMP/mail.log" 2>&1 &
+          HOST=127.0.0.1 PORT=3001 pnpm --filter @aruna/api start > "$RUNNER_TEMP/api.log" 2>&1 &
+          HOST=127.0.0.1 PORT=3000 node apps/web/.output/server/index.mjs > "$RUNNER_TEMP/web.log" 2>&1 &
+
+      - name: Tunggu ketiganya benar-benar siap
+        run: |
+          set -euo pipefail
+          # Polling, bukan `sleep`: waktu siap bervariasi menurut beban runner, dan `sleep` yang
+          # kependekan gagal sebagai "tes tidak menemukan elemen" — jauh dari penyebabnya.
+          tunggu() {
+            for _ in $(seq 1 60); do
+              if eval "$2" >/dev/null 2>&1; then echo "$1 siap."; return 0; fi
+              sleep 1
+            done
+            echo "::error::$1 tidak pernah siap dalam 60 detik."
+            return 1
+          }
+          tunggu "SMTP 1025" 'node -e "require(\"node:net\").connect(1025,\"127.0.0.1\").on(\"connect\",()=>process.exit(0)).on(\"error\",()=>process.exit(1))"'
+          # /ready, bukan /health: yang kedua tidak menyentuh apa pun. Kontrak yang sama dengan
+          # healthcheck compose.prod.yaml dan gerbang deploy.yml.
+          tunggu "API /ready" 'curl -fsS --max-time 3 http://127.0.0.1:3001/ready'
+          tunggu "Web /" 'curl -fsS --max-time 5 -o /dev/null http://127.0.0.1:3000/'
+
+      - run: pnpm test:integration
+
+      # Menangkap `test:integration` yang keluar 0 tanpa menulis fixture. Murah, dan pesan
+      # gagalnya langsung menunjuk sebabnya alih-alih 44 eksekusi yang hilang diam-diam.
+      - name: Fixture QA benar-benar ada
+        run: test -s .data/qa-account.json
+
+      - name: Playwright
+        run: pnpm exec playwright test --reporter=list,html,json
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: ${{ runner.temp }}/pw.json
+
+      # Exit code saja tidak cukup: `test.skip` menandai eksekusi sebagai skipped, bukan failed,
+      # dan Playwright tetap keluar 0. Angka 148 sengaja dipaku dan sengaja rapuh — menambah tes
+      # berarti mengubahnya dengan sadar, dan itulah momen seseorang harus memutuskan apakah tes
+      # barunya ikut menjaga jalur rilis.
+      - name: Tidak boleh ada yang skip
+        run: |
+          node -e '
+            const { expected, skipped, unexpected, flaky } = require(process.env.REPORT).stats;
+            console.log({ expected, skipped, unexpected, flaky });
+            const seharusnya = 148;
+            if (skipped) { console.error(`::error::${skipped} eksekusi di-skip; gerbang e2e hanya berguna kalau semuanya jalan.`); process.exit(1); }
+            if (flaky) { console.error(`::error::${flaky} eksekusi lulus hanya setelah diulang; itu bukan hijau.`); process.exit(1); }
+            if (expected !== seharusnya) { console.error(`::error::${expected} lulus, seharusnya ${seharusnya}. Perbarui angkanya dengan sadar kalau memang ada tes baru.`); process.exit(1); }
+          '
+        env:
+          REPORT: ${{ runner.temp }}/pw.json
+
+      # run_attempt di nama artifact: tanpa itu "Re-run failed jobs" gagal dengan konflik nama,
+      # dan laporannya hilang justru pada percobaan yang paling ingin kamu baca.
+      - name: Laporan Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_attempt }}
+          # Keduanya perlu: playwright-report/ adalah HTML-nya, test-results/ memuat trace dan
+          # screenshot yang ditautkannya lewat path relatif.
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: warn
+
+      # Saat tes dasbor gagal 401, jawabannya hampir selalu ada di api.log, bukan di trace browser.
+      - name: Log server
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-logs-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/*.log
+          retention-days: 7
+          if-no-files-found: warn
+
+      # `docs/` ada di .gitignore, jadi tanpa langkah ini bukti visual dari empat viewport —
+      # termasuk WebKit 390px, satu-satunya bukti tampilan di iOS — menguap bersama runner.
+      - name: Bukti verifikasi
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-${{ github.run_attempt }}
+          path: docs/features/**/verification/
+          retention-days: 7
+          if-no-files-found: ignore

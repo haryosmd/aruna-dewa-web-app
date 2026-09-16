@@ -1,4 +1,5 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
@@ -58,6 +59,55 @@ export class S3MediaStorage implements MediaStorage {
 /** Direktori media lokal, selalu absolut. Di produksi nilainya datang dari `compose.prod.yaml`. */
 export function localMediaDirectory(environment: Environment = process.env, cwd = process.cwd()): string {
   return resolve(cwd, environment.MEDIA_LOCAL_DIR?.trim() || join(cwd, '.data/media'));
+}
+
+/**
+ * Batas waktu probe kesiapan. Jauh di bawah `timeout: 5s` pada healthcheck `api` di
+ * `compose.prod.yaml`: berkas sistem yang menggantung harus dilaporkan sebagai tidak siap,
+ * bukan membuat healthcheck-nya sendiri kehabisan waktu dan kehilangan sebabnya.
+ */
+const PROBE_TIMEOUT_MS = 2000;
+
+/**
+ * Membuktikan penyimpanan media benar-benar bisa ditulis, dibaca ulang, lalu dihapus.
+ *
+ * `/ready` sebelumnya hanya `SELECT 1`, dan itu tidak pernah menyentuh direktori media. Bug
+ * `MEDIA_LOCAL_DIR` yang membuat unggahan mendarat di lapisan container — dan ikut hilang tiap
+ * rilis — lolos sepenuhnya dari gerbang itu: nol galat, `/ready` hijau, foto pelanggan hilang.
+ * Tulis-baca-hapus adalah satu-satunya bentuk yang menangkap kelas itu; memeriksa keberadaan
+ * direktori saja tidak, karena direktori yang salah pun ada.
+ *
+ * Hanya untuk penyimpanan lokal. Pada `MEDIA_PROVIDER=s3` probe ini akan menulis dan menghapus
+ * objek tiap 15 detik — ~17 ribu permintaan per hari untuk menjawab pertanyaan yang tidak sedang
+ * ditanyakan, karena S3 memang belum dipakai. Kalau nanti dipakai, ganti ini dengan HeadBucket;
+ * jangan biarkan cabangnya diam-diam berhenti memeriksa apa pun.
+ */
+export async function probeMediaStorage(environment: Environment = process.env): Promise<void> {
+  if ((environment.MEDIA_PROVIDER ?? 'local') !== 'local') return;
+  const storage = createMediaStorage(environment);
+  // Berprefiks supaya `put` membuat direktori induknya seperti unggahan sungguhan — kunci tanpa
+  // garis miring akan membuat `mkdir` dan `writeFile` menunjuk path yang sama, lalu EISDIR.
+  const key = `.probe/${randomUUID()}`;
+  const body = Buffer.from('ready');
+  let timer: NodeJS.Timeout | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('Probe media melewati batas waktu')), PROBE_TIMEOUT_MS);
+  });
+  try {
+    await Promise.race([
+      (async () => {
+        await storage.put(key, body, 'application/octet-stream');
+        const roundTrip = await storage.get(key);
+        if (!roundTrip.equals(body)) throw new Error('Isi berkas probe berbeda dari yang ditulis');
+      })(),
+      deadline,
+    ]);
+  } finally {
+    clearTimeout(timer);
+    // Kegagalan pembersihan tidak boleh menutupi kegagalan yang sebenarnya, dan berkas probe
+    // yang tertinggal tidak merusak apa pun — `delete` sendiri sudah idempoten.
+    await storage.delete(key).catch(() => undefined);
+  }
 }
 
 export function createMediaStorage(environment: Environment = process.env): MediaStorage {

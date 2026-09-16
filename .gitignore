@@ -16,3 +16,8 @@ test-results/
 .superpowers/
 .data/
 .turbo/
+
+# Caddy mengelola sertifikatnya sendiri di volume `caddy-data`, jadi direktori ini tidak ada
+# hari ini. Barisnya dipasang duluan karena kalau suatu saat CDN dipasang di depan (ops/README.md),
+# yang mendarat di sini adalah kunci privat — dan satu `git add .` sudah cukup untuk menerbitkannya.
+tls/

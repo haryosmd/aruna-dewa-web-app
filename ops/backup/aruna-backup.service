@@ -1,0 +1,19 @@
+[Unit]
+Description=Backup Aruna ke bucket off-site
+# Backup yang jalan sebelum Docker siap gagal dengan galat yang menyesatkan, dan itu terjadi
+# tepat setelah reboot — saat kamu paling tidak sedang memperhatikan.
+After=docker.service network-online.target
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Lebih panjang dari backup terlama yang masuk akal, tapi tetap ada: skrip yang menggantung pada
+# rclone yang tidak pernah timeout akan menahan timer besok tanpa satu pun galat.
+TimeoutStartSec=3600
+EnvironmentFile=/srv/aruna/backup.env
+ExecStart=/usr/local/lib/aruna/backup.sh
+# Backup tidak boleh membuat situs lambat. 2 vCPU tidak punya ruang untuk pg_dump prioritas normal.
+Nice=10
+IOSchedulingClass=idle
+PrivateTmp=true

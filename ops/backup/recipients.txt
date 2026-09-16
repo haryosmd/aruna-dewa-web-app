@@ -1,0 +1,19 @@
+# Kunci PUBLIK age. Bukan rahasia — dan justru karena itu berkas ini ikut git.
+#
+# Kalau daftar ini hanya hidup di server dan seseorang menyusunnya ulang dengan satu karakter
+# salah, backup tetap "berhasil" setiap malam — terenkripsi ke kunci yang privatnya tidak kamu
+# punya — dan kamu baru tahu saat butuh restore. install.sh membandingkan berkas ini dengan yang
+# terpasang di server supaya keduanya tidak bisa menyimpang diam-diam.
+#
+# Dua penerima, karena age bisa mengenkripsi ke banyak penerima dan masing-masing bisa membuka
+# sendiri. Yang kedua ada supaya hilangnya akses ke password manager bukan berarti hilangnya
+# seluruh riwayat backup.
+#
+# Upacara pembuatannya ada di README.md di direktori ini. Kunci privat TIDAK PERNAH menyentuh
+# VPS, git, atau GitHub Secrets.
+
+# Kunci utama — privatnya di password manager.
+# age1...BELUM-DIISI
+
+# Kunci pemulihan — privatnya dicetak di kertas, disimpan terpisah secara fisik.
+# age1...BELUM-DIISI

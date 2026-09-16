@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { bindHost, isLoopbackBind } from '../../src/common/env.js';
 import { localMediaDirectory } from '../../src/media/storage.js';
+import { DEFAULT_HEALTH_PORT } from '../../../worker/src/health.js';
 
 /**
  * Dua nilai yang menentukan apakah rilis hidup atau mati diam-diam, dan keduanya hidup di
@@ -39,6 +40,45 @@ describe('container API di compose.prod.yaml', () => {
     const mount = api.match(/-\s*media:([^\s]+)/u)?.[1];
     expect(mount).toBe(configured);
     expect(localMediaDirectory({ MEDIA_LOCAL_DIR: configured }, '/app/apps/api')).toBe(mount);
+  });
+});
+
+describe('container web di compose.prod.yaml', () => {
+  const web = readService('compose.prod.yaml', 'web');
+
+  /*
+   * Ketiganya punya nilai cadangan loopback di nuxt.config.ts, dan tidak satu pun menggagalkan
+   * boot kalau salah. Situsnya menyala, terlihat benar, dan baru salah saat dipakai — yang
+   * terburuk: composables/useGuestLink.ts membangun tautan undangan dari NUXT_PUBLIC_WEB_BASE,
+   * jadi nilai loopback berarti pelanggan membagikan http://127.0.0.1:3000/i/... ke tamunya.
+   */
+  it('mengumumkan asal publik, bukan loopback — tautan undangan dibangun dari nilai ini', () => {
+    const webBase = value(web, 'NUXT_PUBLIC_WEB_BASE');
+    expect(webBase, 'NUXT_PUBLIC_WEB_BASE wajib ada di environment: compose, bukan dititipkan ke web.env').toBeDefined();
+    expect(webBase).toMatch(/^https:\/\//u);
+    expect(isLoopbackBind(new URL(webBase!).hostname)).toBe(false);
+  });
+
+  it('memanggil API lewat nama service saat render server, lewat alamat publik dari browser', () => {
+    // Render server tidak perlu keluar-masuk TLS untuk memanggil container tetangganya;
+    // browser tidak bisa menghubungi nama service.
+    expect(value(web, 'NUXT_API_BASE')).toBe('http://api:3001/v1');
+    expect(value(web, 'NUXT_PUBLIC_API_BASE')).toMatch(/^https:\/\//u);
+  });
+
+  it('bind ke semua antarmuka — alasan yang sama dengan API', () => {
+    expect(isLoopbackBind(value(web, 'HOST')!)).toBe(false);
+  });
+});
+
+describe('container worker di compose.prod.yaml', () => {
+  const worker = readService('compose.prod.yaml', 'worker');
+
+  it('healthcheck menembak port yang benar-benar didengarkan worker', () => {
+    // Port terbelah antara kode dan compose. Kalau menyimpang, worker ditandai unhealthy
+    // selamanya walau sehat — dan alarm yang selalu menyala adalah alarm yang diabaikan.
+    expect(worker).toContain(`127.0.0.1:${DEFAULT_HEALTH_PORT}`);
+    expect(worker).toMatch(new RegExp(`expose:\\s*\\n\\s*-\\s*'?${DEFAULT_HEALTH_PORT}'?`, 'u'));
   });
 });
 

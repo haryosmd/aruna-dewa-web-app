@@ -95,24 +95,70 @@ services:
       # membalikkannya tanpa jejak. Ditulis di sini supaya Caddy selalu punya alamat untuk dituju.
       HOST: 0.0.0.0
       PORT: '3000'
+      # Ketiganya punya nilai cadangan loopback di nuxt.config.ts, dan itulah bahayanya: tanpa
+      # disetel, situsnya menyala dan terlihat benar sampai seseorang memakainya.
+      #   - NUXT_PUBLIC_WEB_BASE membangun tautan undangan di composables/useGuestLink.ts. Salah
+      #     setel berarti pelanggan membagikan http://127.0.0.1:3000/i/... ke tamu pernikahannya.
+      #     Ia juga jadi header `origin` pada render server (composables/useApi.ts:62), dan
+      #     `webOrigins()` di API hanya menerima WEB_ORIGIN — jadi tiap halaman dasbor yang
+      #     dirender server dijawab 403. Plus canonical, sitemap.xml, dan robots.txt.
+      #   - NUXT_API_BASE dipakai dari dalam jaringan compose; lewat nama service, bukan lewat
+      #     Caddy, supaya render server tidak keluar-masuk TLS untuk memanggil tetangganya.
+      #   - NUXT_PUBLIC_API_BASE dipakai browser, jadi ia harus alamat publik.
+      NUXT_API_BASE: http://api:3001/v1
+      NUXT_PUBLIC_API_BASE: https://api.arunadewa.id/v1
+      NUXT_PUBLIC_WEB_BASE: https://arunadewa.id
     expose:
       - '3000'
+    # `service_started`, dan sengaja BUKAN `service_healthy` walaupun `api` punya healthcheck.
+    # Menaikkannya mengubah kegagalan sebagian menjadi kegagalan total: sejak `/ready` ikut
+    # memeriksa direktori media, volume media yang bermasalah membuat `api` unhealthy — dan
+    # dengan `service_healthy` di sini, web tidak akan pernah menyala. Galeri foto yang rusak
+    # berubah jadi situs yang mati. Gerbang `/ready` di deploy.yml sudah membuatnya berisik;
+    # itu tempat yang benar untuk menghentikan rilis, bukan di sini.
     depends_on:
       api:
         condition: service_started
+    healthcheck:
+      # Nitro tidak punya endpoint kesehatan sendiri; halaman depan dirender penuh dan itu
+      # justru bukti yang lebih kuat daripada rute khusus yang bisa hijau saat render rusak.
+      test: ['CMD-SHELL', 'node -e "fetch(''http://127.0.0.1:3000/'').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   worker:
     <<: *app
     command: ['pnpm', '--filter', '@aruna/worker', 'start']
     env_file: ./worker.env
+    # Hanya untuk healthcheck dan container tetangga; tidak diterbitkan ke luar.
+    expose:
+      - '3002'
     depends_on:
       postgres:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+    # Worker adalah satu-satunya service yang bisa "hidup tapi mati": `boss.on('error')` hanya
+    # mencetak galat, prosesnya tidak pernah keluar, dan `restart: unless-stopped` karena itu
+    # tidak pernah menolong. Antreannya menumpuk tanpa gejala. Endpoint ini menjawab pertanyaan
+    # yang sebelumnya tidak bisa ditanyakan siapa pun: apakah ia masih benar-benar bekerja?
+    healthcheck:
+      test: ['CMD-SHELL', 'node -e "fetch(''http://127.0.0.1:3002/'').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
-  # Satu-satunya service yang menerbitkan port. ufw membatasi 80/443 ke rentang IP Cloudflare;
-  # lihat Bagian 2 rencana — itu yang membuat TRUST_PROXY=2 aman.
+  # Satu-satunya service yang menerbitkan port. 80 dan 443 terbuka ke dunia, dan 80 memang harus
+  # begitu: tantangan ACME HTTP-01 lewat sana. Menutupnya tidak mematikan apa pun hari ini, lalu
+  # mematikan situs dua bulan kemudian saat perpanjangan sertifikat gagal.
+  #
+  # Tidak ada CDN di depan, jadi TRUST_PROXY=1 di api.env benar — Caddy satu-satunya hop. Yang
+  # membuatnya aman bukan firewall melainkan `trusted_proxies` Caddy yang kosong, yang membuang
+  # X-Forwarded-For kiriman klien. Baca komentar X-Forwarded-For di Caddyfile sebelum mengubah
+  # salah satu dari keduanya.
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
@@ -124,6 +170,12 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
+    # Urutan menyala saja, TANPA `condition: service_healthy`, dan ini keputusan sadar yang
+    # membalik rencana awal. Caddy yang menunggu web sehat berarti web yang rusak menahan Caddy
+    # tetap mati — dan bersamanya tantangan ACME. Pemadaman aplikasi yang bisa dipulihkan
+    # berubah menjadi sertifikat kedaluwarsa, yang tidak bisa. Caddy juga melayani `api`, jadi
+    # menyandera keduanya pada kesehatan web memperluas radius kegagalan, bukan mengecilkannya.
+    # Harganya: beberapa detik 502 saat cold start. Itu harga yang jauh lebih murah.
     depends_on:
       - web
       - api

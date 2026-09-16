@@ -5,6 +5,17 @@ import { readFileSync, existsSync } from 'node:fs'
 const fixturePath = '.data/qa-account.json'
 const account = existsSync(fixturePath) ? JSON.parse(readFileSync(fixturePath, 'utf8')) as { email: string; password: string; invitationId: string; slug: string } : null
 
+/*
+ * Di mesin pengembang, tidak adanya fixture adalah keadaan wajar dan `test.skip` di bawah memberi
+ * petunjuk yang benar. Di CI ia adalah kegagalan yang menyamar jadi kelulusan: `test.skip`
+ * menandai eksekusi sebagai *skipped*, bukan *failed*, jadi 44 eksekusi (11 tes x 4 project)
+ * hilang diam-diam, Playwright tetap keluar 0, `workflow_run.conclusion` tetap 'success', dan
+ * Deploy berjalan — gerbang rilisnya terbuka justru ketika separuh suite tidak pernah jalan.
+ */
+if (!account && process.env.CI) {
+  throw new Error('.data/qa-account.json tidak ada. `pnpm test:integration` harus berhasil sebelum `playwright test` di CI.')
+}
+
 /**
  * Editor dirender di server, jadi tombolnya sudah ada di DOM sebelum Vue terpasang. Klik yang
  * mendarat sebelum hidrasi tidak mengubah apa pun dan tidak melaporkan apa pun — gejalanya

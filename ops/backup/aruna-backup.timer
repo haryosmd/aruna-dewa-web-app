@@ -1,0 +1,15 @@
+[Unit]
+Description=Backup harian Aruna (Postgres + media)
+
+[Timer]
+# 03:17 UTC, bukan jam bulat: jam bulat adalah saat setiap VPS di gedung yang sama mulai
+# mengunggah, dan bandwidth keluar mesin 2 vCPU ini terbatas.
+OnCalendar=*-*-* 03:17:00 UTC
+# Jalankan run yang terlewat begitu mesin hidup lagi. Tanpa ini, reboot pada jam backup berarti
+# satu hari tanpa backup dan tanpa satu pun tanda — kecuali dead man's switch, 6 jam kemudian.
+Persistent=true
+RandomizedDelaySec=600
+Unit=aruna-backup.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,37 @@
+{
+  "_comment": [
+    "Retensi bucket. Diterapkan dari laptop dengan kredensial ADMIN, tidak pernah dari server:",
+    "  aws s3api put-bucket-lifecycle-configuration --bucket <bucket> \\",
+    "    --lifecycle-configuration file://ops/backup/lifecycle.json --endpoint-url <endpoint>",
+    "",
+    "Aturan di sini adalah SATU-SATUNYA yang menghapus apa pun. Kredensial rclone di server tidak",
+    "punya izin DeleteObject sama sekali, dan itu disengaja: hal pertama yang dilakukan ransomware",
+    "adalah menghapus backup sebelum mengenkripsi produksi.",
+    "",
+    "Tidak ada aturan untuk prefix media/ — juga disengaja. Kunci media immutable dan append-only,",
+    "jadi biayanya hanya tumbuh sebesar data uniknya, dan foto pernikahan tidak tergantikan.",
+    "",
+    "Berkas ini ikut git karena retensi adalah nilai yang menentukan apakah sistem berfungsi.",
+    "Kalau angkanya hanya hidup di konsol provider, tidak ada yang tahu retensi sebenarnya berapa."
+  ],
+  "Rules": [
+    {
+      "ID": "postgres-daily-14d",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "postgres/daily/" },
+      "Expiration": { "Days": 14 }
+    },
+    {
+      "ID": "postgres-weekly-56d",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "postgres/weekly/" },
+      "Expiration": { "Days": 56 }
+    },
+    {
+      "ID": "postgres-monthly-365d",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "postgres/monthly/" },
+      "Expiration": { "Days": 365 }
+    }
+  ]
+}

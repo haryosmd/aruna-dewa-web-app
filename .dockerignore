@@ -22,3 +22,6 @@ playwright.config.ts
 compose.yaml
 compose.prod.yaml
 Caddyfile
+# Runbook dan skrip operasi dijalankan dari laptop atau dari server, tidak pernah dari dalam
+# image aplikasi.
+ops

@@ -29,8 +29,28 @@ export const DEVELOPMENT_JWT_SECRET = 'development-only-change-me';
 /** Panjang minimum rahasia di produksi; 32 byte adalah ukuran kunci yang kita turunkan darinya. */
 export const MIN_PRODUCTION_SECRET_LENGTH = 32;
 
-/** Variabel yang tidak punya nilai bawaan yang masuk akal di luar mesin pengembang. */
-const PRODUCTION_REQUIRED = ['DATABASE_URL', 'WEB_ORIGIN', 'API_ORIGIN', 'TRUST_PROXY'] as const;
+/**
+ * Variabel yang tidak punya nilai bawaan yang masuk akal di luar mesin pengembang.
+ *
+ * Keempat SMTP_* ada di sini sejak Fase 23, dan alasannya sama dengan JWT_SECRET dulu:
+ * `mail.service.ts` baru memeriksanya saat email pertama dikirim, sehingga API produksi tanpa
+ * SMTP menyala bersih, `/ready` hijau, dan yang menemukan masalahnya adalah pelanggan pertama
+ * yang mendaftar — lewat 503 tanpa satu pun alarm. Kegagalan saat deploy jauh lebih murah.
+ *
+ * SMTP_USER dan SMTP_PASS ikut wajib, bukan hanya SMTP_HOST: `smtpTransportOptions()` hanya
+ * menyertakan blok `auth` kalau keduanya terisi, dan tiap relay menuntut AUTH. Separuh terisi
+ * gagal dengan cara yang sama persis dengan kosong, tapi terlihat seperti sudah dikonfigurasi.
+ */
+const PRODUCTION_REQUIRED = [
+  'DATABASE_URL',
+  'WEB_ORIGIN',
+  'API_ORIGIN',
+  'TRUST_PROXY',
+  'SMTP_HOST',
+  'SMTP_USER',
+  'SMTP_PASS',
+  'SMTP_FROM',
+] as const;
 
 export function isProduction(env: RuntimeEnv = process.env): boolean {
   return env.NODE_ENV === 'production';

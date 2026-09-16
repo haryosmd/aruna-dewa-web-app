@@ -52,6 +52,19 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Caddyfile hidup di /srv/aruna sebagai bind mount dan dikecualikan dari image
+      # (.dockerignore:24), jadi sampai sekarang tidak ada satu pun jalur yang membawanya ke
+      # server: setiap perubahan pada berkas itu diam-diam tidak pernah berlaku. Dikirim ke
+      # staging dulu — divalidasi di langkah berikutnya sebelum menimpa yang sedang dipakai.
+      - name: Kirim Caddyfile ke staging
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: Caddyfile
+          target: /srv/aruna/.staging
+
       - name: Terapkan di server
         uses: appleboy/ssh-action@v1
         with:
@@ -68,6 +81,18 @@ jobs:
             set -eu
             cd /srv/aruna
 
+            # Kegagalan scp yang diam lebih buruk daripada deploy yang merah: Caddyfile lama
+            # tetap dipakai dan perubahannya hilang tanpa jejak, persis bug yang baru ditutup.
+            test -f .staging/Caddyfile || { echo "::error::Caddyfile tidak sampai ke staging."; exit 1; }
+
+            # Validasi SEBELUM menimpa. Caddyfile rusak yang sudah mendarat di tempatnya tidak
+            # menjatuhkan Caddy yang sedang jalan — ia mematikan situs pada restart berikutnya,
+            # jauh dari rilis yang menyebabkannya. Container sekali pakai supaya validasi tetap
+            # mungkin walau caddy sedang mati.
+            docker run --rm -v /srv/aruna/.staging/Caddyfile:/etc/caddy/Caddyfile:ro caddy:2-alpine \
+              caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+            mv .staging/Caddyfile Caddyfile
+
             # Tag yang sedang jalan disalin apa adanya sebelum ditimpa. Membacanya lewat
             # `compose config --images` akan salah: yang keluar pertama belum tentu image
             # aplikasi, bisa saja postgres atau caddy.
@@ -81,6 +106,22 @@ jobs:
             # mengurutkannya. Menjalankannya dua kali aman (idempoten) tapi menyesatkan saat
             # membaca log kegagalan.
             $compose up -d
+
+            # Caddy membaca Caddyfile lewat bind mount, jadi `up -d` tidak melihat perubahannya.
+            # `reload` menukar konfigurasi tanpa memutus koneksi; `--force-recreate` akan memutus
+            # trafik di tiap rilis walaupun Caddyfile-nya tidak berubah sama sekali.
+            # Berulang karena `up -d` kembali saat container baru dijadwalkan, belum tentu siap.
+            reloaded=0
+            n=1
+            while [ $n -le 5 ]; do
+              if $compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile; then
+                reloaded=1
+                break
+              fi
+              n=$((n + 1))
+              sleep 3
+            done
+            [ "$reloaded" = 1 ] || { echo "::error::Caddy menolak memuat ulang konfigurasi."; exit 1; }
         env:
           IMAGE_REF: ${{ env.IMAGE }}:${{ steps.meta.outputs.sha }}
 
@@ -97,12 +138,59 @@ jobs:
             sleep 5
           done
           echo "::error::/ready tidak pernah membalas 200 dalam 90 detik."
-          echo "Rollback — ssh ke server, lalu tiga baris ini:"
-          echo "  cd /srv/aruna"
-          echo "  cp .image.env.previous .image.env"
-          echo "  docker compose -f compose.prod.yaml --env-file .env --env-file .image.env up -d"
-          echo "Aman selama migrasi rilis ini aditif; migrasi Prisma maju-saja."
+          echo "Rollback:"
+          echo "  ssh aruna sudo /usr/local/lib/aruna/rollback.sh"
+          echo "Ia menukar .image.env dengan yang sebelumnya, menarik image lama, dan menunggu"
+          echo "/ready dari dalam container — bukan lewat Caddy, yang menjawab 308 dan membuat"
+          echo "pemeriksaan lulus walau API mati."
+          echo "Aman selama migrasi rilis ini aditif; migrasi Prisma maju-saja. Kalau rilis ini"
+          echo "menghapus atau mengubah kolom, yang kamu butuhkan restore — ops/backup/README.md."
           exit 1
+
+      # Setelah gerbang /ready, bukan di dalam langkah "Terapkan di server". `up -d` kembali saat
+      # container dijadwalkan, belum tentu sehat — memangkas di baris berikutnya berarti menghapus
+      # image yang kamu butuhkan untuk rollback justru ketika boot-nya gagal. Langkah terpisah di
+      # sini hanya berjalan kalau rilisnya terbukti hidup.
+      - name: Pangkas image lama di server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          # `sh`, bukan bash — alasan yang sama dengan langkah terapkan di atas.
+          script: |
+            set -eu
+            cd /srv/aruna
+
+            # Tiga yang disimpan, masing-masing dengan alasannya:
+            #   current  — sedang dipakai
+            #   previous — jalur rollback, dan tidak dipakai container mana pun sehingga
+            #              `docker rmi` tidak akan menolaknya
+            #   :latest  — ditunjuk compose.prod.yaml sebagai bawaan ${ARUNA_IMAGE:-...}
+            current=$(sed -n 's/^ARUNA_IMAGE=//p' .image.env)
+            previous=$(sed -n 's/^ARUNA_IMAGE=//p' .image.env.previous 2>/dev/null || true)
+            repo=${current%:*}
+
+            # --filter reference: postgres:17-alpine dan caddy:2-alpine tidak pernah jadi kandidat.
+            # grep -v -x: tanpa -x, sha "abc123" ikut menyaring "abc1234" dan yang tersisa adalah
+            # image yang kamu kira sudah terhapus.
+            # xargs -r: tanpa argumen, `docker rmi` keluar dengan galat dan `set -e` mematikan
+            # langkah ini — kegagalan palsu yang persis terjadi di rilis pertama setelah dipasang.
+            docker images --format '{{.Repository}}:{{.Tag}}' --filter "reference=$repo" \
+              | grep -v -x -e "$current" -e "${previous:-__tidak_ada__}" -e "$repo:latest" \
+              | xargs -r -n1 docker rmi 2>/dev/null || true
+
+            # Tanpa -a. `prune -af` menghapus setiap image yang tidak dipakai container yang
+            # sedang jalan — termasuk jalur rollback, dan postgres/caddy yang kebetulan berhenti.
+            docker image prune -f
+
+            # `docker volume prune` TIDAK BOLEH ada di berkas ini, sekarang maupun nanti. Volume
+            # `postgres` dan `media` adalah data pelanggan, dan keduanya tampak "tidak terpakai"
+            # bagi Docker setiap kali stack-nya sedang turun.
+
+            # Bukan hiasan: satu-satunya cara tahu pemangkasan ini masih cukup adalah melihat
+            # angkanya di log tiap rilis.
+            df -h /
 
       # Penyimpanan paket privat gratis GitHub 500 MB; tanpa ini kuotanya habis diam-diam.
       - uses: actions/delete-package-versions@v5

@@ -1,9 +1,14 @@
 # Dua vhost, satu catch-all. Dipasangkan dengan compose.prod.yaml.
 #
-# Sertifikat datang dari Cloudflare Origin Certificate — pasang berkasnya di ./tls/ dan
-# lepaskan komentar `tls` di bawah. Tanpa itu Caddy menerbitkan sertifikat Let's Encrypt
-# sendiri, yang juga sah selama port 80 terbuka untuk tantangan ACME.
-
+# Sertifikat diterbitkan Caddy sendiri lewat Let's Encrypt (tantangan ACME HTTP-01), disimpan
+# di volume `caddy-data`, dan diperpanjang otomatis. Itu sebabnya port 80 wajib tetap terbuka
+# ke dunia: menutupnya tidak menghentikan apa pun hari ini, tapi membuat perpanjangan gagal
+# diam-diam sampai sertifikatnya kedaluwarsa dua bulan kemudian.
+#
+# Syaratnya satu: arunadewa.id, www, dan api harus menunjuk LANGSUNG ke IP VPS ini. Proxy mana
+# pun yang terminasi TLS di depan — termasuk toggle "Proxied" di panel DNS IDCloudHost, yang
+# sebenarnya halaman parkir — membuat Caddy tidak pernah melihat tantangannya. Kalau suatu
+# saat CDN dipasang, prosedurnya ada di ops/README.md dan bukan sekadar melepas komentar.
 {
 	email halo@arunadewa.id
 	# Caddy tidak mengirim nomor versi di header Server secara bawaan; jangan tambahkan.
@@ -20,9 +25,21 @@
 	}
 }
 
+# X-Forwarded-For: jangan tambahkan `trusted_proxies`, dan jangan "perbaiki" dengan `header_up`.
+#
+# Selama `trusted_proxies` kosong — bawaannya — Caddy MEMBUANG X-Forwarded-For kiriman klien dan
+# menggantinya dengan alamat peer sesungguhnya. Itulah yang membuat TRUST_PROXY=1 di api.env aman:
+# Express melihat tepat satu hop, dan isinya tidak bisa dikarang. Diverifikasi di caddy 2.11.4 —
+# untuk permintaan yang sama, upstream menerima "127.0.0.1" dengan bawaan, tapi
+# "1.2.3.4, 5.6.7.8, 127.0.0.1" begitu `trusted_proxies 127.0.0.1/32` dipasang.
+#
+# Menambahkannya di sini membuat tiap limiter per-IP (common/rate-limit.ts) dan kolom Session.ip
+# bisa dibohongi siapa pun. Kalau nanti CDN dipasang di depan, ia harus dibatasi ke rentang IP CDN
+# itu DAN ufw harus mengunci 80/443 ke rentang yang sama — keduanya sekaligus, tidak pernah salah
+# satunya. Prosedurnya di ops/README.md.
+
 arunadewa.id, www.arunadewa.id {
 	import keamanan
-	# tls /etc/caddy/tls/origin.pem /etc/caddy/tls/origin.key
 	encode zstd gzip
 	reverse_proxy web:3000
 }
@@ -41,7 +58,6 @@ Disallow: /
 	}
 
 	handle {
-		# tls /etc/caddy/tls/origin.pem /etc/caddy/tls/origin.key
 		# Unggahan dibatasi 10 MiB di kontrak; 12 MiB memberi ruang untuk overhead multipart.
 		# Multer memakai memory storage, jadi tiap unggahan bersamaan menahan 10 MiB di RAM.
 		request_body {
@@ -53,6 +69,12 @@ Disallow: /
 
 # Host yang tidak dikenal — IP mentah, atau domain orang lain yang diarahkan ke sini — diputus
 # tanpa jawaban. Menjawabnya memberi tahu pemindai bahwa ada sesuatu di sini.
+#
+# Blok ini TIDAK menelan tantangan ACME, walaupun terlihat begitu. Caddy menanganinya sebelum
+# routing mana pun — modules/caddyhttp/server.go di ServeHTTP: "guarantee ACME HTTP challenges;
+# handle them separately from any user-defined handlers", dipanggil di atas s.serveHTTP().
+# Dicatat di sini supaya tidak ada yang membuang blok ini demi sertifikat yang sebenarnya
+# tidak pernah terhalang olehnya.
 :80, :443 {
 	abort
 }
