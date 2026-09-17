@@ -145,6 +145,45 @@ tiga record (MX + SPF di `send`, DKIM di `resend._domainkey`) di panel DNS yang 
 "DNS saja". Tanpa itu AUTH tetap lolos dan yang gagal adalah kirimnya — 403 saat `sendMail`,
 bukan saat boot dan bukan saat `verify()`.
 
+## Login Google
+
+Client OAuth-nya satu, dipakai lokal dan produksi sekaligus. Yang membedakan hanya daftar
+**Authorized redirect URIs**, dan alamatnya diturunkan dari `API_ORIGIN` di
+`auth.service.ts` — bukan env tersendiri, jadi ia tidak bisa disetel salah tanpa ikut
+menyalahkan seluruh API:
+
+| Lingkungan | Redirect URI |
+|---|---|
+| lokal | `http://127.0.0.1:3001/auth/google` |
+| produksi | `https://api.arunadewa.id/auth/google` |
+
+`Authorized JavaScript origins` tidak dipakai: penukaran `code` terjadi di server, bukan di
+browser.
+
+**Keduanya wajib saat boot sejak Fase 27.** Sebelum itu `startGoogle` baru memeriksanya saat
+ada yang menekan tombolnya — dan rilis pertama berjalan berhari-hari dengan `GOOGLE_CLIENT_ID`
+dan `GOOGLE_CLIENT_SECRET` kosong di `api.env`: boot hijau, `/ready` hijau, sementara tombol
+Google di `/login` dan `/register` membawa tiap pengunjung ke 400 berbentuk JSON.
+
+Menyiapkannya dari nol, termasuk langkah-langkah di Google Console yang hanya bisa dikerjakan
+manusia: `./scripts/setup-google-oauth.sh`.
+
+Memeriksa apakah ia hidup, tanpa login:
+
+```sh
+curl -sI https://api.arunadewa.id/auth/google/start | grep -i ^location
+```
+
+302 ke `accounts.google.com` berarti terkonfigurasi. Periksa juga `redirect_uri` di dalamnya
+cocok dengan tabel di atas; kalau tidak, Google menolak di langkah tukar kode dengan
+`redirect_uri_mismatch`.
+
+Satu hal yang tidak terlihat dari sini: **Publishing status** di halaman Audience. Selama masih
+`Testing`, hanya email yang terdaftar sebagai test user yang bisa masuk — sisanya kena "access
+blocked", dan API kita tidak pernah melihat permintaannya. Scope yang dipakai cuma
+`openid email profile`, ketiganya non-sensitive, jadi `PUBLISH APP` berlaku seketika tanpa
+review Google.
+
 ## Backup
 
 `ops/backup/` — dump Postgres harian + media inkremental, terenkripsi `age` ke bucket off-site,

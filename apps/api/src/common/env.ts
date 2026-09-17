@@ -46,6 +46,12 @@ export const MIN_PRODUCTION_SECRET_LENGTH = 32;
  * bukan nilai yang bisa ditebak — 25/465/587 di-drop diam-diam oleh jaringan IDCloudHost, jadi
  * satu-satunya yang benar adalah 2587 (`ops/README.md`). Lupa menulisnya berarti boot hijau,
  * `/ready` hijau, dan tiap email menempuh perjalanan ke port yang tidak pernah menjawab.
+ *
+ * GOOGLE_CLIENT_ID dan GOOGLE_CLIENT_SECRET ikut di Fase 27, dan alasannya tidak hipotetis:
+ * rilis pertama berjalan berhari-hari dengan keduanya kosong di `api.env`. `startGoogle` baru
+ * memeriksanya saat ada yang menekan tombolnya, jadi boot hijau, `/ready` hijau — sementara
+ * `login.vue` dan `register.vue` merender tombol Google tanpa syarat, dan tiap pengunjung yang
+ * menekannya mendarat di 400 berbentuk JSON. Deploy yang menolak menyala jauh lebih murah.
  */
 const PRODUCTION_REQUIRED = [
   'DATABASE_URL',
@@ -57,6 +63,8 @@ const PRODUCTION_REQUIRED = [
   'SMTP_USER',
   'SMTP_PASS',
   'SMTP_FROM',
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
 ] as const;
 
 export function isProduction(env: RuntimeEnv = process.env): boolean {
