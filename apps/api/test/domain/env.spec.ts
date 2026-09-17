@@ -9,6 +9,7 @@ const productionEnv = {
   API_ORIGIN: 'https://api.arunadewa.id',
   TRUST_PROXY: '1',
   SMTP_HOST: 'smtp.relay.test',
+  SMTP_PORT: '2587',
   SMTP_USER: 'aruna',
   SMTP_PASS: 'rahasia-relay',
   SMTP_FROM: 'Aruna Dewa <halo@arunadewa.id>',
@@ -29,10 +30,10 @@ describe('gerbang konfigurasi saat boot', () => {
     expect(runtimeEnvProblems({ JWT_SECRET: 'rahasia-lokal-yang-bukan-contoh' })).toEqual([]);
   });
 
-  it('menuntut rahasia panjang dan delapan variabel lain saat NODE_ENV=production', () => {
+  it('menuntut rahasia panjang dan sembilan variabel lain saat NODE_ENV=production', () => {
     expect(runtimeEnvProblems(productionEnv)).toEqual([]);
     expect(runtimeEnvProblems({ ...productionEnv, JWT_SECRET: 'pendek' })[0]).toMatch(/minimal 32 karakter/u);
-    for (const key of ['DATABASE_URL', 'WEB_ORIGIN', 'API_ORIGIN', 'TRUST_PROXY', 'SMTP_HOST', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM']) {
+    for (const key of ['DATABASE_URL', 'WEB_ORIGIN', 'API_ORIGIN', 'TRUST_PROXY', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM']) {
       expect(runtimeEnvProblems({ ...productionEnv, [key]: '' })).toEqual([`${key} wajib diisi saat NODE_ENV=production.`]);
     }
   });
@@ -44,12 +45,21 @@ describe('gerbang konfigurasi saat boot', () => {
     expect(runtimeEnvProblems({ ...productionEnv, SMTP_PASS: '' })).toEqual(['SMTP_PASS wajib diisi saat NODE_ENV=production.']);
   });
 
+  /**
+   * SMTP_PORT satu-satunya variabel SMTP yang punya nilai bawaan — 1025, port Mailpit. Justru
+   * karena itu ia yang paling mahal saat lupa: tidak ada yang meledak, dan tiap email menempuh
+   * perjalanan ke port yang tidak pernah menjawab di relay produksi.
+   */
+  it('menolak SMTP_PORT yang kosong, meski kode punya nilai bawaannya', () => {
+    expect(runtimeEnvProblems({ ...productionEnv, SMTP_PORT: '' })).toEqual(['SMTP_PORT wajib diisi saat NODE_ENV=production.']);
+  });
+
   it('tidak menuntut SMTP di luar produksi — Mailpit lokal memang menolak blok auth', () => {
     expect(runtimeEnvProblems({ JWT_SECRET: 'rahasia-lokal-yang-bukan-contoh', SMTP_HOST: '127.0.0.1' })).toEqual([]);
   });
 
   it('mengumpulkan seluruh keluhan sekaligus, bukan satu per deploy', () => {
-    expect(runtimeEnvProblems({ NODE_ENV: 'production' })).toHaveLength(9);
+    expect(runtimeEnvProblems({ NODE_ENV: 'production' })).toHaveLength(10);
   });
 });
 
