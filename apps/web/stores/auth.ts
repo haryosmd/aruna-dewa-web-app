@@ -19,6 +19,11 @@ export const useAuthStore = defineStore('auth', () => {
   /** Sesi berakhir di tengah pemakaian; sebabnya disimpan, bukan dibuang diam-diam. */
   function endSession(code: unknown) { me.value = null; loaded.value = true; endedCode.value = sessionEndedReason(code) }
   /**
+   * Sebab yang lama tidak boleh menjelaskan kegagalan yang baru. Dipanggil sebelum satu
+   * percobaan masuk, supaya kode yang tersisa sesudahnya memang lahir dari percobaan itu.
+   */
+  function forgetEndedReason() { endedCode.value = null }
+  /**
    * Nama baru ditambal di tempat, bukan lewat `load()` ulang: respons `PATCH` sudah membawa
    * akun lengkap, dan satu round trip tambahan berarti nama di header sempat tertinggal
    * beberapa ratus milidetik di belakang nama yang barusan disimpan orangnya.
@@ -32,5 +37,5 @@ export const useAuthStore = defineStore('auth', () => {
     endedCode.value = null
     await navigateTo('/')
   }
-  return { me, loaded, endedCode, isOperator, load, loadOnce, markSignedOut, endSession, updateProfile, logout }
+  return { me, loaded, endedCode, isOperator, load, loadOnce, markSignedOut, endSession, forgetEndedReason, updateProfile, logout }
 })

@@ -21,6 +21,22 @@ export function sessionEndedMessage(code: unknown): string | null {
 }
 
 /**
+ * Kalimat untuk satu kegagalan yang bentuknya khas: `POST /auth/login` menjawab 200, lalu
+ * `/auth/me` tetap tidak melihat siapa pun.
+ *
+ * Sebelumnya semua kasus ini dijawab satu kalimat yang menuduh cookie diblokir. Tuduhan itu
+ * benar paling banter sepertiga waktu: kegagalan yang sama muncul saat browser masih memegang
+ * cookie sesi warisan yang sudah tidak berlaku (`common/legacy-session-cookie.middleware.ts` di
+ * API mengusirnya, dan sekali muat ulang sudah cukup), dan muncul lagi saat `/auth/me` sekadar
+ * gagal dihubungi — `stores/auth.ts` menelan galat apa pun jadi `me = null`.
+ */
+export function sessionNotStoredMessage(endedCode: unknown, cookiesEnabled: boolean): string {
+  if (!cookiesEnabled) return 'Login berhasil, tapi browser ini memblokir cookie, jadi sesinya tidak bisa disimpan. Izinkan cookie untuk situs ini lalu coba lagi.'
+  if (sessionEndedReason(endedCode)) return 'Login berhasil, tapi browser ini masih memegang sesi lama yang sudah tidak berlaku. Muat ulang halaman ini, lalu coba lagi.'
+  return 'Login berhasil, tapi sesinya belum bisa dipastikan. Coba lagi sebentar lagi.'
+}
+
+/**
  * Sebab berakhirnya sebuah sesi, dari enum `SessionRevokeReason` di basis data.
  *
  * Terpisah dari peta di atas dan memang harus terpisah: yang di atas memetakan kode `SESSION_*`

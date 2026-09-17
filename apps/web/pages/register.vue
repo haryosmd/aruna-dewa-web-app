@@ -45,9 +45,10 @@ async function submit() {
   try {
     // Mendaftar tidak membuat sesi. Tanpa langkah masuk ini, tujuan yang sudah dipilih
     // pendaftar langsung dipantulkan kembali ke /login oleh middleware auth.
+    auth.forgetEndedReason()
     await authApi.login({ email: email.value, password: password.value })
-    // Sama seperti di /login: sesi dipastikan hidup dulu, supaya cookie yang ditolak browser
-    // jatuh ke cabang di bawah — bukan ke middleware yang memantulkan tanpa penjelasan.
+    // Sama seperti di /login: sesi dipastikan hidup dulu, supaya sesi yang tidak terbaca jatuh
+    // ke cabang di bawah — bukan ke middleware yang memantulkan tanpa penjelasan.
     await auth.load()
     if (!auth.me) throw new Error('Sesi tidak tersimpan di browser ini.')
     toast.success(`Akun siap. Email verifikasi dikirim ke ${email.value}.`)
@@ -56,7 +57,10 @@ async function submit() {
     // Akunnya sudah jadi; yang gagal hanya langkah masuk otomatis. Jangan tampilkan ini
     // sebagai kegagalan pendaftaran — antar saja ke halaman masuk dengan tujuan yang sama.
     toast.success('Akun dibuat. Masuk untuk melanjutkan.')
-    await navigateTo(`/login?next=${encodeURIComponent(nextPath.value)}`)
+    // Sebabnya ikut, kalau ada: halaman masuk punya kalimat untuk tiap kode, dan tanpa ini
+    // pendaftar mendarat di sana tanpa satu pun petunjuk kenapa langkah masuknya gagal.
+    const reason = auth.endedCode ? `&reason=${auth.endedCode}` : ''
+    await navigateTo(`/login?next=${encodeURIComponent(nextPath.value)}${reason}`)
   } finally {
     pending.value = false
   }

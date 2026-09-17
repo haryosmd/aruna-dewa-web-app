@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { sessionEndLabel, sessionEndedMessage, sessionEndedReason } from '../utils/session-reason'
+import { sessionEndLabel, sessionEndedMessage, sessionEndedReason, sessionNotStoredMessage } from '../utils/session-reason'
 
 describe('alasan berakhirnya sesi', () => {
   it('membedakan tertendang perangkat lain dari sekadar kedaluwarsa', () => {
@@ -41,5 +41,33 @@ describe('label sebab berakhirnya sesi lama', () => {
     for (const unknown of ['SESUATU_YANG_BARU', '', null, undefined, 7, {}]) {
       expect(sessionEndLabel(unknown)).toBe('Berakhir')
     }
+  })
+})
+
+describe('login berhasil tapi sesinya tidak terbaca', () => {
+  it('menyebut cookie hanya saat browsernya memang memblokir cookie', () => {
+    expect(sessionNotStoredMessage(null, false)).toContain('memblokir cookie')
+    expect(sessionNotStoredMessage(null, true)).not.toContain('cookie')
+    expect(sessionNotStoredMessage('SESSION_REPLACED', true)).not.toContain('cookie')
+  })
+
+  it('menunjuk sesi lama saat penyegaran menjawab dengan kode akhir sesi', () => {
+    // Inilah bentuk kegagalan yang dilaporkan dari produksi: browser memegang cookie sesi
+    // warisan, API menolaknya, dan halaman ini dulu menuduh cookie diblokir. Muat ulang sekali
+    // sudah cukup sekarang — middleware di API mengusir cookie itu pada permintaan pertama.
+    for (const code of ['SESSION_REPLACED', 'SESSION_REUSE', 'SESSION_EXPIRED', 'SESSION_INVALID']) {
+      expect(sessionNotStoredMessage(code, true)).toContain('Muat ulang')
+    }
+  })
+
+  it('tidak menuduh apa pun saat sebabnya memang tidak diketahui', () => {
+    // `/auth/me` yang gagal dihubungi berakhir di cabang yang sama, tanpa kode apa pun.
+    const kalimat = sessionNotStoredMessage(undefined, true)
+    expect(kalimat).toContain('Coba lagi')
+    expect(kalimat).not.toContain('Muat ulang')
+  })
+
+  it('mendahulukan cookie yang diblokir daripada kode sesi', () => {
+    expect(sessionNotStoredMessage('SESSION_REPLACED', false)).toContain('memblokir cookie')
   })
 })
