@@ -14,7 +14,9 @@ const revealed = ref(false)
 const pending = ref(false)
 const error = ref('')
 const ready = useInteractiveReady()
-const apiOrigin = useRuntimeConfig().public.apiBase.replace(/\/v1$/, '')
+const apiBase = useRuntimeConfig().public.apiBase
+/** Sama di render server dan di browser, jadi tautannya tidak berubah saat hidrasi. */
+const pageHost = useRequestURL().hostname
 const nextPath = computed(() => safeNextPath(route.query.next))
 /** Kalau kedatangan ke sini adalah tendangan, katakan sebabnya — bukan biarkan orang menebak. */
 const endedNotice = computed(() => sessionEndedMessage(route.query.reason))
@@ -23,7 +25,7 @@ const googleNotice = computed(() => googleErrorMessage(route.query.error))
 /** Tautan daftar meneruskan tujuan, jadi niat pengunjung selamat lewat dua halaman. */
 const registerLink = computed(() => (nextPath.value === '/dashboard' ? '/register' : `/register?next=${encodeURIComponent(nextPath.value)}`))
 /** Jalur Google membawa tujuan yang sama; API menitipkannya di cookie sampai callback kembali. */
-const googleHref = computed(() => `${apiOrigin}/auth/google/start?next=${encodeURIComponent(nextPath.value)}`)
+const googleHref = computed(() => googleStartHref(apiBase, pageHost, nextPath.value))
 
 async function submit() {
   error.value = ''

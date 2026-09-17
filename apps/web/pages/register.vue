@@ -18,9 +18,11 @@ const revealed = ref(false)
 const pending = ref(false)
 const error = ref('')
 const ready = useInteractiveReady()
-const apiOrigin = useRuntimeConfig().public.apiBase.replace(/\/v1$/, '')
+const apiBase = useRuntimeConfig().public.apiBase
+/** Sama di render server dan di browser, jadi tautannya tidak berubah saat hidrasi. */
+const pageHost = useRequestURL().hostname
 /** Jalur Google membawa tujuan yang sama; API menitipkannya di cookie sampai callback kembali. */
-const googleHref = computed(() => `${apiOrigin}/auth/google/start?next=${encodeURIComponent(nextPath.value)}`)
+const googleHref = computed(() => googleStartHref(apiBase, pageHost, nextPath.value))
 
 /** Four cheap signals; enough to steer people away from a 10-character password of one word. */
 const strength = computed(() => {
