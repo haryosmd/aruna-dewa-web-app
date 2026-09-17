@@ -18,6 +18,8 @@ const apiOrigin = useRuntimeConfig().public.apiBase.replace(/\/v1$/, '')
 const nextPath = computed(() => safeNextPath(route.query.next))
 /** Kalau kedatangan ke sini adalah tendangan, katakan sebabnya — bukan biarkan orang menebak. */
 const endedNotice = computed(() => sessionEndedMessage(route.query.reason))
+/** Kembali dari callback Google yang gagal. Sebelum ini, jawabannya JSON mentah di domain API. */
+const googleNotice = computed(() => googleErrorMessage(route.query.error))
 /** Tautan daftar meneruskan tujuan, jadi niat pengunjung selamat lewat dua halaman. */
 const registerLink = computed(() => (nextPath.value === '/dashboard' ? '/register' : `/register?next=${encodeURIComponent(nextPath.value)}`))
 /** Jalur Google membawa tujuan yang sama; API menitipkannya di cookie sampai callback kembali. */
@@ -55,6 +57,10 @@ useHead({ title: 'Masuk — Aruna Dewa' })
         {{ endedNotice }}
       </p>
     </header>
+
+    <p v-if="googleNotice" id="auth-login-google-error" role="alert" class="m-0 rounded-md border border-danger/30 bg-danger-soft px-3.5 py-2.5 text-[0.875rem] text-danger">
+      {{ googleNotice }}
+    </p>
 
     <UiGoogleButton id="auth-login-google" :href="googleHref" />
 
