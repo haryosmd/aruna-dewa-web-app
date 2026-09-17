@@ -123,3 +123,19 @@ export function nextWindow(session: Pick<RefreshSessionRecord, 'absoluteExpiresA
   const idleExpiresAt = new Date(Math.min(now.getTime() + IDLE_MS, session.absoluteExpiresAt.getTime()));
   return { idleExpiresAt, cookieMaxAgeMs: Math.max(0, idleExpiresAt.getTime() - now.getTime()) };
 }
+
+/**
+ * Bentuk yang sah bagi `Session.id`. Kolomnya `@db.Uuid` di Postgres, jadi nilai yang bukan UUID
+ * bukan sekadar "tidak ketemu": Prisma melemparnya sebagai galat basis data, dan permintaannya
+ * berakhir **500** — bukan 401 yang dimengerti web sebagai sesi berakhir. Pengunjungnya lalu
+ * melihat kegagalan keras tanpa satu pun jalan pulih, padahal yang perlu dilakukannya cuma masuk
+ * lagi. Nilai cookie datang dari luar, jadi bentuknya diperiksa sebelum menyentuh basis data.
+ */
+const SESSION_ID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+
+/** Isi cookie `aruna_refresh`: `<id sesi>.<token mentah>`. `null` berarti tidak perlu ditanyakan ke basis data. */
+export function parseRefreshCookie(cookie: string | undefined): { sessionId: string; rawToken: string } | null {
+  const [sessionId, rawToken, ...rest] = cookie?.split('.') ?? [];
+  if (!sessionId || !rawToken || rest.length) return null;
+  return SESSION_ID_SHAPE.test(sessionId) ? { sessionId, rawToken } : null;
+}

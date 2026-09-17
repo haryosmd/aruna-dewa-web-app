@@ -14,6 +14,7 @@ import {
   matchableHashes,
   newSessionWindow,
   nextWindow,
+  parseRefreshCookie,
   type RefreshSessionRecord,
   type SessionEndedCode,
   type TokenMatch,
@@ -176,8 +177,9 @@ export class AuthService {
    * peristiwa yang mematikan sesi dirinya sendiri.
    */
   async refresh(cookie: string | undefined, response: CookieResponse): Promise<AuthenticatedUser> {
-    const [sessionId, rawToken, ...rest] = cookie?.split('.') ?? [];
-    if (!sessionId || !rawToken || rest.length) throw sessionEnded('SESSION_INVALID');
+    const parsed = parseRefreshCookie(cookie);
+    if (!parsed) throw sessionEnded('SESSION_INVALID');
+    const { sessionId, rawToken } = parsed;
     // Kalah balapan berarti permintaan lain sudah memutar sesi ini sepersekian detik lalu;
     // token kita kini ada di slot tenggang dan percobaan berikutnya melewatinya sebagai
     // `grace`. Beberapa percobaan cukup untuk rentetan sah mana pun.
@@ -233,7 +235,9 @@ export class AuthService {
   }
 
   async logout(cookie: string | undefined, response: CookieResponse): Promise<void> {
-    const sessionId = cookie?.split('.', 1)[0];
+    // Bentuknya diperiksa dulu, sama seperti di `refresh`: `updateMany` dengan id yang bukan UUID
+    // melempar galat basis data, dan keluar dari akun tidak boleh bisa gagal karena cookie rusak.
+    const sessionId = parseRefreshCookie(cookie)?.sessionId;
     if (sessionId) await this.prisma.session.updateMany({ where: { id: sessionId, revokedAt: null }, data: { revokedAt: new Date(), revokedReason: 'LOGOUT' } });
     response.clearCookie(accessCookie, this.cookieOptions());
     response.clearCookie(refreshCookie, this.cookieOptions());
