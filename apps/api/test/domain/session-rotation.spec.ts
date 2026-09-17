@@ -9,6 +9,7 @@ import {
   graceSlotAfter,
   matchableHashes,
   newSessionWindow,
+  parseRefreshCookie,
   nextWindow,
   type RefreshSessionRecord,
 } from '../../src/identity/session-rotation.js';
@@ -148,5 +149,32 @@ describe('jendela umur sesi', () => {
 
   it('tidak pernah menerbitkan umur cookie negatif', () => {
     expect(nextWindow({ absoluteExpiresAt: at(-1000) }, now).cookieMaxAgeMs).toBe(0);
+  });
+});
+
+describe('isi cookie refresh', () => {
+  const sah = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
+
+  it('memisahkan id sesi dari token mentahnya', () => {
+    expect(parseRefreshCookie(`${sah}.aBcDeF-_0123`)).toEqual({ sessionId: sah, rawToken: 'aBcDeF-_0123' });
+  });
+
+  it('menolak id yang bukan UUID sebelum ia sampai ke basis data', () => {
+    // `Session.id` bertipe `@db.Uuid`. Tanpa penjaga ini Prisma melempar galat basis data dan
+    // permintaannya berakhir 500 — bukan 401 yang dibaca web sebagai sesi berakhir, jadi
+    // pengunjungnya melihat kegagalan keras tanpa satu pun jalan pulih.
+    expect(parseRefreshCookie('basi.basi')).toBeNull();
+    expect(parseRefreshCookie('3f2504e0-4f89-41d3-9a0c-0305e82c33.token')).toBeNull();
+    expect(parseRefreshCookie(`${sah}x.token`)).toBeNull();
+  });
+
+  it('menolak bentuk yang tidak utuh', () => {
+    for (const rusak of [undefined, '', '.', sah, `${sah}.`, `.${sah}`, `${sah}.a.b`]) {
+      expect(parseRefreshCookie(rusak)).toBeNull();
+    }
+  });
+
+  it('tidak peduli besar kecil huruf pada UUID-nya', () => {
+    expect(parseRefreshCookie(`${sah.toUpperCase()}.token`)?.sessionId).toBe(sah.toUpperCase());
   });
 });

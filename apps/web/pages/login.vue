@@ -26,17 +26,24 @@ const googleNotice = computed(() => googleErrorMessage(route.query.error))
 const registerLink = computed(() => (nextPath.value === '/dashboard' ? '/register' : `/register?next=${encodeURIComponent(nextPath.value)}`))
 /** Jalur Google membawa tujuan yang sama; API menitipkannya di cookie sampai callback kembali. */
 const googleHref = computed(() => googleStartHref(apiBase, pageHost, nextPath.value))
+/**
+ * Dibaca saat dibutuhkan, bukan sebagai `computed`: `navigator` tidak ada di render server, dan
+ * orangnya bisa mengubah setelan cookie di tab sebelah lalu kembali ke sini tanpa memuat ulang.
+ */
+const cookiesEnabled = () => typeof navigator === 'undefined' || navigator.cookieEnabled
 
 async function submit() {
   error.value = ''
+  // Kode sebab yang menendang orang ke halaman ini tidak boleh ikut menjelaskan percobaan baru.
+  auth.forgetEndedReason()
   pending.value = true
   try {
     await authApi.login({ email: email.value, password: password.value })
-    // Sesi dipastikan hidup sebelum pindah halaman. Tanpa langkah ini, cookie yang ditolak
-    // browser berakhir sebagai pantulan senyap: middleware `/dashboard` mengembalikan orang
-    // ke sini dengan toast sukses masih terpampang, tanpa satu pun kalimat yang menjelaskan.
+    // Sesi dipastikan hidup sebelum pindah halaman. Tanpa langkah ini, sesi yang tidak terbaca
+    // berakhir sebagai pantulan senyap: middleware `/dashboard` mengembalikan orang ke sini
+    // dengan toast sukses masih terpampang, tanpa satu pun kalimat yang menjelaskan.
     await auth.load()
-    if (!auth.me) throw { message: 'Login berhasil, tapi sesi tidak tersimpan di browser ini. Pastikan cookie tidak diblokir, lalu coba lagi.' }
+    if (!auth.me) throw { message: sessionNotStoredMessage(auth.endedCode, cookiesEnabled()) }
     toast.success('Kamu sudah masuk.')
     await navigateTo(nextPath.value)
   } catch (cause) {
