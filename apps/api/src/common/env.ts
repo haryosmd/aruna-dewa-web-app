@@ -1,3 +1,5 @@
+import { cookieDomainProblems } from './cookie-domain.js';
+
 /**
  * Satu gerbang konfigurasi, diperiksa sekali saat boot.
  *
@@ -32,7 +34,7 @@ export const MIN_PRODUCTION_SECRET_LENGTH = 32;
 /**
  * Variabel yang tidak punya nilai bawaan yang masuk akal di luar mesin pengembang.
  *
- * Keempat SMTP_* ada di sini sejak Fase 23, dan alasannya sama dengan JWT_SECRET dulu:
+ * Variabel SMTP_* ada di sini sejak Fase 23, dan alasannya sama dengan JWT_SECRET dulu:
  * `mail.service.ts` baru memeriksanya saat email pertama dikirim, sehingga API produksi tanpa
  * SMTP menyala bersih, `/ready` hijau, dan yang menemukan masalahnya adalah pelanggan pertama
  * yang mendaftar — lewat 503 tanpa satu pun alarm. Kegagalan saat deploy jauh lebih murah.
@@ -40,6 +42,18 @@ export const MIN_PRODUCTION_SECRET_LENGTH = 32;
  * SMTP_USER dan SMTP_PASS ikut wajib, bukan hanya SMTP_HOST: `smtpTransportOptions()` hanya
  * menyertakan blok `auth` kalau keduanya terisi, dan tiap relay menuntut AUTH. Separuh terisi
  * gagal dengan cara yang sama persis dengan kosong, tapi terlihat seperti sudah dikonfigurasi.
+ *
+ * SMTP_PORT menyusul sejak Fase 27, dan ia yang paling mudah luput: satu-satunya variabel SMTP
+ * yang punya nilai bawaan (`mail.service.ts` memakai 1025, port Mailpit). Di VPS ini port relay
+ * bukan nilai yang bisa ditebak — 25/465/587 di-drop diam-diam oleh jaringan IDCloudHost, jadi
+ * satu-satunya yang benar adalah 2587 (`ops/README.md`). Lupa menulisnya berarti boot hijau,
+ * `/ready` hijau, dan tiap email menempuh perjalanan ke port yang tidak pernah menjawab.
+ *
+ * GOOGLE_CLIENT_ID dan GOOGLE_CLIENT_SECRET ikut di Fase 27, dan alasannya tidak hipotetis:
+ * rilis pertama berjalan berhari-hari dengan keduanya kosong di `api.env`. `startGoogle` baru
+ * memeriksanya saat ada yang menekan tombolnya, jadi boot hijau, `/ready` hijau — sementara
+ * `login.vue` dan `register.vue` merender tombol Google tanpa syarat, dan tiap pengunjung yang
+ * menekannya mendarat di 400 berbentuk JSON. Deploy yang menolak menyala jauh lebih murah.
  */
 const PRODUCTION_REQUIRED = [
   'DATABASE_URL',
@@ -47,9 +61,12 @@ const PRODUCTION_REQUIRED = [
   'API_ORIGIN',
   'TRUST_PROXY',
   'SMTP_HOST',
+  'SMTP_PORT',
   'SMTP_USER',
   'SMTP_PASS',
   'SMTP_FROM',
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
 ] as const;
 
 export function isProduction(env: RuntimeEnv = process.env): boolean {
@@ -93,6 +110,10 @@ export function runtimeEnvProblems(env: RuntimeEnv): string[] {
       if (!env[key]?.trim()) problems.push(`${key} wajib diisi saat NODE_ENV=production.`);
     }
   }
+  // Sengaja di luar blok produksi: yang menentukan wajib-tidaknya `COOKIE_DOMAIN` adalah host web
+  // dan host API yang berbeda, bukan nilai `NODE_ENV`. Staging yang lupa menyetelnya punya
+  // kegagalan yang sama persis, dan sebuah nilai yang salah ketik tetap salah di mana pun.
+  problems.push(...cookieDomainProblems(env));
   return problems;
 }
 

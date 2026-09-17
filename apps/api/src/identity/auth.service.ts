@@ -20,6 +20,7 @@ import {
 } from './session-rotation.js';
 import type { AuthenticatedUser } from '../common/auth.js';
 import { canonicalWebOrigin } from '../common/web-origin.js';
+import { sessionCookieDomain } from '../common/cookie-domain.js';
 import { deviceLabel } from './device-label.js';
 
 const accessCookie = 'aruna_access';
@@ -269,7 +270,7 @@ export class AuthService {
 
   async startGoogle(): Promise<{ url: string; state: string }> {
     const clientId = process.env.GOOGLE_CLIENT_ID;
-    if (!clientId || !process.env.GOOGLE_CLIENT_SECRET) throw new BadRequestException('GOOGLE_CLIENT_ID dan GOOGLE_CLIENT_SECRET belum dikonfigurasi');
+    if (!clientId || !process.env.GOOGLE_CLIENT_SECRET) throw new BadRequestException({ code: 'GOOGLE_UNCONFIGURED', message: 'GOOGLE_CLIENT_ID dan GOOGLE_CLIENT_SECRET belum dikonfigurasi' });
     const state = randomBytes(32).toString('base64url');
     await this.prisma.oneTimeToken.create({ data: { purpose: 'OAUTH_STATE', tokenHash: hashOneTimeToken(state), expiresAt: new Date(Date.now() + 10 * 60 * 1000) } });
     const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
@@ -283,21 +284,27 @@ export class AuthService {
   }
 
   async completeGoogle(code: string, state: string, cookieState: string | undefined, response: CookieResponse, context: SessionContext = {}): Promise<AuthenticatedUser> {
-    if (!code || !state) throw new BadRequestException('Callback Google tidak lengkap');
-    if (!cookieState || cookieState.length !== state.length || cookieState !== state) throw new UnauthorizedException('OAuth state tidak cocok dengan browser yang memulai login');
-    await this.consumeToken(state, 'OAUTH_STATE');
+    if (!code || !state) throw new BadRequestException({ code: 'GOOGLE_CANCELLED', message: 'Callback Google tidak lengkap' });
+    if (!cookieState || cookieState.length !== state.length || cookieState !== state) throw new UnauthorizedException({ code: 'GOOGLE_EXPIRED', message: 'OAuth state tidak cocok dengan browser yang memulai login' });
+    try {
+      await this.consumeToken(state, 'OAUTH_STATE');
+    } catch {
+      // `consumeToken` dipakai bersama verifikasi email dan reset password, jadi kodenya
+      // dipasang di sini — di satu-satunya pemanggil yang mengubah kegagalannya jadi halaman.
+      throw new UnauthorizedException({ code: 'GOOGLE_EXPIRED', message: 'State OAuth sudah terpakai atau kedaluwarsa' });
+    }
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    if (!clientId || !clientSecret) throw new BadRequestException('Google OAuth belum dikonfigurasi');
+    if (!clientId || !clientSecret) throw new BadRequestException({ code: 'GOOGLE_UNCONFIGURED', message: 'Google OAuth belum dikonfigurasi' });
     const redirectUri = `${process.env.API_ORIGIN ?? 'http://127.0.0.1:3001'}/auth/google`;
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: 'authorization_code' }) });
-    if (!tokenResponse.ok) throw new UnauthorizedException('Google menolak authorization code');
+    if (!tokenResponse.ok) throw new UnauthorizedException({ code: 'GOOGLE_REJECTED', message: 'Google menolak authorization code' });
     const token = await tokenResponse.json() as { access_token?: string };
-    if (!token.access_token) throw new UnauthorizedException('Google tidak mengembalikan access token');
+    if (!token.access_token) throw new UnauthorizedException({ code: 'GOOGLE_REJECTED', message: 'Google tidak mengembalikan access token' });
     const profileResponse = await fetch('https://openidconnect.googleapis.com/v1/userinfo', { headers: { authorization: `Bearer ${token.access_token}` } });
-    if (!profileResponse.ok) throw new UnauthorizedException('Profil Google tidak dapat diverifikasi');
+    if (!profileResponse.ok) throw new UnauthorizedException({ code: 'GOOGLE_REJECTED', message: 'Profil Google tidak dapat diverifikasi' });
     const profile = await profileResponse.json() as { sub?: string; email?: string; email_verified?: boolean; name?: string };
-    if (!profile.sub || !profile.email || !profile.email_verified) throw new UnauthorizedException('Google tidak memberikan email terverifikasi');
+    if (!profile.sub || !profile.email || !profile.email_verified) throw new UnauthorizedException({ code: 'GOOGLE_EMAIL_UNVERIFIED', message: 'Google tidak memberikan email terverifikasi' });
     const providerUserId = profile.sub;
     const email = profile.email.toLowerCase();
     const user = await this.prisma.$transaction(async (tx) => {
@@ -407,8 +414,17 @@ export class AuthService {
     return record;
   }
 
+  /**
+   * Dipakai untuk menerbitkan **dan** menghapus cookie sesi, dan itu bukan kebetulan: cookie
+   * ber-`Domain` hanya bisa dihapus dengan atribut yang sama persis. Kalau `logout` memakai opsi
+   * yang berbeda, cookie-nya tertinggal di browser dan orangnya tetap terlihat masuk.
+   *
+   * `domain` kosong di mesin pengembang — web dan API di sana satu host — dan berisi induk
+   * bersama kedua subdomain di produksi. Alasan lengkapnya di `common/cookie-domain.ts`.
+   */
   private cookieOptions(): Record<string, unknown> {
-    return { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/' };
+    const domain = sessionCookieDomain();
+    return { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', ...(domain ? { domain } : {}) };
   }
 }
 

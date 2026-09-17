@@ -85,7 +85,9 @@ situs kembali hidup tanpa perubahan kode.
 ## Email keluar — dan port 587 yang tidak akan pernah tersambung
 
 Relay: **Resend**, `smtp.resend.com`, user `resend`, password = API key `re_...` (sending-only).
-Keempat `SMTP_*` wajib saat boot sejak Fase 23; API menolak menyala tanpanya.
+Keempat `SMTP_*` wajib saat boot sejak Fase 23; API menolak menyala tanpanya. **`SMTP_PORT` ikut
+wajib sejak Fase 27** — ia satu-satunya yang punya nilai bawaan di kode (1025, port Mailpit), jadi
+lupa menulisnya dulu berarti boot hijau dan seluruh email keluar menuju port yang tidak menjawab.
 
 **Portnya 2587, dan itu bukan pilihan gaya.** IDCloudHost memblokir port SMTP keluar yang lazim.
 Diukur dari VPS ini 2026-09-16:
@@ -100,6 +102,22 @@ Bentuk kegagalannya yang mahal: paket di-*drop*, bukan di-*reject*. Tidak ada `E
 yang muncul seketika — yang ada permintaan menggantung sampai batas waktu nodemailer. Artinya
 pendaftaran pelanggan pertama akan diam beberapa puluh detik lalu gagal, `/ready` tetap hijau
 karena ia memang sengaja tidak menyentuh SMTP, dan tidak ada satu pun log yang menyebut "port".
+
+Dua hal itu diperbaiki di Fase 27, dan keduanya mengubah cara bagian ini dipakai:
+
+- `smtpTransportOptions()` menyetel `connectionTimeout`/`greetingTimeout` 10 detik, jadi port yang
+  di-drop gagal dalam hitungan detik, bukan dua menit.
+- `MailService` punya `Logger` dan menangkap sebab aslinya. Log sekarang menyebut host, port, dan
+  `code`/`responseCode`/`response` dari relay:
+
+  ```
+  ERROR [MailService] Pengiriman email gagal lewat smtp.resend.com:2587 (auth=ya) — code=EAUTH responseCode=535 response=535 Authentication failed
+  ```
+
+  Ketiga mode kegagalan akhirnya bisa dibedakan dari log saja: `ETIMEDOUT` tanpa balasan = port
+  diblokir; `EAUTH`/`535` = API key salah; AUTH lolos tapi `sendMail` dijawab `403` = domain
+  pengirim belum terverifikasi di Resend. Perintah manual di bawah tetap berguna untuk memeriksa
+  **sebelum** ada yang mendaftar, bukan lagi sebagai satu-satunya cara mengetahui sebabnya.
 
 Resend menyediakan 2587 persis untuk jaringan seperti ini. `mail.service.ts` menyetel
 `secure: port === 465`, jadi 2587 berjalan lewat STARTTLS tanpa perubahan kode.
@@ -126,6 +144,71 @@ timeout 8 bash -c 'exec 3<>/dev/tcp/smtp.resend.com/2587' && echo TERBUKA || ech
 tiga record (MX + SPF di `send`, DKIM di `resend._domainkey`) di panel DNS yang sama, Proxy
 "DNS saja". Tanpa itu AUTH tetap lolos dan yang gagal adalah kirimnya — 403 saat `sendMail`,
 bukan saat boot dan bukan saat `verify()`.
+
+## Cookie sesi lintas subdomain
+
+`COOKIE_DOMAIN=arunadewa.id`, dan tempatnya di **`compose.prod.yaml`**, bukan `api.env`: nilainya
+bukan rahasia, dan menaruhnya di berkas yang ikut git berarti ia sampai ke server dalam rilis yang
+sama dengan kode yang menuntutnya.
+
+Tanpa atribut `Domain`, cookie yang diterbitkan `api.arunadewa.id` menjadi *host-only* dan tidak
+pernah terkirim ke `arunadewa.id`. Render server Nuxt membaca sesi dari header cookie yang sampai
+ke host **web**, jadi ia melihat pengunjung yang barusan berhasil masuk sebagai tamu — dan
+`middleware/auth` memantulkannya ke `/login` dengan sesi yang sebenarnya hidup di sisi API.
+
+Gejalanya menyesatkan karena terlihat seperti kegagalan login Google, padahal jalur Google hanya
+korban yang paling kelihatan: ia selalu berakhir dengan navigasi penuh. Login kata sandi memantul
+dengan sebab yang sama, tapi baru terasa saat halaman dimuat ulang — perpindahan setelah login
+terjadi di sisi klien, dengan sesi masih di memori.
+
+**Di mesin pengembang kelas kegagalan ini tidak bisa muncul**: web `127.0.0.1:3000` dan API
+`127.0.0.1:3001` adalah host yang sama, dan cookie tidak peduli port. Suite e2e mengarah ke sana
+juga. Karena itu aturannya ditegakkan saat boot, di server, oleh `apps/api/src/common/cookie-domain.ts`:
+API menolak menyala kalau host web dan host API berbeda tanpa `COOKIE_DOMAIN`, atau kalau nilainya
+bukan induk dari keduanya — salah ketik satu huruf membuat browser membuang cookienya tanpa galat.
+
+Memeriksanya setelah rilis, dari DevTools di `https://arunadewa.id`: `aruna_access` dan
+`aruna_refresh` harus tampil dengan `Domain = .arunadewa.id`. Muat ulang `/dashboard` — kalau
+tetap di dasbor, cookie-nya sampai ke host web.
+
+## Login Google
+
+Client OAuth-nya satu, dipakai lokal dan produksi sekaligus. Yang membedakan hanya daftar
+**Authorized redirect URIs**, dan alamatnya diturunkan dari `API_ORIGIN` di
+`auth.service.ts` — bukan env tersendiri, jadi ia tidak bisa disetel salah tanpa ikut
+menyalahkan seluruh API:
+
+| Lingkungan | Redirect URI |
+|---|---|
+| lokal | `http://127.0.0.1:3001/auth/google` |
+| produksi | `https://api.arunadewa.id/auth/google` |
+
+`Authorized JavaScript origins` tidak dipakai: penukaran `code` terjadi di server, bukan di
+browser.
+
+**Keduanya wajib saat boot sejak Fase 27.** Sebelum itu `startGoogle` baru memeriksanya saat
+ada yang menekan tombolnya — dan rilis pertama berjalan berhari-hari dengan `GOOGLE_CLIENT_ID`
+dan `GOOGLE_CLIENT_SECRET` kosong di `api.env`: boot hijau, `/ready` hijau, sementara tombol
+Google di `/login` dan `/register` membawa tiap pengunjung ke 400 berbentuk JSON.
+
+Menyiapkannya dari nol, termasuk langkah-langkah di Google Console yang hanya bisa dikerjakan
+manusia: `./scripts/setup-google-oauth.sh`.
+
+Memeriksa apakah ia hidup, tanpa login:
+
+```sh
+curl -sI https://api.arunadewa.id/auth/google/start | grep -i ^location
+```
+
+302 ke `accounts.google.com` berarti terkonfigurasi. Periksa juga `redirect_uri` di dalamnya
+cocok dengan tabel di atas; kalau tidak, Google menolak di langkah tukar kode dengan
+`redirect_uri_mismatch`.
+
+Satu hal yang tidak terlihat dari sini: **Publishing status** di halaman Audience. Selama masih
+`Testing`, hanya email yang terdaftar sebagai test user yang bisa masuk — sisanya kena "access
+blocked", dan API kita tidak pernah melihat permintaannya. Scope yang dipakai cuma
+`openid email profile`, ketiganya non-sensitive, jadi `PUBLISH APP` berlaku seketika tanpa
+review Google.
 
 ## Backup
 

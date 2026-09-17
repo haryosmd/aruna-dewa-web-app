@@ -68,6 +68,13 @@ services:
       # `pnpm --filter @aruna/api start` berjalan dari /app/apps/api — di luar volume di bawah,
       # di lapisan container yang dibuang setiap rilis.
       MEDIA_LOCAL_DIR: /app/.data/media
+      # Induk bersama `arunadewa.id` dan `api.arunadewa.id`. Tanpa ini cookie sesi terbit
+      # host-only di host API, dan render server Nuxt — yang membacanya dari header cookie yang
+      # sampai ke host WEB — tidak pernah melihatnya: tiap navigasi penuh ke halaman ber-middleware
+      # `auth` memantul ke /login dengan sesi yang sebenarnya hidup. Di mesin pengembang kedua
+      # host sama, jadi kelas kegagalan ini tidak bisa muncul di sana. `common/cookie-domain.ts`
+      # menolak boot kalau nilainya hilang atau bukan induk kedua host.
+      COOKIE_DOMAIN: arunadewa.id
     expose:
       - '3001'
     # MEDIA_PROVIDER=local menulis ke dalam container; tanpa volume ini setiap rilis menghapus
