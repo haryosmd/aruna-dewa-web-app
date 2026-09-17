@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from 'reka-ui'
-import { ArrowRight, HelpCircle, LayoutDashboard, Menu, Palette, Route, Sparkles, Tag, X, type LucideIcon } from 'lucide-vue-next'
+import { ArrowRight, HelpCircle, LayoutDashboard, LogOut, Menu, Palette, Route, Sparkles, Tag, UserRound, X, type LucideIcon } from 'lucide-vue-next'
 
 /**
  * Ikon hanya dirender di drawer mobile: di sana barisnya tinggi dan berpembatas, jadi
@@ -43,8 +43,12 @@ onMounted(() => {
   })
 })
 
-const dashboardHref = computed(() => (auth.me ? '/dashboard' : '/login'))
-const dashboardLabel = computed(() => (auth.me ? 'Dashboard' : 'Masuk'))
+/**
+ * Yang sudah masuk mendapat menu akun, yang belum mendapat tautan "Masuk". Sebelumnya keduanya
+ * berbagi satu tautan yang cuma berganti label — jadi tidak pernah ada jalan keluar dari akun
+ * di header mana pun, dan logout yang sebenarnya sudah bekerja terbaca sebagai belum ada.
+ */
+const signedIn = computed(() => Boolean(auth.me))
 </script>
 
 <template>
@@ -75,17 +79,20 @@ const dashboardLabel = computed(() => (auth.me ? 'Dashboard' : 'Masuk'))
 
       <div class="flex items-center gap-2">
         <NuxtLink
+          v-if="!signedIn"
           id="nav-dashboard"
-          :to="dashboardHref"
+          to="/login"
           class="hidden rounded-full px-3.5 py-2 text-[0.875rem] font-semibold text-ink no-underline transition-colors duration-200 hover:text-primary sm:inline-flex"
         >
-          {{ dashboardLabel }}
+          Masuk
         </NuxtLink>
 
         <UiButton id="nav-order" as="NuxtLink" to="/order" size="sm" class="hidden sm:inline-flex">
           Buat undangan
           <ArrowRight :size="16" aria-hidden="true" />
         </UiButton>
+
+        <AccountMenu />
 
         <DialogRoot v-model:open="open">
           <DialogTrigger
@@ -124,8 +131,23 @@ const dashboardLabel = computed(() => (auth.me ? 'Dashboard' : 'Masuk'))
               </nav>
 
               <div class="mt-auto grid gap-3">
-                <UiButton id="nav-menu-dashboard" as="NuxtLink" :to="dashboardHref" tone="outline" block @click="open = false">
-                  {{ dashboardLabel }}
+                <!-- Laci punya ruang untuk baris penuh; menu akun di bilah atas punya ruang untuk ikon. -->
+                <template v-if="signedIn">
+                  <UiButton id="nav-menu-dashboard" as="NuxtLink" to="/dashboard" tone="outline" block @click="open = false">
+                    <LayoutDashboard :size="17" aria-hidden="true" />
+                    Undangan saya
+                  </UiButton>
+                  <UiButton id="nav-menu-account" as="NuxtLink" to="/account" tone="outline" block @click="open = false">
+                    <UserRound :size="17" aria-hidden="true" />
+                    Profil &amp; akun
+                  </UiButton>
+                  <UiButton id="nav-menu-logout" tone="ghost" block @click="open = false; auth.logout()">
+                    <LogOut :size="17" aria-hidden="true" />
+                    Keluar
+                  </UiButton>
+                </template>
+                <UiButton v-else id="nav-menu-dashboard" as="NuxtLink" to="/login" tone="outline" block @click="open = false">
+                  Masuk
                 </UiButton>
                 <UiButton id="nav-menu-order" as="NuxtLink" to="/order" block @click="open = false">
                   Buat undangan

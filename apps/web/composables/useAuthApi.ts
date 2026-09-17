@@ -1,4 +1,4 @@
-import type { CurrentAccount, LoginBody, RegisterBody } from '@aruna/contracts/api'
+import type { ChangePasswordBody, CurrentAccount, LoginBody, RegisterBody, SessionHistoryEntry } from '@aruna/contracts/api'
 
 /**
  * Jalur identitas. Tidak ada di daftar composable domain semula, tapi tanpanya tujuh
@@ -15,6 +15,10 @@ export function useAuthApi() {
   const verifyEmail = (token: string) => request<{ verified: boolean }>('/auth/verify-email', { method: 'POST', body: { token } })
   const forgotPassword = (email: string) => request<{ accepted: boolean }>('/auth/forgot-password', { method: 'POST', body: { email } })
   const resetPassword = (token: string, password: string) => request<{ reset: boolean }>('/auth/reset-password', { method: 'POST', body: { token, password } })
+  const updateProfile = (name: string) => request<CurrentAccount>('/auth/me', { method: 'PATCH', body: { name } })
+  const changePassword = (body: ChangePasswordBody) => request<void>('/auth/change-password', { method: 'POST', body })
+  const sessions = () => request<SessionHistoryEntry[]>('/auth/sessions')
+  const resendVerification = () => request<void>('/auth/resend-verification', { method: 'POST' })
 
-  return { me, login, register, logout, verifyEmail, forgotPassword, resetPassword }
+  return { me, login, register, logout, verifyEmail, forgotPassword, resetPassword, updateProfile, changePassword, sessions, resendVerification }
 }

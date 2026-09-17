@@ -19,3 +19,23 @@ export function sessionEndedMessage(code: unknown): string | null {
   const reason = sessionEndedReason(code)
   return reason ? messages[reason]! : null
 }
+
+/**
+ * Sebab berakhirnya sebuah sesi, dari enum `SessionRevokeReason` di basis data.
+ *
+ * Terpisah dari peta di atas dan memang harus terpisah: yang di atas memetakan kode `SESSION_*`
+ * yang dibawa 401 kepada orang yang **baru saja** tertendang, dan kalimatnya berbunyi seperti
+ * instruksi ("masuk lagi untuk melanjutkan"). Yang di sini dibaca di halaman akun, tentang sesi
+ * yang sudah lama selesai, dan di sana instruksi itu tidak masuk akal.
+ */
+const endLabels: Record<string, string> = {
+  LOGOUT: 'Keluar sendiri',
+  REPLACED: 'Digantikan perangkat lain',
+  REUSE_DETECTED: 'Dihentikan demi keamanan',
+  PASSWORD_RESET: 'Kata sandi diganti',
+  ACCOUNT_RECLAIMED: 'Akun didaftarkan ulang',
+}
+
+export function sessionEndLabel(reason: unknown): string {
+  return (typeof reason === 'string' && endLabels[reason]) || 'Berakhir'
+}

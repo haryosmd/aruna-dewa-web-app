@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { sessionEndedMessage, sessionEndedReason } from '../utils/session-reason'
+import { sessionEndLabel, sessionEndedMessage, sessionEndedReason } from '../utils/session-reason'
 
 describe('alasan berakhirnya sesi', () => {
   it('membedakan tertendang perangkat lain dari sekadar kedaluwarsa', () => {
@@ -20,6 +20,26 @@ describe('alasan berakhirnya sesi', () => {
     for (const code of ['SESSION_REPLACED', 'SESSION_REUSE', 'SESSION_EXPIRED', 'SESSION_INVALID']) {
       expect(sessionEndedReason(code)).toBe(code)
       expect(sessionEndedMessage(code)).toBeTruthy()
+    }
+  })
+})
+
+describe('label sebab berakhirnya sesi lama', () => {
+  it('menamai kelima sebab yang bisa ditulis basis data', () => {
+    expect(sessionEndLabel('LOGOUT')).toBe('Keluar sendiri')
+    expect(sessionEndLabel('REPLACED')).toContain('perangkat lain')
+    expect(sessionEndLabel('REUSE_DETECTED')).toContain('keamanan')
+    expect(sessionEndLabel('PASSWORD_RESET')).toContain('Kata sandi')
+    expect(sessionEndLabel('ACCOUNT_RECLAIMED')).toContain('didaftarkan ulang')
+  })
+
+  /**
+   * Enum di basis data boleh bertambah tanpa web ikut dirilis. Yang tidak boleh terjadi adalah
+   * baris riwayat yang kosong atau bertuliskan `REVOKED_BY_ADMIN` kepada pasangan pengantin.
+   */
+  it('tetap memberi kalimat untuk sebab yang belum dikenalnya', () => {
+    for (const unknown of ['SESUATU_YANG_BARU', '', null, undefined, 7, {}]) {
+      expect(sessionEndLabel(unknown)).toBe('Berakhir')
     }
   })
 })

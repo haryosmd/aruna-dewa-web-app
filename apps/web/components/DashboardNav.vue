@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LayoutDashboard, LogOut, MessageSquareText, PencilLine, ReceiptText, Users } from 'lucide-vue-next'
+import { LayoutDashboard, LogOut, MessageSquareText, PencilLine, ReceiptText, UserRound, Users } from 'lucide-vue-next'
 
 const props = defineProps<{ invitationId: string; title: string }>()
 const auth = useAuthStore()
@@ -37,15 +37,26 @@ const links = computed(() => [
       </NuxtLink>
     </nav>
 
-    <button
-      id="dash-nav-logout"
-      type="button"
-      class="mt-auto flex min-h-11 items-center gap-2.5 rounded-md px-3 text-[0.9375rem] font-medium text-ink-muted transition-colors duration-200 hover:bg-surface-3 hover:text-ink"
-      @click="auth.logout"
-    >
-      <LogOut :size="17" aria-hidden="true" />
-      Keluar
-    </button>
+    <div class="mt-auto grid gap-1">
+      <NuxtLink
+        id="dash-nav-account"
+        to="/account"
+        class="flex min-h-11 items-center gap-2.5 rounded-md px-3 text-[0.9375rem] font-medium text-ink-muted no-underline transition-colors duration-200 hover:bg-surface-3 hover:text-ink [&.router-link-exact-active]:bg-primary-soft [&.router-link-exact-active]:font-semibold [&.router-link-exact-active]:text-primary-strong"
+      >
+        <UserRound :size="17" aria-hidden="true" />
+        Profil &amp; akun
+      </NuxtLink>
+
+      <button
+        id="dash-nav-logout"
+        type="button"
+        class="flex min-h-11 items-center gap-2.5 rounded-md px-3 text-[0.9375rem] font-medium text-ink-muted transition-colors duration-200 hover:bg-surface-3 hover:text-ink"
+        @click="auth.logout"
+      >
+        <LogOut :size="17" aria-hidden="true" />
+        Keluar
+      </button>
+    </div>
   </aside>
 
   <!-- Mobile: a header for identity, plus a bottom bar that can actually navigate. -->
@@ -54,15 +65,7 @@ const links = computed(() => [
       <BrandLogo compact />
     </NuxtLink>
     <p class="m-0 min-w-0 flex-1 truncate text-[0.9375rem] font-semibold text-ink">{{ title }}</p>
-    <button
-      id="dash-tab-logout"
-      type="button"
-      class="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border-strong text-ink-muted"
-      aria-label="Keluar"
-      @click="auth.logout"
-    >
-      <LogOut :size="17" aria-hidden="true" />
-    </button>
+    <AccountMenu />
   </header>
 
   <nav

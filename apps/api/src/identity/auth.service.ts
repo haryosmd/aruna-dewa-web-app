@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, Injectable, ServiceUnavailableE
 import { JwtService } from '@nestjs/jwt';
 import argon2 from 'argon2';
 import { createHash, randomBytes } from 'node:crypto';
-import type { RegisterBody } from '@aruna/contracts/api';
+import type { CurrentAccount, RegisterBody, SessionHistoryEntry } from '@aruna/contracts/api';
 import { PrismaService } from '../database/prisma.service.js';
 import type { TokenPurpose } from '@aruna/database';
 import { MailService } from './mail.service.js';
@@ -20,6 +20,7 @@ import {
 } from './session-rotation.js';
 import type { AuthenticatedUser } from '../common/auth.js';
 import { canonicalWebOrigin } from '../common/web-origin.js';
+import { deviceLabel } from './device-label.js';
 
 const accessCookie = 'aruna_access';
 const refreshCookie = 'aruna_refresh';
@@ -312,6 +313,90 @@ export class AuthService {
       return account;
     });
     return this.createSession(user, response, context);
+  }
+
+  /**
+   * Bentuk tunggal akun yang sedang masuk.
+   *
+   * Dulu dirakit inline di dalam controller `GET /me`. Begitu `PATCH /me` ada, dua endpoint
+   * harus mengembalikan bentuk yang sama persis — dan dua tempat yang merakitnya sendiri-sendiri
+   * adalah cara bentuk itu menyimpang tanpa ada yang menyadarinya.
+   */
+  async currentAccount(userId: string): Promise<CurrentAccount> {
+    const account = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, include: { memberships: { include: { invitation: true } } } });
+    return {
+      user: {
+        id: account.id,
+        email: account.email,
+        name: account.name,
+        role: account.role === 'OPERATOR' ? 'r_7c91' : 'user',
+        emailVerified: Boolean(account.emailVerifiedAt),
+        hasPassword: Boolean(account.passwordHash),
+      },
+      invitations: account.memberships.map(({ invitation }) => ({ id: invitation.id, slug: invitation.slug, title: invitation.title, status: invitation.status })),
+    };
+  }
+
+  async updateProfile(userId: string, name: string): Promise<CurrentAccount> {
+    await this.prisma.user.update({ where: { id: userId }, data: { name } });
+    return this.currentAccount(userId);
+  }
+
+  /**
+   * Ganti kata sandi dari dalam sesi yang hidup.
+   *
+   * Dua keputusan yang tidak terbaca dari kodenya:
+   *
+   * **Kata sandi lama yang salah dijawab 400, bukan 401.** `useApi` di web memperlakukan 401
+   * sebagai sesi kedaluwarsa: ia menyegarkan sesi lalu **mengulang** permintaannya. Satu
+   * tebakan salah karena itu terkirim dua kali dan membakar dua jatah rate limit, dan yang
+   * terbaca pemakainya cuma "kenapa jatahnya habis dua kali lebih cepat".
+   *
+   * **Sesi yang sedang dipakai tidak ikut dicabut.** Sisanya dicabut — itu gunanya mengganti
+   * kata sandi. Tapi mengeluarkan orang dari perangkat tempat ia baru saja mengamankan
+   * akunnya adalah hukuman untuk melakukan hal yang benar.
+   */
+  async changePassword(userId: string, sessionId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    if (!user.passwordHash) {
+      throw new BadRequestException({ code: 'NO_PASSWORD_SET', message: 'Akun ini masuk lewat Google dan belum punya kata sandi. Kirim tautan buat kata sandi lebih dulu.' });
+    }
+    if (!(await verifyPassword(user.passwordHash, currentPassword))) {
+      throw new BadRequestException({ code: 'WRONG_PASSWORD', message: 'Kata sandi lama salah.', fieldErrors: { currentPassword: ['Kata sandi lama salah.'] } });
+    }
+    const passwordHash = await argon2.hash(newPassword, { type: argon2.argon2id });
+    const now = new Date();
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: userId }, data: { passwordHash } }),
+      this.prisma.session.updateMany({ where: { userId, revokedAt: null, id: { not: sessionId } }, data: { revokedAt: now, revokedReason: 'PASSWORD_RESET' } }),
+      this.prisma.auditEvent.create({ data: { actorId: userId, action: 'AUTH_PASSWORD_CHANGED', targetType: 'User', targetId: userId } }),
+    ]);
+  }
+
+  /**
+   * Riwayat sesi, bukan daftar perangkat aktif: `createSession` mencabut semua sesi lama tiap
+   * login baru, jadi yang hidup selalu tepat satu. Yang punya nilai baca adalah sebab
+   * berakhirnya baris-baris lama.
+   */
+  async sessionHistory(userId: string, currentSessionId: string): Promise<SessionHistoryEntry[]> {
+    const sessions = await this.prisma.session.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 10 });
+    return sessions.map(session => ({
+      id: session.id,
+      current: session.id === currentSessionId,
+      device: deviceLabel(session.userAgent),
+      ip: session.ip,
+      signedInAt: session.createdAt.toISOString(),
+      lastActiveAt: (session.rotatedAt ?? session.createdAt).toISOString(),
+      endedAt: session.revokedAt?.toISOString() ?? null,
+      endedReason: session.revokedReason,
+    }));
+  }
+
+  /** Diam saja kalau sudah terverifikasi: tidak ada yang perlu dikirim, dan itu bukan galat. */
+  async resendVerification(userId: string): Promise<void> {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    if (user.emailVerifiedAt) return;
+    await this.issueEmailVerification(user.id, user.email);
   }
 
   private async consumeToken(rawToken: string, purpose: TokenPurpose) {

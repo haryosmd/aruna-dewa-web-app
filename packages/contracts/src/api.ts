@@ -57,6 +57,20 @@ export type ForgotPasswordBody = z.infer<typeof forgotPasswordBodySchema>
 export const resetPasswordBodySchema = z.object({ token: opaqueToken, password })
 export type ResetPasswordBody = z.infer<typeof resetPasswordBodySchema>
 
+export const updateProfileBodySchema = z.object({ name: z.string().trim().min(1).max(120) })
+export type UpdateProfileBody = z.infer<typeof updateProfileBodySchema>
+
+/**
+ * Kata sandi lama sengaja dipakaikan aturan `loginBodySchema`, bukan aturan `register`: yang
+ * diminta di sini adalah rahasia yang **sudah** dimiliki orangnya, dan akun yang lahir sebelum
+ * aturan panjang mana pun tetap harus bisa membuktikan dirinya. Yang baru tetap ketat.
+ */
+export const changePasswordBodySchema = z.object({
+  currentPassword: z.string().max(1024),
+  newPassword: password,
+})
+export type ChangePasswordBody = z.infer<typeof changePasswordBodySchema>
+
 // — Undangan ————————————————————————————————————————————————————————————————
 
 export const createInvitationBodySchema = z.object({
@@ -341,6 +355,34 @@ export interface SignedInUser {
   email: string
   name: string
   role: string
+  /** Halaman akun memakai ini untuk memutuskan lencana; `emailVerifiedAt` sendiri tidak pernah keluar. */
+  emailVerified: boolean
+  /**
+   * Akun yang lahir dari Google murni tidak punya `passwordHash`. Tanpa bendera ini halaman
+   * akun tidak bisa tahu kapan harus menampilkan form ganti kata sandi dan kapan tombol
+   * "kirim tautan buat kata sandi" — dan menebaknya berarti separuh pemakai melihat form yang
+   * menolak apa pun yang mereka isi.
+   */
+  hasPassword: boolean
+}
+
+/**
+ * Satu baris riwayat sesi. Sengaja **riwayat**, bukan "perangkat aktif": login baru mencabut
+ * semua sesi lama pemilik akun, jadi yang aktif selalu tepat satu. Yang punya nilai baca adalah
+ * sebab berakhirnya — baris `REPLACED` yang tidak dikenali pemiliknya adalah satu-satunya
+ * sinyal yang akan ia dapat bahwa kata sandinya bocor.
+ */
+export interface SessionHistoryEntry {
+  id: string
+  /** Sesi yang sedang dipakai untuk membaca daftar ini. */
+  current: boolean
+  device: string
+  ip: string | null
+  signedInAt: string
+  lastActiveAt: string
+  endedAt: string | null
+  /** `SessionRevokeReason` dari basis data; `null` selama sesinya masih hidup. */
+  endedReason: string | null
 }
 
 export interface CurrentAccount {

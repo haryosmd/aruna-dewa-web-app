@@ -4,6 +4,7 @@ import { NuxtLink } from '#components'
 import { Primitive } from 'reka-ui'
 import { Loader2 } from 'lucide-vue-next'
 import { cva, type VariantProps } from 'class-variance-authority'
+import type { ClassValue } from 'clsx'
 
 const button = cva(
   'relative inline-flex select-none items-center justify-center gap-2 rounded-md font-semibold whitespace-nowrap no-underline transition-[transform,background-color,color,border-color,box-shadow] duration-200 ease-[var(--ease-out-quart)] active:translate-y-px disabled:pointer-events-none disabled:opacity-55',
@@ -56,15 +57,28 @@ const asComponents: Record<string, Component> = { NuxtLink }
 const resolvedAs = computed(() => (typeof props.as === 'string' ? asComponents[props.as] ?? props.as : props.as))
 
 const isNativeButton = computed(() => props.as === 'button')
+
+/**
+ * Kelas dari pemanggil digabung lewat `cn`, bukan dibiarkan jatuh sendiri.
+ *
+ * Fallthrough bawaan Vue **merangkai** dua daftar kelas, dan yang menang setelah itu ditentukan
+ * urutan di stylesheet — bukan urutan di atribut. Akibatnya `class="hidden sm:inline-flex"` pada
+ * tombol kalah oleh `inline-flex` milik `cva` dan tidak pernah bekerja sekali pun: CTA "Buat
+ * undangan" yang dirancang bersembunyi di ponsel selalu tampil di sana. `cn` memakai
+ * `tailwind-merge`, yang memutuskan konflik dengan sadar dan memenangkan pemanggilnya.
+ */
+defineOptions({ inheritAttrs: false })
+const attrs = useAttrs()
 </script>
 
 <template>
   <Primitive
+    v-bind="attrs"
     :as="resolvedAs"
     :type="isNativeButton ? type : undefined"
     :disabled="isNativeButton ? (disabled || loading) : undefined"
     :aria-busy="loading || undefined"
-    :class="cn(button({ tone: props.tone, size: props.size, block: props.block }))"
+    :class="cn(button({ tone: props.tone, size: props.size, block: props.block }), attrs.class as ClassValue)"
   >
     <Loader2 v-if="loading" :size="17" class="animate-spin" aria-hidden="true" />
     <slot />

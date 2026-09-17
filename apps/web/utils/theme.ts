@@ -33,6 +33,12 @@ export type GalleryLayout = 'masonry' | 'mosaic' | 'rail'
 
 export interface ThemePresentation {
   body: FontChoice
+  /**
+   * Varian `/images/card/` dari `scripts/optimize-images.ts`, bukan berkas asli di
+   * `/images/`. Kartu tema menayangkannya selebar ~272 px dengan `opacity-45` di balik
+   * gradient; yang asli 1000–1400 px dan tetap dipakai undangan demo apa adanya. Tema baru
+   * ikut aturan yang sama — jalankan `pnpm images:optimize` setelah menambah berkas.
+   */
   cover: string
   mood: string
   script: string | null
@@ -51,7 +57,7 @@ export interface ThemePresentation {
 export const themePresentation: Record<TemplateId, ThemePresentation> = {
   'aruna-bloom': {
     body: 'jakarta',
-    cover: '/images/couple.webp',
+    cover: '/images/card/couple.webp',
     mood: 'Hangat · Botanical · Klasik',
     script: scriptStack,
     gallery: 'masonry',
@@ -71,7 +77,7 @@ export const themePresentation: Record<TemplateId, ThemePresentation> = {
   },
   'aruna-lumine': {
     body: 'jost',
-    cover: '/images/rings.webp',
+    cover: '/images/card/rings.webp',
     mood: 'Tenang · Emas · Modern',
     // Lumine sengaja tanpa kaligrafi: huruf art-deco-nya justru lemah kalau dicampur script.
     script: null,
@@ -92,7 +98,7 @@ export const themePresentation: Record<TemplateId, ThemePresentation> = {
   },
   'aruna-senja': {
     body: 'jakarta',
-    cover: '/images/venue.webp',
+    cover: '/images/card/venue.webp',
     mood: 'Dramatis · Plum · Amber',
     script: scriptStack,
     gallery: 'rail',
@@ -112,7 +118,7 @@ export const themePresentation: Record<TemplateId, ThemePresentation> = {
   },
   'aruna-alba': {
     body: 'jakarta',
-    cover: '/images/rings.webp',
+    cover: '/images/card/rings.webp',
     mood: 'Bersih · Tegas · Modern',
     script: null,
     gallery: 'mosaic',
@@ -133,7 +139,7 @@ export const themePresentation: Record<TemplateId, ThemePresentation> = {
   },
   'aruna-sogan': {
     body: 'jakarta',
-    cover: '/images/adat-jawa.webp',
+    cover: '/images/card/adat-jawa.webp',
     mood: 'Sogan · Kunir · Jawa',
     script: scriptStack,
     gallery: 'masonry',
@@ -156,7 +162,7 @@ export const themePresentation: Record<TemplateId, ThemePresentation> = {
   },
   'aruna-gonjong': {
     body: 'jakarta',
-    cover: '/images/rumah-gadang.webp',
+    cover: '/images/card/rumah-gadang.webp',
     mood: 'Marun · Songket · Minang',
     script: scriptStack,
     gallery: 'rail',
@@ -179,7 +185,7 @@ export const themePresentation: Record<TemplateId, ThemePresentation> = {
   },
   'aruna-mendung': {
     body: 'jost',
-    cover: '/images/venue.webp',
+    cover: '/images/card/venue.webp',
     mood: 'Pesisiran · Biru · Awan',
     script: scriptStack,
     gallery: 'mosaic',
@@ -202,7 +208,7 @@ export const themePresentation: Record<TemplateId, ThemePresentation> = {
   },
   'aruna-kenanga': {
     body: 'jakarta',
-    cover: '/images/couple.webp',
+    cover: '/images/card/couple.webp',
     mood: 'Blush · Kenanga · Lembut',
     script: scriptStack,
     gallery: 'rail',
@@ -225,7 +231,7 @@ export const themePresentation: Record<TemplateId, ThemePresentation> = {
   },
   'aruna-bentar': {
     body: 'jost',
-    cover: '/images/hero.webp',
+    cover: '/images/card/hero.webp',
     mood: 'Bali · Padas · Poleng',
     script: scriptStack,
     gallery: 'masonry',

@@ -17,6 +17,15 @@ pnpm --filter @aruna/worker dev
 pnpm --filter @aruna/web dev --host 127.0.0.1 --port 3000
 ```
 
+The API's `dev` script runs `nest start --watch --exec tsx`, and the `--exec tsx` is load-bearing.
+`@aruna/contracts` and `@aruna/database` export raw `.ts` from their `exports` map, and their sources
+import each other with `.js` specifiers the way `moduleResolution` expects. Plain `node` — which is
+what `nest start` uses by default — strips types on Node 22.18+ but does **not** map `./index.js` to
+`index.ts`, so the API crashed at boot with `ERR_MODULE_NOT_FOUND` before it ever listened. `tsx`
+resolves those specifiers. Compilation still goes through `tsc`, so `emitDecoratorMetadata` survives
+and Nest's DI keeps working; this is the same pairing the Dockerfile uses, and the reason `tsx` sits
+in `dependencies` rather than `devDependencies`.
+
 The compose database is `postgresql://aruna:aruna-local-only@127.0.0.1:54329/aruna`. The password is for local development only; set `POSTGRES_PASSWORD` when configuring a different environment.
 
 If Docker is unavailable, run `pnpm db:local` and `pnpm mail:local` in separate terminals. This starts a real isolated PostgreSQL cluster in `.data/postgres` and a loopback SMTP inbox writing `.data/mail/*.eml`. Keep both running while using the app. Do not use these fallback scripts in production.

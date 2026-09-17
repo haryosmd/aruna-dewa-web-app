@@ -11,6 +11,14 @@ const page = ref(0)
 const message = ref('')
 
 /**
+ * Paginasi ini murni klien: SSR memberi halaman pertama, dan tombolnya baru punya pendengar
+ * setelah hidrasi. Tanpa penjaga ini, ketukan sebelum hidrasi tidak melakukan apa pun dan
+ * tidak meninggalkan jejak apa pun — tamu mengira tombolnya rusak. Pola yang sama sudah
+ * dipakai `components/landing/Demo.vue` untuk alasan yang persis sama.
+ */
+const ready = useInteractiveReady()
+
+/**
  * Dinding yang kosong tidak menjual apa pun. Saat belum ada ucapan sungguhan — demo, dan
  * undangan yang baru terbit — contoh ucapan dipakai supaya tamu melihat bentuk yang
  * diharapkan darinya. Ditandai jelas, jadi tidak ada yang mengira itu ucapan sungguhan.
@@ -93,7 +101,7 @@ function react(id: string, emoji: string) {
         id="iv-wish-page-prev"
         type="button"
         class="iv-page-btn"
-        :disabled="page === 0"
+        :disabled="!ready || page === 0"
         aria-label="Halaman ucapan sebelumnya"
         @click="page -= 1"
       >
@@ -104,7 +112,7 @@ function react(id: string, emoji: string) {
         id="iv-wish-page-next"
         type="button"
         class="iv-page-btn"
-        :disabled="page >= pageCount - 1"
+        :disabled="!ready || page >= pageCount - 1"
         aria-label="Halaman ucapan berikutnya"
         @click="page += 1"
       >

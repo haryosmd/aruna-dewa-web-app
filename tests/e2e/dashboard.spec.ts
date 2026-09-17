@@ -119,6 +119,7 @@ test('dashboard screens are accessible and titled', async ({ page }) => {
 
   const screens = [
     '/dashboard',
+    '/account',
     `/dashboard/${account!.invitationId}`,
     `/dashboard/${account!.invitationId}/editor`,
     `/dashboard/${account!.invitationId}/guests`,
@@ -596,3 +597,81 @@ test('background music yields to the live stream and stays silent for a guest wh
   await page.waitForTimeout(500)
   expect(await berbunyi(), 'jeda yang ditekan tamu tidak boleh batal karena pindah tab').toBe(false)
 })
+
+/*
+ * Jalan keluar dari akun sendiri, dari layar pertama setelah masuk.
+ *
+ * Logout sebenarnya sudah bekerja jauh sebelum tes ini ditulis — yang tidak ada adalah jalan
+ * menuju ke sana: tombolnya hanya hidup di rail per-undangan, yang baru muncul setelah sebuah
+ * undangan dibuka. `/dashboard` sendiri tidak punya satu pun. Regresinya tidak akan terlihat
+ * sebagai halaman yang rusak, hanya sebagai orang yang tidak bisa keluar, dan itu jenis
+ * kerusakan yang dilaporkan sebagai "fiturnya belum ada".
+ *
+ * Keyboard ikut diuji di sini dan bukan sebagai pemanis: menu yang hanya bisa dibuka dengan
+ * tetikus mengunci jalan keluar itu untuk siapa pun yang tidak memakai tetikus.
+ */
+test('account menu carries the way out of the account', async ({ page }) => {
+  test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
+  await signIn(page)
+  await hydrated(page)
+
+  // Dibuka dari keyboard, bukan diklik: Escape harus mengembalikan fokus ke pemicunya.
+  await page.locator('#account-menu-trigger').focus()
+  await page.keyboard.press('Enter')
+  await expect(page.locator('#account-menu-account')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.locator('#account-menu-account')).toBeHidden()
+  await expect(page.locator('#account-menu-trigger')).toBeFocused()
+
+  await openAccountMenu(page)
+  await page.locator('#account-menu-account').click()
+  await expect(page).toHaveURL(/\/account$/)
+
+  /*
+   * Nama semula dibaca dari fieldnya, bukan dari `h1`.
+   *
+   * `toHaveURL` lulus begitu URL-nya berganti, dan pada navigasi SPA itu terjadi **sebelum**
+   * DOM-nya ikut berganti. Versi pertama tes ini membaca `h1` di situ, mendapat judul halaman
+   * sebelumnya — "Undangan kalian" — lalu menyimpannya sebagai nama akun, dan memulihkan
+   * fixture ke nilai yang tidak pernah jadi namanya. Menunggu field milik halaman ini muncul
+   * lebih dulu membuat yang terbaca dijamin milik halaman yang benar.
+   */
+  await expect(page.locator('#account-name')).toBeVisible()
+  const semula = await page.locator('#account-name').inputValue()
+  expect(semula).not.toBe('')
+
+  await page.locator('#account-name').fill(`${semula} QA`)
+  await page.locator('#account-name-submit').click()
+  await expect(page.locator('h1')).toHaveText(`${semula} QA`)
+  await page.reload()
+  await expect(page.locator('h1')).toHaveText(`${semula} QA`)
+
+  // Fixture dikembalikan ke keadaan semula; suite ini memakai satu akun bersama.
+  await hydrated(page)
+  await page.locator('#account-name').fill(semula)
+  await page.locator('#account-name-submit').click()
+  await expect(page.locator('h1')).toHaveText(semula)
+
+  // Sesi yang sedang dipakai harus muncul sebagai perangkat ini, bukan sebagai baris berakhir.
+  await expect(page.locator('#account-sessions').getByText('Perangkat ini')).toBeVisible()
+
+  await openAccountMenu(page)
+  await page.locator('#account-menu-logout').click()
+  await expect(page).toHaveURL(/\/$/)
+
+  // Keluar yang sungguhan: cookie sesi harus ikut mati, bukan cuma state di browser.
+  await page.goto('/dashboard')
+  await expect(page).toHaveURL(/\/login/)
+})
+
+/**
+ * Toast `vue-sonner` muncul di `top-center` dan, pada lebar ponsel, ia menutupi persis sudut
+ * tempat pemicu menu akun berdiri. Klik yang mendarat di atasnya tidak membuka apa pun dan
+ * tidak melaporkan apa pun — tes gagal di baris berikutnya, jauh dari sebabnya. Menunggunya
+ * pergi lebih jujur daripada menambah `waitForTimeout` yang angkanya cuma tebakan.
+ */
+async function openAccountMenu(page: import('@playwright/test').Page) {
+  await expect(page.locator('[data-sonner-toast]')).toHaveCount(0)
+  await page.locator('#account-menu-trigger').click()
+  await expect(page.locator('#account-menu-logout')).toBeVisible()
+}

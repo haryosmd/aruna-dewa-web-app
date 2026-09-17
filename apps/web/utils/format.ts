@@ -17,6 +17,15 @@ export function formatLongDate(value: string | Date | null | undefined): string 
   return Number.isNaN(date.getTime()) ? '' : longDate.format(date)
 }
 
+const dateTime = new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
+
+/** Tanggal **dan** jam: riwayat sesi sering berisi beberapa baris dari hari yang sama. */
+export function formatDateTime(value: string | Date | null | undefined): string {
+  if (!value) return ''
+  const date = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(date.getTime()) ? '' : dateTime.format(date)
+}
+
 export function slugify(value: string): string {
   return value
     .normalize('NFD')

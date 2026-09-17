@@ -18,11 +18,19 @@ export const useAuthStore = defineStore('auth', () => {
   function markSignedOut() { me.value = null; loaded.value = true }
   /** Sesi berakhir di tengah pemakaian; sebabnya disimpan, bukan dibuang diam-diam. */
   function endSession(code: unknown) { me.value = null; loaded.value = true; endedCode.value = sessionEndedReason(code) }
+  /**
+   * Nama baru ditambal di tempat, bukan lewat `load()` ulang: respons `PATCH` sudah membawa
+   * akun lengkap, dan satu round trip tambahan berarti nama di header sempat tertinggal
+   * beberapa ratus milidetik di belakang nama yang barusan disimpan orangnya.
+   */
+  async function updateProfile(name: string) {
+    me.value = await authApi.updateProfile(name)
+  }
   async function logout() {
     await authApi.logout()
     me.value = null
     endedCode.value = null
     await navigateTo('/')
   }
-  return { me, loaded, endedCode, isOperator, load, loadOnce, markSignedOut, endSession, logout }
+  return { me, loaded, endedCode, isOperator, load, loadOnce, markSignedOut, endSession, updateProfile, logout }
 })

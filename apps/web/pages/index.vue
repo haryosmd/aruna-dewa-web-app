@@ -6,6 +6,19 @@ const hasTestimonials = computed(() => testimonials.length > 0)
 
 useHead({
   title: 'Aruna Dewa — Undangan pernikahan digital yang terasa seperti undangan cetak',
+  link: [
+    /*
+     * Foto hero adalah elemen LCP halaman ini, dan tanpa baris ini browser baru
+     * menemukannya saat parser sampai ke `<img>`-nya — lalu menahannya di prioritas rendah
+     * di belakang puluhan chunk JS dan berkas font. Terukur di produksi: request-nya baru
+     * dikirim 2436 ms setelah gambarnya ditemukan.
+     *
+     * Berpasangan dengan `fetchpriority="high"` di `components/landing/Hero.vue`; keduanya
+     * harus menunjuk berkas yang sama persis, kalau tidak preload-nya justru menambah satu
+     * unduhan yang tidak terpakai.
+     */
+    { rel: 'preload', as: 'image', href: '/images/hero-landing.webp', type: 'image/webp', fetchpriority: 'high' },
+  ],
   meta: [
     // Menimpa `noindex` bawaan di `nuxt.config.ts`. Beranda adalah satu dari tiga halaman yang
     // memang dicari orang.

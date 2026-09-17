@@ -23,10 +23,13 @@ useHead({ title: 'Undangan kalian — Aruna Dewa' })
         <NuxtLink id="dash-home" to="/" class="no-underline" aria-label="Aruna Dewa, ke beranda">
           <BrandLogo />
         </NuxtLink>
-        <UiButton id="dash-new-invitation" as="NuxtLink" to="/order" size="sm">
-          <Plus :size="16" aria-hidden="true" />
-          Buat undangan
-        </UiButton>
+        <div class="flex items-center gap-2">
+          <UiButton id="dash-new-invitation" as="NuxtLink" to="/order" size="sm">
+            <Plus :size="16" aria-hidden="true" />
+            Buat undangan
+          </UiButton>
+          <AccountMenu />
+        </div>
       </div>
     </header>
 

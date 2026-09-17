@@ -72,11 +72,21 @@ useArunaMotion(root, ({ revealText, revealUp, bloomIn, cascadeIn }) => {
                 '--iv-primary': theme.tokens.primary,
               }"
             >
+              <!--
+                `loading="lazy"` wajib: section ini di bawah lipatan dan kartunya bergulir
+                mendatar, jadi enam berkas cover dulu ikut antre di muat pertama dan merebut
+                giliran dari foto hero yang justru elemen LCP.
+
+                Tanpa `width`/`height` dengan sengaja. Geometrinya sudah dikunci
+                `aspect-[4/5]` di pembungkus, dan gambarnya absolut memenuhi kotak itu, jadi
+                atribut ini tidak bisa mempengaruhi tata letak — sementara keenam berkasnya
+                punya rasio yang berbeda-beda, jadi angka tunggal apa pun di sini bohong.
+              -->
               <img
                 :src="theme.cover"
                 :alt="`Pratinjau tema ${theme.name}`"
-                width="1000"
-                height="667"
+                loading="lazy"
+                decoding="async"
                 class="absolute inset-0 h-full w-full object-cover opacity-45 transition-transform duration-700 ease-out-expo group-hover:scale-105"
               >
               <div class="absolute inset-0" :style="{ background: `linear-gradient(to top, ${theme.tokens.background} 10%, transparent 66%)` }" />

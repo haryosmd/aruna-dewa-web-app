@@ -85,6 +85,13 @@ export const identityRateLimits = {
   forgotPassword: { perIdentity: { ttl: minutes(15), limit: 5 }, perAddress: { ttl: minutes(15), limit: 20 } },
   /** Sama, plus enumerasi: jawabannya membedakan email yang sudah terdaftar dari yang belum. */
   register: { perIdentity: { ttl: minutes(15), limit: 5 }, perAddress: { ttl: minutes(15), limit: 20 } },
+  /**
+   * Menebak kata sandi lama, satu argon2id per percobaan. Body-nya tidak membawa `email`, jadi
+   * kedua ember jatuh ke kunci per-IP yang sama — pembedaan per-identitas di sini tidak berarti
+   * apa-apa. Itu diterima apa adanya: endpointnya di balik `JwtAuthGuard`, jadi penebaknya harus
+   * sudah memegang cookie sesi yang hidup sebelum sampai ke sini.
+   */
+  changePassword: { perIdentity: { ttl: minutes(15), limit: 10 }, perAddress: { ttl: minutes(15), limit: 40 } },
 } as const satisfies Record<string, IdentityRateLimit>;
 
 const IDENTITY_RATE_LIMIT = 'aruna:identity-rate-limit';
