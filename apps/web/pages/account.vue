@@ -203,7 +203,7 @@ useHead({ title: 'Profil & akun — Aruna Dewa' })
         <p class="copy m-0 text-[0.9375rem]">
           {{ user.hasPassword
             ? 'Mengganti kata sandi mengeluarkan perangkat lain. Perangkat ini tetap masuk.'
-            : 'Akun ini masuk lewat Google, jadi belum punya kata sandi. Kamu bisa membuatnya lewat tautan yang kami kirim ke email.' }}
+            : 'Akun ini masuk lewat Google, jadi belum punya kata sandi. Kamu bisa membuatnya lewat tautan yang kami kirim ke email — dan sesudahnya semua perangkat, termasuk yang ini, perlu masuk lagi.' }}
         </p>
       </div>
 
