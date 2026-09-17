@@ -34,3 +34,12 @@ worker.env
 # pun baris kode aplikasi berubah. Dua skill lain di `.codex/skills` sengaja tetap terlacak.
 .codex/skills/aruna-ornament-builder/
 .claude/skills/
+
+# Instruksi agen, dan sekarang per-mesin juga: barisnya menunjuk skill di `.codex/skills` yang
+# tidak semuanya terlacak — termasuk `aruna-ornament-builder` tepat di atas. Berkas yang
+# mendeskripsikan perkakas yang tidak ikut repo tidak punya alasan ikut repo.
+#
+# Ia tetap ada di direktori kerja tiap mesin; yang hilang hanya salinannya di git. Artinya
+# klona baru dan CI tidak lagi membacanya, jadi apa pun yang harus berlaku untuk semua orang
+# — seperti `DESIGN.md` sebagai sumber kebenaran visual — tempatnya bukan lagi di sini.
+AGENTS.md
