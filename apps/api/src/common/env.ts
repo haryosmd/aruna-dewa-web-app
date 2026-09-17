@@ -1,3 +1,5 @@
+import { cookieDomainProblems } from './cookie-domain.js';
+
 /**
  * Satu gerbang konfigurasi, diperiksa sekali saat boot.
  *
@@ -108,6 +110,10 @@ export function runtimeEnvProblems(env: RuntimeEnv): string[] {
       if (!env[key]?.trim()) problems.push(`${key} wajib diisi saat NODE_ENV=production.`);
     }
   }
+  // Sengaja di luar blok produksi: yang menentukan wajib-tidaknya `COOKIE_DOMAIN` adalah host web
+  // dan host API yang berbeda, bukan nilai `NODE_ENV`. Staging yang lupa menyetelnya punya
+  // kegagalan yang sama persis, dan sebuah nilai yang salah ketik tetap salah di mana pun.
+  problems.push(...cookieDomainProblems(env));
   return problems;
 }
 

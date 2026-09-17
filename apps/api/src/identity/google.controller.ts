@@ -7,7 +7,13 @@ import { sessionContext } from './session-context.js';
 import { throttleLimits } from '../common/throttling.js';
 import { canonicalWebOrigin } from '../common/web-origin.js';
 
-/** Kedua cookie hidup sependek state OAuth-nya dan hanya terkirim ke jalur callback ini. */
+/**
+ * Kedua cookie hidup sependek state OAuth-nya dan hanya terkirim ke jalur callback ini.
+ *
+ * Sengaja TANPA `Domain`, tidak seperti cookie sesi di `auth.service.ts`: keduanya tidak pernah
+ * perlu dibaca di luar host API ini, dan menyebarkannya ke seluruh subdomain hanya memperluas
+ * permukaan tanpa satu pun manfaat. Jangan "diseragamkan" dengan cookie sesi.
+ */
 const oauthPath = '/auth/google';
 const stateCookie = 'aruna_oauth_state';
 const nextCookie = 'aruna_oauth_next';

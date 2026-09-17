@@ -15,9 +15,17 @@ const productionEnv = {
   SMTP_FROM: 'Aruna Dewa <halo@arunadewa.id>',
   GOOGLE_CLIENT_ID: '1234567890-contoh.apps.googleusercontent.com',
   GOOGLE_CLIENT_SECRET: 'GOCSPX-contoh',
+  COOKIE_DOMAIN: 'arunadewa.id',
 };
 
 describe('gerbang konfigurasi saat boot', () => {
+  it('menolak dua subdomain tanpa COOKIE_DOMAIN', () => {
+    // Aturannya sendiri diuji di `cookie-domain.spec.ts`; yang dipastikan di sini hanya bahwa ia
+    // benar-benar ikut menahan boot, bukan hidup sebagai fungsi yang tidak pernah dipanggil.
+    const { COOKIE_DOMAIN: _, ...tanpaDomain } = productionEnv;
+    expect(() => assertRuntimeEnv(tanpaDomain)).toThrow(/COOKIE_DOMAIN/u);
+  });
+
   it('menolak menyala tanpa JWT_SECRET', () => {
     expect(runtimeEnvProblems({})).toContain('JWT_SECRET wajib diisi.');
     expect(() => assertRuntimeEnv({})).toThrow(/JWT_SECRET/u);

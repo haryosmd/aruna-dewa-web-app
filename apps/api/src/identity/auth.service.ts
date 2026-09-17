@@ -20,6 +20,7 @@ import {
 } from './session-rotation.js';
 import type { AuthenticatedUser } from '../common/auth.js';
 import { canonicalWebOrigin } from '../common/web-origin.js';
+import { sessionCookieDomain } from '../common/cookie-domain.js';
 import { deviceLabel } from './device-label.js';
 
 const accessCookie = 'aruna_access';
@@ -407,8 +408,17 @@ export class AuthService {
     return record;
   }
 
+  /**
+   * Dipakai untuk menerbitkan **dan** menghapus cookie sesi, dan itu bukan kebetulan: cookie
+   * ber-`Domain` hanya bisa dihapus dengan atribut yang sama persis. Kalau `logout` memakai opsi
+   * yang berbeda, cookie-nya tertinggal di browser dan orangnya tetap terlihat masuk.
+   *
+   * `domain` kosong di mesin pengembang — web dan API di sana satu host — dan berisi induk
+   * bersama kedua subdomain di produksi. Alasan lengkapnya di `common/cookie-domain.ts`.
+   */
   private cookieOptions(): Record<string, unknown> {
-    return { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/' };
+    const domain = sessionCookieDomain();
+    return { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', ...(domain ? { domain } : {}) };
   }
 }
 

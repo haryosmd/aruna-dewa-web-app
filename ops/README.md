@@ -145,6 +145,32 @@ tiga record (MX + SPF di `send`, DKIM di `resend._domainkey`) di panel DNS yang 
 "DNS saja". Tanpa itu AUTH tetap lolos dan yang gagal adalah kirimnya — 403 saat `sendMail`,
 bukan saat boot dan bukan saat `verify()`.
 
+## Cookie sesi lintas subdomain
+
+`COOKIE_DOMAIN=arunadewa.id`, dan tempatnya di **`compose.prod.yaml`**, bukan `api.env`: nilainya
+bukan rahasia, dan menaruhnya di berkas yang ikut git berarti ia sampai ke server dalam rilis yang
+sama dengan kode yang menuntutnya.
+
+Tanpa atribut `Domain`, cookie yang diterbitkan `api.arunadewa.id` menjadi *host-only* dan tidak
+pernah terkirim ke `arunadewa.id`. Render server Nuxt membaca sesi dari header cookie yang sampai
+ke host **web**, jadi ia melihat pengunjung yang barusan berhasil masuk sebagai tamu — dan
+`middleware/auth` memantulkannya ke `/login` dengan sesi yang sebenarnya hidup di sisi API.
+
+Gejalanya menyesatkan karena terlihat seperti kegagalan login Google, padahal jalur Google hanya
+korban yang paling kelihatan: ia selalu berakhir dengan navigasi penuh. Login kata sandi memantul
+dengan sebab yang sama, tapi baru terasa saat halaman dimuat ulang — perpindahan setelah login
+terjadi di sisi klien, dengan sesi masih di memori.
+
+**Di mesin pengembang kelas kegagalan ini tidak bisa muncul**: web `127.0.0.1:3000` dan API
+`127.0.0.1:3001` adalah host yang sama, dan cookie tidak peduli port. Suite e2e mengarah ke sana
+juga. Karena itu aturannya ditegakkan saat boot, di server, oleh `apps/api/src/common/cookie-domain.ts`:
+API menolak menyala kalau host web dan host API berbeda tanpa `COOKIE_DOMAIN`, atau kalau nilainya
+bukan induk dari keduanya — salah ketik satu huruf membuat browser membuang cookienya tanpa galat.
+
+Memeriksanya setelah rilis, dari DevTools di `https://arunadewa.id`: `aruna_access` dan
+`aruna_refresh` harus tampil dengan `Domain = .arunadewa.id`. Muat ulang `/dashboard` — kalau
+tetap di dasbor, cookie-nya sampai ke host web.
+
 ## Login Google
 
 Client OAuth-nya satu, dipakai lokal dan produksi sekaligus. Yang membedakan hanya daftar

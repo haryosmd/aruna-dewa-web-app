@@ -24,8 +24,11 @@ export function apiBaseForPage(configured: string, pageHost: string | undefined)
     // Base relatif (proxy same-origin) tidak punya host untuk disamakan — biarkan utuh.
     return configured
   }
-  // Domain produksi tidak pernah disentuh: `api.arunadewa.id` dan `arunadewa.id` sudah
-  // satu situs, jadi cookie-nya memang terkirim tanpa penyesuaian apa pun.
+  // Domain produksi tidak pernah disentuh — tapi bukan karena tidak butuh apa-apa.
+  // `arunadewa.id` dan `api.arunadewa.id` memang satu *site*, jadi `SameSite=Lax` tidak
+  // menghalangi; yang tetap kurang di sana adalah cakupan *host*, dan itu diselesaikan di sisi
+  // API lewat `COOKIE_DOMAIN` (`apps/api/src/common/cookie-domain.ts`), bukan di modul ini.
+  // Dua hal yang mudah tertukar, dan komentar di sini sempat menyimpulkan yang salah.
   if (!loopbackHosts.includes(url.hostname)) return configured
   url.hostname = pageHost
   return url.toString().replace(/\/$/, '')
