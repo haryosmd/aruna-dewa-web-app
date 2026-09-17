@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtAuthGuard, OriginGuard } from './auth.js';
 import { requireJwtSecret } from './env.js';
+import { LegacySessionCookieMiddleware } from './legacy-session-cookie.middleware.js';
 import { MembershipService } from './membership.service.js';
 
 /**
@@ -11,7 +12,7 @@ import { MembershipService } from './membership.service.js';
  */
 @Module({
   imports: [JwtModule.registerAsync({ useFactory: () => ({ secret: requireJwtSecret() }) })],
-  providers: [MembershipService, JwtAuthGuard, OriginGuard],
-  exports: [JwtModule, MembershipService, JwtAuthGuard, OriginGuard],
+  providers: [MembershipService, JwtAuthGuard, OriginGuard, LegacySessionCookieMiddleware],
+  exports: [JwtModule, MembershipService, JwtAuthGuard, OriginGuard, LegacySessionCookieMiddleware],
 })
 export class CommonModule {}

@@ -76,12 +76,18 @@ Integration tests require the local API, database and SMTP inbox. They create cl
 
 Web and API must share one registrable domain — `arunadewa.id` for the web and `api.arunadewa.id` for
 the API, or a single origin with the API behind a `/api` reverse proxy. Subdomains of one domain are
-the *same site*, so the host-only `SameSite=Lax` session cookies are sent on every request and no
-cookie `domain` attribute is needed. Splitting the two across unrelated domains (web on one hosting
-provider's domain, API on another's) makes every session cookie third-party, which browsers are in the
-process of blocking outright; reach for the same-origin proxy instead of loosening `SameSite`. Set
-`NODE_ENV=production` — that is what turns on `Secure` on the session cookies — and point `WEB_ORIGIN`
-and `API_ORIGIN` at the public HTTPS origins.
+the *same site*, so `SameSite=Lax` is already correct and does not need loosening. Same-site scope and
+*host* scope are two different axes, though, and confusing them is what cost this project a production
+outage: without a `Domain` attribute the session cookies are **host-only** on `api.arunadewa.id` and
+never reach the web host at all, so Nuxt server rendering sees a signed-in visitor as a guest and
+bounces them to `/login`. Set `COOKIE_DOMAIN` to the shared parent (`arunadewa.id`) whenever the two
+hosts differ; `apps/api/src/common/cookie-domain.ts` refuses to boot without it, and the rollout
+procedure — including the legacy host-only cookies already sitting in visitors' browsers — is in
+`ops/README.md`. Splitting the two across unrelated domains (web on one hosting provider's domain, API
+on another's) makes every session cookie third-party, which browsers are in the process of blocking
+outright; reach for the same-origin proxy instead of loosening `SameSite`. Set `NODE_ENV=production` —
+that is what turns on `Secure` on the session cookies — and point `WEB_ORIGIN` and `API_ORIGIN` at the
+public HTTPS origins.
 
 Feature decisions, original reference assets, source provenance, verification results and revision history are local under `docs/`, intentionally gitignored. Competitor screenshots are research material only; production image provenance is retained in the local feature artifacts.
 

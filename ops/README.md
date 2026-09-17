@@ -171,6 +171,39 @@ Memeriksanya setelah rilis, dari DevTools di `https://arunadewa.id`: `aruna_acce
 `aruna_refresh` harus tampil dengan `Domain = .arunadewa.id`. Muat ulang `/dashboard` — kalau
 tetap di dasbor, cookie-nya sampai ke host web.
 
+### Cookie warisan dari sebelum `COOKIE_DOMAIN`
+
+Memasang `COOKIE_DOMAIN` tidak menyentuh cookie yang sudah telanjur ada di browser orang. Salinan
+host-only di `api.arunadewa.id` dan salinan ber-`Domain` adalah **dua entri berbeda** di jar
+browser: yang baru tidak menimpa yang lama, dan `logout` tidak bisa menghapus yang lama karena
+`clearCookie` hanya cocok kalau `Path` dan `Domain` persis sama.
+
+Akibatnya satu nama datang dua kali dalam satu header `Cookie`. Browser menyajikan yang lebih tua
+lebih dulu (RFC 6265 §5.4) dan `cookie-parser` memenangkan kemunculan pertama, jadi API selalu
+memilih token basi, menolaknya sebagai sesi yang sudah dicabut, lalu memantulkan orangnya ke
+`/login` — setiap kali, sampai cookie 30 harinya kedaluwarsa sendiri. Gejalanya di mata pemakai:
+"login berhasil tapi kembali ke halaman masuk", dan banner *Sesi berakhir karena akun ini dipakai
+masuk di perangkat lain* pada akun yang tidak pernah dipakai di perangkat lain.
+
+Dua hal yang menanganinya, keduanya otomatis dan tidak perlu tindakan operator:
+
+- `apps/api/src/common/session-cookie.ts` membaca kemunculan **terakhir**, bukan yang pertama.
+- `apps/api/src/common/legacy-session-cookie.middleware.ts` mengusir salinan host-only begitu
+  nama ganda terlihat — di permintaan mana pun, termasuk yang berakhir 401, jadi browser yang
+  terkunci sembuh pada kunjungan pertama berikutnya.
+
+Yang perlu dilakukan operator hanya membuktikannya setelah rilis:
+
+```bash
+VERIFY_EMAIL=... VERIFY_PASSWORD=... bash scripts/verify-session.sh
+```
+
+Langkah keempat skrip itulah ujinya: menyegarkan sesi dengan `aruna_refresh` dikirim dua kali,
+yang basi lebih dulu. Sebelum perbaikan ini jawabannya 401.
+
+Aturan yang sama berlaku kalau `COOKIE_DOMAIN` suatu saat diubah lagi — mengubah cakupan cookie
+sesi selalu melahirkan satu generasi cookie warisan.
+
 ## Login Google
 
 Client OAuth-nya satu, dipakai lokal dan produksi sekaligus. Yang membedakan hanya daftar

@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
+import type { MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { DatabaseModule } from './database/database.module.js';
 import { CommonModule } from './common/common.module.js';
+import { LegacySessionCookieMiddleware } from './common/legacy-session-cookie.middleware.js';
 import { ApiThrottlerGuard, throttleLimits } from './common/throttling.js';
 import { IdentityModule } from './identity/identity.module.js';
 import { InvitationsModule } from './invitations/invitations.module.js';
@@ -39,4 +41,13 @@ import { MaintenanceModule } from './maintenance/maintenance.module.js';
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ApiThrottlerGuard }],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  /**
+   * Semua rute, bukan hanya `auth/*`: browser yang memegang cookie sesi warisan mengirimkannya
+   * ke setiap permintaan, jadi kunjungan pertama ke mana pun sudah cukup untuk mengusirnya —
+   * termasuk kunjungan yang berakhir 401 dan tidak pernah menyentuh jalur penerbitan sesi.
+   */
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(LegacySessionCookieMiddleware).forRoutes('*');
+  }
+}

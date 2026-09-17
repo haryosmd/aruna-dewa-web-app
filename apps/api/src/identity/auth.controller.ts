@@ -19,6 +19,7 @@ import {
 import { AuthService } from './auth.service.js';
 import { CurrentUser, JwtAuthGuard, OriginGuard, type AuthenticatedUser } from '../common/auth.js';
 import { IdentityRateLimit, forgiveIdentityAttempt, identityRateLimits } from '../common/rate-limit.js';
+import { readSessionCookie } from '../common/session-cookie.js';
 import { zodBody } from '../common/zod-validation.pipe.js';
 import { sessionContext } from './session-context.js';
 
@@ -42,14 +43,14 @@ export class AuthController {
   @Post('refresh')
   @UseGuards(OriginGuard)
   async refresh(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
-    return { user: await this.auth.refresh(request.cookies?.aruna_refresh as string | undefined, response) };
+    return { user: await this.auth.refresh(readSessionCookie(request, 'aruna_refresh'), response) };
   }
 
   @Post('logout')
   @HttpCode(204)
   @UseGuards(OriginGuard)
   async logout(@Req() request: Request, @Res({ passthrough: true }) response: Response): Promise<void> {
-    await this.auth.logout(request.cookies?.aruna_refresh as string | undefined, response);
+    await this.auth.logout(readSessionCookie(request, 'aruna_refresh'), response);
   }
 
   @Get('me')

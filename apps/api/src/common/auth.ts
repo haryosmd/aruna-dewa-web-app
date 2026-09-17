@@ -2,6 +2,7 @@ import { CanActivate, ExecutionContext, ForbiddenException, Injectable, Unauthor
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 import { PrismaService } from '../database/prisma.service.js';
+import { readSessionCookie } from './session-cookie.js';
 import { isAllowedOrigin } from './web-origin.js';
 
 export interface AuthenticatedUser { sub: string; sid: string; email: string; role: 'USER' | 'OPERATOR' }
@@ -28,7 +29,9 @@ export class JwtAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithUser>();
-    const token = request.cookies?.aruna_access as string | undefined;
+    // Header mentah, bukan `request.cookies`: satu nama bisa datang dua kali dan yang
+    // pertama justru salinan warisan. Lihat `session-cookie.ts`.
+    const token = readSessionCookie(request, 'aruna_access');
     if (!token) throw new UnauthorizedException('Login diperlukan');
     try {
       const payload = await this.jwt.verifyAsync<AuthenticatedUser>(token);
