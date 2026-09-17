@@ -85,7 +85,9 @@ situs kembali hidup tanpa perubahan kode.
 ## Email keluar — dan port 587 yang tidak akan pernah tersambung
 
 Relay: **Resend**, `smtp.resend.com`, user `resend`, password = API key `re_...` (sending-only).
-Keempat `SMTP_*` wajib saat boot sejak Fase 23; API menolak menyala tanpanya.
+Keempat `SMTP_*` wajib saat boot sejak Fase 23; API menolak menyala tanpanya. **`SMTP_PORT` ikut
+wajib sejak Fase 27** — ia satu-satunya yang punya nilai bawaan di kode (1025, port Mailpit), jadi
+lupa menulisnya dulu berarti boot hijau dan seluruh email keluar menuju port yang tidak menjawab.
 
 **Portnya 2587, dan itu bukan pilihan gaya.** IDCloudHost memblokir port SMTP keluar yang lazim.
 Diukur dari VPS ini 2026-09-16:
@@ -100,6 +102,22 @@ Bentuk kegagalannya yang mahal: paket di-*drop*, bukan di-*reject*. Tidak ada `E
 yang muncul seketika — yang ada permintaan menggantung sampai batas waktu nodemailer. Artinya
 pendaftaran pelanggan pertama akan diam beberapa puluh detik lalu gagal, `/ready` tetap hijau
 karena ia memang sengaja tidak menyentuh SMTP, dan tidak ada satu pun log yang menyebut "port".
+
+Dua hal itu diperbaiki di Fase 27, dan keduanya mengubah cara bagian ini dipakai:
+
+- `smtpTransportOptions()` menyetel `connectionTimeout`/`greetingTimeout` 10 detik, jadi port yang
+  di-drop gagal dalam hitungan detik, bukan dua menit.
+- `MailService` punya `Logger` dan menangkap sebab aslinya. Log sekarang menyebut host, port, dan
+  `code`/`responseCode`/`response` dari relay:
+
+  ```
+  ERROR [MailService] Pengiriman email gagal lewat smtp.resend.com:2587 (auth=ya) — code=EAUTH responseCode=535 response=535 Authentication failed
+  ```
+
+  Ketiga mode kegagalan akhirnya bisa dibedakan dari log saja: `ETIMEDOUT` tanpa balasan = port
+  diblokir; `EAUTH`/`535` = API key salah; AUTH lolos tapi `sendMail` dijawab `403` = domain
+  pengirim belum terverifikasi di Resend. Perintah manual di bawah tetap berguna untuk memeriksa
+  **sebelum** ada yang mendaftar, bukan lagi sebagai satu-satunya cara mengetahui sebabnya.
 
 Resend menyediakan 2587 persis untuk jaringan seperti ini. `mail.service.ts` menyetel
 `secure: port === 465`, jadi 2587 berjalan lewat STARTTLS tanpa perubahan kode.
