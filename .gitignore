@@ -27,3 +27,10 @@ tls/
 api.env
 web.env
 worker.env
+
+# Skill agen yang dipasang per-mesin, bukan bagian aplikasi. `aruna-ornament-builder` membawa
+# `scripts/core.test.mjs` — berkas `node:test`, bukan vitest — dan glob bawaan vitest menjaringnya
+# sebagai suite kosong, jadi satu `git add .` sudah cukup membuat `Verify` merah di CI tanpa satu
+# pun baris kode aplikasi berubah. Dua skill lain di `.codex/skills` sengaja tetap terlacak.
+.codex/skills/aruna-ornament-builder/
+.claude/skills/
