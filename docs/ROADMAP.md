@@ -128,13 +128,23 @@ yang belum pernah ada adalah orang yang menjalankan project `mobile`.
 fase 16 sebagai pemblokir regenerasi fixture sudah tidak ada; keempat pemeriksaan rotasi refresh
 token lulus.
 
-**Gerbang "tidak boleh ada yang skip" di CI sudah basi dan akan merah karena dua hal sekaligus,
-keduanya warisan fase 59.** `ci.yml` menuntut persis 156 eksekusi; kenyataannya sekarang 168 lulus
-dan **4 di-skip**. Yang di-skip `mengunci pemilih saat add-on desain belum dibeli` di keempat
-project: ia melewati dirinya sendiri kalau `#ornament-locked` tidak ada, padahal pemilik fixture QA
-selalu dinaikkan jadi `OPERATOR` — jadi keadaan terkunci yang ingin diujinya tidak pernah bisa
-terjadi di fixture itu. Angka 156 sengaja **tidak** dinaikkan diam-diam di fase ini: menaikkannya
-akan menyembunyikan tes yang tidak pernah benar-benar berjalan. Keputusan pemilik, fase sendiri.
+**Sebuah tes yang lulus di keempat project tanpa sekali pun berjalan.** `mengunci pemilih saat
+add-on desain belum dibeli` memanggil `test.skip` kalau `#ornament-locked` tidak ada — dan
+`canEditDesign()` bernilai `isOperator || features.includes('design')`, sementara pemilik fixture QA
+**selalu** dinaikkan jadi `OPERATOR` supaya bisa mengaktifkan tanpa bayar. Jadi subjek yang ingin
+diujinya tidak pernah bisa ada, dan tesnya melewati dirinya sendiri persis pada keadaan yang
+menjadi alasannya ditulis. Itu bukan tes; itu laporan hijau.
+
+**Fixture-nya yang diperbaiki, bukan tesnya yang dilonggarkan.** `api-smoke.ts` kini menyeed
+undangan kedua milik `stranger` — akun biasa yang tidak pernah dioperatorkan, tanpa entitlement
+`design` — dan menuliskannya ke `.data/qa-account.json` sebagai `locked`. Tesnya masuk lewat akun
+itu dan `test.skip`-nya dicabut. Dibuktikan benar-benar menguji sesuatu: diarahkan ke undangan
+operator, ia **merah** (`#ornament-locked` count 0 lawan 1).
+
+**Baru sesudah itu angka gerbang dinaikkan: 156 → 172.** Urutannya disengaja. Menaikkannya lebih
+dulu akan membuat `ci.yml` hijau justru dengan merestui tes yang tidak pernah jalan; menghapus
+sebab skip-nya lebih dulu membuat 172 itu berarti 172 eksekusi yang sungguh berjalan.
+`pnpm test:integration` ikut naik 47 → 49.
 
 **Sengaja ditunda: rotasi kunci sungguhan.** `Guest.tokenVersion` ada di schema tapi tidak pernah
 dibaca atau ditulis. Selama kunci diturunkan `sha256(JWT_SECRET)` tanpa key id, mengganti

@@ -203,12 +203,23 @@ jobs:
       # selama itu tidak ada satu pun tes yang bisa membedakannya dari fitur yang belum dibuat.
       # Sapuan axe dasbor ikut bertambah satu halaman (`/account`) tanpa menambah eksekusi:
       # halamannya masuk ke daftar di dalam tes yang sudah ada.
+      # 156 -> 172 di Fase 61: empat tes baru dikali empat project, semuanya lahir di fase 59-60
+      # dan baru sekarang diikutkan gerbang. Angkanya dinaikkan **setelah** sebab satu-satunya
+      # skip dihapus, bukan sebelumnya: `mengunci pemilih saat add-on desain belum dibeli` dulu
+      # melewati dirinya sendiri kalau `#ornament-locked` tidak ada, dan karena pemilik fixture QA
+      # selalu dinaikkan jadi `OPERATOR` (supaya bisa mengaktifkan tanpa bayar), `canEditDesign()`
+      # selalu benar dan keadaan terkunci tidak pernah bisa terjadi. Tes itu lulus di keempat
+      # project tanpa sekali pun berjalan. `api-smoke.ts` sekarang menyeed undangan kedua milik
+      # akun biasa, jadi keadaannya nyata dan tesnya benar-benar menguji sesuatu — dibuktikan
+      # merah saat diarahkan ke undangan operator. Menaikkan angkanya lebih dulu akan membuat
+      # gerbang ini hijau justru dengan menyembunyikan tes yang tidak pernah jalan.
+      #
       - name: Tidak boleh ada yang skip
         run: |
           node -e '
             const { expected, skipped, unexpected, flaky } = require(process.env.REPORT).stats;
             console.log({ expected, skipped, unexpected, flaky });
-            const seharusnya = 156;
+            const seharusnya = 172;
             if (skipped) { console.error(`::error::${skipped} eksekusi di-skip; gerbang e2e hanya berguna kalau semuanya jalan.`); process.exit(1); }
             if (flaky) { console.error(`::error::${flaky} eksekusi lulus hanya setelah diulang; itu bukan hijau.`); process.exit(1); }
             if (expected !== seharusnya) { console.error(`::error::${expected} lulus, seharusnya ${seharusnya}. Perbarui angkanya dengan sadar kalau memang ada tes baru.`); process.exit(1); }

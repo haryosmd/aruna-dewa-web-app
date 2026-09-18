@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { readFileSync, existsSync } from 'node:fs'
 
 const fixturePath = '.data/qa-account.json'
-const account = existsSync(fixturePath) ? JSON.parse(readFileSync(fixturePath, 'utf8')) as { email: string; password: string; invitationId: string; slug: string } : null
+const account = existsSync(fixturePath) ? JSON.parse(readFileSync(fixturePath, 'utf8')) as { email: string; password: string; invitationId: string; slug: string; locked?: { email: string; password: string; invitationId: string } } : null
 
 /*
  * Di mesin pengembang, tidak adanya fixture adalah keadaan wajar dan `test.skip` di bawah memberi
@@ -331,10 +331,10 @@ test('footer sitemap follows the session', async ({ page }) => {
  * berkas 12 MB selesai naik lewat data seluler. Yang diuji di sini persisnya itu: penolakan
  * terjadi **sebelum** ada satu permintaan jaringan pun.
  */
-async function signIn(page: import('@playwright/test').Page) {
+async function signIn(page: import('@playwright/test').Page, sebagai: { email: string; password: string } = account!) {
   await page.goto('/login')
-  await page.getByLabel('Email', { exact: true }).fill(account!.email)
-  await page.getByLabel('Kata sandi', { exact: true }).fill(account!.password)
+  await page.getByLabel('Email', { exact: true }).fill(sebagai.email)
+  await page.getByLabel('Kata sandi', { exact: true }).fill(sebagai.password)
   await page.getByRole('button', { name: 'Masuk', exact: true }).click()
   await expect(page).toHaveURL(/dashboard/)
 }
@@ -860,20 +860,27 @@ test.describe('studio ornamen', () => {
     await expect(page.locator('.iv-root img[src*="/ornaments/referensi/"]')).toHaveCount(0)
   })
 
+  /*
+   * Kontrol yang terlihat hidup tapi berujung simpan ditolak adalah bentuk kegagalan yang paling
+   * membingungkan, dan API memang menolaknya sejak `ornamentOverrides` ikut `designFingerprint()`.
+   *
+   * Diuji pada undangan **kedua**, milik akun yang tidak pernah dinaikkan jadi `OPERATOR`.
+   * `canEditDesign()` bernilai `isOperator || features.includes('design')`, jadi pemilik fixture
+   * utama — yang sengaja dioperatorkan supaya bisa mengaktifkan tanpa bayar — tidak akan pernah
+   * melihat keadaan terkunci. Versi lama tes ini menghadapi itu dengan `test.skip` saat
+   * `#ornament-locked` tidak ada, dan akibatnya ia lulus di keempat project tanpa sekali pun
+   * berjalan. Sebuah tes yang melewati dirinya sendiri persis ketika subjeknya tidak ada bukan
+   * tes; ia laporan hijau. Fixture-nya yang diperbaiki, bukan tesnya yang dilonggarkan.
+   */
   test('mengunci pemilih saat add-on desain belum dibeli', async ({ page }) => {
     test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
-    await signIn(page)
-    await page.goto(`/dashboard/${account!.invitationId}/editor`)
+    const terkunci = account!.locked
+    expect(terkunci, 'fixture QA wajib memuat akun tanpa add-on desain; jalankan ulang `pnpm test:integration`').toBeTruthy()
+    await signIn(page, terkunci!)
+    await page.goto(`/dashboard/${terkunci!.invitationId}/editor`)
     await openSection(page, 'cover')
 
-    /*
-     * Kontrol yang terlihat hidup tapi berujung simpan ditolak adalah bentuk kegagalan yang
-     * paling membingungkan, dan API memang menolaknya sejak `ornamentOverrides` ikut
-     * `designFingerprint()`. Kalau undangan QA punya entitlement `design`, tidak ada yang bisa
-     * dibuktikan di sini — dan itu ditulis apa adanya, bukan dilewati diam-diam.
-     */
-    const terkunci = await page.locator('#ornament-locked').count()
-    test.skip(terkunci === 0, 'Undangan QA memiliki entitlement `design`; penguncian diuji pada akun tanpa add-on.')
+    await expect(page.locator('#ornament-locked')).toHaveCount(1)
     await expect(page.locator('#ornament-ganti-divider')).toBeDisabled()
     await expect(page.locator('#ornament-ganti-divider')).toHaveAttribute('aria-describedby', 'ornament-locked')
   })

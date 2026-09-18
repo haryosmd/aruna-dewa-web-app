@@ -30,11 +30,15 @@ Cacat keempat, milik fase 59, ketemu hanya karena project `mobile` dijalankan: e
 di 360px (`scrollWidth` 362 lawan 360). `grid-cols-[auto_1fr_auto]` di
 `dashboard/ornament/SlotSummary.vue` menahan kolom teks di `min-content`; diganti `minmax(0,1fr)`.
 
-Hasil: 1029 tes unit hijau (+4), `lint` dan `typecheck` hijau, dan **seluruh suite e2e hijau di
-keempat project — 168 lulus, nol gagal**. Sisa yang belum dibereskan dan sengaja diserahkan ke
-pemilik: 4 eksekusi masih di-skip (`mengunci pemilih saat add-on desain belum dibeli`, yang keadaan
-terkuncinya tidak pernah bisa terjadi di fixture QA ber-`OPERATOR`), dan gerbang `ci.yml` masih
-menuntut 156 padahal kenyataannya 168.
+Satu tes ternyata lulus di keempat project tanpa sekali pun berjalan: `mengunci pemilih saat add-on
+desain belum dibeli` melewati dirinya sendiri kalau `#ornament-locked` tidak ada, padahal pemilik
+fixture QA selalu dinaikkan jadi `OPERATOR` sehingga keadaan terkunci tidak pernah bisa terjadi.
+`api-smoke.ts` kini menyeed undangan kedua milik akun biasa dan tesnya masuk lewat akun itu;
+`test.skip`-nya dicabut, dan ia terbukti merah saat diarahkan ke undangan operator. Gerbang
+`ci.yml` dinaikkan 156 → 172 **sesudah** itu, bukan sebelumnya.
+
+Hasil: 1029 tes unit hijau (+4), `lint` dan `typecheck` hijau, `pnpm test:integration` 49/49, dan
+**seluruh suite e2e 172 lulus, nol gagal, nol skip** di keempat project.
 
 ## 2026-09-11: execution started
 
