@@ -15,6 +15,7 @@
     "db:seed": "pnpm --filter @aruna/database run seed",
     "db:local": "node scripts/local-postgres.mjs",
     "test:integration": "tsx --env-file-if-exists=packages/database/.env scripts/api-smoke.ts",
+    "media:check": "tsx --env-file-if-exists=apps/api/.env scripts/media-bucket-check.ts",
     "mail:local": "node scripts/local-mail.mjs",
     "capture:dashboard": "tsx --env-file-if-exists=packages/database/.env scripts/capture-dashboard.ts",
     "images:optimize": "tsx scripts/optimize-images.ts"

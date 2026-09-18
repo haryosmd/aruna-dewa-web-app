@@ -243,6 +243,106 @@ blocked", dan API kita tidak pernah melihat permintaannya. Scope yang dipakai cu
 `openid email profile`, ketiganya non-sensitive, jadi `PUBLISH APP` berlaku seketika tanpa
 review Google.
 
+## Penyimpanan media (IDCloudHost IS3)
+
+Foto dan lagu pelanggan hidup di bucket object storage, bukan di disk VPS. Endpoint
+`https://is3.cloudhost.id`, path-style, satu vendor dengan VPS.
+
+**Dua pasang kredensial, dan perbedaannya bukan kerapian.**
+
+| Dipakai | Izin | Tinggal di |
+|---|---|---|
+| API (`S3_*`) | Get, Put, Delete | `/srv/aruna/api.env`, mode 600 |
+| Backup (`MEDIA_REMOTE`) | Get, List — **tanpa Put, tanpa Delete** | `/root/.config/rclone/rclone.conf`, mode 600 |
+
+Satu pasang kunci untuk keduanya berarti mesin yang mencadangkan media bisa menghapusnya. Itu
+persis arah yang seluruh `ops/backup/` dibangun untuk tolak, dan tidak ada gunanya menegakkannya
+di bucket backup lalu melepasnya di bucket media.
+
+**Bucketnya privat, dan itu menahan seluruh kontrol akses.** Media disajikan lewat proxy API
+(`/v1/public/media/:id`), bukan URL bucket: draf hanya terbaca anggota, foto publik hanya setelah
+`servesAsset()` membenarkan ia benar-benar dipakai revisi yang terbit. Bucket yang bisa dibaca
+anonim membatalkan semuanya sekaligus, dan tidak ada gerbang otomatis yang akan melihatnya —
+karena itu `pnpm media:check` memeriksanya secara eksplisit.
+
+**Sebelum menyentuh apa pun**, buktikan bucketnya dengan kode yang sama yang akan dipakai API:
+
+```sh
+# di laptop, dengan S3_* terisi di apps/api/.env
+pnpm media:check
+```
+
+Ia memeriksa HeadBucket, put/get/delete, path-style, penolakan pembacaan anonim, dan apakah
+`If-None-Match: *` ditegakkan. Yang terakhir dilaporkan, bukan diwajibkan.
+
+### Urutan pindah dari volume ke bucket
+
+**Merge ke `main` ADALAH flip-nya.** `compose.prod.yaml` membawa `MEDIA_PROVIDER: s3`, dan itu
+disengaja — keputusan tempat foto pelanggan disimpan ikut git, dan `container-wiring.spec.ts`
+memakukannya.
+
+**Yang wajib sebelum merge cuma satu: `S3_*` di `/srv/aruna/api.env`.**
+
+```
+S3_ENDPOINT=https://is3.cloudhost.id
+S3_REGION=us-east-1
+S3_BUCKET=aruna-media
+S3_ACCESS_KEY_ID=<dari konsol>
+S3_SECRET_ACCESS_KEY=<dari konsol>
+```
+
+Merge tanpa itu membuat API menolak boot dan gerbang `/ready` di `deploy.yml` menggagalkan
+rilisnya. Perilaku yang memang diinginkan, tapi jauh lebih murah dihindari.
+
+**Menyalin objek lama TIDAK perlu sebelum merge**, dan itu bukan kelonggaran melainkan konsekuensi
+langsung dari dual-read: aset `provider = LOCAL` dibaca dari volume lewat `storageForAsset()`, per
+aset, tanpa peduli `MEDIA_PROVIDER` menunjuk ke mana. Volume-nya tetap terpasang di
+`compose.prod.yaml`. Yang membutuhkan salinan di bucket adalah `--flip`, bukan merge.
+
+Sesudah merge, buktikan di produksi — satu lintasan, bukan `/ready` hijau:
+
+1. Unggah foto baru lewat dasbor, terbitkan, buka tautan tamu. Objeknya muncul di bucket dan
+   barisnya `provider = S3`.
+2. **Buka undangan yang fotonya diunggah sebelum hari ini.** Ini yang membuktikan dual-read, dan
+   satu-satunya kelas kegagalan yang tidak akan terlihat dari langkah 1.
+3. `docker compose ... up -d --force-recreate api`, lalu ulangi keduanya.
+
+### Utang yang dicatat terbuka, bukan dilupakan
+
+**Backup off-site belum pernah terpasang** — bukan berhenti bekerja karena pindah ke S3, memang
+belum pernah ada. `docs/ROADMAP.md` menundanya justru sampai ada bucket. Cakupan backup media
+karena itu nol sebelum maupun sesudah pindah; yang berubah hanya daya tahannya naik, karena object
+storage direplikasi provider sementara disk 58 GB tidak.
+
+Keputusan pemilik 2026-09-18: **flip dulu, backup menyusul sebagai pekerjaan berikutnya.**
+
+Aturannya satu, dan mengikat:
+
+> **Jangan jalankan `media-migrate.sh --flip` sebelum backup terpasang.** Sebelum `--flip`, volume
+> masih jadi cadangan hidup untuk setiap foto lama dan rollback ke `MEDIA_PROVIDER: local`
+> memulihkan semuanya. Sesudah `--flip`, bucket jadi satu-satunya salinan yang dibaca — dan itu
+> titik di mana "belum ada backup" berhenti murah.
+
+Urutan saat backup dikerjakan nanti: `ops/backup/README.md` dari langkah 1, ditambah remote rclone
+kedua (`MEDIA_REMOTE`) untuk bucket media. `install.sh` sudah menuntut ketiga variabel
+(`HC_URL`, `REMOTE`, `MEDIA_REMOTE`) dan ikut memasang `media-migrate.sh`.
+
+**Kredensial `MEDIA_REMOTE` belum terbukti bisa dibatasi.** Konsol IDCloudHost menampilkan
+permission per access key ("All permissions") dengan ikon sunting, tapi apakah ia bisa dipersempit
+ke Get+List saja belum diverifikasi. Kalau ternyata tidak bisa, catat apa adanya di sini dan
+putuskan sadar — seluruh `ops/backup/` berdiri di atas premis mesin backup tidak bisa menghapus.
+
+**Rollback**, dan batasnya. Sebelum langkah 6: kembalikan `MEDIA_PROVIDER: local` dan `up -d` —
+semua foto lama masih di volume, dan `storageForAsset()` memilih per aset, jadi yang sudah naik ke
+bucket pun tetap terbaca. Setelah langkah 6 rollback tidak memulihkan apa pun, karena kolomnya
+sudah bilang S3. Itu sebabnya ia langkah terpisah dan sengaja ditunda.
+
+**Volume `media:` tetap dipasang** selama masih ada baris `provider = LOCAL`. Periksa kapan saja:
+
+```sh
+ssh aruna sudo /usr/local/lib/aruna/media-migrate.sh --status
+```
+
 ## Backup
 
 `ops/backup/` — dump Postgres harian + media inkremental, terenkripsi `age` ke bucket off-site,

@@ -68,6 +68,15 @@ services:
       # `pnpm --filter @aruna/api start` berjalan dari /app/apps/api — di luar volume di bawah,
       # di lapisan container yang dibuang setiap rilis.
       MEDIA_LOCAL_DIR: /app/.data/media
+      # Di mana foto pelanggan disimpan. Tempatnya di sini dengan alasan yang sama seperti dua
+      # nilai di atas: ia menentukan apakah unggahan bertahan, jadi ia tidak boleh hidup hanya di
+      # `api.env` yang ada di satu server dan ditulis tangan sekali. Rahasianya (`S3_*`) tetap di
+      # sana — yang ikut git adalah keputusannya, bukan kuncinya.
+      #
+      # Rollback ke `local` aman **selama** `ops/media-migrate.sh --flip` belum dijalankan: baris
+      # yang masih `LOCAL` tetap dibaca dari volume di bawah, dan `storageForAsset()` memilih per
+      # aset, bukan per proses.
+      MEDIA_PROVIDER: s3
       # Induk bersama `arunadewa.id` dan `api.arunadewa.id`. Tanpa ini cookie sesi terbit
       # host-only di host API, dan render server Nuxt — yang membacanya dari header cookie yang
       # sampai ke host WEB — tidak pernah melihatnya: tiap navigasi penuh ke halaman ber-middleware
@@ -77,8 +86,10 @@ services:
       COOKIE_DOMAIN: arunadewa.id
     expose:
       - '3001'
-    # MEDIA_PROVIDER=local menulis ke dalam container; tanpa volume ini setiap rilis menghapus
-    # foto yang sudah diunggah pelanggan. Pindah ke S3 nanti menjadikannya tidak terpakai, bukan salah.
+    # Sejak fase 56 ini bukan lagi jalur tulis — unggahan baru mendarat di bucket. Ia tetap
+    # dipasang karena ia satu-satunya sumber baca aset warisan `provider = LOCAL`, dan mencabutnya
+    # sekarang berarti undangan yang sudah disebar kehilangan fotonya. Dihapus di fase tersendiri,
+    # setelah `--flip` dan setelah `SELECT count(*) FROM "MediaAsset" WHERE provider='LOCAL'` nol.
     volumes:
       - media:/app/.data/media
     depends_on:

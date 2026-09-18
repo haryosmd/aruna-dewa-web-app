@@ -12,6 +12,7 @@ set -euo pipefail
 
 : "${HC_URL:?HC_URL wajib ada di /srv/aruna/backup.env}"
 : "${REMOTE:?REMOTE wajib ada di /srv/aruna/backup.env}"
+: "${MEDIA_REMOTE:?MEDIA_REMOTE wajib ada di /srv/aruna/backup.env}"
 COMPOSE_DIR="${COMPOSE_DIR:-/srv/aruna}"
 RECIPIENTS="${RECIPIENTS:-/etc/aruna/backup-recipients.txt}"
 LOCAL_DIR="${LOCAL_DIR:-/var/backups/aruna}"
@@ -92,31 +93,70 @@ for prefix in $prefixes; do
 done
 
 echo "== 4/5 salin media (inkremental) =="
-# Kunci media immutable: media.service.ts memakai randomUUID dan storage.ts menulis dengan
-# flag 'wx'. Tidak ada berkas yang pernah ditimpa — hanya ditambah. Itu yang membuat "salin
-# yang belum ada" benar secara semantik, bukan sekadar hemat.
+# Kunci media immutable: media.service.ts memakai randomUUID untuk tiap kunci, dan tidak ada
+# jalur kode yang pernah menulis ulang kunci yang sudah ada. Itu yang membuat "salin yang belum
+# ada" benar secara semantik, bukan sekadar hemat.
+#
+# Jaminannya ditegakkan storage di KEDUA backend, bukan hanya oleh kuncinya: jalur lokal menulis
+# dengan flag 'wx', jalur S3 mengirim `If-None-Match: *` dan IS3 menjawab 412 (diverifikasi
+# 2026-09-18 lewat `pnpm media:check`, yang menuntut kode 412 itu — bukan sekadar "permintaannya
+# melempar", karena header yang ditolak sebagai tidak didukung juga melempar).
+#
+# Kalau bucket diganti ke provider lain, jalankan `pnpm media:check` lagi sebelum mempercayai
+# baris ini. Jaminan yang tertulis lebih kuat dari yang sebenarnya berlaku adalah cara backup
+# berhenti benar tanpa ada yang menyadarinya.
 #
 # `copy`, TIDAK PERNAH `sync`: penghapusan yang salah di produksi akan dikejar ke backup dalam
 # 24 jam dan pemulihannya mustahil. Objek yang aset-nya sudah dihapus memang menumpuk di bucket;
 # itu konsekuensi sadar, dan harganya kecil.
-MEDIA_DIR="$($compose ps -q api | xargs -r docker inspect \
-  -f '{{range .Mounts}}{{if eq .Destination "/app/.data/media"}}{{.Source}}{{end}}{{end}}')"
-test -n "$MEDIA_DIR" && test -d "$MEDIA_DIR" \
-  || { echo "Volume media tidak ditemukan lewat container api."; exit 1; }
-echo "  volume: $MEDIA_DIR"
+#
+# DUA SUMBER, dan keduanya wajib disebut. Sejak fase 56 unggahan baru mendarat di bucket media,
+# sementara aset warisan `provider = LOCAL` masih hidup di volume. Skrip ini pernah hanya tahu
+# volume; membiarkannya begitu berarti cakupan backup foto jatuh ke nol pada hari flip, sementara
+# skripnya tetap keluar 0 dan dead man's switch tetap berbunyi sehat. Karena itu MEDIA_REMOTE
+# gagal keras kalau kosong — kebalikan dari volume, yang boleh hilang setelah dipensiunkan.
+: "${MEDIA_REMOTE:?MEDIA_REMOTE wajib ada di /srv/aruna/backup.env sejak media pindah ke bucket}"
 
 # Daftar remote adalah sumber kebenaran. Tidak ada berkas state lokal yang bisa ikut hilang
 # bersama disk yang justru sedang kita cadangkan.
 rclone lsf -R --files-only "$REMOTE/media/" 2>/dev/null | sed 's/\.age$//' | sort > "$WORK/remote.txt"
-find "$MEDIA_DIR" -type f -printf '%P\n' | sort > "$WORK/local.txt"
-comm -23 "$WORK/local.txt" "$WORK/remote.txt" > "$WORK/todo.txt"
-echo "  lokal $(wc -l < "$WORK/local.txt"), sudah di bucket $(wc -l < "$WORK/remote.txt"), baru $(wc -l < "$WORK/todo.txt")"
 
-export MEDIA_DIR REMOTE RECIPIENTS
-# rcat streaming: disk 58 GB tidak perlu menampung salinan kedua seluruh media dalam bentuk
-# terenkripsi. -P supaya ribuan foto tidak diunggah satu per satu secara berurutan.
-xargs -r -a "$WORK/todo.txt" -d '\n' -P "$MEDIA_JOBS" -I{} \
-  sh -c 'age -R "$RECIPIENTS" -o - -- "$MEDIA_DIR/$1" | rclone rcat "$REMOTE/media/$1.age"' _ {}
+# Sumber A — bucket media. `.probe/` dikecualikan: berkas probe kesiapan bukan media dan tidak
+# pernah punya baris DB. (Pada S3 probe-nya HeadBucket, jadi ini hanya sisa dari era lokal.)
+rclone lsf -R --files-only "$MEDIA_REMOTE/" 2>/dev/null | grep -v '^\.probe/' | sort > "$WORK/bucket.txt"
+echo "  bucket $MEDIA_REMOTE: $(wc -l < "$WORK/bucket.txt")"
+
+# Sumber B — volume warisan. Boleh tidak ada: setelah fase pensiun volume, hilangnya bukan galat.
+# Selama masih ada, isinya wajib ikut tercadangkan.
+MEDIA_DIR="$($compose ps -q api | xargs -r docker inspect \
+  -f '{{range .Mounts}}{{if eq .Destination "/app/.data/media"}}{{.Source}}{{end}}{{end}}')"
+if [ -n "$MEDIA_DIR" ] && [ -d "$MEDIA_DIR" ]; then
+  find "$MEDIA_DIR" -type f -printf '%P\n' | grep -v '^\.probe/' | sort > "$WORK/volume.txt"
+  echo "  volume $MEDIA_DIR: $(wc -l < "$WORK/volume.txt")"
+else
+  : > "$WORK/volume.txt"
+  echo "  volume: tidak dipasang (sudah dipensiunkan)"
+fi
+
+# Kunci yang hanya ada di volume disalin dari volume; sisanya dari bucket. Kalau sebuah kunci ada
+# di keduanya — keadaan normal selama migrasi — bucket yang menang, dan isinya identik.
+comm -23 "$WORK/volume.txt" "$WORK/bucket.txt" > "$WORK/volume-saja.txt"
+comm -23 "$WORK/bucket.txt" "$WORK/remote.txt" > "$WORK/todo-bucket.txt"
+comm -23 "$WORK/volume-saja.txt" "$WORK/remote.txt" > "$WORK/todo-volume.txt"
+echo "  sudah di backup $(wc -l < "$WORK/remote.txt"), baru $(( $(wc -l < "$WORK/todo-bucket.txt") + $(wc -l < "$WORK/todo-volume.txt") ))"
+
+export MEDIA_DIR MEDIA_REMOTE REMOTE RECIPIENTS
+# rcat streaming di kedua arah: disk 58 GB tidak perlu menampung salinan kedua seluruh media
+# dalam bentuk terenkripsi, dan objek bucket tidak pernah mendarat di disk sama sekali.
+# -P supaya ribuan foto tidak diunggah satu per satu secara berurutan.
+#
+# `bash -c` dengan `pipefail`, bukan `sh -c`. Tanpa itu hanya perintah TERAKHIR yang menentukan
+# kode keluar: `rclone cat` yang gagal atau `age` yang mati di tengah tetap berakhir dengan
+# `rclone rcat` yang sukses menulis objek terpotong — backup yang ada, terenkripsi, dan kosong.
+xargs -r -a "$WORK/todo-bucket.txt" -d '\n' -P "$MEDIA_JOBS" -I{} \
+  bash -c 'set -eo pipefail; rclone cat "$MEDIA_REMOTE/$1" | age -R "$RECIPIENTS" -o - | rclone rcat "$REMOTE/media/$1.age"' _ {}
+xargs -r -a "$WORK/todo-volume.txt" -d '\n' -P "$MEDIA_JOBS" -I{} \
+  bash -c 'set -eo pipefail; age -R "$RECIPIENTS" -o - -- "$MEDIA_DIR/$1" | rclone rcat "$REMOTE/media/$1.age"' _ {}
 
 echo "== 5/5 verifikasi objek benar-benar ada di remote =="
 # rcat yang putus di tengah bisa meninggalkan objek terpotong. Yang ditanya bukan "apakah
