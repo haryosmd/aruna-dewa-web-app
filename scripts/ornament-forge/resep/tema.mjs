@@ -168,6 +168,27 @@ export const lepasKategori = {
   'corner-fan': { mahkota: 'halus', isen: 'cecek', stroke: 3, rapport: 5, isenSkala: 0.44 },
 
   /*
+   * Simbol dan segel tiga tema hidup, sejak fase 58 memensiunkan keluarga forge-nya.
+   *
+   * Pemilik menilai bingkai, segel, dan simbol keluaran forge tidak memenuhi standar, dan
+   * ketiganya dicabut dari `themePresentation`. Berkasnya tetap ada — `ornamenPensiun` dan
+   * gerbang keunikan bergantung padanya — tapi `bacaTema()` membangun kepemilikan dari
+   * `theme.ts`, jadi keenamnya kini glyph tanpa tema. Tanpa parameter di sini,
+   * `pnpm ornament:forge` berhenti di tengah jalan dan `forge-idempotent.spec.ts` merah.
+   *
+   * Parameternya disalin PERSIS dari tema asalnya, bukan disetel ulang: menjalankan forge
+   * harus tetap menghasilkan berkas yang sama byte-per-byte, kalau tidak yang diuji idempoten
+   * bukan generatornya melainkan salinannya. Bingkai ketiganya tidak perlu entri — `bingkaiTema`
+   * memetakannya dengan tangan, bukan lewat `bacaTema()`.
+   */
+  'symbol-wastra': { mahkota: 'wastra', isen: 'cecek', stroke: 3.5, rapport: 3, isenSkala: 0.62 },
+  'seal-wastra': { mahkota: 'wastra', isen: 'cecek', stroke: 3.5, rapport: 3, isenSkala: 0.62 },
+  'symbol-hening': { mahkota: 'hening', isen: 'sawut', stroke: 2.5, rapport: 4, isenSkala: 0.28 },
+  'seal-hening': { mahkota: 'hening', isen: 'sawut', stroke: 2.5, rapport: 4, isenSkala: 0.28 },
+  'symbol-pelita': { mahkota: 'pelita', isen: 'cecek', stroke: 3.5, rapport: 6, isenSkala: 0.46 },
+  'seal-pelita': { mahkota: 'pelita', isen: 'cecek', stroke: 3.5, rapport: 6, isenSkala: 0.46 },
+
+  /*
    * Wajah Bloom yang lama, sejak kesebelas slotnya pindah ke pack `melati`.
    *
    * Mereka tidak dipensiunkan dan tidak dihapus: kelimanya turun jadi alternatif pertama di

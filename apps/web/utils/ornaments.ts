@@ -34,6 +34,9 @@ export interface OrnamentEntry {
   ratio: number
   /** Hanya untuk kategori `layer`. */
   slot?: LayerSlot
+  /** Fixed-color vector or native raster from the owner's reference collection. */
+  asset?: string
+  format?: 'svg' | 'png'
 }
 
 const layer = (component: string, name: string, slot: LayerSlot, ratio: number) =>
@@ -272,9 +275,6 @@ export const ornamentBank = {
   'melati-segel-janur': { component: 'OrnamentMelatiSegelJanur', name: 'Segel janur', category: 'seal', ratio: 1 },
   'melati-segel-kuncup': { component: 'OrnamentMelatiSegelKuncup', name: 'Segel kuncup', category: 'seal', ratio: 1 },
   'melati-pendopo-joglo': { component: 'OrnamentMelatiPendopoJoglo', name: 'Pendopo joglo', category: 'venue', ratio: 200 / 260 },
-  'kayon-bingkai-kayon': { component: 'OrnamentKayonBingkaiKayon', name: 'Bingkai kayon', category: 'frame', ratio: 420 / 560 },
-  'kayon-bingkai-kayon-polos': { component: 'OrnamentKayonBingkaiKayonPolos', name: 'Bingkai kayon polos', category: 'frame', ratio: 420 / 560 },
-  'kayon-bingkai-kayon-kembar': { component: 'OrnamentKayonBingkaiKayonKembar', name: 'Bingkai kayon kembar', category: 'frame', ratio: 460 / 520 },
   'kayon-bingkai-medalion': { component: 'OrnamentKayonBingkaiMedalion', name: 'Bingkai medalion', category: 'frame', ratio: 1 },
   'kayon-bingkai-tumpal': { component: 'OrnamentKayonBingkaiTumpal', name: 'Bingkai tumpal', category: 'frame', ratio: 380 / 520 },
   'kayon-bingkai-lung': { component: 'OrnamentKayonBingkaiLung', name: 'Bingkai lung-lungan', category: 'frame', ratio: 440 / 300 },
@@ -339,6 +339,10 @@ export const ornamentBank = {
   'sekar-sudut-damask': { component: 'OrnamentSekarSudutDamask', name: 'Sudut damask', category: 'corner', ratio: 1 },
   'sekar-sudut-sulur-kanan': { component: 'OrnamentSekarSudutSulurKanan', name: 'Sudut sulur kanan', category: 'corner', ratio: 1 },
   'sekar-sudut-sulur-kiri': { component: 'OrnamentSekarSudutSulurKiri', name: 'Sudut sulur kiri', category: 'corner', ratio: 1 },
+  'pusaka-segel-tumpal-jajar': { component: 'OrnamentPusakaSegelTumpalJajar', name: 'Segel tumpal berjajar', category: 'seal', ratio: 1 },
+  'pusaka-segel-sulur-bintang': { component: 'OrnamentPusakaSegelSulurBintang', name: 'Segel sulur bintang', category: 'seal', ratio: 1 },
+  'pusaka-segel-karangan-tipis': { component: 'OrnamentPusakaSegelKaranganTipis', name: 'Segel karangan tipis', category: 'seal', ratio: 1 },
+  'pusaka-bingkai-kubah': { component: 'OrnamentPusakaBingkaiKubah', name: 'Bingkai kubah', category: 'frame', ratio: 300 / 420 },
   /* ── /pack ── */
 } as const satisfies Record<string, OrnamentEntry>
 

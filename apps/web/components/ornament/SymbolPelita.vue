@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * Kubah bertingkat di atas bahu yang melebar; isen titik yang rapat.
+ * Ornamen symbol bank.
  *
  * dibangkitkan oleh scripts/ornament-forge — jangan sunting berkas ini dengan tangan;
  * ubah resepnya lalu jalankan `pnpm ornament:forge`.
- * Tema: aruna-pelita · mahkota: pelita · isen: cecek · garis: 3.5
+ * Tanpa tema · mahkota: pelita · isen: cecek · garis: 3.5
  */
 </script>
 

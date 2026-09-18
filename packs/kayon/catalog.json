@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "kayon",
-  "name": "Kayon — cokelat krem, gunungan dan pita medalion",
+  "name": "Kayon \u2014 cokelat krem, gunungan dan pita medalion",
   "scope": "original-local-demo",
   "builtAt": "2026-09-17",
   "palette": {
@@ -13,206 +13,21 @@
   },
   "fonts": {
     "demo": "Georgia / Arial bawaan sistem, supaya demo jalan offline",
-    "recommendation": "Belum ditentukan. Font referensi TIDAK teridentifikasi — lihat LIMITS.md.",
+    "recommendation": "Belum ditentukan. Font referensi TIDAK teridentifikasi \u2014 lihat LIMITS.md.",
     "note": "Tidak ada biner font yang disalin ke pack ini."
   },
   "composition": {
     "anchorRule": "Rumpun kayon di tepi bawah, pita medalion di kepala dan kaki, zona teks tidak dianimasikan.",
-    "source": "sources/canva-cokelat-krem/MOTION.md — densitas baris bawah 1,09–1,29 vs baris atas 0,70–0,92"
+    "source": "sources/canva-cokelat-krem/MOTION.md \u2014 densitas baris bawah 1,09\u20131,29 vs baris atas 0,70\u20130,92"
   },
   "motionRecipe": {
     "ease": "sine.inOut untuk gestur tunggal; power1.out untuk reveal berurutan",
-    "durasiGestur": "0,30 s (median segmen terukur); 0,93–1,03 s untuk dua gestur besar",
-    "jarakAntarGestur": "3,2–5,3 s",
+    "durasiGestur": "0,30 s (median segmen terukur); 0,93\u20131,03 s untuk dua gestur besar",
+    "jarakAntarGestur": "3,2\u20135,3 s",
     "pangsaDiam": "87,3% frame di bawah ambang gerak",
     "source": "sources/canva-cokelat-krem/motion/measurements.json"
   },
   "assets": [
-    {
-      "id": "bingkai-kayon",
-      "name": "Bingkai kayon",
-      "category": "frame",
-      "tags": [
-        "frame",
-        "gunungan",
-        "kayon",
-        "jawa",
-        "tatahan"
-      ],
-      "culturalRole": "arsitektur-kultural",
-      "provenance": {
-        "kind": "original",
-        "method": "geometri parametrik, dihitung untuk pack ini",
-        "generator": "build.mjs + geometry.mjs",
-        "referenceStudy": [
-          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
-          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
-          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
-        ],
-        "tracedFrom": null,
-        "checkedAt": "2026-09-17"
-      },
-      "usage": "original-local-demo",
-      "style": {
-        "palette": "monokrom currentColor",
-        "medium": "vektor bermassa",
-        "inkFields": [
-          1,
-          0.45
-        ]
-      },
-      "layers": [
-        "frame",
-        "scroll"
-      ],
-      "anchor": "section",
-      "motion": {
-        "preset": "gate",
-        "amplitude": 24,
-        "unit": "px",
-        "duration": 1,
-        "ease": "sine.inOut",
-        "stagger": 0,
-        "rigid": true,
-        "reducedMotion": "langsung-ke-keadaan-akhir",
-        "amplitudeMeasured": false
-      },
-      "variants": [
-        {
-          "file": "svg/bingkai-kayon.svg",
-          "format": "svg",
-          "width": 420,
-          "height": 560,
-          "ratio": 0.75,
-          "bytes": 44092,
-          "sha256": "3e32e84820154fdfe97c63588c2baba271c7e5348054b831b7a58064726aa3c7",
-          "alpha": true
-        }
-      ]
-    },
-    {
-      "id": "bingkai-kayon-polos",
-      "name": "Bingkai kayon polos",
-      "category": "frame",
-      "tags": [
-        "frame",
-        "gunungan",
-        "kayon",
-        "polos",
-        "kartu-nama"
-      ],
-      "culturalRole": "arsitektur-kultural",
-      "provenance": {
-        "kind": "original",
-        "method": "geometri parametrik, dihitung untuk pack ini",
-        "generator": "build.mjs + geometry.mjs",
-        "referenceStudy": [
-          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
-          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
-          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
-        ],
-        "tracedFrom": null,
-        "checkedAt": "2026-09-17"
-      },
-      "usage": "original-local-demo",
-      "style": {
-        "palette": "monokrom currentColor",
-        "medium": "vektor bermassa",
-        "inkFields": [
-          1,
-          0.45
-        ]
-      },
-      "layers": [
-        "frame",
-        "scroll"
-      ],
-      "anchor": "section",
-      "motion": {
-        "preset": "gate",
-        "amplitude": 24,
-        "unit": "px",
-        "duration": 1,
-        "ease": "sine.inOut",
-        "stagger": 0,
-        "rigid": true,
-        "reducedMotion": "langsung-ke-keadaan-akhir",
-        "amplitudeMeasured": false
-      },
-      "variants": [
-        {
-          "file": "svg/bingkai-kayon-polos.svg",
-          "format": "svg",
-          "width": 420,
-          "height": 560,
-          "ratio": 0.75,
-          "bytes": 10903,
-          "sha256": "5107fc07c52b155fecf43b802e523b400d249645314d17ac3a558181122ea125",
-          "alpha": true
-        }
-      ]
-    },
-    {
-      "id": "bingkai-kayon-kembar",
-      "name": "Bingkai kayon kembar",
-      "category": "frame",
-      "tags": [
-        "frame",
-        "gunungan",
-        "sepasang",
-        "jawa"
-      ],
-      "culturalRole": "arsitektur-kultural",
-      "provenance": {
-        "kind": "original",
-        "method": "geometri parametrik, dihitung untuk pack ini",
-        "generator": "build.mjs + geometry.mjs",
-        "referenceStudy": [
-          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
-          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
-          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
-        ],
-        "tracedFrom": null,
-        "checkedAt": "2026-09-17"
-      },
-      "usage": "original-local-demo",
-      "style": {
-        "palette": "monokrom currentColor",
-        "medium": "vektor bermassa",
-        "inkFields": [
-          1,
-          0.45
-        ]
-      },
-      "layers": [
-        "frame",
-        "scroll"
-      ],
-      "anchor": "section",
-      "motion": {
-        "preset": "gate",
-        "amplitude": 24,
-        "unit": "px",
-        "duration": 1,
-        "ease": "sine.inOut",
-        "stagger": 0,
-        "rigid": true,
-        "reducedMotion": "langsung-ke-keadaan-akhir",
-        "amplitudeMeasured": false
-      },
-      "variants": [
-        {
-          "file": "svg/bingkai-kayon-kembar.svg",
-          "format": "svg",
-          "width": 460,
-          "height": 520,
-          "ratio": 0.885,
-          "bytes": 38393,
-          "sha256": "7c93db98d8320bb8953f2a1e36acdd91904d48e0af6091f9601a957321f61b16",
-          "alpha": true
-        }
-      ]
-    },
     {
       "id": "bingkai-medalion",
       "name": "Bingkai medalion",
@@ -2407,7 +2222,7 @@
       "bytes": 6359,
       "sha256": "87cf8bcc5f917100bc965e66795a790d0f00478a0eaf0cec64bebf6b5e1b718f",
       "usage": "backdrop-mask",
-      "catatan": "Ubin sebar 160×160, seamless di keempat sisi karena titik sudutnya diulang penuh."
+      "catatan": "Ubin sebar 160\u00d7160, seamless di keempat sisi karena titik sudutnya diulang penuh."
     },
     {
       "id": "tumpal-tepi",
@@ -2420,5 +2235,6 @@
       "usage": "backdrop-mask",
       "catatan": "Ubin tepi mendatar; dipakai di kepala atau kaki section, bukan sebagai latar penuh."
     }
-  ]
+  ],
+  "catatanPensiun": "Tiga bingkai kayon dicabut dari katalog pada fase 58 atas penilaian pemilik: bingkai-kayon, bingkai-kayon-polos, bingkai-kayon-kembar. Berkas SVG-nya sengaja tetap ada di svg/ \u2014 yang dicabut keanggotaannya di bank, bukan karyanya, sama seperti perlakuan terhadap keluarga forge di fase yang sama."
 }

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * Satu takik pada garis yang selain itu datar; isen hanya guratan rambut.
+ * Ornamen seal bank.
  *
  * dibangkitkan oleh scripts/ornament-forge — jangan sunting berkas ini dengan tangan;
  * ubah resepnya lalu jalankan `pnpm ornament:forge`.
- * Tema: aruna-hening · mahkota: hening · isen: sawut · garis: 2.5
+ * Tanpa tema · mahkota: hening · isen: sawut · garis: 2.5
  */
 
 defineProps<{ initials?: string }>()

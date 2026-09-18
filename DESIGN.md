@@ -328,6 +328,24 @@ Frame, divider, corner, motif, symbol, dan seal **tidak pernah berulang antar te
 memakai glyph yang sama pada salah satu slot itu, salah satunya belum benar-benar punya wajah.
 Floral, monogram, dan garland boleh berbagi.
 
+**Keluarga bingkai, segel, dan simbol forge dipensiunkan pada fase 58**, atas penilaian pemilik
+setelah lembar kontaknya dibuka: sudut tidak sempurna, garis tebal. Empat puluh glyph, dan
+cacatnya cacat resep — bukan cacat satu-dua keping. **Berkasnya tidak dihapus**: `ornamenPensiun`
+dan gerbang keunikan bergantung padanya, persis alasan yang sudah tertulis di atas. Yang dicabut
+keanggotaannya di `themePresentation` dan `themeVariants` — dua-duanya satu-satunya jalan sebuah
+glyph bisa sampai ke mata tamu atau pasangan.
+
+**Yang dipelajari saat menambalnya berlaku untuk penggantian slot berikutnya.** `gerbangKohesi`
+punya DUA syarat, dan yang kedua memangkas paling banyak: ketebalan garis seragam **dan** tiap
+anggota wajib punya lapisan garis. Diukur pada seluruh bank non-forge, enam keping terbaik tidak
+punya `data-draw` sama sekali — relnya ditambahkan di SVG sumber packnya, bukan diakali di
+`theme.ts`. Ketebalan diselesaikan `strokeGlyph` di importir, penimpaan per-glyph yang aman justru
+karena aturan keunikan di atas: glyph yang ditimpa ketebalannya hanya pernah dipakai satu tema.
+
+**Dan kolam varian menuntut alternatif, bukan satu pilihan.** Sesudah forge keluar, bank cuma
+punya tujuh segel non-forge untuk lima tema yang masing-masing butuh dua. Kekurangan itu diisi
+pack `pusaka` — empat keping yang lahir dari hitungan, bukan dari tema.
+
 **Pack `sekar` menambahkan syarat kesepuluh yang sebelumnya tidak pernah ditulis: jangan datar.**
 Sampai fase 42 seluruh bank satu tinta, dan `ornament-palette.ts` menjawabnya dengan ramp empat
 stop — tapi ramp itu hanya menyediakan warnanya, tidak mewajibkan glyph memakainya. Diukur, 128

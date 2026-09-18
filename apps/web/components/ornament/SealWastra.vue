@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * Tumpal diperbesar jadi bidang, bukan renda tepi; isen cecek besar dan jarang.
+ * Ornamen seal bank.
  *
  * dibangkitkan oleh scripts/ornament-forge — jangan sunting berkas ini dengan tangan;
  * ubah resepnya lalu jalankan `pnpm ornament:forge`.
- * Tema: aruna-wastra · mahkota: wastra · isen: cecek · garis: 3.5
+ * Tanpa tema · mahkota: wastra · isen: cecek · garis: 3.5
  */
 
 defineProps<{ initials?: string }>()

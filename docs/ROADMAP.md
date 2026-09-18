@@ -43,6 +43,34 @@ alasannya.
 
 ## Sisa
 
+**Fase 58 — bingkai, segel, dan simbol forge dipensiunkan.** Ditulis 2026-09-18 setelah pemilik
+membuka lembar kontak dan menilai ketiga keluarga itu tidak memenuhi standar: sudut tidak
+sempurna, garis tebal. Empat puluh glyph, dan cacatnya cacat resep — bukan cacat satu-dua keping.
+
+**Dipensiunkan, bukan dihapus, dan itu keputusan pemilik setelah angkanya diajukan.** Dari 28
+glyph yang ia potret, 5 dipakai tema hidup dan 19 mengisi set tema pensiun serta kolam varian;
+hanya 4 yang benar-benar bebas. Menghapus set tema pensiun akan menurunkan gerbang keunikan dari
+54 slot ke 6 sambil tetap melaporkan "0 pelanggaran" — kegagalan yang sudah ditulis di
+`DESIGN.md:280`. Jadi berkasnya tinggal; yang dicabut keanggotaannya di `themePresentation` dan
+`themeVariants`, dua-duanya satu-satunya jalan sebuah glyph bisa sampai ke mata tamu atau
+pasangan.
+
+**Gerbang kohesi punya dua syarat, dan syarat keduanya yang memangkas paling banyak.** Ia menolak
+tema yang ketebalan garisnya tidak seragam DAN tema yang anggotanya tidak punya lapisan garis.
+Enam keping pack terbaik ternyata tidak punya `data-draw` sama sekali — relnya ditambahkan di SVG
+sumbernya. Ketebalan diselesaikan `strokeGlyph`, penimpaan per-glyph di importir: aman justru
+karena bingkai, simbol, dan segel tidak pernah berulang antar tema, jadi glyph yang ditimpa hanya
+pernah dipakai satu tema.
+
+**Pack `pusaka` lahir dari kekurangan yang terukur, bukan dari tema.** Sesudah forge keluar, bank
+hanya punya tujuh segel non-forge untuk lima tema yang masing-masing butuh dua — kurang tiga,
+ditambah kurang satu bingkai. Empat keping, tidak lebih.
+
+**Dua segel pertama saya terbaca sebagai roda gigi**, dan itu persis kelas cacat yang sedang
+diperbaiki. Ketahuan dari melihat: kelopak sama panjang mengelilingi cakram pejal, dan gerigi yang
+menghadap ke dalam. Diperbaiki jadi kelopak berselang-seling dan gerigi menghadap keluar.
+
+
 **Fase 53 — tema `aruna-sekar`, dan slot yang akhirnya diisi.** Ditulis 2026-09-18, **sebelum satu
 berkas pun disentuh**. Fase 47 menyisakan barisnya sebagai "menunggu pemilik"; yang datang adalah
 sembilan ekspor Canva dan satu ubin damask seamless 864×864, dengan permintaan tema khusus yang
@@ -256,6 +284,7 @@ memicu gerbang add-on. Nol perubahan pada `invitationDocumentSchema`.
 | 53 | Tema `aruna-sekar` — permintaan pemilik, dibangun dari sembilan referensi Canva miliknya sendiri plus satu ubin damask. Pack `sekar` 22 glyph bergradasi, dan backdrop pertama yang benar-benar menyala. **Selesai 2026-09-18**; diaudit ulang terhadap referensinya hari yang sama — `--iv-orn-leaf`, tangkai bermassa, plafon floral 10240 |
 | 54 | Migrasi `draftDocument` + pembebasan gerbang `design`. **Skrip selesai 2026-09-18; belum dijalankan di produksi** |
 | 55 | `DESIGN.md` diperbarui 2026-09-18. **`playLegacyScore` belum bisa dihapus** — bloom sengaja belum diberi partitur |
+| 58 | Pensiunkan keluarga bingkai, segel, dan simbol forge (40 glyph) atas penilaian pemilik; sembilan slot tema hidup dibangun ulang dari pack, pack `pusaka` lahir mengisi kolam. **Selesai 2026-09-18** |
 | 57 | Artefak berhenti di-gitignore: skill, `packs/`, dan docs teks ikut terlacak supaya progres terbaca dari mesin lain. **Selesai 2026-09-18** — 134 berkas docs (1,15 MB), 126 berkas packs (1,40 MB), 23 berkas skill (0,09 MB) |
 
 **Fase 47–55 menggantikan fase 47–50 yang lama.** Ditulis 2026-09-18, **sebelum satu berkas pun

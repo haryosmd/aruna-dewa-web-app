@@ -36,33 +36,10 @@
       "data-draw",
       "isen"
     ],
-    "kayon-bingkai-kayon": [
-      "bobot",
-      "data-draw",
-      "lonjakan",
-      "potong-diri"
-    ],
-    "kayon-bingkai-kayon-kembar": [
-      "bobot",
-      "data-draw",
-      "lonjakan",
-      "potong-diri"
-    ],
-    "kayon-bingkai-kayon-polos": [
-      "data-draw",
-      "lonjakan",
-      "potong-diri"
-    ],
     "kayon-bingkai-lung": [
-      "bidang-nilai",
-      "data-draw",
       "isen"
     ],
-    "kayon-bingkai-medalion": [
-      "data-draw"
-    ],
     "kayon-bingkai-tumpal": [
-      "data-draw",
       "isen",
       "lonjakan"
     ],
@@ -144,13 +121,11 @@
     ],
     "kayon-segel-kayon": [
       "bobot",
-      "data-draw",
       "lonjakan",
       "potong-diri"
     ],
     "kayon-segel-medalion": [
-      "bobot",
-      "data-draw"
+      "bobot"
     ],
     "kayon-simbol-cincin": [
       "data-draw",
@@ -161,9 +136,6 @@
       "isen",
       "lonjakan",
       "potong-diri"
-    ],
-    "kayon-simbol-mawar": [
-      "data-draw"
     ],
     "kayon-sudut-kayon": [
       "bobot",
@@ -391,11 +363,7 @@
       "bobot"
     ],
     "melati-segel-janur": [
-      "data-draw",
       "kurva"
-    ],
-    "melati-segel-melati": [
-      "data-draw"
     ],
     "melati-sudut-anyam": [
       "data-draw"

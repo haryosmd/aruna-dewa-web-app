@@ -33,6 +33,13 @@ const modules = import.meta.glob<{ default: Component }>('./*.vue')
 
 const props = defineProps<{ glyph: OrnamentId | null | undefined; initials?: string }>()
 
+// External SVGs retain their fixed reference palette and isolate definition IDs per image.
+// Native raster illustrations follow the same sizing and decorative accessibility contract.
+const asset = computed(() => {
+  const entry = props.glyph ? ornamentBank[props.glyph] : null
+  return entry && 'asset' in entry ? entry.asset : null
+})
+
 const cache = new Map<string, Component>()
 const resolved = computed(() => {
   if (!props.glyph) return null
@@ -55,6 +62,7 @@ const resolved = computed(() => {
  */
 const extra = computed(() => ({
   ...(props.initials === undefined ? {} : { initials: props.initials }),
+  ...(asset.value ? { src: asset.value } : {}),
 }))
 </script>
 

@@ -26,7 +26,7 @@ const akar = fileURLToPath(new URL('../../', import.meta.url))
 const tujuan = `${akar}apps/web/components/ornament/`
 
 /** Pack yang ikut diimpor, beserta awalan id dan nama komponennya. */
-export const packs = ['melati', 'kayon', 'sunda', 'sekar']
+export const packs = ['melati', 'kayon', 'sunda', 'sekar', 'pusaka']
 
 /**
  * Slot ladang untuk glyph berkategori `layer`.
@@ -99,7 +99,29 @@ function warnai(svg) {
  * adalah kolam yang cepat atau lambat akan dicampur. 3,2 membuat tema ini hanya bisa menarik
  * dari packnya sendiri, yang memang membawa dua kandidat untuk keempat slotnya.
  */
-const strokePack = { melati: 3, kayon: 3.5, sunda: 3, sekar: 3.2 }
+const strokePack = { melati: 3, kayon: 3.5, sunda: 3, sekar: 3.2, pusaka: 3.5 }
+
+/**
+ * Penimpaan ketebalan per GLYPH, dan ia yang membuat glyph pack bisa masuk tema mana pun.
+ *
+ * `gerbangKohesi` menuntut satu ketebalan garis per tema. Sampai fase ini itu berarti sebuah
+ * tema hanya boleh menarik dari pack yang ketebalannya kebetulan sama — dan `aruna-hening`
+ * memakai 2,5 sementara tidak ada satu pack pun di 2,5. Akibatnya kolam kandidatnya **nol**,
+ * bukan karena tidak ada bentuk yang bagus melainkan karena satu angka.
+ *
+ * Penimpaan ini aman justru karena aturan lain: `frame`, `symbol`, dan `seal` tidak pernah
+ * berulang antar tema, jadi sebuah glyph yang ditimpa ketebalannya hanya pernah dipakai satu
+ * tema. Tidak ada tema kedua yang ikut berubah tanpa diminta.
+ */
+const strokeGlyph = {
+  // Tiga keping yang mengisi slot `aruna-hening` sesudah glyph forge-nya dipensiunkan.
+  'melati-bingkai-oval-kantil': 2.5,
+  'melati-janur-kuning': 2.5,
+  'melati-segel-janur': 2.5,
+  'sunda-bingkai-sunda': 2.5,
+  // Pack `pusaka` lahir 3,5 untuk wastra dan pelita; satu kepingnya dituju ke hening yang 2,5.
+  'pusaka-segel-karangan-tipis': 2.5,
+}
 
 /**
  * Menyesuaikan penulisan markup dengan aturan lint repo.
@@ -111,9 +133,10 @@ const strokePack = { melati: 3, kayon: 3.5, sunda: 3, sekar: 3.2 }
  */
 const rapikan = (svg) => svg.replace(/([^\s])\/>/g, '$1 />')
 
-/** Menyeragamkan `stroke-width` sebuah SVG ke ketebalan target packnya. */
-function seragamkanGaris(svg, pack) {
-  return svg.replace(/stroke-width="[\d.]+"/g, `stroke-width="${strokePack[pack] ?? 3}"`)
+/** Menyeragamkan `stroke-width` sebuah SVG ke ketebalan target packnya, atau penimpaan glyphnya. */
+function seragamkanGaris(svg, pack, id) {
+  const lebar = strokeGlyph[id] ?? strokePack[pack] ?? 3
+  return svg.replace(/stroke-width="[\d.]+"/g, `stroke-width="${lebar}"`)
 }
 
 /** Isi `<svg>` sebuah berkas pack, tanpa `<title>` dan atribut yang tidak dipakai bank. */
@@ -141,12 +164,13 @@ export function impor({ tulis = false } = {}) {
       const raw = readFileSync(`${dir}svg/${nama}.svg`, 'utf8')
       const mentah = isiSvg(raw)
       const viewBox = mentah.viewBox
-      const dalam = rapikan(warnai(seragamkanGaris(mentah.dalam, pack)))
-      const [, , w, h] = viewBox.split(/\s+/).map(Number)
 
       // Id pack sudah diawali nama packnya sendiri di sebagian katalog (`sunda-*`); jangan
       // menggandakannya, karena id bank adalah kunci publik yang masuk `theme.ts`.
       const id = aset.id.startsWith(`${pack}-`) ? aset.id : `${pack}-${aset.id}`
+
+      const dalam = rapikan(warnai(seragamkanGaris(mentah.dalam, pack, id)))
+      const [, , w, h] = viewBox.split(/\s+/).map(Number)
       const file = pascal(id)
 
       /*

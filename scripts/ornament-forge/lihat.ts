@@ -83,10 +83,27 @@ for (const [id, p] of Object.entries(themePresentation)) {
 const gaya = (obj: Record<string, string>) =>
   Object.entries(obj).map(([k, v]) => `${k}:${v}`).join(';')
 
+/**
+ * Isi sebuah keping: SVG yang di-inline, atau `<img>` untuk entri beraset.
+ *
+ * Entri beraset datang dari `referenceOrnaments` — koleksi referensi pemilik yang tayang
+ * sebagai berkas di `apps/web/public/ornaments/`, bukan sebagai komponen. `component`-nya
+ * menunjuk `OrnamentReferenceAsset` yang memang tidak ada berkasnya, dan `Glyph.vue` sudah
+ * memintasnya jadi `<img>`. Lembar ini belum tahu, jadi ia mati dengan ENOENT sebelum
+ * menggambar satu kartu pun.
+ *
+ * Asetnya **tidak** di-inline sebagai data URI: 65 berkas berbobot 24 MB dengan PNG sampai
+ * 1,9 MB, dan lembar ini sudah 4,9 MB. Ia dirujuk relatif, dan penyajinya yang diajari
+ * mencarinya di akar repo.
+ */
+function isiKeping(entri: { component: string, asset?: string }): string {
+  if (entri.asset) return `<img src="..${entri.asset.replace('/ornaments/', '/apps/web/public/ornaments/')}" alt="" loading="lazy">`
+  return keSvg(readFileSync(`${akar}apps/web/components/ornament/${entri.component.replace(/^Ornament/, '')}.vue`, 'utf8'))
+}
+
 function kartu(id: string): string {
-  const entri = ornamentBank[id as OrnamentId]
-  const raw = readFileSync(`${akar}apps/web/components/ornament/${entri.component.replace(/^Ornament/, '')}.vue`, 'utf8')
-  const svg = keSvg(raw)
+  const entri = ornamentBank[id as OrnamentId] as { component: string, asset?: string, category: string }
+  const svg = isiKeping(entri)
   const gagal = hasil.perGlyph[id] ?? []
   const u = hasil.ukuran[id]
   const lencana = gagal.length
@@ -143,7 +160,8 @@ const html = `<!doctype html><meta charset="utf-8"><title>Lembar kontak ornamen<
   .kisi{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
   .kartu{margin:0;background:#ffffff14;border-radius:6px;padding:8px;outline:1px solid #8884}
   .ukuran{display:flex;align-items:flex-end;gap:10px;justify-content:center;min-height:200px}
-  .s48 svg{width:40px;height:auto}.s120 svg{width:76px;height:auto}.s240 svg{width:190px;height:auto}
+  .s48 svg,.s48 img{width:40px;height:auto}.s120 svg,.s120 img{width:76px;height:auto}.s240 svg,.s240 img{width:190px;height:auto}
+  .ukuran img{display:block;object-fit:contain}
   figcaption{margin-top:8px;font-size:10px;line-height:1.35;opacity:.9;word-break:break-all}
   figcaption small{opacity:.6}
   .gagal{color:#ff9d8a}.lulus{color:#8ad6a0}
@@ -172,9 +190,19 @@ if (process.argv.includes('--sajikan')) {
     // permintaan `/favicon.ico` yang wajar menjatuhkan seluruh server dengan
     // ERR_HTTP_HEADERS_SENT — dan servernya memang sempat jatuh begitu.
     let isi: Buffer
+    // Dua akar: lembarnya sendiri di `.forge/`, dan aset referensi yang dirujuk relatif ke
+    // akar repo. Tanpa yang kedua tiap `<img>` keping referensi menjawab 404.
     try { isi = readFileSync(keluar + nama) }
-    catch { res.writeHead(404); res.end('tidak ada'); return }
-    res.writeHead(200, { 'content-type': nama.endsWith('.html') ? 'text/html; charset=utf-8' : 'text/plain' })
+    catch {
+      try { isi = readFileSync(akar + nama.replace(/^(\.\.\/)+/, '')) }
+      catch { res.writeHead(404); res.end('tidak ada'); return }
+    }
+    const jenis = nama.endsWith('.html') ? 'text/html; charset=utf-8'
+      : nama.endsWith('.svg') ? 'image/svg+xml'
+        : nama.endsWith('.png') ? 'image/png'
+          : nama.endsWith('.webp') ? 'image/webp'
+            : 'text/plain'
+    res.writeHead(200, { 'content-type': jenis })
     res.end(isi)
   }).listen(port, '127.0.0.1', () => console.log(`lembar kontak: http://127.0.0.1:${port}/`))
 }

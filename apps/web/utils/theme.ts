@@ -79,6 +79,21 @@ export interface ThemePresentation {
  * pemisah, sudut, motif, dan simbolnya sendiri — bukan sekadar tiga warna yang ditukar.
  * Kesembilan frame, divider, corner, motif, dan symbol di bawah ini tidak ada yang berulang.
  */
+/**
+ * **Bingkai, simbol, dan segel forge dipensiunkan pada fase 58.**
+ *
+ * Pemilik membuka lembar kontaknya, menilai keluarga bingkai/segel/simbol keluaran
+ * `scripts/ornament-forge` tidak memenuhi standar — sudut tidak sempurna, garis tebal — dan
+ * meminta ketiganya berhenti tayang. Empat puluh glyph itu **tidak dihapus**: berkasnya tinggal
+ * supaya `ornamenPensiun` tetap utuh dan `gerbangKeunikan` tetap mengukur 54 slot, persis alasan
+ * yang sudah ditulis di bawah untuk tema pensiun. Yang dicabut adalah keanggotaannya di sini dan
+ * di `themeVariants` — satu-satunya dua tempat yang bisa membuat tamu atau pasangan melihatnya.
+ *
+ * Penggantinya diambil dari pack, dan yang menentukan pilihannya dua syarat gerbang kohesi
+ * sekaligus: ketebalan garis harus sama dengan tema induknya, DAN tiap anggota wajib punya
+ * lapisan garis. Enam keping pack terpilih tidak punya `data-draw` sama sekali — relnya
+ * ditambahkan di SVG sumbernya, bukan diakali di sini.
+ */
 export const themePresentation: Record<LiveTemplateId, ThemePresentation> = {
   'aruna-bloom': {
     body: 'jakarta',
@@ -126,16 +141,16 @@ export const themePresentation: Record<LiveTemplateId, ThemePresentation> = {
     script: null,
     gallery: 'rail',
     ornaments: {
-      frame: 'frame-wastra',
+      frame: 'kayon-bingkai-tumpal',
       divider: 'divider-wastra',
       corner: 'corner-wastra',
       floral: 'branch',
       floralAlt: 'monstera',
       monogram: 'monogram-diamond',
       motif: 'motif-wastra',
-      symbol: 'symbol-wastra',
+      symbol: 'kayon-simbol-kayon',
       garland: 'garland-slim',
-      seal: 'seal-wastra',
+      seal: 'kayon-segel-kayon',
       layers: ['layer-bloom-songket', 'layer-cascade-songket', 'layer-crown-songket', 'layer-cluster-songket', 'layer-swag-songket'],
     },
     /**
@@ -164,16 +179,16 @@ export const themePresentation: Record<LiveTemplateId, ThemePresentation> = {
     // Tanpa `backdrop`, dan itu disengaja: tekstur latar adalah hal pertama yang membuat
     // sebuah halaman berhenti terbaca hening.
     ornaments: {
-      frame: 'frame-hening',
+      frame: 'melati-bingkai-oval-kantil',
       divider: 'divider-hening',
       corner: 'corner-hening',
       floral: 'stem-single',
       floralAlt: 'sprig',
       monogram: 'monogram-ring',
       motif: 'motif-hening',
-      symbol: 'symbol-hening',
+      symbol: 'melati-janur-kuning',
       garland: 'garland-slim',
-      seal: 'seal-hening',
+      seal: 'melati-segel-janur',
       layers: ['layer-bloom-geometris', 'layer-cascade-geometris', 'layer-crown-geometris', 'layer-cluster-geometris', 'layer-swag-geometris'],
     },
     /**
@@ -198,16 +213,16 @@ export const themePresentation: Record<LiveTemplateId, ThemePresentation> = {
     script: scriptStack,
     gallery: 'masonry',
     ornaments: {
-      frame: 'frame-pelita',
+      frame: 'kayon-bingkai-medalion',
       divider: 'divider-pelita',
       corner: 'corner-pelita',
       floral: 'branch',
       floralAlt: 'eucalyptus',
       monogram: 'monogram-shield',
       motif: 'motif-pelita',
-      symbol: 'symbol-pelita',
+      symbol: 'kayon-simbol-mawar',
       garland: 'garland',
-      seal: 'seal-pelita',
+      seal: 'pusaka-segel-sulur-bintang',
       layers: ['layer-bloom-deco', 'layer-cascade-deco', 'layer-crown-deco', 'layer-cluster-deco', 'layer-swag-deco'],
     },
     /**
