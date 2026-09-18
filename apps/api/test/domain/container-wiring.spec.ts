@@ -34,7 +34,15 @@ describe('container API di compose.prod.yaml', () => {
     expect(isLoopbackBind(host!)).toBe(false);
   });
 
-  it('menulis media ke dalam volume, bukan ke lapisan container yang dibuang tiap rilis', () => {
+  it('menyimpan media di bucket, dan keputusan itu ikut git — bukan dititipkan ke api.env', () => {
+    // Nilainya menentukan di mana foto pelanggan mendarat. Di `api.env` ia hanya ada di satu
+    // server, ditulis tangan sekali, dan tidak pernah dibaca satu pun gerbang.
+    expect(value(api, 'MEDIA_PROVIDER')).toBe('s3');
+  });
+
+  it('tetap memasang volume media — ia sumber baca satu-satunya untuk aset LOCAL warisan', () => {
+    // Bukan lagi jalur tulis sejak fase 56, tapi mencabutnya sekarang membuat undangan yang
+    // sudah disebar kehilangan fotonya. Assertion-nya bertahan sampai hitungan baris LOCAL nol.
     const configured = value(api, 'MEDIA_LOCAL_DIR');
     expect(configured, 'MEDIA_LOCAL_DIR wajib absolut: nilai relatif mengikuti cwd, dan cwd-nya /app/apps/api').toMatch(/^\//u);
     const mount = api.match(/-\s*media:([^\s]+)/u)?.[1];

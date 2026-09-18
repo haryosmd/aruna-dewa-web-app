@@ -16,6 +16,15 @@ const productionEnv = {
   GOOGLE_CLIENT_ID: '1234567890-contoh.apps.googleusercontent.com',
   GOOGLE_CLIENT_SECRET: 'GOCSPX-contoh',
   COOKIE_DOMAIN: 'arunadewa.id',
+  // Cerminan produksi sejak fase 56, bukan nilai termudah: `MEDIA_PROVIDER` datang dari
+  // `compose.prod.yaml` dan `S3_*` dari `api.env`. Fixture yang memakai `local` akan hijau
+  // sambil berhenti mewakili satu-satunya lingkungan yang gerbang ini benar-benar jaga.
+  MEDIA_PROVIDER: 's3',
+  S3_ENDPOINT: 'https://is3.cloudhost.id',
+  S3_REGION: 'us-east-1',
+  S3_BUCKET: 'aruna-media',
+  S3_ACCESS_KEY_ID: 'contoh-akses',
+  S3_SECRET_ACCESS_KEY: 'contoh-rahasia',
 };
 
 describe('gerbang konfigurasi saat boot', () => {
@@ -40,10 +49,10 @@ describe('gerbang konfigurasi saat boot', () => {
     expect(runtimeEnvProblems({ JWT_SECRET: 'rahasia-lokal-yang-bukan-contoh' })).toEqual([]);
   });
 
-  it('menuntut rahasia panjang dan sebelas variabel lain saat NODE_ENV=production', () => {
+  it('menuntut rahasia panjang dan dua belas variabel lain saat NODE_ENV=production', () => {
     expect(runtimeEnvProblems(productionEnv)).toEqual([]);
     expect(runtimeEnvProblems({ ...productionEnv, JWT_SECRET: 'pendek' })[0]).toMatch(/minimal 32 karakter/u);
-    for (const key of ['DATABASE_URL', 'WEB_ORIGIN', 'API_ORIGIN', 'TRUST_PROXY', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET']) {
+    for (const key of ['DATABASE_URL', 'WEB_ORIGIN', 'API_ORIGIN', 'TRUST_PROXY', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'MEDIA_PROVIDER']) {
       expect(runtimeEnvProblems({ ...productionEnv, [key]: '' })).toEqual([`${key} wajib diisi saat NODE_ENV=production.`]);
     }
   });
@@ -73,12 +82,26 @@ describe('gerbang konfigurasi saat boot', () => {
     expect(runtimeEnvProblems({ ...productionEnv, GOOGLE_CLIENT_SECRET: '' })).toEqual(['GOOGLE_CLIENT_SECRET wajib diisi saat NODE_ENV=production.']);
   });
 
+  /**
+   * `S3_*` tidak ikut `PRODUCTION_REQUIRED`, dan itu keputusan, bukan kelalaian: yang menentukan
+   * wajib-tidaknya adalah `MEDIA_PROVIDER` itu sendiri. Staging yang menunjuk bucket dengan kunci
+   * kosong gagal persis seperti produksi, dan mesin pengembang tidak perlu punya bucket sama sekali.
+   */
+  it('menuntut kredensial bucket begitu providernya s3, di lingkungan mana pun', () => {
+    expect(runtimeEnvProblems({ ...productionEnv, S3_BUCKET: '' })).toEqual(['S3_BUCKET wajib diisi saat MEDIA_PROVIDER=s3.']);
+    expect(runtimeEnvProblems({ JWT_SECRET: 'rahasia-lokal-yang-bukan-contoh', MEDIA_PROVIDER: 's3' })).toHaveLength(5);
+  });
+
+  it('tidak menuntut bucket saat media masih lokal — mesin pengembang tidak punya satu pun', () => {
+    expect(runtimeEnvProblems({ JWT_SECRET: 'rahasia-lokal-yang-bukan-contoh', MEDIA_PROVIDER: 'local' })).toEqual([]);
+  });
+
   it('tidak menuntut SMTP di luar produksi — Mailpit lokal memang menolak blok auth', () => {
     expect(runtimeEnvProblems({ JWT_SECRET: 'rahasia-lokal-yang-bukan-contoh', SMTP_HOST: '127.0.0.1' })).toEqual([]);
   });
 
   it('mengumpulkan seluruh keluhan sekaligus, bukan satu per deploy', () => {
-    expect(runtimeEnvProblems({ NODE_ENV: 'production' })).toHaveLength(12);
+    expect(runtimeEnvProblems({ NODE_ENV: 'production' })).toHaveLength(13);
   });
 });
 

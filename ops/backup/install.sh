@@ -42,8 +42,9 @@ echo "== skrip =="
 install -d -m 755 "$LIB"
 install -m 755 "$HERE/backup.sh" "$LIB/backup.sh"
 [ -f "$HERE/../rollback.sh" ] && install -m 755 "$HERE/../rollback.sh" "$LIB/rollback.sh"
+[ -f "$HERE/../media-migrate.sh" ] && install -m 755 "$HERE/../media-migrate.sh" "$LIB/media-migrate.sh"
 install -d -m 700 /var/backups/aruna
-echo "  $LIB/backup.sh, $LIB/rollback.sh, /var/backups/aruna"
+echo "  $LIB/backup.sh, $LIB/rollback.sh, $LIB/media-migrate.sh, /var/backups/aruna"
 
 echo "== konfigurasi yang harus kamu isi sendiri =="
 ENVFILE=/srv/aruna/backup.env
@@ -53,7 +54,9 @@ ENVFILE=/srv/aruna/backup.env
 [ "$(stat -c '%a' "$ENVFILE")" = "600" ] || {
   echo "  $ENVFILE harus mode 600 (sekarang $(stat -c '%a' "$ENVFILE")). Ia berisi rahasia." >&2
   exit 1; }
-for key in HC_URL REMOTE; do
+# MEDIA_REMOTE ikut wajib sejak media pindah ke bucket. Backup yang jalan tanpa ia terisi
+# adalah backup yang tidak mencadangkan satu foto pun sambil tetap melapor sehat.
+for key in HC_URL REMOTE MEDIA_REMOTE; do
   grep -qE "^$key=.+" "$ENVFILE" || { echo "  $key belum terisi di $ENVFILE." >&2; exit 1; }
 done
 echo "  $ENVFILE lengkap dan mode 600"

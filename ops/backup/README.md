@@ -65,6 +65,12 @@ aws s3api put-bucket-lifecycle-configuration --bucket <bucket> \
 Lalu buat kredensial kedua, **hanya `PutObject` + `ListBucket`**, dan itu yang masuk ke
 `/root/.config/rclone/rclone.conf` di server (mode 600).
 
+**Remote kedua: bucket media.** Sejak media pindah ke object storage, skrip ini membaca sumbernya
+dari bucket, bukan dari volume Docker. Remote itu (`MEDIA_REMOTE`) butuh kredensial **hanya
+`GetObject` + `ListBucket` — tanpa Put, tanpa Delete**. API punya pasangannya sendiri yang boleh
+menulis dan menghapus; menyatukan keduanya berarti mesin yang mencadangkan media bisa
+menghapusnya, dan itu arah yang seluruh berkas ini dibangun untuk tolak.
+
 ## Langkah 3 — pasang di server
 
 ```sh
@@ -106,7 +112,7 @@ Yang dibuktikan, dan kenapa masing-masing ada:
 | a | `User`/`Invitation`/`Guest`/`Order`/`Package` tidak kosong | dump dari database yang salah |
 | b | ada `Package` aktif | restore yang halaman `/order`-nya tidak punya apa pun untuk dijual |
 | c | `prisma migrate status` bersih | skema tertinggal — aplikasi tidak bisa boot di atasnya |
-| d | 20 kunci `MediaAsset` acak ada di bucket | dump sempurna yang separuh fotonya tidak pernah terunggah |
+| d | 20 kunci `MediaAsset` acak ada di bucket, **apa pun providernya** | dump sempurna yang separuh fotonya tidak pernah terunggah — dan filter `provider = 'LOCAL'` yang, setelah media pindah ke bucket, memeriksa himpunan kosong sambil tetap lulus |
 | e | image produksi menyala di atasnya, `/ready` 200 | "datanya kembali" vs "aplikasinya jalan di atas data yang kembali" |
 
 Umur baris terbaru dilaporkan tapi **tidak** menggagalkan drill: bisnis undangan bisa sepi
@@ -142,15 +148,17 @@ panik jam 2 pagi.
    `prisma migrate status` dan pastikan bersih.
 5. Nyalakan lagi, dan tunggu `/ready` menjawab 200 sebelum menyatakan selesai.
 
-Media dipulihkan terpisah: `rclone copy` dari `media/` lalu `age -d` tiap berkas ke volume
-`media`. Karena kuncinya immutable dan tidak pernah ditimpa, menyalin ulang seluruhnya aman.
+Media dipulihkan terpisah: `rclone copy` dari `media/`, `age -d` tiap berkas, lalu `rclone copy`
+ke **bucket media** (bukan ke volume — volume hanya menampung aset warisan `provider = LOCAL`,
+dan baris DB-nya yang menentukan mana yang dibaca dari mana). Karena kuncinya immutable dan tidak
+pernah ditimpa, menyalin ulang seluruhnya aman.
 
 ## Yang ada di sini vs yang hanya di server
 
 | Repo | Server |
 |---|---|
 | `backup.sh`, `restore.sh`, `drill.sh`, `install.sh`, `rollback.sh` | `/srv/aruna/backup.env` (0600) |
-| unit systemd — `OnCalendar` dan `TimeoutStartSec` adalah nilai yang menentukan | `/root/.config/rclone/rclone.conf` (0600, tanpa Delete) |
+| unit systemd — `OnCalendar` dan `TimeoutStartSec` adalah nilai yang menentukan | `/root/.config/rclone/rclone.conf` (0600): remote backup tanpa Delete, remote media tanpa Put maupun Delete |
 | `recipients.txt` — kunci publik, bukan rahasia | `/etc/aruna/backup-recipients.txt` (dari repo) |
 | `lifecycle.json` — retensi yang hanya hidup di konsol provider tidak diketahui siapa pun | `/var/backups/aruna/` (2 dump terakhir) |
 

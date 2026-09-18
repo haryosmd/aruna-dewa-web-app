@@ -7,7 +7,7 @@ import { MembershipService } from '../common/membership.service.js';
 import { isOperator, type AuthenticatedUser } from '../common/auth.js';
 import { validatePublishableDocument } from './document-validation.js';
 import { orphanAssetIds } from '../media/asset-usage.js';
-import { createMediaStorage } from '../media/storage.js';
+import { storageForAsset } from '../media/storage.js';
 
 @Injectable()
 export class InvitationsService {
@@ -104,12 +104,15 @@ export class InvitationsService {
    */
   private async sweepOrphanAssets(tx: Prisma.TransactionClient, invitationId: string, activeDocument: unknown, draftDocument: unknown): Promise<void> {
     try {
-      const assets = await tx.mediaAsset.findMany({ where: { invitationId }, select: { id: true, key: true } });
+      // `provider` ikut diambil, dan itu bukan kelengkapan: menyapu lewat penyimpanan global
+      // berarti kunci warisan `LOCAL` dicoba dihapus dari bucket setelah pindah. Gagalnya ditelan
+      // `catch` di bawah, berkasnya tinggal di volume selamanya, dan karena barisnya tetap
+      // terhapus, kuota 15 foto bocor tanpa ada yang bisa melihat penyebabnya.
+      const assets = await tx.mediaAsset.findMany({ where: { invitationId }, select: { id: true, key: true, provider: true } });
       const orphans = orphanAssetIds(assets.map((asset) => asset.id), activeDocument, draftDocument);
       if (!orphans.length) return;
-      const storage = createMediaStorage();
-      const byId = new Map(assets.map((asset) => [asset.id, asset.key]));
-      for (const id of orphans) await storage.delete(byId.get(id)!);
+      const byId = new Map(assets.map((asset) => [asset.id, asset]));
+      for (const id of orphans) { const asset = byId.get(id)!; await storageForAsset(asset.provider).delete(asset.key); }
       await tx.mediaAsset.deleteMany({ where: { id: { in: orphans } } });
     } catch (error) {
       this.logger.error(`Sapuan aset yatim gagal (${invitationId})`, error instanceof Error ? error.stack : String(error));

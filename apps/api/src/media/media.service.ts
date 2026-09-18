@@ -4,7 +4,8 @@ import { allowedMediaTypes, audioAssetLimit, formatBytes, galleryPhotoLimit, med
 import { PrismaService } from '../database/prisma.service.js';
 import { MembershipService } from '../common/membership.service.js';
 import type { AuthenticatedUser } from '../common/auth.js';
-import { createMediaStorage } from './storage.js';
+import { createMediaStorage, storageForAsset } from './storage.js';
+import type { MediaProviderName } from './storage.js';
 import { apiOrigin, publicMediaUrl, referencesAsset, servesAsset } from './asset-usage.js';
 
 @Injectable()
@@ -48,7 +49,7 @@ export class MediaService {
     const asset = await this.prisma.mediaAsset.findUnique({ where: { id: assetId }, include: { invitation: { include: { activeRevision: true } } } });
     if (!asset || asset.invitationId !== invitationId) throw new BadRequestException('Media tidak ditemukan');
     if (referencesAsset(asset.invitation.activeRevision?.document, asset.id)) throw new BadRequestException('Foto ini masih dipakai versi yang sudah diterbitkan. Terbitkan ulang undangan tanpa foto itu lebih dulu.');
-    try { await createMediaStorage().delete(asset.key); }
+    try { await storageForAsset(asset.provider).delete(asset.key); }
     catch (error) {
       // Baris DB tetap dihapus: berkas yatim di storage jauh lebih murah daripada kuota yang
       // macet selamanya karena satu penghapusan gagal.
@@ -62,19 +63,24 @@ export class MediaService {
     const asset = await this.prisma.mediaAsset.findUnique({ where: { id: assetId } });
     if (!asset) throw new BadRequestException('Media tidak ditemukan');
     await this.memberships.requireInvitationRole(user, asset.invitationId);
-    return { contentType: asset.contentType, body: await this.read(asset.key) };
+    return { contentType: asset.contentType, body: await this.read(asset) };
   }
 
   async readForPublic(assetId: string): Promise<{ contentType: string; body: Buffer }> {
     const asset = await this.prisma.mediaAsset.findUnique({ where: { id: assetId }, include: { invitation: { include: { activeRevision: true } } } });
     if (!asset?.invitation.activeRevision || asset.invitation.status !== 'PUBLISHED') throw new BadRequestException('Media publik tidak ditemukan');
     if (!servesAsset(asset.invitation.activeRevision.document, asset.id)) throw new BadRequestException('Media belum dipakai pada undangan publik');
-    return { contentType: asset.contentType, body: await this.read(asset.key) };
+    return { contentType: asset.contentType, body: await this.read(asset) };
   }
 
-  private async read(key: string): Promise<Buffer> {
-    if (!/^[0-9a-f-]+\/[0-9a-f-]+\.(jpg|png|webp|mp3)$/u.test(key)) throw new BadRequestException('Media tersimpan tidak valid');
-    try { return await createMediaStorage().get(key); } catch { throw new BadRequestException('Berkas media tidak tersedia'); }
+  /**
+   * Dibaca dari penyimpanan milik aset itu, bukan dari `MEDIA_PROVIDER` yang sedang berlaku.
+   * Foto yang diunggah sebelum pindah ke bucket tetap hidup di volume, dan tetap harus tersaji —
+   * termasuk di undangan yang sudah disebar ke ratusan tamu.
+   */
+  private async read(asset: { key: string; provider: MediaProviderName }): Promise<Buffer> {
+    if (!/^[0-9a-f-]+\/[0-9a-f-]+\.(jpg|png|webp|mp3)$/u.test(asset.key)) throw new BadRequestException('Media tersimpan tidak valid');
+    try { return await storageForAsset(asset.provider).get(asset.key); } catch { throw new BadRequestException('Berkas media tidak tersedia'); }
   }
 }
 

@@ -1,4 +1,5 @@
 import { cookieDomainProblems } from './cookie-domain.js';
+import { mediaEnvProblems } from '../media/storage.js';
 
 /**
  * Satu gerbang konfigurasi, diperiksa sekali saat boot.
@@ -49,6 +50,12 @@ export const MIN_PRODUCTION_SECRET_LENGTH = 32;
  * satu-satunya yang benar adalah 2587 (`ops/README.md`). Lupa menulisnya berarti boot hijau,
  * `/ready` hijau, dan tiap email menempuh perjalanan ke port yang tidak pernah menjawab.
  *
+ * MEDIA_PROVIDER ikut sejak Fase 56, dan alasannya sama dengan TRUST_PROXY: bukan karena tidak
+ * punya nilai bawaan yang masuk akal — `local` masuk akal di mesin pengembang — melainkan supaya
+ * keputusan di mana foto pelanggan disimpan selalu diambil sadar. Nilai bawaan yang diam berarti
+ * satu deploy yang lupa menyebutkannya memindahkan seluruh unggahan berikutnya ke disk container
+ * tanpa ada yang memutuskan itu. Nilainya sendiri datang dari `compose.prod.yaml`, bukan `api.env`.
+ *
  * GOOGLE_CLIENT_ID dan GOOGLE_CLIENT_SECRET ikut di Fase 27, dan alasannya tidak hipotetis:
  * rilis pertama berjalan berhari-hari dengan keduanya kosong di `api.env`. `startGoogle` baru
  * memeriksanya saat ada yang menekan tombolnya, jadi boot hijau, `/ready` hijau — sementara
@@ -67,6 +74,7 @@ const PRODUCTION_REQUIRED = [
   'SMTP_FROM',
   'GOOGLE_CLIENT_ID',
   'GOOGLE_CLIENT_SECRET',
+  'MEDIA_PROVIDER',
 ] as const;
 
 export function isProduction(env: RuntimeEnv = process.env): boolean {
@@ -114,6 +122,10 @@ export function runtimeEnvProblems(env: RuntimeEnv): string[] {
   // dan host API yang berbeda, bukan nilai `NODE_ENV`. Staging yang lupa menyetelnya punya
   // kegagalan yang sama persis, dan sebuah nilai yang salah ketik tetap salah di mana pun.
   problems.push(...cookieDomainProblems(env));
+  // Sengaja di luar blok produksi, alasan yang sama dengan COOKIE_DOMAIN: yang menentukan
+  // wajib-tidaknya `S3_*` adalah `MEDIA_PROVIDER` itu sendiri, bukan `NODE_ENV`. Staging yang
+  // menunjuk bucket dengan kunci kosong gagal persis seperti produksi.
+  problems.push(...mediaEnvProblems(env));
   return problems;
 }
 

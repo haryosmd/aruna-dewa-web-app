@@ -87,9 +87,14 @@ echo
 echo "== assertion d: media yang disebut DB benar-benar ada di bucket =="
 # Ini yang menangkap dump sempurna yang separuh fotonya tidak pernah terunggah — kelas kegagalan
 # yang paling mahal, karena foto pernikahan tidak bisa dibuat ulang.
-keys="$(q "SELECT key FROM \"MediaAsset\" WHERE provider = 'LOCAL' ORDER BY random() LIMIT 20")"
+#
+# TANPA filter provider, dan itu bukan penyederhanaan. Filter `provider = 'LOCAL'` benar selama
+# hanya ada satu provider; setelah media pindah ke bucket ia memeriksa himpunan yang menyusut jadi
+# kosong — dan cabang "tidak ada yang bisa diperiksa" di bawah membuat drill-nya tetap LULUS.
+# Assertion yang berhenti mengukur sambil tetap hijau lebih buruk daripada tidak ada assertion.
+keys="$(q "SELECT key FROM \"MediaAsset\" ORDER BY random() LIMIT 20")"
 if [ -z "$keys" ]; then
-  echo "  (belum ada MediaAsset LOCAL — tidak ada yang bisa diperiksa)"
+  echo "  (belum ada MediaAsset sama sekali — tidak ada yang bisa diperiksa)"
 else
   missing=0
   while IFS= read -r k; do
