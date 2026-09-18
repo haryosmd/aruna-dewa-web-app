@@ -1,14 +1,20 @@
 <script setup lang="ts">
-import { canEditDesign as designUnlocked, createDefaultDocument, designFeatureId, galleryPhotoLimit, giftAccountLimit, invitationDocumentSchema, normalizeGift, selectableFonts, type FontChoice, type TemplateId } from '@aruna/contracts'
+import { canEditDesign as designUnlocked, createDefaultDocument, designFeatureId, galleryPhotoLimit, giftAccountLimit, invitationDocumentSchema, isLiveTemplateId, normalizeGift, selectableBodyFonts, selectableFonts, templateById, type BackdropChoice, type BackdropWeight, type FontChoice, type LiveTemplateId } from '@aruna/contracts'
 import {
   selectableAttire, selectableCoverLayouts, selectableGalleryMotions, selectableVenues,
-  toAttire, toCoverLayout, toGalleryMotion,
+  toAttire, toCoverLayout, toGalleryMotion, toOrnamentOverrides,
 } from '~/utils/invitation-options'
-import { selectableIntensities, toIntensity } from '~/utils/ornaments'
+import { selectableIntensities, toIntensity, type OrnamentId } from '~/utils/ornaments'
+import { terapkanOverrides, type OrnamentOverrides, type OrnamentSlotKey } from '~/utils/ornament-slots'
+import { bawaanSlot } from '~/utils/ornament-search'
+import { toBackdrop, toBackdropWeight } from '~/utils/backdrops'
+import { themeOrnaments } from '~/utils/theme'
+import type { LayerSlot } from '~/utils/ornaments'
 import type { Invitation, InvitationDocument } from '~/types/aruna'
 import type { MusicTrack } from '~/utils/music-library'
 import { AlertCircle, ArrowDown, ArrowUp, Check, Eye, Laptop, Lock, Pause, Play, Plus, Redo2, RotateCcw, Save, Send, Smartphone, Tablet, Trash2, Undo2, Wand2 } from 'lucide-vue-next'
-import { toast } from 'vue-sonner'
+
+const toast = useToast()
 
 definePageMeta({ middleware: 'auth', layout: false })
 
@@ -131,6 +137,19 @@ const canEditDesign = computed(() => designUnlocked({
   features: invitation.value?.features ?? [],
 }))
 
+/**
+ * Preset yang sedang menggantikan tema pensiun, atau `null` kalau temanya masih hidup.
+ *
+ * Pasangan yang temanya dipensiunkan harus tahu kenapa wajah undangannya berubah — dan harus
+ * bisa keluar dari sana. `hasDesignChange()` di API membebaskan perpindahan yang berasal dari
+ * id pensiun, jadi tombolnya tidak dikunci `canEditDesign` seperti perpindahan biasa.
+ */
+const templatePensiun = computed(() => {
+  const id = document.value?.templateId
+  if (!id || isLiveTemplateId(id)) return null
+  return templateById(id) ?? null
+})
+
 /** Nama dan harga add-on diambil dari katalog, bukan ditulis ulang di sini. */
 async function loadDesignAddon() {
   if (canEditDesign.value || designAddon.value) return
@@ -202,8 +221,11 @@ function move(index: number, direction: -1 | 1) {
 }
 
 /** Swapping template also swaps the curated palette, unless the couple already recoloured it. */
-function applyTemplate(id: TemplateId) {
-  if (!canEditDesign.value) return
+function applyTemplate(id: LiveTemplateId) {
+  // Pasangan bertema pensiun boleh pindah sekali tanpa add-on — aturan yang sama persis
+  // dengan `hasDesignChange()` di API, supaya kontrol yang terlihat hidup tidak pernah
+  // berujung pada simpan yang ditolak.
+  if (!canEditDesign.value && !templatePensiun.value) return
   const preset = invitationThemes.find(theme => theme.id === id)
   if (!preset) return
   checkpoint()
@@ -340,6 +362,110 @@ function writeOption(key: string, value: string) {
   if (!section) return
   checkpoint()
   section.data[key] = value
+}
+
+/* ── Varian ornamen ─────────────────────────────────────────────────────────── */
+
+/** Aksen tema yang sedang berlaku — pratinjau ornamen diwarnai ramp yang sama dengan undangan. */
+// `accent` hidup di preset kontrak, bukan di `ThemePresentation`; `templateById()` yang
+// menerjemahkan id pensiun, jadi pratinjau tetap berwarna untuk tema yang dipensiunkan.
+const themeAccent = computed(() => templateById(document.value?.templateId ?? '')?.accent ?? '#7A8B6F')
+
+
+/**
+ * Penukaran ornamen yang sedang berlaku.
+ *
+ * `ornamentOverrides` bernilai objek, bukan string, jadi ia tidak perlu masuk `enumKeys` —
+ * `textFields` sudah menyaring dengan `typeof value === 'string'`. Tapi ia juga karena itu
+ * tidak bisa lewat `writeOption()`, yang hanya menerima string.
+ */
+const ornamentOverrides = computed(() =>
+  toOrnamentOverrides(selected.value?.data.ornamentOverrides, document.value?.templateId ?? ''))
+
+/** Set tema sesudah penukaran, untuk ringkasan panel. */
+const ornamentSet = computed(() => themeOrnaments(document.value?.templateId ?? ''))
+
+/* ── Studio Ornamen ─────────────────────────────────────────────────────────── */
+
+/**
+ * Slot yang sedang dibuka di Studio, beserta nilai semula.
+ *
+ * `checkpoint()` dipanggil **sekali** saat Studio dibuka, bukan tiap klik ubin. Satu sesi memilih
+ * karena itu jadi satu langkah undo — orang yang mencoba enam bingkai sebelum memutuskan tidak
+ * seharusnya menghabiskan enam dari tiga puluh langkah riwayatnya.
+ */
+const studio = ref<{ slot?: OrnamentSlotKey, layer?: LayerSlot, semula: OrnamentOverrides } | null>(null)
+
+const studioAktif = computed(() => {
+  if (!studio.value) return null
+  const { slot, layer } = studio.value
+  const berlaku = terapkanOverrides(ornamentSet.value, ornamentOverrides.value)
+  const aktif = layer
+    ? berlaku.layers.find(id => ornament(id).slot === layer)!
+    : berlaku[slot!]
+  return { slot, layer, aktif, bawaan: bawaanSlot({ slot, layer, templateId: document.value.templateId })! }
+})
+
+function bukaStudio(target: { slot?: OrnamentSlotKey, layer?: LayerSlot }) {
+  if (!canEditDesign.value) return
+  checkpoint()
+  studio.value = { ...target, semula: { ...ornamentOverrides.value, layers: { ...ornamentOverrides.value.layers } } }
+}
+
+/** Menulis penukaran ke `cover.data`. Nilai yang sama dengan bawaan tema dibuang oleh sanitizer. */
+function tulisOverrides(berikut: OrnamentOverrides) {
+  const cover = document.value.sections.find(section => section.type === 'cover')
+  if (!cover) return
+  const bersih = toOrnamentOverrides(berikut, document.value.templateId)
+  if (Object.keys(bersih).length) cover.data.ornamentOverrides = bersih
+  else delete cover.data.ornamentOverrides
+}
+
+function pilihOrnamen(glyph: OrnamentId) {
+  const target = studio.value
+  if (!target) return
+  const berikut: OrnamentOverrides = { ...ornamentOverrides.value, layers: { ...ornamentOverrides.value.layers } }
+  if (target.layer) berikut.layers = { ...berikut.layers, [target.layer]: glyph }
+  else berikut[target.slot!] = glyph
+  tulisOverrides(berikut)
+}
+
+function kembalikanSlot() {
+  const target = studio.value
+  if (!target) return
+  const berikut: OrnamentOverrides = { ...ornamentOverrides.value, layers: { ...ornamentOverrides.value.layers } }
+  if (target.layer) delete berikut.layers?.[target.layer]
+  else delete berikut[target.slot!]
+  tulisOverrides(berikut)
+}
+
+/** Escape / Batal: kembalikan seluruh penukaran ke keadaan saat Studio dibuka. */
+function batalkanStudio() {
+  if (studio.value) tulisOverrides(studio.value.semula)
+}
+
+function kembalikanSemuaOrnamen() {
+  if (!canEditDesign.value) return
+  checkpoint()
+  tulisOverrides({})
+}
+
+/* ── Latar & huruf body ─────────────────────────────────────────────────────── */
+
+const backdrop = computed(() => toBackdrop(document.value?.tokens.backdrop) ?? 'tema')
+const backdropWeight = computed(() => toBackdropWeight(document.value?.tokens.backdropWeight) ?? 'sedang')
+
+function tulisBackdrop(pilihan: BackdropChoice) {
+  checkpoint()
+  // `'tema'` DIHAPUS, bukan disimpan: "ikut tema" berarti dokumen tidak membawa pendapat sendiri,
+  // jadi tema yang kelak mengganti latarnya tetap berlaku untuk pasangan ini.
+  if (pilihan === 'tema') delete document.value.tokens.backdrop
+  else document.value.tokens.backdrop = pilihan
+}
+
+function tulisBackdropWeight(bobot: BackdropWeight) {
+  checkpoint()
+  document.value.tokens.backdropWeight = bobot
 }
 
 const coverLayout = computed(() => toCoverLayout(selected.value?.data.layout))
@@ -861,6 +987,17 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
               </UiSelect>
             </UiField>
             <p class="m-0 text-caption text-ink-subtle">Berlaku untuk seluruh undangan, bukan hanya bagian pembuka.</p>
+
+            <DashboardOrnamentSlotSummary
+              :set="ornamentSet"
+              :overrides="ornamentOverrides"
+              :tokens="document.tokens"
+              :accent="themeAccent"
+              :terkunci="!canEditDesign"
+              :locked-by="designAddon ? `Add-on ${designAddon.name} (${formatRupiah(designAddon.price)}) membukanya.` : undefined"
+              @buka="bukaStudio"
+              @kembalikan-semua="kembalikanSemuaOrnamen"
+            />
 
             <DashboardPhotoField
               id="editor-cover-image"
@@ -1392,6 +1529,19 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
               </span>
             </p>
 
+            <p
+              v-if="templatePensiun"
+              id="template-pensiun"
+              class="m-0 flex items-start gap-2 rounded-md border border-border bg-surface-2 p-3.5 text-[0.8125rem] text-ink-muted"
+            >
+              <Lock :size="15" class="mt-0.5 shrink-0 text-ink-subtle" aria-hidden="true" />
+              <span>
+                Tema undangan ini sudah tidak tersedia lagi, dan sekarang ditampilkan memakai
+                <span class="text-ink">{{ templatePensiun.name }}</span>. Pilih penggantinya kapan saja —
+                undangan yang sudah terbit tetap tampil seperti semula sampai kamu menerbitkannya ulang.
+              </span>
+            </p>
+
             <div class="grid gap-2 @xs:grid-cols-2 @md:grid-cols-3">
               <button
                 v-for="theme in invitationThemes"
@@ -1399,12 +1549,12 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
                 :key="theme.id"
                 type="button"
                 :aria-pressed="document.templateId === theme.id"
-                :disabled="!canEditDesign"
-                :aria-describedby="canEditDesign ? undefined : 'design-locked'"
+                :disabled="!canEditDesign && !templatePensiun"
+                :aria-describedby="canEditDesign || templatePensiun ? undefined : 'design-locked'"
                 :class="cn(
                   'grid gap-2 rounded-md border p-2 text-left transition-[border-color,box-shadow] duration-200',
                   document.templateId === theme.id ? 'border-primary shadow-lift' : 'border-border',
-                  canEditDesign
+                  canEditDesign || templatePensiun
                     ? (document.templateId === theme.id ? '' : 'hover:border-border-strong')
                     : 'cursor-not-allowed opacity-60',
                 )"
@@ -1483,11 +1633,50 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
               </button>
             </div>
 
-            <UiField id="editor-font" v-slot="{ id }" label="Jenis huruf judul">
-              <UiSelect :id="id" v-model="(document.tokens.font as FontChoice)" :disabled="!canEditDesign" :aria-describedby="canEditDesign ? undefined : 'design-locked'">
-                <option v-for="font in selectableFonts" :key="font.id" :value="font.id">{{ font.label }}</option>
-              </UiSelect>
-            </UiField>
+            <div class="grid gap-3 @xs:grid-cols-2">
+              <UiField id="editor-font" v-slot="{ id }" label="Jenis huruf judul">
+                <UiSelect :id="id" v-model="(document.tokens.font as FontChoice)" :disabled="!canEditDesign" :aria-describedby="canEditDesign ? undefined : 'design-locked'">
+                  <option v-for="font in selectableFonts" :key="font.id" :value="font.id">{{ font.label }}</option>
+                </UiSelect>
+              </UiField>
+
+              <!--
+                Daftar body SENGAJA lebih pendek dari daftar judul.
+
+                `DESIGN.md` melarang script untuk paragraf, dan sampai fase 58 larangan itu
+                ditegakkan karena huruf body tidak bisa dipilih sama sekali. Membuka pemilihnya
+                tanpa menyaring akan mencabut aturannya diam-diam — paragraf 16px dalam Allura
+                tidak terbaca. `selectableBodyFonts` yang menyaringnya, dan `bodyFontOf()` di
+                `utils/theme.ts` menolak nilai script yang masuk lewat dokumen suntingan tangan.
+              -->
+              <UiField
+                id="editor-body-font"
+                v-slot="{ id }"
+                label="Jenis huruf paragraf"
+                hint="Kosong berarti ikut tema."
+              >
+                <UiSelect
+                  :id="id"
+                  :model-value="document.tokens.bodyFont ?? ''"
+                  :disabled="!canEditDesign"
+                  :aria-describedby="canEditDesign ? undefined : 'design-locked'"
+                  @update:model-value="value => { checkpoint(); if (value) document.tokens.bodyFont = value as FontChoice; else delete document.tokens.bodyFont }"
+                >
+                  <option value="">Ikut tema</option>
+                  <option v-for="font in selectableBodyFonts" :key="font.id" :value="font.id">{{ font.label }}</option>
+                </UiSelect>
+              </UiField>
+            </div>
+
+            <DashboardOrnamentBackdropPicker
+              :pilihan="backdrop"
+              :bobot="backdropWeight"
+              :accent="themeAccent"
+              :background="document.tokens.background"
+              :terkunci="!canEditDesign"
+              @update:pilihan="tulisBackdrop"
+              @update:bobot="tulisBackdropWeight"
+            />
           </section>
         </template>
       </section>
@@ -1586,6 +1775,33 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
         </div>
       </aside>
     </div>
+
+    <!--
+      Studio Ornamen dipasang di dalam `DashboardShell`, bukan di akar halaman.
+
+      Ia dialog ber-portal, jadi tempat deklarasinya tidak menentukan tempat RENDER-nya — dan itu
+      yang membuat salah tempat begitu mudah dan begitu senyap. Versi pertama mendarat di cabang
+      `v-else` milik keadaan memuat/galat: markupnya benar, typecheck hijau, lint bersih, dan
+      tombol "Ganti" tidak melakukan apa pun sama sekali, karena cabang itu mati begitu editor
+      selesai memuat. Komponen di dalam `v-if` yang tidak aktif tidak pernah dipasang.
+
+      Bukan di dalam panel pengaturan juga: panel itu `hidden xl:grid` pada tata letak ponsel.
+    -->
+    <DashboardOrnamentStudio
+      v-if="studioAktif"
+      :open="Boolean(studio)"
+      :slot-key="studioAktif.slot"
+      :layer="studioAktif.layer"
+      :template-id="document.templateId"
+      :aktif="studioAktif.aktif"
+      :bawaan="studioAktif.bawaan"
+      :tokens="document.tokens"
+      :accent="themeAccent"
+      @update:open="terbuka => { if (!terbuka) studio = null }"
+      @pilih="pilihOrnamen"
+      @kembalikan="kembalikanSlot"
+      @batal="batalkanStudio"
+    />
   </DashboardShell>
 
   <div v-else class="shell section grid gap-4">
@@ -1594,5 +1810,5 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
       {{ error }}
       <button id="editor-retry" class="button button-secondary ml-2" type="button" @click="load">Coba lagi</button>
     </p>
-  </div>
+</div>
 </template>

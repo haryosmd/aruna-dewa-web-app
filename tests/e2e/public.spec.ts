@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
-import { catalog, templateIds, templates } from '../../packages/contracts/src/index'
+import { catalog, templates } from '../../packages/contracts/src/index'
 
 /** Cermin `apps/web/utils/format.ts`, supaya tes tidak perlu mengimpor util Nuxt. */
 const rupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })
@@ -81,11 +81,62 @@ test('landing keyboard navigation and accessibility', async ({ page }, testInfo)
   await page.screenshot({ path: `docs/features/landing-order/verification/landing-${testInfo.project.name}.png`, fullPage: true })
 })
 
+/**
+ * Sapuan yang SENGAJA menatap toast — satu-satunya di suite ini.
+ *
+ * Fase 60 mengganti `vue-sonner` karena markup-nya menaruh `role="status"` pada `<li>` di dalam
+ * `<ol>`, dan aturan `list` axe menilai itu `serious`. Yang membuatnya lolos bertahun-tahun bukan
+ * kebersihan melainkan waktu: cabang yang gagal hanya dimasuki anak yang terlihat pembaca layar,
+ * jadi selama tidak ada toast di layar wadahnya kosong dan aturannya lulus. Setiap sapuan lain di
+ * repo ini berjalan tepat setelah navigasi, saat tidak ada satu pun toast. Tanpa tes ini,
+ * kemunduran yang sama akan sunyi persis dengan cara yang sama.
+ *
+ * Dua hal di bawah ini yang membuatnya berarti, dan keduanya berasal dari kegagalan sungguhan
+ * saat tes ini ditulis:
+ *
+ * 1. **Clipboard dimatikan supaya cabang GAGAL yang terpakai.** Bukan untuk menguji kegagalannya,
+ *    melainkan karena cabang itu memasang `duration: 10000` sementara toast biasa pergi setelah
+ *    4 detik. Toast yang kedaluwarsa di tengah sapuan tidak membuat tes ini merah — ia membuatnya
+ *    HIJAU tanpa memeriksa apa pun, dan lubang itu persis jenis yang sedang ditutup di sini.
+ * 2. **Halaman dikembalikan ke puncak sebelum disapu.** Mengklik tombol salin menggulir ke seksi
+ *    demo yang gelap, dan di sana header lengket berlatar `bg-surface/85` sedang di tengah
+ *    transisi 300ms-nya; axe membaca warna campuran itu dan melaporkan `color-contrast` pada
+ *    wordmark. Diukur: pada posisi diam yang sama, setelah transisinya selesai, sapuannya nol
+ *    pelanggaran — jadi yang dilaporkan tadi memang artefak transisi, bukan cacat desain.
+ */
+test('landing stays clean with a toast on screen', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true })
+  })
+  await page.goto('/')
+
+  const copy = page.locator('#landing-demo-copy')
+  await expect(copy).toBeEnabled()
+  await copy.click()
+
+  const toast = page.locator('[data-aruna-toast]')
+  await expect(toast).toHaveCount(1)
+
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
+
+  const scan = await new AxeBuilder({ page }).exclude('nuxt-devtools-frame').withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
+  expect(scan.violations.map(v => ({ id: v.id, impact: v.impact, targets: v.nodes.map(n => n.target) }))).toEqual([])
+
+  // Toast-nya harus MASIH ada: kalau ia sudah pergi, sapuan di atas memeriksa halaman kosong.
+  await expect(toast).toHaveCount(1)
+})
+
 test('theme carousel previews every published template', async ({ page }) => {
   await page.goto('/')
   const themes = page.getByRole('region', { name: 'Tema undangan' })
-  // Satu kartu per template di kontrak: koleksi yang bertambah tidak boleh diam-diam hilang di sini.
-  await expect(themes.getByRole('article')).toHaveCount(templateIds.length)
+  /*
+   * Satu kartu per tema HIDUP. Diukur terhadap `templates`, bukan `templateIds`: yang kedua
+   * ikut memuat id pensiun yang sengaja tidak punya kartu, jadi memakainya di sini membuat
+   * tes ini menuntut kartu untuk tema yang memang sudah dihapus.
+   */
+  await expect(themes.getByRole('article')).toHaveCount(templates.length)
   for (const template of templates) {
     await expect(themes.getByRole('link', { name: `Buka tema ini — ${template.name}` })).toHaveAttribute('href', `/i/demo?tema=${template.id}`)
   }
@@ -117,7 +168,7 @@ test('only the hero image is on the landing critical path', async ({ page }) => 
   await expect(page.locator('link[rel="preload"][as="image"]')).toHaveAttribute('href', '/images/hero-landing.webp')
 
   const covers = page.getByRole('region', { name: 'Tema undangan' }).locator('img')
-  await expect(covers).toHaveCount(templateIds.length)
+  await expect(covers).toHaveCount(templates.length)
   for (const cover of await covers.all()) {
     await expect(cover).toHaveAttribute('loading', 'lazy')
     // Varian kecil dari `pnpm images:optimize`, bukan berkas asli yang dipakai undangan demo.
@@ -146,7 +197,7 @@ test('pricing shows every package with its catalog price', async ({ page }) => {
 })
 
 test('invitation opens through the cover gate and keeps the theme palette', async ({ page }) => {
-  await page.goto('/i/demo?tema=aruna-lumine')
+  await page.goto(`/i/demo?tema=${templates[0]!.id}`)
   const gate = page.getByRole('button', { name: 'Buka Undangan' })
   await expect(gate).toBeVisible()
   await gate.click()
@@ -159,7 +210,7 @@ test('invitation opens through the cover gate and keeps the theme palette', asyn
 
 /*
  * Dipindai per tema. Sebelumnya hanya tema default yang diperiksa, dan itulah yang
- * menyembunyikan primary `aruna-lumine` yang kontrasnya hanya 3,6:1 selama berbulan-bulan.
+ * menyembunyikan primary lumine yang kontrasnya hanya 3,6:1 selama berbulan-bulan.
  */
 for (const template of templates) {
   test(`invitation accessibility after opening — ${template.id}`, async ({ page }) => {
@@ -175,16 +226,25 @@ for (const template of templates) {
  * Aturan "tanpa JS halaman tetap terbaca penuh" belum pernah diuji langsung. Galeri adalah
  * tempat paling mudah melanggarnya, dan layout `rail` adalah satu-satunya yang bisa membuat
  * halaman ikut menggeser ke samping.
+ *
+ * Disapu per tema, bukan pada satu tema yang dipilih tangan. Versi lama menunjuk
+ * `aruna-gonjong` justru karena galerinya `rail`; tema itu dipensiunkan di fase 48, dan tes
+ * yang menyebut satu id akan diam-diam pindah menguji layout lain sambil komentarnya tetap
+ * menyebut rail. Menyapu semuanya membuat layout mana pun yang ada selalu ikut teruji.
  */
-test('gallery stays visible and contained under reduced motion', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.goto('/i/demo?tema=aruna-gonjong')
-  await bukaGerbang(page)
-  const tile = page.locator('.iv-gallery img').first()
-  await tile.scrollIntoViewIfNeeded()
-  await expect(tile).toBeVisible()
-  expect(await tile.evaluate(node => getComputedStyle(node).opacity)).toBe('1')
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+test.describe('gallery stays visible and contained under reduced motion', () => {
+  for (const template of templates) {
+    test(template.id, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await page.goto(`/i/demo?tema=${template.id}`)
+      await bukaGerbang(page)
+      const tile = page.locator('.iv-gallery img').first()
+      await tile.scrollIntoViewIfNeeded()
+      await expect(tile).toBeVisible()
+      expect(await tile.evaluate(node => getComputedStyle(node).opacity)).toBe('1')
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    })
+  }
 })
 
 /*
@@ -192,6 +252,31 @@ test('gallery stays visible and contained under reduced motion', async ({ page }
  * delapan: pada delapan kartu label itu berubah jadi kebisingan, dan nama pemilik
  * rekening sudah ada di kartunya. Field `owner` tetap ada di dokumen.
  */
+/*
+ * Partitur scroll benar-benar terbaca, bukan sekadar terdeklarasi di tipe.
+ *
+ * Buktinya sengaja BUKAN `[data-iv-act]`: atribut itu dipasang tanpa syarat di template
+ * (`Renderer.vue`), jadi tema tanpa partitur pun menstempelnya — diukur, bloom menstempel dua
+ * belas. Yang hanya ada saat partitur terbaca adalah pita `.iv-segue`: `rendered` memberi
+ * `segue: null` ke tiap section ketika `themeMotion()` undefined, jadi `<InvitationSegue>`
+ * tidak pernah dirender. Menuntut keduanya sekaligus membuat tes ini gagal kalau partiturnya
+ * diam-diam berhenti terbaca DAN kalau jalur lama diam-diam ikut merender pita.
+ */
+test('theme motion scores actually reach the page', async ({ page }) => {
+  const berpartitur = []
+  const tanpa = []
+  for (const template of templates) {
+    await page.goto(`/i/demo?tema=${template.id}`)
+    await bukaGerbang(page)
+    const pita = await page.locator('.iv-segue').count()
+    expect(await page.locator('[data-iv-act]').count(), `${template.id} harus menstempel peran section`).toBeGreaterThan(0)
+    ;(pita > 0 ? berpartitur : tanpa).push(template.id)
+  }
+  // Minimal satu tema membuktikan jalur partitur hidup; tanpa ini fase 50 bisa hijau
+  // sementara `playScore` tidak pernah sekali pun dipanggil.
+  expect(berpartitur.length, `tidak ada tema yang merender pita transisi (tanpa partitur: ${tanpa.join(', ')})`).toBeGreaterThan(0)
+})
+
 test('gift section shows every account with its bank and no owner label', async ({ page }) => {
   await page.goto('/i/demo')
   await bukaGerbang(page)

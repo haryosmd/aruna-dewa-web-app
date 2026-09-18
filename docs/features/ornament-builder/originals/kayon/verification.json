@@ -1,0 +1,149 @@
+{
+  "url": "http://127.0.0.1:4179/originals/kayon/demo/index.html",
+  "checkedAt": "2026-09-17T13:59:23.272Z",
+  "lolos": [
+    {
+      "nama": "360: tanpa overflow horizontal",
+      "detail": {
+        "scrollW": 360,
+        "clientW": 360
+      }
+    },
+    {
+      "nama": "360: id DOM unik",
+      "detail": []
+    },
+    {
+      "nama": "360: tanpa galat konsol",
+      "detail": []
+    },
+    {
+      "nama": "360: semua SVG terpasang",
+      "detail": {
+        "svg": 78,
+        "diharap": 78
+      }
+    },
+    {
+      "nama": "360: tidak ada glyph berlebar nol",
+      "detail": {
+        "jumlah": 0
+      }
+    },
+    {
+      "nama": "768: tanpa overflow horizontal",
+      "detail": {
+        "scrollW": 768,
+        "clientW": 768
+      }
+    },
+    {
+      "nama": "768: id DOM unik",
+      "detail": []
+    },
+    {
+      "nama": "768: tanpa galat konsol",
+      "detail": []
+    },
+    {
+      "nama": "768: semua SVG terpasang",
+      "detail": {
+        "svg": 78,
+        "diharap": 78
+      }
+    },
+    {
+      "nama": "768: tidak ada glyph berlebar nol",
+      "detail": {
+        "jumlah": 0
+      }
+    },
+    {
+      "nama": "1440: tanpa overflow horizontal",
+      "detail": {
+        "scrollW": 1440,
+        "clientW": 1440
+      }
+    },
+    {
+      "nama": "1440: id DOM unik",
+      "detail": []
+    },
+    {
+      "nama": "1440: tanpa galat konsol",
+      "detail": []
+    },
+    {
+      "nama": "1440: semua SVG terpasang",
+      "detail": {
+        "svg": 78,
+        "diharap": 78
+      }
+    },
+    {
+      "nama": "1440: tidak ada glyph berlebar nol",
+      "detail": {
+        "jumlah": 0
+      }
+    },
+    {
+      "nama": "axe wcag2a/2aa/21aa",
+      "detail": []
+    },
+    {
+      "nama": "reduced motion: tidak ada tween berjalan",
+      "detail": {
+        "tweenAktif": 0,
+        "tombolMati": true,
+        "status": "Gerak dimatikan: sistem meminta reduced motion.",
+        "glyphTransparan": 0
+      }
+    },
+    {
+      "nama": "reduced motion: tombol jeda nonaktif",
+      "detail": {
+        "tweenAktif": 0,
+        "tombolMati": true,
+        "status": "Gerak dimatikan: sistem meminta reduced motion.",
+        "glyphTransparan": 0
+      }
+    },
+    {
+      "nama": "reduced motion: semua glyph terbaca penuh",
+      "detail": {
+        "tweenAktif": 0,
+        "tombolMati": true,
+        "status": "Gerak dimatikan: sistem meminta reduced motion.",
+        "glyphTransparan": 0
+      }
+    },
+    {
+      "nama": "tanpa JS: glyph tetap terpasang",
+      "detail": {
+        "glyph": 47,
+        "diharap": 47
+      }
+    },
+    {
+      "nama": "tanpa JS: teks tetap utuh",
+      "detail": [
+        "Daniel",
+        "Samira"
+      ]
+    },
+    {
+      "nama": "tanpa JS: glyph tidak tersembunyi",
+      "detail": {
+        "opacity": "1"
+      }
+    },
+    {
+      "nama": "jeda offscreen: ambient berhenti saat adegan keluar layar",
+      "detail": {
+        "saatTerlihat": "jalan",
+        "saatKeluar": "jeda"
+      }
+    }
+  ],
+  "gagal": []
+}

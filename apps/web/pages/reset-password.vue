@@ -4,7 +4,8 @@
  * begitu kata sandi berganti, jadi setelah berhasil pemilik akun memang harus masuk lagi.
  */
 import { ArrowRight, Eye, EyeOff, ShieldCheck } from 'lucide-vue-next'
-import { toast } from 'vue-sonner'
+
+const toast = useToast()
 
 definePageMeta({ layout: 'auth' })
 

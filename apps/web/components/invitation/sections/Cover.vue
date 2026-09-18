@@ -62,17 +62,26 @@ void coverLayouts
         layout === 'split-editorial' ? 'mx-auto grid max-w-5xl items-center gap-8 @min-[48rem]:grid-cols-2 @min-[48rem]:text-left' : 'grid justify-items-center gap-4',
       )"
     >
-      <!-- Potret berbingkai: mask arch, sudut ornamen menempel padanya. -->
+      <!--
+        Potret berbingkai: mask arch, sudut ornamen menempel padanya.
+
+        `data-iv-photo-frame` adalah penanda aturan 6 DESIGN.md: ornamen yang MEMBINGKAI
+        sebuah foto dianimasikan dalam rentang scroll yang sama dengan fotonya. Sebelum ini
+        kedua sudut hanya ber-`data-iv-ornament`, yang tidak dijaring `orchestrate()` sama
+        sekali — jadi pada partitur mana pun selain `draw` mereka diam, dan satu-satunya
+        alasan mereka tampak bergerak adalah karena `.iv-cover-arch` pembungkusnya yang
+        bergerak. Bergerak karena ikut induk bukan animasi; itu kebetulan tata letak.
+      -->
       <div v-if="layout === 'arch-potret'" data-iv-photo class="iv-cover-arch">
         <img :src="photo" :alt="`Foto ${coupleNames}`" class="h-full w-full object-cover">
-        <OrnamentGlyph :glyph="orn.corner" data-iv-ornament class="iv-portrait-corner iv-portrait-corner--tl" aria-hidden="true" />
-        <OrnamentGlyph :glyph="orn.corner" data-iv-ornament class="iv-portrait-corner iv-portrait-corner--br" aria-hidden="true" />
+        <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-photo-frame class="iv-portrait-corner iv-portrait-corner--tl" aria-hidden="true" />
+        <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-photo-frame class="iv-portrait-corner iv-portrait-corner--br" aria-hidden="true" />
       </div>
 
       <!-- Kayon: foto duduk di dalam siluet bingkai milik tema. -->
       <div v-else-if="layout === 'kayon-frame'" class="iv-cover-kayon">
         <img :src="photo" :alt="`Foto ${coupleNames}`" data-iv-photo class="iv-cover-kayon-photo">
-        <OrnamentGlyph :glyph="orn.frame" data-iv-ornament class="iv-cover-kayon-frame" aria-hidden="true" />
+        <OrnamentGlyph :glyph="orn.frame" data-iv-ornament data-iv-photo-frame class="iv-cover-kayon-frame" aria-hidden="true" />
       </div>
 
       <!-- Kolase prewed: satu foto besar dan dua pendamping. -->

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeDisplayName, buildGuestUrl, invitationDocumentSchema, createDefaultDocument, priceOrder, parseGuestText, safeSpreadsheetCell, templates, normalizeGift, giftAccountLimit } from '../packages/contracts/src/index'
+import { normalizeDisplayName, buildGuestUrl, invitationDocumentSchema, createDefaultDocument, priceOrder, parseGuestText, safeSpreadsheetCell, templates, templateIds, liveTemplateIds, templateAliases, resolveTemplateId, templateById, normalizeGift, giftAccountLimit } from '../packages/contracts/src/index'
 
 describe('guest identity and links', () => {
   it.each(['Yosi Susanti', 'dr. Yosi Susanti, Sp.OG', 'Drs. Ahmad Hidayat, M.Pd.', 'Anne-Marie & Budi', 'A+B', "O’Connor / % # ?", '山田 太郎'])('preserves %s', name => {
@@ -42,6 +42,36 @@ describe('document and pricing boundaries', () => {
       const document = createDefaultDocument('Aruna', 'Dewa', template.id)
       expect(invitationDocumentSchema.safeParse(document).success).toBe(true)
       expect(document.tokens).toEqual(template.tokens)
+    }
+  })
+})
+describe('id tema pensiun', () => {
+  it('menerima tiap id pensiun di schema, tapi tidak menawarkannya di pemilih', () => {
+    for (const id of Object.keys(templateAliases)) {
+      // Diterima schema: draft dan revisi terbit yang sudah memakainya tidak boleh mati.
+      expect(templateIds).toContain(id)
+      expect(invitationDocumentSchema.safeParse({ ...createDefaultDocument(), templateId: id }).success).toBe(true)
+      // Hilang dari pemilih: `templates` adalah yang diiterasi landing, /order, dan editor.
+      expect(templates.some(t => t.id === id)).toBe(false)
+      expect(liveTemplateIds).not.toContain(id)
+    }
+  })
+  it('mengarahkan tiap alias ke tema yang benar-benar hidup', () => {
+    for (const [pensiun, tujuan] of Object.entries(templateAliases)) {
+      expect(liveTemplateIds).toContain(tujuan)
+      expect(resolveTemplateId(pensiun)).toBe(tujuan)
+      // Preset ikut terterjemahkan, jadi dokumen ber-id pensiun tetap punya warna.
+      expect(templateById(pensiun)?.id).toBe(tujuan)
+    }
+  })
+  it('membiarkan id hidup apa adanya dan menampung id yang tidak dikenal', () => {
+    for (const id of liveTemplateIds) expect(resolveTemplateId(id)).toBe(id)
+    // Dokumen yang rusak tetap harus bisa dibuka pemiliknya, bukan melempar.
+    expect(liveTemplateIds).toContain(resolveTemplateId('aruna-entah-apa'))
+  })
+  it('menulis pengganti, bukan id pensiun, ke dokumen yang baru lahir', () => {
+    for (const [pensiun, tujuan] of Object.entries(templateAliases)) {
+      expect(createDefaultDocument('Aruna', 'Dewa', pensiun as never).templateId).toBe(tujuan)
     }
   })
 })

@@ -223,6 +223,14 @@ export interface Guest {
   displayName: string
   /** Hanya dikirim ke anggota yang boleh melihat tautan personal; VIEWER tidak menerimanya. */
   token?: string
+  /**
+   * Ada hanya kalau tokennya tersimpan tapi tidak bisa dibuka lagi — bukan sekadar tidak dikirim.
+   *
+   * Dipisah dari `token` yang absen karena keduanya berbeda arti: VIEWER memang tidak pernah
+   * menerima token dan itu sehat, sedangkan baris ini kehilangan tautan personalnya untuk
+   * selamanya. Tanpa pembedaan itu, UI tidak punya cara tahu kapan harus mematikan tombol salin.
+   */
+  tokenUnavailable?: true
   revision: number
   phone?: string
   group?: string

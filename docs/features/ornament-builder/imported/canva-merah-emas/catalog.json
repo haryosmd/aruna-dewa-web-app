@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "id": "canva-merah-emas",
+  "name": "Impor Canva — Merah Emas",
+  "scope": "imported-local-demo",
+  "builtAt": "2026-09-18",
+  "origin": {
+    "template": "Merah Emas Tradisional Pernikahan Undangan",
+    "exportedBy": "pemilik, dari akun Canva Pro",
+    "warning": "Bukan aset original. Aturan AGENTS.md/DESIGN.md tentang aset pihak ketiga tetap berlaku sampai pemilik memutuskan sebaliknya secara tertulis. Lihat PROVENANCE.md."
+  },
+  "palette": {
+    "source": [
+      "merah",
+      "emas"
+    ],
+    "note": "Ilustrasi berwarna penuh; disajikan sebagai raster ber-alpha."
+  },
+  "assets": [
+    {
+      "id": "kayon-sudut-merah",
+      "name": "Kayon sudut merah",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "raster",
+        "impor-canva",
+        "canva-merah-emas"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/kayon-sudut-merah.svg",
+        "sourceTemplate": "Merah Emas Tradisional Pernikahan Undangan",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg",
+        "note": "Tidak dipecah — kayon dan sulur batiknya bertumpuk, tidak ada celah untuk memotong."
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "tepi-kiri",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/kayon-sudut-merah.png",
+          "format": "png",
+          "width": 1584,
+          "height": 2439,
+          "ratio": 0.649,
+          "bytes": 1879828,
+          "sha256": "e6588fb7de2929586bb414ba9cfa0926e4608d73061baa4f734d6a7d077e6ae0",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/kayon-sudut-merah.webp",
+          "format": "webp",
+          "width": 1584,
+          "height": 2439,
+          "ratio": 0.649,
+          "bytes": 277634,
+          "sha256": "f8f9ce478b6a04ff07582f1d443f561768cdd9bd420bacea5aeb6f6bae49deb1",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    }
+  ]
+}

@@ -14,6 +14,8 @@
  * diungkap dengannya. `bloomIn`/`cascadeIn` di `useArunaMotion()` yang menggantikannya.
  */
 
+import { referenceOrnaments } from './ornament-reference'
+
 export type OrnamentCategory =
   | 'frame' | 'divider' | 'corner' | 'floral' | 'monogram' | 'motif' | 'symbol'
   | 'layer' | 'venue' | 'attire' | 'seal'
@@ -34,12 +36,32 @@ export interface OrnamentEntry {
   ratio: number
   /** Hanya untuk kategori `layer`. */
   slot?: LayerSlot
+  /** Fixed-color vector or native raster from the owner's reference collection. */
+  asset?: string
+  format?: 'svg' | 'png'
+  /**
+   * Piksel asli aset referensi, dipancarkan supaya `<img>` punya dimensi intrinsik.
+   *
+   * Tanpa ini tiap aset referensi adalah sumber CLS: `ReferenceAsset.vue` merender `<img>`
+   * tanpa `width`/`height`, jadi tata letak melompat saat gambarnya tiba. Selama fase 58 itu
+   * tidak pernah terlihat karena tidak ada satu pun aset referensi yang bisa dicapai.
+   */
+  width?: number
+  height?: number
+  /** Salinan 240px untuk grid pemilih. Grid tidak pernah memuat aset penuh. */
+  thumb?: string
+  /**
+   * Salinan yang dikirim ke tamu — 960px WebP, atau berkas aslinya kalau memang lebih kecil.
+   * `asset` tetap menunjuk berkas penuh; yang dirender undangan adalah yang ini.
+   */
+  webAsset?: string
 }
 
 const layer = (component: string, name: string, slot: LayerSlot, ratio: number) =>
   ({ component, name, category: 'layer', ratio, slot }) as const
 
 export const ornamentBank = {
+  ...referenceOrnaments,
   // Frame
   'arch': { component: 'OrnamentArch', name: 'Gerbang ganda', category: 'frame', ratio: 300 / 420 },
   'frame-oval': { component: 'OrnamentFrameOval', name: 'Oval', category: 'frame', ratio: 300 / 420 },
@@ -54,6 +76,9 @@ export const ornamentBank = {
   'frame-mendung': { component: 'OrnamentFrameMendung', name: 'Gerbang mendung', category: 'frame', ratio: 300 / 420 },
   'frame-kenanga': { component: 'OrnamentFrameKenanga', name: 'Gerbang kenanga', category: 'frame', ratio: 300 / 420 },
   'frame-bentar': { component: 'OrnamentFrameBentar', name: 'Candi bentar', category: 'frame', ratio: 300 / 420 },
+  'frame-wastra': { component: 'OrnamentFrameWastra', name: 'Bidang tumpal', category: 'frame', ratio: 300 / 420 },
+  'frame-hening': { component: 'OrnamentFrameHening', name: 'Takik tunggal', category: 'frame', ratio: 300 / 420 },
+  'frame-pelita': { component: 'OrnamentFramePelita', name: 'Kubah pelita', category: 'frame', ratio: 300 / 420 },
 
   // Divider
   'divider-leaf': { component: 'OrnamentDivider', name: 'Daun', category: 'divider', ratio: 8 },
@@ -65,6 +90,9 @@ export const ornamentBank = {
   'divider-dotted': { component: 'OrnamentDividerDotted', name: 'Bertitik', category: 'divider', ratio: 8 },
   'divider-lung-lungan': { component: 'OrnamentDividerLungLungan', name: 'Lung-lungan', category: 'divider', ratio: 8 },
   'divider-songket': { component: 'OrnamentDividerSongket', name: 'Songket', category: 'divider', ratio: 8 },
+  'divider-wastra': { component: 'OrnamentDividerWastra', name: 'Lajur wastra', category: 'divider', ratio: 8 },
+  'divider-hening': { component: 'OrnamentDividerHening', name: 'Guratan hening', category: 'divider', ratio: 8 },
+  'divider-pelita': { component: 'OrnamentDividerPelita', name: 'Deret pelita', category: 'divider', ratio: 8 },
 
   // Corner
   'corner-flourish': { component: 'OrnamentCorner', name: 'Flourish', category: 'corner', ratio: 1 },
@@ -76,7 +104,10 @@ export const ornamentBank = {
   'corner-pucuak-rabuang': { component: 'OrnamentCornerPucuakRabuang', name: 'Pucuak rabuang', category: 'corner', ratio: 1 },
   'corner-wadasan': { component: 'OrnamentCornerWadasan', name: 'Karang wadasan', category: 'corner', ratio: 1 },
   'corner-kenanga': { component: 'OrnamentCornerKenanga', name: 'Sulur kenanga', category: 'corner', ratio: 1 },
-  'corner-poleng': { component: 'OrnamentCornerPoleng', name: 'Siku poleng', category: 'corner', ratio: 1 },
+  'corner-catur': { component: 'OrnamentCornerCatur', name: 'Siku catur', category: 'corner', ratio: 1 },
+  'corner-wastra': { component: 'OrnamentCornerWastra', name: 'Siku wastra', category: 'corner', ratio: 1 },
+  'corner-hening': { component: 'OrnamentCornerHening', name: 'Siku hening', category: 'corner', ratio: 1 },
+  'corner-pelita': { component: 'OrnamentCornerPelita', name: 'Siku pelita', category: 'corner', ratio: 1 },
 
   // Floral
   'sprig': { component: 'OrnamentSprig', name: 'Ranting berdaun', category: 'floral', ratio: 120 / 168 },
@@ -100,7 +131,10 @@ export const ornamentBank = {
   'motif-rule': { component: 'OrnamentMotifRule', name: 'Rel hairline', category: 'motif', ratio: 3 },
   'motif-mega-mendung': { component: 'OrnamentMotifMegaMendung', name: 'Mega mendung', category: 'motif', ratio: 3 },
   'motif-kenanga': { component: 'OrnamentMotifKenanga', name: 'Kenanga', category: 'motif', ratio: 3 },
-  'motif-poleng': { component: 'OrnamentMotifPoleng', name: 'Poleng', category: 'motif', ratio: 3 },
+  'motif-catur': { component: 'OrnamentMotifCatur', name: 'Papan catur', category: 'motif', ratio: 3 },
+  'motif-wastra': { component: 'OrnamentMotifWastra', name: 'Bidang berjajar', category: 'motif', ratio: 3 },
+  'motif-hening': { component: 'OrnamentMotifHening', name: 'Takik berjajar', category: 'motif', ratio: 3 },
+  'motif-pelita': { component: 'OrnamentMotifPelita', name: 'Kubah berjajar', category: 'motif', ratio: 3 },
 
   // Symbol
   'symbol-rings': { component: 'OrnamentSymbolRings', name: 'Dua cincin', category: 'symbol', ratio: 1.4 },
@@ -112,6 +146,9 @@ export const ornamentBank = {
   'symbol-wadasan': { component: 'OrnamentSymbolWadasan', name: 'Karang & awan', category: 'symbol', ratio: 140 / 110 },
   'symbol-kupu': { component: 'OrnamentSymbolKupu', name: 'Kupu-kupu', category: 'symbol', ratio: 140 / 120 },
   'symbol-payung': { component: 'OrnamentSymbolPayung', name: 'Payung pagut', category: 'symbol', ratio: 110 / 140 },
+  'symbol-wastra': { component: 'OrnamentSymbolWastra', name: 'Anyaman', category: 'symbol', ratio: 140 / 110 },
+  'symbol-hening': { component: 'OrnamentSymbolHening', name: 'Dua sabit', category: 'symbol', ratio: 130 / 120 },
+  'symbol-pelita': { component: 'OrnamentSymbolPelita', name: 'Nyala pelita', category: 'symbol', ratio: 120 / 130 },
 
   // Monogram — semuanya menerima prop `initials`.
   'monogram-laurel': { component: 'OrnamentMonogram', name: 'Laurel', category: 'monogram', ratio: 1 },
@@ -173,7 +210,7 @@ export const ornamentBank = {
   'layer-swag-kenanga': layer('OrnamentLayerSwagKenanga', 'Penutup kenanga', 'swag', 600 / 220),
 
   'layer-bloom-bentar': layer('OrnamentLayerBloomBentar', 'Undakan bentar', 'bloom', 480 / 260),
-  'layer-cascade-bentar': layer('OrnamentLayerCascadeBentar', 'Pita poleng', 'cascade', 260 / 480),
+  'layer-cascade-bentar': layer('OrnamentLayerCascadeBentar', 'Pita catur', 'cascade', 260 / 480),
   'layer-crown-bentar': layer('OrnamentLayerCrownBentar', 'Mahkota bentar', 'crown', 480 / 200),
   'layer-cluster-bentar': layer('OrnamentLayerClusterBentar', 'Rumpun sudut bentar', 'cluster', 1),
   'layer-swag-bentar': layer('OrnamentLayerSwagBentar', 'Penutup bentar', 'swag', 600 / 220),
@@ -191,6 +228,9 @@ export const ornamentBank = {
   'seal-mendung': { component: 'OrnamentSealMendung', name: 'Mendung', category: 'seal', ratio: 120 / 160 },
   'seal-kenanga': { component: 'OrnamentSealKenanga', name: 'Kenanga', category: 'seal', ratio: 120 / 160 },
   'seal-bentar': { component: 'OrnamentSealBentar', name: 'Bentar', category: 'seal', ratio: 120 / 160 },
+  'seal-wastra': { component: 'OrnamentSealWastra', name: 'Wastra', category: 'seal', ratio: 120 / 160 },
+  'seal-hening': { component: 'OrnamentSealHening', name: 'Hening', category: 'seal', ratio: 120 / 160 },
+  'seal-pelita': { component: 'OrnamentSealPelita', name: 'Pelita', category: 'seal', ratio: 120 / 160 },
 
   // Venue — ilustrasi gedung untuk kartu acara. Dipilih pasangan, bukan tema.
   'venue-joglo': { component: 'OrnamentVenueJoglo', name: 'Joglo', category: 'venue', ratio: 1.5 },
@@ -208,6 +248,121 @@ export const ornamentBank = {
   'attire-dress': { component: 'OrnamentAttireDress', name: 'Gaun', category: 'attire', ratio: 120 / 180 },
   'attire-jas': { component: 'OrnamentAttireJas', name: 'Jas', category: 'attire', ratio: 120 / 180 },
   'attire-kemeja': { component: 'OrnamentAttireKemeja', name: 'Kemeja', category: 'attire', ratio: 120 / 180 },
+  /* ── pack: diimpor scripts/ornament-pack — jangan sunting tangan ── */
+  'melati-bingkai-ronce': { component: 'OrnamentMelatiBingkaiRonce', name: 'Bingkai ronce', category: 'frame', ratio: 420 / 588 },
+  'melati-bingkai-segi': { component: 'OrnamentMelatiBingkaiSegi', name: 'Bingkai segi melati', category: 'frame', ratio: 1 },
+  'melati-bingkai-kembar-mayang': { component: 'OrnamentMelatiBingkaiKembarMayang', name: 'Bingkai kembar mayang', category: 'frame', ratio: 420 / 588 },
+  'melati-bingkai-oval-kantil': { component: 'OrnamentMelatiBingkaiOvalKantil', name: 'Bingkai oval kantil', category: 'frame', ratio: 420 / 588 },
+  'melati-bingkai-anyaman': { component: 'OrnamentMelatiBingkaiAnyaman', name: 'Bingkai anyaman janur', category: 'frame', ratio: 420 / 588 },
+  'melati-pemisah-ronce': { component: 'OrnamentMelatiPemisahRonce', name: 'Pemisah ronce', category: 'divider', ratio: 8 },
+  'melati-pemisah-kenanga': { component: 'OrnamentMelatiPemisahKenanga', name: 'Pemisah kenanga', category: 'divider', ratio: 8 },
+  'melati-pemisah-janur': { component: 'OrnamentMelatiPemisahJanur', name: 'Pemisah janur', category: 'divider', ratio: 8 },
+  'melati-pemisah-titik': { component: 'OrnamentMelatiPemisahTitik', name: 'Pemisah titik melati', category: 'divider', ratio: 8 },
+  'melati-pemisah-sulur': { component: 'OrnamentMelatiPemisahSulur', name: 'Pemisah sulur melati', category: 'divider', ratio: 8 },
+  'melati-pemisah-kantil': { component: 'OrnamentMelatiPemisahKantil', name: 'Pemisah kantil', category: 'divider', ratio: 8 },
+  'melati-sudut-sulur': { component: 'OrnamentMelatiSudutSulur', name: 'Sudut sulur melati', category: 'corner', ratio: 1 },
+  'melati-sudut-kantil': { component: 'OrnamentMelatiSudutKantil', name: 'Sudut kantil', category: 'corner', ratio: 1 },
+  'melati-sudut-anyam': { component: 'OrnamentMelatiSudutAnyam', name: 'Sudut anyaman', category: 'corner', ratio: 1 },
+  'melati-sudut-ceplok': { component: 'OrnamentMelatiSudutCeplok', name: 'Sudut ceplok', category: 'corner', ratio: 1 },
+  'melati-sudut-ronce': { component: 'OrnamentMelatiSudutRonce', name: 'Sudut ronce', category: 'corner', ratio: 1 },
+  'melati-sudut-melati': { component: 'OrnamentMelatiSudutMelati', name: 'Sudut melati', category: 'corner', ratio: 1 },
+  'melati-tangkai-melati': { component: 'OrnamentMelatiTangkaiMelati', name: 'Tangkai melati', category: 'floral', ratio: 200 / 320 },
+  'melati-tangkai-kenanga': { component: 'OrnamentMelatiTangkaiKenanga', name: 'Tangkai kenanga', category: 'floral', ratio: 200 / 320 },
+  'melati-tangkai-sedap-malam': { component: 'OrnamentMelatiTangkaiSedapMalam', name: 'Tangkai sedap malam', category: 'floral', ratio: 200 / 320 },
+  'melati-rumpun-kantil': { component: 'OrnamentMelatiRumpunKantil', name: 'Rumpun kantil', category: 'floral', ratio: 1 },
+  'melati-dedaunan-pandan': { component: 'OrnamentMelatiDedaunanPandan', name: 'Dedaunan pandan', category: 'floral', ratio: 240 / 320 },
+  'melati-ranting-kuncup': { component: 'OrnamentMelatiRantingKuncup', name: 'Ranting kuncup', category: 'floral', ratio: 1 },
+  'melati-layer-ronce-gantung': { component: 'OrnamentMelatiLayerRonceGantung', name: 'Ronce gantung', category: 'layer', ratio: 260 / 360, slot: 'cascade' },
+  'melati-layer-karangan': { component: 'OrnamentMelatiLayerKarangan', name: 'Karangan melati', category: 'layer', ratio: 420 / 200, slot: 'bloom' },
+  'melati-layer-rumpun': { component: 'OrnamentMelatiLayerRumpun', name: 'Rumpun melati', category: 'layer', ratio: 1, slot: 'cluster' },
+  'melati-layer-untaian': { component: 'OrnamentMelatiLayerUntaian', name: 'Untaian melati', category: 'layer', ratio: 480 / 200, slot: 'crown' },
+  'melati-layer-mekar': { component: 'OrnamentMelatiLayerMekar', name: 'Mekar kantil', category: 'layer', ratio: 1, slot: 'bloom' },
+  'melati-layer-untai-tunggal': { component: 'OrnamentMelatiLayerUntaiTunggal', name: 'Untai tunggal', category: 'layer', ratio: 120 / 400, slot: 'cascade' },
+  'melati-monogram-cincin': { component: 'OrnamentMelatiMonogramCincin', name: 'Monogram cincin ronce', category: 'monogram', ratio: 1 },
+  'melati-monogram-perisai': { component: 'OrnamentMelatiMonogramPerisai', name: 'Monogram perisai melati', category: 'monogram', ratio: 244 / 260 },
+  'melati-monogram-lingkar': { component: 'OrnamentMelatiMonogramLingkar', name: 'Monogram lingkar ronce', category: 'monogram', ratio: 1 },
+  'melati-motif-ceplok': { component: 'OrnamentMelatiMotifCeplok', name: 'Motif ceplok melati', category: 'motif', ratio: 1 },
+  'melati-motif-anyaman': { component: 'OrnamentMelatiMotifAnyaman', name: 'Motif anyaman janur', category: 'motif', ratio: 1 },
+  'melati-motif-kuncup': { component: 'OrnamentMelatiMotifKuncup', name: 'Motif kuncup', category: 'motif', ratio: 1 },
+  'melati-motif-tumpal': { component: 'OrnamentMelatiMotifTumpal', name: 'Motif tumpal melati', category: 'motif', ratio: 1 },
+  'melati-motif-jala': { component: 'OrnamentMelatiMotifJala', name: 'Motif jala melati', category: 'motif', ratio: 1 },
+  'melati-kembar-mayang': { component: 'OrnamentMelatiKembarMayang', name: 'Kembar mayang', category: 'symbol', ratio: 200 / 280 },
+  'melati-janur-kuning': { component: 'OrnamentMelatiJanurKuning', name: 'Janur kuning', category: 'symbol', ratio: 200 / 280 },
+  'melati-payung-teduh': { component: 'OrnamentMelatiPayungTeduh', name: 'Payung teduh', category: 'symbol', ratio: 200 / 280 },
+  'melati-merpati-sepasang': { component: 'OrnamentMelatiMerpatiSepasang', name: 'Sepasang merpati', category: 'symbol', ratio: 260 / 200 },
+  'melati-segel-melati': { component: 'OrnamentMelatiSegelMelati', name: 'Segel melati', category: 'seal', ratio: 1 },
+  'melati-segel-janur': { component: 'OrnamentMelatiSegelJanur', name: 'Segel janur', category: 'seal', ratio: 1 },
+  'melati-segel-kuncup': { component: 'OrnamentMelatiSegelKuncup', name: 'Segel kuncup', category: 'seal', ratio: 1 },
+  'melati-pendopo-joglo': { component: 'OrnamentMelatiPendopoJoglo', name: 'Pendopo joglo', category: 'venue', ratio: 200 / 260 },
+  'kayon-bingkai-medalion': { component: 'OrnamentKayonBingkaiMedalion', name: 'Bingkai medalion', category: 'frame', ratio: 1 },
+  'kayon-bingkai-tumpal': { component: 'OrnamentKayonBingkaiTumpal', name: 'Bingkai tumpal', category: 'frame', ratio: 380 / 520 },
+  'kayon-bingkai-lung': { component: 'OrnamentKayonBingkaiLung', name: 'Bingkai lung-lungan', category: 'frame', ratio: 440 / 300 },
+  'kayon-bidang-kayon': { component: 'OrnamentKayonBidangKayon', name: 'Bidang kayon', category: 'motif', ratio: 420 / 560 },
+  'kayon-bidang-rumpun-kayon': { component: 'OrnamentKayonBidangRumpunKayon', name: 'Bidang rumpun kayon', category: 'motif', ratio: 460 / 340 },
+  'kayon-pemisah-medalion': { component: 'OrnamentKayonPemisahMedalion', name: 'Pemisah pita medalion', category: 'divider', ratio: 420 / 74 },
+  'kayon-pemisah-ukel': { component: 'OrnamentKayonPemisahUkel', name: 'Pemisah ukel', category: 'divider', ratio: 340 / 76 },
+  'kayon-pemisah-patran': { component: 'OrnamentKayonPemisahPatran', name: 'Pemisah patran', category: 'divider', ratio: 320 / 86 },
+  'kayon-pemisah-kayon': { component: 'OrnamentKayonPemisahKayon', name: 'Pemisah kayon', category: 'divider', ratio: 300 / 120 },
+  'kayon-pemisah-cecek': { component: 'OrnamentKayonPemisahCecek', name: 'Pemisah cecek', category: 'divider', ratio: 300 / 46 },
+  'kayon-pemisah-tumpal': { component: 'OrnamentKayonPemisahTumpal', name: 'Pemisah tumpal', category: 'divider', ratio: 6 },
+  'kayon-sudut-ukel': { component: 'OrnamentKayonSudutUkel', name: 'Sudut ukel', category: 'corner', ratio: 1 },
+  'kayon-sudut-kayon': { component: 'OrnamentKayonSudutKayon', name: 'Sudut kayon', category: 'corner', ratio: 1 },
+  'kayon-sudut-patran': { component: 'OrnamentKayonSudutPatran', name: 'Sudut patran', category: 'corner', ratio: 1 },
+  'kayon-sudut-medalion': { component: 'OrnamentKayonSudutMedalion', name: 'Sudut medalion', category: 'corner', ratio: 1 },
+  'kayon-sudut-mawar': { component: 'OrnamentKayonSudutMawar', name: 'Sudut mawar', category: 'corner', ratio: 1 },
+  'kayon-motif-ukel': { component: 'OrnamentKayonMotifUkel', name: 'Motif ukel', category: 'motif', ratio: 1 },
+  'kayon-motif-medalion': { component: 'OrnamentKayonMotifMedalion', name: 'Motif medalion', category: 'motif', ratio: 1 },
+  'kayon-motif-patran': { component: 'OrnamentKayonMotifPatran', name: 'Motif patran', category: 'motif', ratio: 140 / 120 },
+  'kayon-motif-tumpal': { component: 'OrnamentKayonMotifTumpal', name: 'Motif tumpal', category: 'motif', ratio: 140 / 120 },
+  'kayon-motif-cecek': { component: 'OrnamentKayonMotifCecek', name: 'Motif cecek', category: 'motif', ratio: 1 },
+  'kayon-layer-rumpun-kayon': { component: 'OrnamentKayonLayerRumpunKayon', name: 'Rumpun kayon', category: 'layer', ratio: 460 / 340, slot: 'bloom' },
+  'kayon-layer-kayon-tunggal': { component: 'OrnamentKayonLayerKayonTunggal', name: 'Kayon tunggal', category: 'layer', ratio: 260 / 360, slot: 'cascade' },
+  'kayon-layer-sulur-mawar': { component: 'OrnamentKayonLayerSulurMawar', name: 'Sulur mawar', category: 'layer', ratio: 340 / 300, slot: 'swag' },
+  'kayon-layer-patran-gantung': { component: 'OrnamentKayonLayerPatranGantung', name: 'Patran gantung', category: 'layer', ratio: 300 / 260, slot: 'crown' },
+  'kayon-layer-pita-medalion': { component: 'OrnamentKayonLayerPitaMedalion', name: 'Pita medalion', category: 'layer', ratio: 420 / 150, slot: 'crown' },
+  'kayon-layer-dedaunan': { component: 'OrnamentKayonLayerDedaunan', name: 'Dedaunan', category: 'layer', ratio: 1, slot: 'cluster' },
+  'kayon-simbol-kayon': { component: 'OrnamentKayonSimbolKayon', name: 'Simbol kayon', category: 'symbol', ratio: 130 / 170 },
+  'kayon-simbol-cincin': { component: 'OrnamentKayonSimbolCincin', name: 'Simbol cincin medalion', category: 'symbol', ratio: 1 },
+  'kayon-simbol-mawar': { component: 'OrnamentKayonSimbolMawar', name: 'Simbol mawar', category: 'symbol', ratio: 1 },
+  'kayon-segel-kayon': { component: 'OrnamentKayonSegelKayon', name: 'Segel kayon', category: 'seal', ratio: 1 },
+  'kayon-segel-medalion': { component: 'OrnamentKayonSegelMedalion', name: 'Segel medalion', category: 'seal', ratio: 1 },
+  'kayon-monogram-kayon': { component: 'OrnamentKayonMonogramKayon', name: 'Monogram kayon', category: 'monogram', ratio: 200 / 260 },
+  'kayon-monogram-medalion': { component: 'OrnamentKayonMonogramMedalion', name: 'Monogram medalion', category: 'monogram', ratio: 1 },
+  'kayon-mawar-mekar': { component: 'OrnamentKayonMawarMekar', name: 'Mawar mekar', category: 'floral', ratio: 160 / 220 },
+  'kayon-tangkai-daun': { component: 'OrnamentKayonTangkaiDaun', name: 'Tangkai daun', category: 'floral', ratio: 140 / 220 },
+  'sunda-julang-ngapak': { component: 'OrnamentSundaJulangNgapak', name: 'Rumah Julang Ngapak', category: 'venue', ratio: 720 / 480 },
+  'sunda-angklung': { component: 'OrnamentSundaAngklung', name: 'Angklung', category: 'symbol', ratio: 260 / 400 },
+  'sunda-anyaman-bambu': { component: 'OrnamentSundaAnyamanBambu', name: 'Anyaman bambu', category: 'motif', ratio: 1 },
+  'sunda-bingkai-sunda': { component: 'OrnamentSundaBingkaiSunda', name: 'Bingkai taman', category: 'frame', ratio: 420 / 580 },
+  'sunda-divider-sunda': { component: 'OrnamentSundaDividerSunda', name: 'Pucuk dan pertemuan', category: 'divider', ratio: 600 / 90 },
+  'sunda-sudut-daun': { component: 'OrnamentSundaSudutDaun', name: 'Sudut dedaunan', category: 'corner', ratio: 1 },
+  'sekar-bingkai-gapura': { component: 'OrnamentSekarBingkaiGapura', name: 'Gapura sekar', category: 'frame', ratio: 300 / 420 },
+  'sekar-bingkai-oval': { component: 'OrnamentSekarBingkaiOval', name: 'Oval sekar', category: 'frame', ratio: 300 / 420 },
+  'sekar-bingkai-segi': { component: 'OrnamentSekarBingkaiSegi', name: 'Segi bersilang', category: 'frame', ratio: 1 },
+  'sekar-layer-jatuh': { component: 'OrnamentSekarLayerJatuh', name: 'Untaian sekar', category: 'layer', ratio: 260 / 480, slot: 'cascade' },
+  'sekar-layer-mahkota': { component: 'OrnamentSekarLayerMahkota', name: 'Mahkota sekar', category: 'layer', ratio: 480 / 200, slot: 'crown' },
+  'sekar-layer-mekar': { component: 'OrnamentSekarLayerMekar', name: 'Mekar sekar', category: 'layer', ratio: 480 / 260, slot: 'bloom' },
+  'sekar-layer-rumpun': { component: 'OrnamentSekarLayerRumpun', name: 'Rumpun sekar', category: 'layer', ratio: 1, slot: 'cluster' },
+  'sekar-layer-untai': { component: 'OrnamentSekarLayerUntai', name: 'Penutup sekar', category: 'layer', ratio: 600 / 220, slot: 'swag' },
+  'sekar-monogram-karangan': { component: 'OrnamentSekarMonogramKarangan', name: 'Karangan sekar', category: 'monogram', ratio: 1 },
+  'sekar-motif-damask': { component: 'OrnamentSekarMotifDamask', name: 'Pita damask', category: 'motif', ratio: 3 },
+  'sekar-pemisah-mahkota': { component: 'OrnamentSekarPemisahMahkota', name: 'Mahkota berel', category: 'divider', ratio: 8 },
+  'sekar-pemisah-sulur': { component: 'OrnamentSekarPemisahSulur', name: 'Sulur berjalan', category: 'divider', ratio: 8 },
+  'sekar-rangkaian-kanan': { component: 'OrnamentSekarRangkaianKanan', name: 'Rangkaian kanan', category: 'floral', ratio: 140 / 176 },
+  'sekar-rangkaian-kiri': { component: 'OrnamentSekarRangkaianKiri', name: 'Rangkaian kiri', category: 'floral', ratio: 140 / 176 },
+  'sekar-ranting-kanan': { component: 'OrnamentSekarRantingKanan', name: 'Ranting kanan', category: 'floral', ratio: 120 / 168 },
+  'sekar-ranting-kiri': { component: 'OrnamentSekarRantingKiri', name: 'Ranting kiri', category: 'floral', ratio: 120 / 168 },
+  'sekar-segel-rozet': { component: 'OrnamentSekarSegelRozet', name: 'Rozet sekar', category: 'seal', ratio: 1 },
+  'sekar-segel-tumpal': { component: 'OrnamentSekarSegelTumpal', name: 'Liontin tumpal', category: 'seal', ratio: 120 / 160 },
+  'sekar-simbol-kembang-air': { component: 'OrnamentSekarSimbolKembangAir', name: 'Kembang air', category: 'symbol', ratio: 140 / 120 },
+  'sekar-sudut-damask': { component: 'OrnamentSekarSudutDamask', name: 'Sudut damask', category: 'corner', ratio: 1 },
+  'sekar-sudut-sulur-kanan': { component: 'OrnamentSekarSudutSulurKanan', name: 'Sudut sulur kanan', category: 'corner', ratio: 1 },
+  'sekar-sudut-sulur-kiri': { component: 'OrnamentSekarSudutSulurKiri', name: 'Sudut sulur kiri', category: 'corner', ratio: 1 },
+  'pusaka-segel-tumpal-jajar': { component: 'OrnamentPusakaSegelTumpalJajar', name: 'Segel tumpal berjajar', category: 'seal', ratio: 1 },
+  'pusaka-segel-sulur-bintang': { component: 'OrnamentPusakaSegelSulurBintang', name: 'Segel sulur bintang', category: 'seal', ratio: 1 },
+  'pusaka-segel-karangan-tipis': { component: 'OrnamentPusakaSegelKaranganTipis', name: 'Segel karangan tipis', category: 'seal', ratio: 1 },
+  'pusaka-bingkai-kubah': { component: 'OrnamentPusakaBingkaiKubah', name: 'Bingkai kubah', category: 'frame', ratio: 300 / 420 },
+  /* ── /pack ── */
 } as const satisfies Record<string, OrnamentEntry>
 
 export type OrnamentId = keyof typeof ornamentBank

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ArrowRight, Eye, EyeOff } from 'lucide-vue-next'
-import { toast } from 'vue-sonner'
+
+const toast = useToast()
 
 definePageMeta({ layout: 'auth' })
 

@@ -1,0 +1,16 @@
+<script setup lang="ts">
+/**
+ * Tangkai daun — flora-pendamping, pack kayon.
+ *
+ * Peran kultural dirujuk `packs/kayon/CULTURE.md`; diperiksa 2026-09-17.
+ *
+ * diimpor oleh scripts/ornament-pack dari `packs/kayon/svg/tangkai-daun.svg`; jangan sunting berkas ini dengan
+ * tangan — ubah SVG sumbernya lalu jalankan `pnpm ornament:pack --tulis`.
+ */
+</script>
+
+<template>
+  <svg viewBox="0 0 140 220" fill="var(--iv-orn-body, currentColor)" aria-hidden="true">
+    <g id="kayon-tangkai-daun-leaf" data-layer="leaf"><path data-draw="" fill="none" stroke="var(--iv-orn-deep, currentColor)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" d="M70 210C70 150 66 100 74 18" /><g transform="translate(70 180) rotate(-32)"><path data-mass="" d="M0 0L2.49 -2.54L5.3 -4.7L8.4 -6.46L11.74 -7.86L15.29 -8.9L19 -9.6L22.83 -9.96L26.74 -9.99L30.69 -9.71L34.64 -9.13L38.55 -8.27L42.37 -7.12L46.07 -5.71L49.6 -4.05L52.92 -2.14L56 0L52.92 1.55L49.6 2.94L46.07 4.17L42.37 5.23L38.55 6.1L34.64 6.77L30.69 7.23L26.74 7.47L22.83 7.48L19 7.24L15.29 6.74L11.74 5.97L8.4 4.93L5.3 3.59L2.49 1.95Z" /></g><g transform="translate(70 146) rotate(212)"><path data-mass="" opacity="0.45" d="M0 0L2.26 -2.33L4.83 -4.3L7.65 -5.93L10.69 -7.21L13.92 -8.16L17.3 -8.8L20.79 -9.13L24.35 -9.16L27.95 -8.9L31.55 -8.37L35.1 -7.58L38.58 -6.53L41.95 -5.23L45.17 -3.71L48.2 -1.96L51 0L48.2 1.42L45.17 2.7L41.95 3.83L38.58 4.8L35.1 5.59L31.55 6.21L27.95 6.63L24.35 6.85L20.79 6.85L17.3 6.63L13.92 6.18L10.69 5.48L7.65 4.52L4.83 3.29L2.26 1.79Z" /></g><g transform="translate(69 112) rotate(-26)"><path data-mass="" d="M0 0L2.04 -2.12L4.35 -3.91L6.9 -5.39L9.65 -6.55L12.56 -7.42L15.61 -8L18.75 -8.3L21.96 -8.32L25.21 -8.09L28.45 -7.61L31.66 -6.89L34.8 -5.93L37.84 -4.76L40.74 -3.37L43.47 -1.78L46 0L43.47 1.29L40.74 2.45L37.84 3.48L34.8 4.36L31.66 5.08L28.45 5.64L25.21 6.03L21.96 6.23L18.75 6.23L15.61 6.03L12.56 5.62L9.65 4.98L6.9 4.11L4.35 2.99L2.04 1.63Z" /></g><g transform="translate(70 80) rotate(206)"><path data-mass="" opacity="0.45" d="M0 0L1.82 -1.91L3.88 -3.52L6.15 -4.85L8.6 -5.9L11.19 -6.68L13.91 -7.2L16.71 -7.47L19.58 -7.49L22.47 -7.28L25.36 -6.85L28.22 -6.2L31.02 -5.34L33.73 -4.28L36.31 -3.03L38.75 -1.6L41 0L38.75 1.16L36.31 2.21L33.73 3.13L31.02 3.92L28.22 4.58L25.36 5.08L22.47 5.42L19.58 5.6L16.71 5.61L13.91 5.43L11.19 5.05L8.6 4.48L6.15 3.7L3.88 2.69L1.82 1.47Z" /></g><g transform="translate(72 50) rotate(-22)"><path data-mass="" d="M0 0L1.6 -1.7L3.41 -3.13L5.4 -4.31L7.55 -5.24L9.83 -5.94L12.21 -6.4L14.68 -6.64L17.19 -6.66L19.73 -6.47L22.27 -6.09L24.78 -5.51L27.24 -4.75L29.61 -3.81L31.88 -2.7L34.02 -1.43L36 0L34.02 1.03L31.88 1.96L29.61 2.78L27.24 3.49L24.78 4.07L22.27 4.51L19.73 4.82L17.19 4.98L14.68 4.98L12.21 4.82L9.83 4.49L7.55 3.98L5.4 3.29L3.41 2.4L1.6 1.3Z" /></g><g transform="translate(74 16)"><path data-mass="" opacity="0.45" d="M0 -7C3.87 -7 7 -3.87 7 0C7 3.87 3.87 7 0 7C-3.87 7 -7 3.87 -7 0C-7 -3.87 -3.87 -7 0 -7Z" /></g></g>
+  </svg>
+</template>

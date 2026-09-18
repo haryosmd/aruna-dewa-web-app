@@ -118,7 +118,7 @@ defineExpose({
       :aria-label="playing ? 'Jeda musik' : 'Putar musik'"
       :aria-pressed="playing"
       class="grid h-12 w-12 shrink-0 place-items-center rounded-full shadow-[0_10px_28px_-10px_rgb(0_0_0/0.5)] transition-transform duration-300 hover:scale-105"
-      style="background: var(--iv-primary); color: #fffdf7"
+      style="background: var(--iv-primary); color: var(--iv-on-primary, #fffdf7)"
       @click="apply('toggle')"
     >
       <Pause v-if="playing" :size="19" aria-hidden="true" />

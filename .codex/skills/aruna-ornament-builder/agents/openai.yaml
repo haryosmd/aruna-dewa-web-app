@@ -1,0 +1,6 @@
+interface:
+  display_name: "Aruna Ornament Builder"
+  short_description: "Hunting ornamen, font, SVG dan motion tema budaya"
+  default_prompt: "Gunakan $aruna-ornament-builder untuk membuat paket ornamen budaya yang terkurasi, bersumber jelas, dan memiliki demo motion lokal."
+policy:
+  allow_implicit_invocation: true

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { templates } from '../packages/contracts/src/index'
-import { checkPalette, contrastRatio, repairPalette, textContrastMinimum, tintSurface } from '../apps/web/utils/contrast'
+import { checkPalette, contrastRatio, inkDark, inkLight, onPrimary, repairPalette, textContrastMinimum, tintSurface } from '../apps/web/utils/contrast'
 
 describe('rasio kontras', () => {
   it('cocok dengan nilai referensi WCAG', () => {
@@ -29,8 +29,30 @@ describe('penjaga palet undangan', () => {
   })
 
   it('menangkap palet kustom yang tidak terbaca', () => {
+    /*
+     * Tiga pasangan, bukan empat. Sejak tinta tombol diturunkan dari `primary` (fase 45),
+     * merah muda terang ini justru **lolos** pasangan `button`: ia mendapat tinta gelap, dan
+     * `#171203` di atas `#E8B4C8` bernilai 10,49. Yang tetap gagal adalah ketiga pasangan yang
+     * memang tidak bisa ditolong tinta tombol.
+     */
     const failing = checkPalette({ background: '#FBF6EE', foreground: '#C9C0B4', primary: '#E8B4C8' })
-    expect(failing.filter(check => check.passes)).toHaveLength(0)
+    expect(failing.filter(check => !check.passes).map(check => check.id)).toEqual(['body', 'accent', 'accentOnTint'])
+  })
+
+  it('memilih tinta tombol yang benar-benar lebih terbaca', () => {
+    // Primary gelap menuntut tinta terang; primary terang menuntut yang gelap. Sebelum fase 45
+    // hanya yang pertama ada, dan itulah sebabnya tema gelap mustahil.
+    expect(onPrimary('#A93F23')).toBe(inkLight)
+    expect(onPrimary('#E8B4C8')).toBe(inkDark)
+    // Emas pelita: 1,97 dengan tinta terang, 9,93 dengan yang gelap.
+    expect(onPrimary('#D9B978')).toBe(inkDark)
+    expect(contrastRatio(onPrimary('#D9B978'), '#D9B978')).toBeGreaterThan(textContrastMinimum)
+  })
+
+  it('meloloskan palet gelap yang dulu mustahil', () => {
+    // Bukti fase 45: sebelum tinta diturunkan, tidak ada palet gelap yang bisa lolos keempatnya.
+    const gelap = { background: '#141719', foreground: '#F1ECE2', primary: '#D9B978' }
+    expect(checkPalette(gelap).filter(check => !check.passes)).toEqual([])
   })
 
   it('memperbaiki palet gagal tanpa membuang pilihan warna pasangan', () => {

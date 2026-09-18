@@ -10,7 +10,8 @@
  */
 import type { ApiError, SessionHistoryEntry } from '@aruna/contracts/api'
 import { BadgeCheck, Eye, EyeOff, KeyRound, MailCheck, Save, ShieldAlert } from 'lucide-vue-next'
-import { toast } from 'vue-sonner'
+
+const toast = useToast()
 
 definePageMeta({ middleware: 'auth' })
 

@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 import type { GuestProfile, InvitationDocument, RsvpPayload, Section, Wish } from '~/types/aruna'
+import { toOrnamentOverrides } from '~/utils/invitation-options'
 import { toIntensity } from '~/utils/ornaments'
+import { playLegacyScore, playScore } from '~/utils/motion-play'
+import { resolveScore, sectionRole } from '~/utils/motion-score'
+import { themeMotion, themeOrnaments } from '~/utils/theme'
+import { terapkanOverrides } from '~/utils/ornament-slots'
 
 /*
  * Diimpor eksplisit, bukan disebut lewat nama auto-import.
@@ -81,11 +86,35 @@ const sectionComponents: Record<string, Component> = {
   closing: SectionClosing,
 }
 
-const rendered = computed(() =>
-  visible.value
+const score = computed(() => themeMotion(props.document.templateId))
+
+const rendered = computed(() => {
+  const entries = visible.value
     .map((section, index) => ({ section, index, component: sectionComponents[section.type] }))
-    .filter((entry): entry is { section: Section; index: number; component: Component } => Boolean(entry.component)),
-)
+    .filter((entry): entry is { section: Section; index: number; component: Component } => Boolean(entry.component))
+    .map(entry => ({ ...entry, role: sectionRole[entry.section.type] }))
+
+  const partitur = score.value
+  if (!partitur) return entries.map(entry => ({ ...entry, segue: null }))
+
+  /*
+   * Pita transisi dipasang di batas babak, dan babaknya dihitung dari daftar yang dirender
+   * di sini — bukan dari DOM seperti yang dilakukan pemain partitur. Keduanya memang boleh
+   * berbeda: `Video` dan `Rundown` bisa merender nol elemen, jadi sebuah pita bisa berdiri
+   * tepat sebelum section hantu. Itu tidak merusak apa pun — pita itu tetap menandai babak
+   * yang benar-benar berakhir — dan dua pita yang jadi bertetangga disembunyikan CSS lewat
+   * `.iv-segue + .iv-segue`, bukan lewat penghitungan yang mencoba menebak isi section.
+   */
+  const babak = resolveScore(partitur, entries.map(entry => entry.role))
+  const segueDiIndeks = new Map<number, (typeof babak)[number]['segue']>()
+  let cursor = 0
+  for (const act of babak) {
+    if (cursor > 0 && act.segue.kind !== 'none') segueDiIndeks.set(cursor, act.segue)
+    cursor += act.span
+  }
+
+  return entries.map((entry, index) => ({ ...entry, segue: segueDiIndeks.get(index) ?? null }))
+})
 
 const coupleSection = computed(() => sectionOf('couple'))
 const coupleNames = computed(() => {
@@ -98,8 +127,29 @@ const initials = computed(() => coupleNames.value.split('&').map(part => part.tr
 const coverSection = computed(() => sectionOf('cover'))
 const coverImage = computed(() => text(coverSection.value, 'image') || themeOf(props.document.templateId).cover)
 
-/** Set ornamen milik tema — inilah yang membedakan wajah tiap tema, bukan hanya warnanya. */
-const orn = computed(() => themeOrnaments(props.document.templateId))
+/**
+ * Set ornamen milik tema — inilah yang membedakan wajah tiap tema, bukan hanya warnanya —
+ * ditimpa penukaran yang dipilih pasangan di Studio Ornamen.
+ *
+ * Penukarannya hidup di `cover.data`, bukan di `tokens`. Alasannya bukan lagi entitlement:
+ * sejak fase 59 `designFingerprint()` di API ikut membaca `ornamentOverrides`, jadi penukaran
+ * ornamen **tergerbang `design`** persis seperti warna dan font. Yang membuatnya tetap di
+ * `section.data` adalah bentuknya — `tokens` ada di `packages/contracts` dan menaruh id
+ * ornamen di sana akan memaksa kontrak mengenal bank yang 328 keping, atau melemahkannya jadi
+ * `z.record(z.string())` yang justru memvalidasi lebih sedikit daripada `toOrnamentOverrides()`.
+ *
+ * `toOrnamentOverrides()` menyaringnya terhadap kategori slot, jadi glyph yang salah tempat
+ * tidak bisa masuk lewat dokumen yang disunting tangan. Ia **tidak lagi** melepas penukaran
+ * saat tema diganti; itu disengaja dan alasannya ada di sana.
+ *
+ * `terapkanOverrides()` yang menggabungkannya, bukan spread biasa: `layers` adalah array lima
+ * keping yang dibedakan jangkarnya, dan menyebarnya akan merusak invarian "lima layer, satu per
+ * jangkar" yang dijaga `theme-identity.spec.ts`.
+ */
+const orn = computed(() => terapkanOverrides(
+  themeOrnaments(props.document.templateId),
+  toOrnamentOverrides(coverSection.value?.data.ornamentOverrides, props.document.templateId),
+))
 
 /**
  * Seberapa kental ornamen dipasang. Hidup di `cover.data`, bukan di `tokens`: menambah
@@ -161,39 +211,15 @@ provideInvitation({
 })
 
 // --- Motion ------------------------------------------------------------------
-useArunaMotion(root, ({ gsap, revealUp, parallax, drawSvg, orchestrate }) => {
-  // 70px terasa menyentak di layar pendek; 40 cukup untuk membuat foto terbaca sebagai jendela.
-  parallax('[data-iv-parallax]', { distance: 40 })
-  revealUp('[data-iv-reveal]', { y: 26, stagger: 0.07 })
-
+useArunaMotion(root, (api) => {
   /*
-   * DrawSVG hanya bisa menggambar stroke. Sejak ornamen digambar bermassa, yang tersisa
-   * untuk digambar tinggal detail bergaris bertanda `data-draw` — badan bentuknya diungkap
-   * `orchestrate()` di bawah.
+   * Tema tanpa partitur menjalankan koreografi lama **persis** seperti sebelumnya, bukan
+   * partitur bawaan yang kira-kira sama. Sembilan tema yang sudah terbit hanya boleh
+   * berubah ketika masing-masing dipindahkan dan dibandingkan sendiri-sendiri.
    */
-  drawSvg('[data-iv-ornament] [data-draw] path, [data-iv-ornament] path[data-draw]', { duration: 1.8 })
-
-  // Tile galeri bergantian bergerak lebih lambat, jadi kolomnya tidak naik serempak.
-  parallax('[data-iv-gallery-slow]', { distance: 26 })
-
-  /*
-   * Koreografi per section: heading → foto → ladang ornamen. Inilah ritme yang membuat
-   * referensi terbaca lebih kaya meski mesin motionnya hanya AOS — bukan pluginnya,
-   * melainkan urutan dan jeda antar unsurnya.
-   */
-  gsap.utils.toArray<HTMLElement>('[data-iv-section]').forEach((section) => {
-    orchestrate(section, { stagger: 0.16, duration: 1.4 })
-  })
-
-  // Rel timeline rundown tumbuh mengikuti scroll. Keadaan diam-nya scaleY(1) di CSS.
-  gsap.utils.toArray<HTMLElement>('[data-iv-rail]').forEach((node) => {
-    gsap.from(node, {
-      scaleY: 0,
-      transformOrigin: 'top center',
-      ease: 'none',
-      scrollTrigger: { trigger: node.parentElement ?? node, start: 'top 80%', end: 'bottom 70%', scrub: 0.5 },
-    })
-  })
+  const partitur = score.value
+  if (!partitur) return playLegacyScore(api)
+  playScore(api, { root: root.value!, score: partitur, compact: props.compact })
 })
 </script>
 
@@ -222,13 +248,20 @@ useArunaMotion(root, ({ gsap, revealUp, parallax, drawSvg, orchestrate }) => {
       Urutan diambil dari dokumen, bukan dari urutan tag di berkas ini. Itulah yang
       membuat tombol naik/turun di editor akhirnya berpengaruh pada yang dilihat tamu.
     -->
-    <component
-      :is="entry.component"
-      v-for="entry in rendered"
-      :key="entry.section.id"
-      :section="entry.section"
-      :seed="entry.index"
-    />
+    <template v-for="entry in rendered" :key="entry.section.id">
+      <InvitationSegue
+        v-if="entry.segue"
+        :kind="entry.segue.kind"
+        :shape="'shape' in entry.segue ? entry.segue.shape : null"
+        :from="'from' in entry.segue ? entry.segue.from : 'bottom'"
+      />
+      <component
+        :is="entry.component"
+        :section="entry.section"
+        :seed="entry.index"
+        :data-iv-act="entry.role"
+      />
+    </template>
 
     <template v-if="!compact">
       <InvitationMusicPlayer
@@ -261,9 +294,38 @@ useArunaMotion(root, ({ gsap, revealUp, parallax, drawSvg, orchestrate }) => {
   width: 20%;
   height: auto;
   aspect-ratio: 1;
+  /*
+   * Ramp kertas, ditulis di sini dan bukan diwarisi.
+   *
+   * `color` saja tidak cukup dan belum pernah cukup: tiap `<g>` hasil forge memakai
+   * `var(--iv-orn-*, currentColor)`, dan cadangan itu hanya terpakai kalau var-nya TIDAK
+   * terdefinisi — padahal `themeStyle()` selalu mendefinisikannya di `.iv-root`. Jadi
+   * selama empat var di bawah tidak ditulis ulang, baris `color` hanyalah kode mati dan
+   * sudut ini memakai warna tema, bukan warna kertas.
+   *
+   * Empat tingkatnya dipertahankan sebagai tingkat TEMBUS, bukan tingkat warna. Di atas
+   * foto itu justru yang benar: hue apa pun bertabrakan dengan sebagian foto, sedangkan
+   * putih berjenjang terbaca sebagai hiasan pada foto terang maupun gelap. Badan solid,
+   * plat aksen lebih lembut supaya tepinya menyembul, rel garis penuh supaya detailnya
+   * tidak hilang di ~64px — dan bayangan tipis di bawah yang menahannya di foto terang.
+   */
+  --iv-orn-deep: #fffdf7;
+  --iv-orn-body: #fffdf7;
+  --iv-orn-accent: rgb(255 253 247 / 0.55);
+  --iv-orn-glow: rgb(255 253 247 / 0.72);
   color: #fffdf7;
   opacity: 0.72;
-  filter: drop-shadow(0 1px 3px rgb(0 0 0 / 0.45));
+  /*
+   * Dua bayangan, dan yang pertama yang mengerjakan pekerjaan sesungguhnya.
+   *
+   * Tinta kertas menyelesaikan foto gelap tapi menciptakan kebalikannya: di atas bidang
+   * foto yang terang — langit, dinding putih — putih 0,72 nyaris menghilang. Bayangan
+   * tunggal 3px yang lama terlalu lembut untuk menahannya, karena ornamen ini berlubang
+   * isen dan yang perlu ditegaskan adalah TEPI tiap lubang, bukan siluet luarnya.
+   * `0 0 1px` rapat menempel di tepi dan bekerja seperti garis luar setipis rambut;
+   * `0 1px 3px` yang lama tetap ada untuk memberi kedalaman.
+   */
+  filter: drop-shadow(0 0 1px rgb(0 0 0 / 0.55)) drop-shadow(0 1px 3px rgb(0 0 0 / 0.45));
   pointer-events: none;
 }
 .iv-portrait-corner--tl { top: 3.5%; left: 3.5%; }
@@ -330,8 +392,12 @@ useArunaMotion(root, ({ gsap, revealUp, parallax, drawSvg, orchestrate }) => {
   background: var(--iv-bg);
   color: var(--iv-primary);
 }
+/*
+ * Penanda ini dicat `--iv-fg`, jadi tintanya harus `--iv-bg` — bukan putih yang dipanggang.
+ * Pada tema gelap `--iv-fg` justru terang, dan tinta nyaris putih di atasnya hilang sama sekali.
+ */
 .iv-section[data-tone='ink'] .iv-timeline-mark,
-.iv-section[data-tone='primary'] .iv-timeline-mark { background: var(--iv-fg); color: #fffdf7; }
+.iv-section[data-tone='primary'] .iv-timeline-mark { background: var(--iv-fg); color: var(--iv-bg); }
 
 /* ── Ucapan menunggu moderasi ───────────────────────────────────────────────── */
 .iv-pending {
@@ -386,6 +452,40 @@ useArunaMotion(root, ({ gsap, revealUp, parallax, drawSvg, orchestrate }) => {
   background: var(--iv-bg);
   color: var(--iv-fg);
   font-family: var(--iv-body);
+}
+
+/*
+ * Ramp ornamen di bidang gelap, ditulis SEKALI.
+ *
+ * Empat belas tempat di undangan memaksa `color: #fffdf7` masing-masing, karena di atas bidang
+ * gelap `primary` tema mana pun ikut tenggelam. Sejak ornamen punya empat tingkat warna, aturan
+ * itu perlu empat pasangannya — dan menempelkannya di empat belas tempat berarti tiga belas
+ * kesempatan untuk lupa. Satu aturan di sini yang menukar rampnya; yang di bawah tinggal
+ * mengurus `color`-nya sendiri seperti sebelumnya.
+ *
+ * `--iv-orn-dark-*` dipancarkan `themeStyle()` berdampingan dengan ramp terangnya.
+ *
+ * **`.iv-portrait-corner` sengaja TIDAK ada di daftar ini, dan itu bukan kelalaian.** Ramp
+ * gelap dihitung `ornamentRampOnDark(accent, tokens.primary)` — terhadap `primary`, karena
+ * itulah bidang yang ditempati keempat tempat di atas. Sudut potret tidak duduk di atas
+ * `primary`; ia duduk di atas FOTO. Diukur pada `aruna-pelita` (`primary #D9B978`), ramp
+ * gelapnya keluar `#7e6b41` · `#171203` · `#4f3c1d` · `#2c2410` — tiga dari empat stop
+ * praktis satu warna, jadi ornamen empat tingkat runtuh jadi satu bidang cokelat kusam di
+ * atas foto malam. Efek sampingnya lebih buruk lagi: `color: #fffdf7` di bawah berhenti
+ * berarti apa-apa, karena tiap `<g>` memakai `var(--iv-orn-*, currentColor)` dan
+ * cadangannya tidak pernah terpakai selama var-nya terdefinisi.
+ *
+ * Dibiarkan di luar, sudut potret jatuh ke ramp terang `.iv-root` sementara `color`-nya
+ * sendiri yang mengurus kertas — persis maksud yang sudah tertulis di DESIGN.md.
+ */
+.iv-field[data-dark='true'] .iv-field-piece,
+.iv-section[data-tone='ink'],
+.iv-section[data-tone='primary'],
+.iv-story-finale {
+  --iv-orn-deep: var(--iv-orn-dark-deep);
+  --iv-orn-body: var(--iv-orn-dark-body);
+  --iv-orn-accent: var(--iv-orn-dark-accent);
+  --iv-orn-glow: var(--iv-orn-dark-glow);
 }
 
 .iv-chip {
@@ -450,7 +550,8 @@ useArunaMotion(root, ({ gsap, revealUp, parallax, drawSvg, orchestrate }) => {
   border: 0;
   border-radius: 0.5rem;
   background: var(--iv-primary);
-  color: #fffdf7;
+  /* Tinta mengikuti `primary`, bukan dipanggang: lihat `onPrimary()` di `utils/contrast.ts`. */
+  color: var(--iv-on-primary, #fffdf7);
   font-family: var(--iv-body);
   font-size: 0.9375rem;
   font-weight: 700;

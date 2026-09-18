@@ -1,0 +1,755 @@
+{
+  "schemaVersion": 1,
+  "id": "canva-emas-cokelat",
+  "name": "Impor Canva — Emas Cokelat",
+  "scope": "imported-local-demo",
+  "builtAt": "2026-09-18",
+  "origin": {
+    "template": "Emas Cokelat Tradisional Undangan Pernikahan Video Seluler",
+    "exportedBy": "pemilik, dari akun Canva Pro",
+    "warning": "Bukan aset original. Aturan AGENTS.md/DESIGN.md tentang aset pihak ketiga tetap berlaku sampai pemilik memutuskan sebaliknya secara tertulis. Lihat PROVENANCE.md."
+  },
+  "palette": {
+    "source": [
+      "#efdeca",
+      "#f6e9d7"
+    ],
+    "note": "Sulur memakai satu warna; sisanya berwarna penuh sebagai raster."
+  },
+  "assets": [
+    {
+      "id": "sudut-gunungan-kiri",
+      "name": "Sudut gunungan kiri",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "raster",
+        "impor-canva",
+        "canva-emas-cokelat",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/sudut-gunungan-emas.svg",
+        "sourceTemplate": "Emas Cokelat Tradisional Undangan Pernikahan Video Seluler",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg",
+        "crop": "dipotong dari berkas yang sama pada x=120 y=0 w=465 h=563 (satuan viewBox sumber); piksel tidak disentuh"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "sudut",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/sudut-gunungan-kiri.png",
+          "format": "png",
+          "width": 645,
+          "height": 779,
+          "ratio": 0.828,
+          "bytes": 263918,
+          "sha256": "a48e25fa339040493a6ce897eb944406dc6fb4f9a4ceddeaa2a9bcddba162c5b",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/sudut-gunungan-kiri.webp",
+          "format": "webp",
+          "width": 645,
+          "height": 779,
+          "ratio": 0.828,
+          "bytes": 82746,
+          "sha256": "8574f0aa108fea4ce4475755696bea5f11ebb8f95c8f9c341efd5c2974a29ee0",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    },
+    {
+      "id": "sudut-gunungan-kanan",
+      "name": "Sudut gunungan kanan",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "raster",
+        "impor-canva",
+        "canva-emas-cokelat",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/sudut-gunungan-emas.svg",
+        "sourceTemplate": "Emas Cokelat Tradisional Undangan Pernikahan Video Seluler",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg",
+        "crop": "dipotong dari berkas yang sama pada x=585 y=0 w=465 h=563 (satuan viewBox sumber); piksel tidak disentuh"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "sudut",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/sudut-gunungan-kanan.png",
+          "format": "png",
+          "width": 645,
+          "height": 779,
+          "ratio": 0.828,
+          "bytes": 265889,
+          "sha256": "e01134f4f1224b8db411c3fcee7f08553b2b1b52af4d69c3d4a85cff9c328ffa",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/sudut-gunungan-kanan.webp",
+          "format": "webp",
+          "width": 645,
+          "height": 779,
+          "ratio": 0.828,
+          "bytes": 80486,
+          "sha256": "8e9304816424cde86a5ede737c473018be0dd9c725ec9338e51381a152686696",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    },
+    {
+      "id": "sulur-krem-kiri",
+      "name": "Sulur krem kiri",
+      "category": "floral",
+      "tags": [
+        "floral",
+        "impor-canva",
+        "canva-emas-cokelat",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/sulur-krem.svg",
+        "sourceTemplate": "Emas Cokelat Tradisional Undangan Pernikahan Video Seluler",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "split": "dipecah dari satu berkas sumber pada x = 547; viewBox dirapatkan ke isinya, koordinat tidak digeser"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1
+        ]
+      },
+      "layers": [
+        "scroll"
+      ],
+      "anchor": "tepi",
+      "motion": {
+        "preset": "reveal+sway",
+        "amplitude": 16,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sulur-krem-kiri.svg",
+          "format": "svg",
+          "width": 469,
+          "height": 688,
+          "ratio": 0.682,
+          "bytes": 11657,
+          "sha256": "2751cef38b3e99cbbb03ee6094c32f8bc0816bef68d1f59fa7f65fa6843193d9",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sulur-krem-kanan",
+      "name": "Sulur krem kanan",
+      "category": "floral",
+      "tags": [
+        "floral",
+        "impor-canva",
+        "canva-emas-cokelat",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/sulur-krem.svg",
+        "sourceTemplate": "Emas Cokelat Tradisional Undangan Pernikahan Video Seluler",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "split": "dipecah dari satu berkas sumber pada x = 547; viewBox dirapatkan ke isinya, koordinat tidak digeser"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1
+        ]
+      },
+      "layers": [
+        "scroll"
+      ],
+      "anchor": "tepi",
+      "motion": {
+        "preset": "reveal+sway",
+        "amplitude": 16,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sulur-krem-kanan.svg",
+          "format": "svg",
+          "width": 469,
+          "height": 688,
+          "ratio": 0.682,
+          "bytes": 11793,
+          "sha256": "d3fe655fca8d68a708742b545a3a0e40eeb7e9e6a6a7f8945817c6048f9e57b6",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sulur-tipis-kiri",
+      "name": "Sulur tipis kiri",
+      "category": "divider",
+      "tags": [
+        "divider",
+        "impor-canva",
+        "canva-emas-cokelat",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/sulur-tipis.svg",
+        "sourceTemplate": "Emas Cokelat Tradisional Undangan Pernikahan Video Seluler",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "split": "dipecah dari satu berkas sumber pada undefined = undefined; viewBox dirapatkan ke isinya, koordinat tidak digeser"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1
+        ]
+      },
+      "layers": [
+        "scroll"
+      ],
+      "anchor": "antar-blok",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 12,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sulur-tipis-kiri.svg",
+          "format": "svg",
+          "width": 262,
+          "height": 351,
+          "ratio": 0.746,
+          "bytes": 59048,
+          "sha256": "015893628ae60a6cf2542261f7020b6495bc5b402051588327994f9f84495b78",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sulur-tipis-kanan",
+      "name": "Sulur tipis kanan",
+      "category": "divider",
+      "tags": [
+        "divider",
+        "impor-canva",
+        "canva-emas-cokelat",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/sulur-tipis.svg",
+        "sourceTemplate": "Emas Cokelat Tradisional Undangan Pernikahan Video Seluler",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "split": "dipecah dari satu berkas sumber pada undefined = undefined; viewBox dirapatkan ke isinya, koordinat tidak digeser"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1
+        ]
+      },
+      "layers": [
+        "scroll"
+      ],
+      "anchor": "antar-blok",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 12,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sulur-tipis-kanan.svg",
+          "format": "svg",
+          "width": 262,
+          "height": 351,
+          "ratio": 0.746,
+          "bytes": 59426,
+          "sha256": "eeef4dbb8231c9427f77e70c371251d0b3287157e877dad8a5eadb48f56782b6",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "lengkung-latar",
+      "name": "Lengkung latar",
+      "category": "frame",
+      "tags": [
+        "frame",
+        "raster",
+        "impor-canva",
+        "canva-emas-cokelat"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/lengkung-latar.svg",
+        "sourceTemplate": "Emas Cokelat Tradisional Undangan Pernikahan Video Seluler",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg",
+        "note": "Bidang latar berbentuk lengkung, bukan ornamen bergaris."
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster wash (semi-transparan, tidak pernah pekat)",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "latar",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/lengkung-latar.png",
+          "format": "png",
+          "width": 1599,
+          "height": 3096,
+          "ratio": 0.516,
+          "bytes": 342398,
+          "sha256": "e697bf574b6a6013282b51349a5541e0a5dc65eb59a5998946719a0f1c176294",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/lengkung-latar.webp",
+          "format": "webp",
+          "width": 1599,
+          "height": 3096,
+          "ratio": 0.516,
+          "bytes": 61982,
+          "sha256": "b8783cd35078e4f455aeb058250780e9a98ac81060dc6672dcc71b3fd3f0e8c9",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    },
+    {
+      "id": "cahaya-lembut",
+      "name": "Cahaya lembut",
+      "category": "motif",
+      "tags": [
+        "motif",
+        "raster",
+        "impor-canva",
+        "canva-emas-cokelat",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/cahaya-lembut.svg",
+        "sourceTemplate": "Emas Cokelat Tradisional Undangan Pernikahan Video Seluler",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg",
+        "crop": "dipotong dari berkas yang sama pada x=0 y=0 w=210 h=349 (satuan viewBox sumber); piksel tidak disentuh",
+        "note": "Sumbernya memuat dua nyala identik (x 19–182 dan 598–762); hanya satu yang diambil."
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "latar",
+      "motion": {
+        "preset": "static",
+        "amplitude": 0,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/cahaya-lembut.png",
+          "format": "png",
+          "width": 407,
+          "height": 407,
+          "ratio": 1,
+          "bytes": 38559,
+          "sha256": "35c8c5351c6ec897d1a53d4d8289bf77fcfcaae1b736f127a65fb62c2e2186b8",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/cahaya-lembut.webp",
+          "format": "webp",
+          "width": 407,
+          "height": 407,
+          "ratio": 1,
+          "bytes": 16340,
+          "sha256": "b73829b05510a5d266733e97cb93b67f390df3d6def75b1773843b51d47a4067",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    },
+    {
+      "id": "pengantin-jawa",
+      "name": "Pengantin Jawa",
+      "category": "symbol",
+      "tags": [
+        "symbol",
+        "raster",
+        "impor-canva",
+        "canva-emas-cokelat"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/pengantin-jawa.svg",
+        "sourceTemplate": "Emas Cokelat Tradisional Undangan Pernikahan Video Seluler",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "chromium (librsvg menolak: Input buffer has corrupt header)",
+        "note": "Sepasang utuh. Dua potongan per tokoh juga disediakan; lihat catatan di PROVENANCE.md."
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "kepala",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/pengantin-jawa.png",
+          "format": "png",
+          "width": 1556,
+          "height": 1214,
+          "ratio": 1.282,
+          "bytes": 1248086,
+          "sha256": "1b86977e39adfa906a53326f25ee7f40a2d308606983d25eaa5772675878c59e",
+          "alpha": true,
+          "renderer": "chromium (librsvg menolak: Input buffer has corrupt header)"
+        },
+        {
+          "file": "raster/pengantin-jawa.webp",
+          "format": "webp",
+          "width": 1556,
+          "height": 1214,
+          "ratio": 1.282,
+          "bytes": 351300,
+          "sha256": "02746f39747574ed2df954dd26b13bedeaa7421302e003a13ec46b8db8d1e933",
+          "alpha": true,
+          "renderer": "chromium (librsvg menolak: Input buffer has corrupt header)"
+        }
+      ]
+    },
+    {
+      "id": "pengantin-pria",
+      "name": "Pengantin pria",
+      "category": "symbol",
+      "tags": [
+        "symbol",
+        "raster",
+        "impor-canva",
+        "canva-emas-cokelat",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/pengantin-jawa.svg",
+        "sourceTemplate": "Emas Cokelat Tradisional Undangan Pernikahan Video Seluler",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "chromium (librsvg menolak: Input buffer has corrupt header)",
+        "crop": "dipotong dari berkas yang sama pada x=120 y=0 w=462 h=877 (satuan viewBox sumber); piksel tidak disentuh",
+        "note": "Dipotong di x=582. Kedua tokoh saling menimpa di sana, jadi potongan ini kehilangan ujung tangan kanannya dan membawa sedikit ujung kain mempelai wanita."
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "kepala",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/pengantin-pria.png",
+          "format": "png",
+          "width": 640,
+          "height": 1203,
+          "ratio": 0.532,
+          "bytes": 505470,
+          "sha256": "090e3cb8b7763822f8af972054d813d81dac98ea0415a4245c238bc3f6ea3dbd",
+          "alpha": true,
+          "renderer": "chromium (librsvg menolak: Input buffer has corrupt header)"
+        },
+        {
+          "file": "raster/pengantin-pria.webp",
+          "format": "webp",
+          "width": 640,
+          "height": 1203,
+          "ratio": 0.532,
+          "bytes": 147810,
+          "sha256": "7bfc63cab05d7133b855e2f0d0e803c7ef5dbef2c6bb517e3466b816e46cd2ed",
+          "alpha": true,
+          "renderer": "chromium (librsvg menolak: Input buffer has corrupt header)"
+        }
+      ]
+    },
+    {
+      "id": "pengantin-wanita",
+      "name": "Pengantin wanita",
+      "category": "symbol",
+      "tags": [
+        "symbol",
+        "raster",
+        "impor-canva",
+        "canva-emas-cokelat",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/pengantin-jawa.svg",
+        "sourceTemplate": "Emas Cokelat Tradisional Undangan Pernikahan Video Seluler",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "chromium (librsvg menolak: Input buffer has corrupt header)",
+        "crop": "dipotong dari berkas yang sama pada x=582 y=0 w=462 h=877 (satuan viewBox sumber); piksel tidak disentuh",
+        "note": "Dipotong di x=582; membawa serta tangan mempelai pria yang memang melingkari lengannya."
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "kepala",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/pengantin-wanita.png",
+          "format": "png",
+          "width": 640,
+          "height": 1165,
+          "ratio": 0.549,
+          "bytes": 666924,
+          "sha256": "180e84e864393add2f7e059a2e558f6d4e8b93c86d9c5000ad8c89e22d15fb36",
+          "alpha": true,
+          "renderer": "chromium (librsvg menolak: Input buffer has corrupt header)"
+        },
+        {
+          "file": "raster/pengantin-wanita.webp",
+          "format": "webp",
+          "width": 640,
+          "height": 1165,
+          "ratio": 0.549,
+          "bytes": 195618,
+          "sha256": "8882a06a5dd741b3891a073240474fb731b417da878732a007f471cfa39876ce",
+          "alpha": true,
+          "renderer": "chromium (librsvg menolak: Input buffer has corrupt header)"
+        }
+      ]
+    }
+  ]
+}

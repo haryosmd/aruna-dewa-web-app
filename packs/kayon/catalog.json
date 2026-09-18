@@ -1,0 +1,2240 @@
+{
+  "schemaVersion": 1,
+  "id": "kayon",
+  "name": "Kayon \u2014 cokelat krem, gunungan dan pita medalion",
+  "scope": "original-local-demo",
+  "builtAt": "2026-09-17",
+  "palette": {
+    "paper": "#F4EFE7",
+    "ink": "#2A1F1B",
+    "tan": "#DFCCBB",
+    "rose": "#8C4F55",
+    "note": "Palet demo pack, diukur dari frame referensi (lihat sources/canva-cokelat-krem/WARNA.md). Token aplikasi tidak diubah; glyph memakai currentColor dan tidak membawa warna sendiri."
+  },
+  "fonts": {
+    "demo": "Georgia / Arial bawaan sistem, supaya demo jalan offline",
+    "recommendation": "Belum ditentukan. Font referensi TIDAK teridentifikasi \u2014 lihat LIMITS.md.",
+    "note": "Tidak ada biner font yang disalin ke pack ini."
+  },
+  "composition": {
+    "anchorRule": "Rumpun kayon di tepi bawah, pita medalion di kepala dan kaki, zona teks tidak dianimasikan.",
+    "source": "sources/canva-cokelat-krem/MOTION.md \u2014 densitas baris bawah 1,09\u20131,29 vs baris atas 0,70\u20130,92"
+  },
+  "motionRecipe": {
+    "ease": "sine.inOut untuk gestur tunggal; power1.out untuk reveal berurutan",
+    "durasiGestur": "0,30 s (median segmen terukur); 0,93\u20131,03 s untuk dua gestur besar",
+    "jarakAntarGestur": "3,2\u20135,3 s",
+    "pangsaDiam": "87,3% frame di bawah ambang gerak",
+    "source": "sources/canva-cokelat-krem/motion/measurements.json"
+  },
+  "assets": [
+    {
+      "id": "bingkai-medalion",
+      "name": "Bingkai medalion",
+      "category": "frame",
+      "tags": [
+        "frame",
+        "medalion",
+        "cincin",
+        "pita"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "scroll"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/bingkai-medalion.svg",
+          "format": "svg",
+          "width": 380,
+          "height": 380,
+          "ratio": 1,
+          "bytes": 17422,
+          "sha256": "faee7ff7852a14a1c0bf0de96d80ca6e606856ce98ec8b692e312e3970993faa",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "bingkai-tumpal",
+      "name": "Bingkai tumpal",
+      "category": "frame",
+      "tags": [
+        "frame",
+        "tumpal",
+        "geometris",
+        "pita"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "band"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/bingkai-tumpal.svg",
+          "format": "svg",
+          "width": 380,
+          "height": 520,
+          "ratio": 0.731,
+          "bytes": 5449,
+          "sha256": "3a46e097327696a5aad1528e8ecaac6fa897916da26117c6744b396b6a2129c3",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "bingkai-lung",
+      "name": "Bingkai lung-lungan",
+      "category": "frame",
+      "tags": [
+        "frame",
+        "lung-lungan",
+        "sulur",
+        "landscape"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "scroll"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/bingkai-lung.svg",
+          "format": "svg",
+          "width": 440,
+          "height": 300,
+          "ratio": 1.467,
+          "bytes": 12206,
+          "sha256": "b98390a99ea1c9ac4f4106d2fa73c8ef2bfbbd5e7454fe2e94d742a60fee4e63",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "bidang-kayon",
+      "name": "Bidang kayon",
+      "category": "motif",
+      "tags": [
+        "motif",
+        "gunungan",
+        "kayon",
+        "alas",
+        "dua-warna"
+      ],
+      "culturalRole": "arsitektur-kultural",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "field"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "gate",
+        "amplitude": 24,
+        "unit": "px",
+        "duration": 1,
+        "ease": "sine.inOut",
+        "stagger": 0,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/bidang-kayon.svg",
+          "format": "svg",
+          "width": 420,
+          "height": 560,
+          "ratio": 0.75,
+          "bytes": 1981,
+          "sha256": "fa9c926d34d520dd772384b961f24a34cc40aebedba6eba7e30ce143010adb36",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "bidang-rumpun-kayon",
+      "name": "Bidang rumpun kayon",
+      "category": "motif",
+      "tags": [
+        "motif",
+        "gunungan",
+        "kayon",
+        "rumpun",
+        "alas",
+        "dua-warna"
+      ],
+      "culturalRole": "arsitektur-kultural",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "field"
+      ],
+      "anchor": "bottom-left",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/bidang-rumpun-kayon.svg",
+          "format": "svg",
+          "width": 460,
+          "height": 340,
+          "ratio": 1.353,
+          "bytes": 5318,
+          "sha256": "1bbf042e5d8fa0a5e803571cb9aa21f0e39d0f4f9322258c571b6816b80eee52",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "pemisah-medalion",
+      "name": "Pemisah pita medalion",
+      "category": "divider",
+      "tags": [
+        "divider",
+        "medalion",
+        "pita",
+        "berulang"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "band"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/pemisah-medalion.svg",
+          "format": "svg",
+          "width": 420,
+          "height": 74,
+          "ratio": 5.676,
+          "bytes": 39759,
+          "sha256": "d6d87a65271cce7286c181f1fe2b66d6c38210524cc395d08209df858ca3ca15",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "pemisah-ukel",
+      "name": "Pemisah ukel",
+      "category": "divider",
+      "tags": [
+        "divider",
+        "ukel",
+        "sulur",
+        "simetris"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "scroll"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/pemisah-ukel.svg",
+          "format": "svg",
+          "width": 340,
+          "height": 76,
+          "ratio": 4.474,
+          "bytes": 5716,
+          "sha256": "0474bcc607f23818dd7c2cb57a16a0c96119a44a06f3e2a1f13f055c9c4dae27",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "pemisah-patran",
+      "name": "Pemisah patran",
+      "category": "divider",
+      "tags": [
+        "divider",
+        "patran",
+        "daun",
+        "kipas"
+      ],
+      "culturalRole": "flora-pendamping",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "leaf"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "bloomIn",
+        "amplitude": 16,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/pemisah-patran.svg",
+          "format": "svg",
+          "width": 320,
+          "height": 86,
+          "ratio": 3.721,
+          "bytes": 4393,
+          "sha256": "93d46778e779e5a92c157c9aa0acd737686456ed5568edb5d3010e1ff8b9c8cf",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "pemisah-kayon",
+      "name": "Pemisah kayon",
+      "category": "divider",
+      "tags": [
+        "divider",
+        "gunungan",
+        "kayon",
+        "jawa"
+      ],
+      "culturalRole": "arsitektur-kultural",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "scroll"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/pemisah-kayon.svg",
+          "format": "svg",
+          "width": 300,
+          "height": 120,
+          "ratio": 2.5,
+          "bytes": 8185,
+          "sha256": "f6e7dcb71c1ac5864a3c12ce8ff77a2e70b1b58da22b5c41b3784ceba0111ae0",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "pemisah-cecek",
+      "name": "Pemisah cecek",
+      "category": "divider",
+      "tags": [
+        "divider",
+        "cecek",
+        "titik",
+        "minimal"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "band"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/pemisah-cecek.svg",
+          "format": "svg",
+          "width": 300,
+          "height": 46,
+          "ratio": 6.522,
+          "bytes": 1214,
+          "sha256": "e0baae2a532712617c6addb3f702b6cc89c46c6231cd678d8ecbb072d46bd84e",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "pemisah-tumpal",
+      "name": "Pemisah tumpal",
+      "category": "divider",
+      "tags": [
+        "divider",
+        "tumpal",
+        "geometris"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "band"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/pemisah-tumpal.svg",
+          "format": "svg",
+          "width": 360,
+          "height": 60,
+          "ratio": 6,
+          "bytes": 819,
+          "sha256": "605477fc44a5532dbf9bfa0e9dbc69485aaf5883edd12945d91624d66081773c",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sudut-ukel",
+      "name": "Sudut ukel",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "ukel",
+        "sulur"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "scroll"
+      ],
+      "anchor": "corner",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sudut-ukel.svg",
+          "format": "svg",
+          "width": 190,
+          "height": 190,
+          "ratio": 1,
+          "bytes": 5526,
+          "sha256": "8592d604a993e505375e9cfec00a3dd9acf7794bda41a365e6a83b21e16029ce",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sudut-kayon",
+      "name": "Sudut kayon",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "gunungan",
+        "kayon",
+        "jawa"
+      ],
+      "culturalRole": "arsitektur-kultural",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "scroll"
+      ],
+      "anchor": "corner",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sudut-kayon.svg",
+          "format": "svg",
+          "width": 220,
+          "height": 220,
+          "ratio": 1,
+          "bytes": 16686,
+          "sha256": "25121a209acbf507e8e59da148c5b5567619a0c7b2f40abf5b0acb2262e40ab6",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sudut-patran",
+      "name": "Sudut patran",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "patran",
+        "daun"
+      ],
+      "culturalRole": "flora-pendamping",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "leaf"
+      ],
+      "anchor": "corner",
+      "motion": {
+        "preset": "bloomIn",
+        "amplitude": 16,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sudut-patran.svg",
+          "format": "svg",
+          "width": 180,
+          "height": 180,
+          "ratio": 1,
+          "bytes": 3546,
+          "sha256": "21bd77ff1f113d08e45b33f25c94b1d55994766fcb3e01deb0ccd8fbb23f9b28",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sudut-medalion",
+      "name": "Sudut medalion",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "medalion",
+        "cincin"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "scroll"
+      ],
+      "anchor": "corner",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sudut-medalion.svg",
+          "format": "svg",
+          "width": 180,
+          "height": 180,
+          "ratio": 1,
+          "bytes": 6546,
+          "sha256": "c35599247a2b6acbfd98c7328eff08ea370c9db190c37ad58a7ab7a02e5702dd",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sudut-mawar",
+      "name": "Sudut mawar",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "bunga",
+        "mawar",
+        "sulur"
+      ],
+      "culturalRole": "flora-pendamping",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "floral",
+        "leaf"
+      ],
+      "anchor": "corner",
+      "motion": {
+        "preset": "bloomIn",
+        "amplitude": 16,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sudut-mawar.svg",
+          "format": "svg",
+          "width": 200,
+          "height": 200,
+          "ratio": 1,
+          "bytes": 12853,
+          "sha256": "0dc2db7dbe8baa3d4206b6859521378e1ea06607d9db41deebc79223c9b458e2",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "motif-ukel",
+      "name": "Motif ukel",
+      "category": "motif",
+      "tags": [
+        "motif",
+        "ukel",
+        "tunggal"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "scroll"
+      ],
+      "anchor": "inline",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/motif-ukel.svg",
+          "format": "svg",
+          "width": 120,
+          "height": 120,
+          "ratio": 1,
+          "bytes": 2706,
+          "sha256": "5777e95dd9bc3de5c18802704a59271d94b244d5d56bcd54cc7a58f6e24e7bda",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "motif-medalion",
+      "name": "Motif medalion",
+      "category": "motif",
+      "tags": [
+        "motif",
+        "medalion",
+        "cincin",
+        "pusat"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "scroll"
+      ],
+      "anchor": "inline",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/motif-medalion.svg",
+          "format": "svg",
+          "width": 140,
+          "height": 140,
+          "ratio": 1,
+          "bytes": 8878,
+          "sha256": "b2585f81f9a6152e3fe8d9b7c26219d2cca4255a77e318a073af540021adc596",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "motif-patran",
+      "name": "Motif patran",
+      "category": "motif",
+      "tags": [
+        "motif",
+        "patran",
+        "kipas",
+        "daun"
+      ],
+      "culturalRole": "flora-pendamping",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "leaf"
+      ],
+      "anchor": "inline",
+      "motion": {
+        "preset": "bloomIn",
+        "amplitude": 16,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/motif-patran.svg",
+          "format": "svg",
+          "width": 140,
+          "height": 120,
+          "ratio": 1.167,
+          "bytes": 3786,
+          "sha256": "cea783d676a9137949e24bf3ff6c616bab5502569ce48d96a5dd102e262d5bbf",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "motif-tumpal",
+      "name": "Motif tumpal",
+      "category": "motif",
+      "tags": [
+        "motif",
+        "tumpal",
+        "geometris"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "band"
+      ],
+      "anchor": "inline",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/motif-tumpal.svg",
+          "format": "svg",
+          "width": 140,
+          "height": 120,
+          "ratio": 1.167,
+          "bytes": 979,
+          "sha256": "c302d9e9490066a96249124df41f9bad09c1303ab5036f0cada8a020d3e95ea9",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "motif-cecek",
+      "name": "Motif cecek",
+      "category": "motif",
+      "tags": [
+        "motif",
+        "cecek",
+        "titik",
+        "isen"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "band"
+      ],
+      "anchor": "inline",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/motif-cecek.svg",
+          "format": "svg",
+          "width": 140,
+          "height": 140,
+          "ratio": 1,
+          "bytes": 4970,
+          "sha256": "fd3b95a9dec88a11d41ccac9436cdb3b7894b89fceb04ef68de8f12ef0b36192",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "layer-rumpun-kayon",
+      "name": "Rumpun kayon",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "gunungan",
+        "kayon",
+        "rumpun",
+        "jawa"
+      ],
+      "culturalRole": "arsitektur-kultural",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "scroll"
+      ],
+      "anchor": "bottom-left",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/layer-rumpun-kayon.svg",
+          "format": "svg",
+          "width": 460,
+          "height": 340,
+          "ratio": 1.353,
+          "bytes": 45008,
+          "sha256": "b275b07fea62c22b7df0574c1dba0ba21d6ad38cbf2dd27f95798e1dd6c99b3b",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "layer-kayon-tunggal",
+      "name": "Kayon tunggal",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "gunungan",
+        "kayon",
+        "tunggal"
+      ],
+      "culturalRole": "arsitektur-kultural",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "scroll"
+      ],
+      "anchor": "mid-right",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/layer-kayon-tunggal.svg",
+          "format": "svg",
+          "width": 260,
+          "height": 360,
+          "ratio": 0.722,
+          "bytes": 34592,
+          "sha256": "2a5babc79ed6a487f4d4b335c7add199dde31295f07d79d5151744a2289aed8d",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "layer-sulur-mawar",
+      "name": "Sulur mawar",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "bunga",
+        "mawar",
+        "sulur",
+        "karangan"
+      ],
+      "culturalRole": "flora-pendamping",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "floral",
+        "leaf"
+      ],
+      "anchor": "top-right",
+      "motion": {
+        "preset": "bloomIn",
+        "amplitude": 16,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/layer-sulur-mawar.svg",
+          "format": "svg",
+          "width": 340,
+          "height": 300,
+          "ratio": 1.133,
+          "bytes": 25516,
+          "sha256": "e336706aa896f0e7d0d566c5b266ab4b0ce3934d2fe4bbce611d6b724d45be9c",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "layer-patran-gantung",
+      "name": "Patran gantung",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "patran",
+        "daun",
+        "gantung"
+      ],
+      "culturalRole": "flora-pendamping",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "leaf"
+      ],
+      "anchor": "top-center",
+      "motion": {
+        "preset": "bloomIn",
+        "amplitude": 16,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/layer-patran-gantung.svg",
+          "format": "svg",
+          "width": 300,
+          "height": 260,
+          "ratio": 1.154,
+          "bytes": 11111,
+          "sha256": "a92020718373b064991d2bd30c9a0b8407ac8643058904d108d310d0d56d04ce",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "layer-pita-medalion",
+      "name": "Pita medalion",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "medalion",
+        "pita",
+        "tepi"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "band"
+      ],
+      "anchor": "bottom-center",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/layer-pita-medalion.svg",
+          "format": "svg",
+          "width": 420,
+          "height": 150,
+          "ratio": 2.8,
+          "bytes": 30636,
+          "sha256": "6dfc4f3e422ceac20ce8a7e5e11e7de71abfdcb35f912b098fbda4b5df10346d",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "layer-dedaunan",
+      "name": "Dedaunan",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "daun",
+        "rumpun",
+        "tepi"
+      ],
+      "culturalRole": "flora-pendamping",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "leaf"
+      ],
+      "anchor": "mid-left",
+      "motion": {
+        "preset": "bloomIn",
+        "amplitude": 16,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/layer-dedaunan.svg",
+          "format": "svg",
+          "width": 300,
+          "height": 300,
+          "ratio": 1,
+          "bytes": 4008,
+          "sha256": "95930adb59022e77bd5331eb5e0e90f6e2d7b888da0d3a0d3039786f37627d61",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "simbol-kayon",
+      "name": "Simbol kayon",
+      "category": "symbol",
+      "tags": [
+        "symbol",
+        "gunungan",
+        "kayon",
+        "ikon"
+      ],
+      "culturalRole": "arsitektur-kultural",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "scroll"
+      ],
+      "anchor": "inline",
+      "motion": {
+        "preset": "sceneChange",
+        "amplitude": 18,
+        "unit": "px",
+        "duration": 0.3,
+        "ease": "power1.inOut",
+        "stagger": 0,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/simbol-kayon.svg",
+          "format": "svg",
+          "width": 130,
+          "height": 170,
+          "ratio": 0.765,
+          "bytes": 7848,
+          "sha256": "63bcc73a9fa2442d8d2fe44f9e13ec961105905a183e776da0c5f225d9aeff24",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "simbol-cincin",
+      "name": "Simbol cincin medalion",
+      "category": "symbol",
+      "tags": [
+        "symbol",
+        "cincin",
+        "medalion"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame"
+      ],
+      "anchor": "inline",
+      "motion": {
+        "preset": "sceneChange",
+        "amplitude": 18,
+        "unit": "px",
+        "duration": 0.3,
+        "ease": "power1.inOut",
+        "stagger": 0,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/simbol-cincin.svg",
+          "format": "svg",
+          "width": 120,
+          "height": 120,
+          "ratio": 1,
+          "bytes": 958,
+          "sha256": "1332a2cc1878416dda72b28832f7116cc0be1a0ce30dc4934e11a7860d80486c",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "simbol-mawar",
+      "name": "Simbol mawar",
+      "category": "symbol",
+      "tags": [
+        "symbol",
+        "bunga",
+        "mawar"
+      ],
+      "culturalRole": "flora-pendamping",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "inline",
+      "motion": {
+        "preset": "bloomIn",
+        "amplitude": 16,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/simbol-mawar.svg",
+          "format": "svg",
+          "width": 120,
+          "height": 120,
+          "ratio": 1,
+          "bytes": 6733,
+          "sha256": "8a7375e6cc0c982b670d2e34853fde3315675442440815ae3d9cbfc4c23c2fb7",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "segel-kayon",
+      "name": "Segel kayon",
+      "category": "seal",
+      "tags": [
+        "seal",
+        "gunungan",
+        "kayon",
+        "gerbang"
+      ],
+      "culturalRole": "arsitektur-kultural",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "scroll"
+      ],
+      "anchor": "inline",
+      "motion": {
+        "preset": "gate",
+        "amplitude": 24,
+        "unit": "px",
+        "duration": 1,
+        "ease": "sine.inOut",
+        "stagger": 0,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/segel-kayon.svg",
+          "format": "svg",
+          "width": 200,
+          "height": 200,
+          "ratio": 1,
+          "bytes": 11057,
+          "sha256": "34f1f305ccd3234fe138ffbcb89259f96db5cd36de9d673e6e728e4a87b3349d",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "segel-medalion",
+      "name": "Segel medalion",
+      "category": "seal",
+      "tags": [
+        "seal",
+        "medalion",
+        "patran"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "leaf"
+      ],
+      "anchor": "inline",
+      "motion": {
+        "preset": "gate",
+        "amplitude": 24,
+        "unit": "px",
+        "duration": 1,
+        "ease": "sine.inOut",
+        "stagger": 0,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/segel-medalion.svg",
+          "format": "svg",
+          "width": 200,
+          "height": 200,
+          "ratio": 1,
+          "bytes": 14619,
+          "sha256": "a3dc67846ba45ee41fe84f7deb12a87be162fcc4a2d3236b8cf993899c79af11",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "monogram-kayon",
+      "name": "Monogram kayon",
+      "category": "monogram",
+      "tags": [
+        "monogram",
+        "gunungan",
+        "kayon",
+        "inisial"
+      ],
+      "culturalRole": "arsitektur-kultural",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "scroll"
+      ],
+      "anchor": "inline",
+      "motion": {
+        "preset": "gate",
+        "amplitude": 24,
+        "unit": "px",
+        "duration": 1,
+        "ease": "sine.inOut",
+        "stagger": 0,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/monogram-kayon.svg",
+          "format": "svg",
+          "width": 200,
+          "height": 260,
+          "ratio": 0.769,
+          "bytes": 15036,
+          "sha256": "9efac46bf959a27e4d22ccc86bd18fa6276696ecfc6be0487e3f62c8424006ae",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "monogram-medalion",
+      "name": "Monogram medalion",
+      "category": "monogram",
+      "tags": [
+        "monogram",
+        "medalion",
+        "cincin",
+        "inisial"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "scroll"
+      ],
+      "anchor": "inline",
+      "motion": {
+        "preset": "gate",
+        "amplitude": 24,
+        "unit": "px",
+        "duration": 1,
+        "ease": "sine.inOut",
+        "stagger": 0,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/monogram-medalion.svg",
+          "format": "svg",
+          "width": 220,
+          "height": 220,
+          "ratio": 1,
+          "bytes": 7995,
+          "sha256": "171ee2522229a781721a2e3a02ff3b511ac20c89d703a1d50c41c8805c4ccbf3",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "mawar-mekar",
+      "name": "Mawar mekar",
+      "category": "floral",
+      "tags": [
+        "floral",
+        "bunga",
+        "mawar",
+        "tangkai"
+      ],
+      "culturalRole": "flora-pendamping",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "floral",
+        "leaf"
+      ],
+      "anchor": "inline",
+      "motion": {
+        "preset": "bloomIn",
+        "amplitude": 16,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/mawar-mekar.svg",
+          "format": "svg",
+          "width": 160,
+          "height": 220,
+          "ratio": 0.727,
+          "bytes": 17940,
+          "sha256": "64633eecd44066a052c4226c0bd3e74512ab66e32d7111672d9e05afb23cb974",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "tangkai-daun",
+      "name": "Tangkai daun",
+      "category": "floral",
+      "tags": [
+        "floral",
+        "daun",
+        "tangkai"
+      ],
+      "culturalRole": "flora-pendamping",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "build.mjs + geometry.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/MOTION.md",
+          "docs/features/ornament-builder/sources/canva-cokelat-krem/README.md",
+          "docs/features/ornament-builder/originals/kayon/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "leaf"
+      ],
+      "anchor": "inline",
+      "motion": {
+        "preset": "bloomIn",
+        "amplitude": 16,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/tangkai-daun.svg",
+          "format": "svg",
+          "width": 140,
+          "height": 220,
+          "ratio": 0.636,
+          "bytes": 2652,
+          "sha256": "2bcf340623fc50a60594e7895ee1fe5f1e72e4ade7b435cf11eeacc682d15bba",
+          "alpha": true
+        }
+      ]
+    }
+  ],
+  "tekstur": [
+    {
+      "id": "pita-medalion",
+      "name": "Pita medalion (ubin mendatar)",
+      "file": "tekstur/pita-medalion.svg",
+      "width": 140,
+      "height": 96,
+      "bytes": 10172,
+      "sha256": "38349a13e4821f710fd63bdbfd579f7b761d04bbf15272f025c63527adf4a2c2",
+      "usage": "backdrop-mask",
+      "catatan": "Ubin mendatar seamless: unit berulang tiap 140px. Padanan pita batik di kepala dan kaki referensi."
+    },
+    {
+      "id": "cecek-ukel",
+      "name": "Cecek ukel (ubin sebar)",
+      "file": "tekstur/cecek-ukel.svg",
+      "width": 160,
+      "height": 160,
+      "bytes": 6359,
+      "sha256": "87cf8bcc5f917100bc965e66795a790d0f00478a0eaf0cec64bebf6b5e1b718f",
+      "usage": "backdrop-mask",
+      "catatan": "Ubin sebar 160\u00d7160, seamless di keempat sisi karena titik sudutnya diulang penuh."
+    },
+    {
+      "id": "tumpal-tepi",
+      "name": "Tumpal tepi (ubin mendatar)",
+      "file": "tekstur/tumpal-tepi.svg",
+      "width": 160,
+      "height": 64,
+      "bytes": 369,
+      "sha256": "e6d65d049ec2a5b5138b9ba9278706e2c7e086c977a69abdf39651742397d7bc",
+      "usage": "backdrop-mask",
+      "catatan": "Ubin tepi mendatar; dipakai di kepala atau kaki section, bukan sebagai latar penuh."
+    }
+  ],
+  "catatanPensiun": "Tiga bingkai kayon dicabut dari katalog pada fase 58 atas penilaian pemilik: bingkai-kayon, bingkai-kayon-polos, bingkai-kayon-kembar. Berkas SVG-nya sengaja tetap ada di svg/ \u2014 yang dicabut keanggotaannya di bank, bukan karyanya, sama seperti perlakuan terhadap keluarga forge di fase yang sama."
+}

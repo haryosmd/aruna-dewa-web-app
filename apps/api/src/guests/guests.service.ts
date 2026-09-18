@@ -1,15 +1,17 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { normalizeDisplayName, parseGuestText, type ImportRow } from '@aruna/contracts';
 import { PrismaService } from '../database/prisma.service.js';
 import { MembershipService } from '../common/membership.service.js';
 import { isOperator, type AuthenticatedUser } from '../common/auth.js';
 import { serializeRsvp, type StoredRsvp } from '../rsvp/attendance.js';
-import { createGuestToken, decryptGuestToken } from './guest-token.js';
+import { createGuestToken, tryDecryptGuestToken } from './guest-token.js';
 
 type GuestInput = { displayName: string; phone?: string; group?: string; quota?: number };
 
 @Injectable()
 export class GuestsService {
+  private readonly logger = new Logger(GuestsService.name);
+
   constructor(private readonly prisma: PrismaService, private readonly memberships: MembershipService) {}
 
   async list(user: AuthenticatedUser, invitationId: string, query: { q?: string; page?: number; pageSize?: number }) {
@@ -76,8 +78,30 @@ export class GuestsService {
     });
   }
 
+  /**
+   * Token yang tidak bisa dibuka **tidak** boleh menjatuhkan seluruh halaman.
+   *
+   * Sebelumnya `decryptGuestToken` dipanggil telanjang di dalam `.map()`, jadi satu baris yang
+   * ditulis di bawah `JWT_SECRET` lain membuat `GET .../guests` menjawab 500 dan halaman tamu
+   * tampil kosong seolah memang tidak ada tamu. Sekarang baris itu tetap ikut terkirim, dengan
+   * `tokenUnavailable` supaya UI bisa mematikan tombol salin personalnya — diam-diam membuang
+   * tokennya justru berbahaya, karena `buildGuestUrl()` akan menghasilkan tautan sapaan tanpa
+   * `g` yang terlihat baik-baik saja tapi tidak bisa dipakai RSVP.
+   *
+   * Dicatat `warn` per baris: tanpa ini kegagalannya jadi benar-benar senyap, karena filter
+   * global yang tadinya mencatat stack-nya tidak lagi pernah kena.
+   */
   private serializeGuest(guest: { id: string; displayName: string; phone: string | null; groupName: string | null; quota: number; revision: number; tokenCiphertext: string; rsvps?: StoredRsvp[] }, revealToken = true) {
-    return { id: guest.id, displayName: guest.displayName, ...(revealToken ? { token: decryptGuestToken(guest.tokenCiphertext) } : {}), revision: guest.revision, phone: guest.phone ?? undefined, group: guest.groupName ?? undefined, quota: guest.quota, rsvp: serializeRsvp(guest.rsvps?.[0]) };
+    let personal: { token: string } | { tokenUnavailable: true } | Record<string, never> = {};
+    if (revealToken) {
+      const token = tryDecryptGuestToken(guest.tokenCiphertext);
+      if (token) personal = { token };
+      else {
+        personal = { tokenUnavailable: true };
+        this.logger.warn(`Token tamu ${guest.id} tidak bisa didekripsi; kemungkinan ditulis di bawah JWT_SECRET lain`);
+      }
+    }
+    return { id: guest.id, displayName: guest.displayName, ...personal, revision: guest.revision, phone: guest.phone ?? undefined, group: guest.groupName ?? undefined, quota: guest.quota, rsvp: serializeRsvp(guest.rsvps?.[0]) };
   }
 }
 

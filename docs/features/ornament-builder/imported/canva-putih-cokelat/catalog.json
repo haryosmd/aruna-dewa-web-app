@@ -1,0 +1,508 @@
+{
+  "schemaVersion": 1,
+  "id": "canva-putih-cokelat",
+  "name": "Impor Canva — Putih Cokelat",
+  "scope": "imported-local-demo",
+  "builtAt": "2026-09-18",
+  "origin": {
+    "template": "Putih Cokelat Elegan Klasik Undangan Pernikahan Mobile Video",
+    "exportedBy": "pemilik, dari akun Canva Pro",
+    "warning": "Bukan aset original. Aturan AGENTS.md/DESIGN.md tentang aset pihak ketiga tetap berlaku sampai pemilik memutuskan sebaliknya secara tertulis. Lihat PROVENANCE.md."
+  },
+  "palette": {
+    "source": [
+      "#080706",
+      "#8a613a",
+      "#e9c594",
+      "#a48b61",
+      "#4f3d34"
+    ],
+    "note": "Ukiran relief disajikan berwarna penuh sebagai raster; hanya motif latar yang jadi glyph currentColor."
+  },
+  "assets": [
+    {
+      "id": "mahkota-ukir",
+      "name": "Mahkota ukir",
+      "category": "frame",
+      "tags": [
+        "frame",
+        "raster",
+        "impor-canva",
+        "canva-putih-cokelat"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/mahkota-ukir.svg",
+        "sourceTemplate": "Putih Cokelat Elegan Klasik Undangan Pernikahan Mobile Video",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "kepala",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/mahkota-ukir.png",
+          "format": "png",
+          "width": 1597,
+          "height": 550,
+          "ratio": 2.904,
+          "bytes": 839713,
+          "sha256": "9956e6e73ec5d0fae15dd85b7b34c9a7269214d3b38b49b9b683775f5a815eea",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/mahkota-ukir.webp",
+          "format": "webp",
+          "width": 1597,
+          "height": 550,
+          "ratio": 2.904,
+          "bytes": 311974,
+          "sha256": "6f58f5a984c9b52420f80a94b440deb16e21d150a29892aeb3e19c13cc8664f0",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    },
+    {
+      "id": "sudut-ukir-kiri",
+      "name": "Sudut ukir kiri",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "raster",
+        "impor-canva",
+        "canva-putih-cokelat",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/sudut-ukir.svg",
+        "sourceTemplate": "Putih Cokelat Elegan Klasik Undangan Pernikahan Mobile Video",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg",
+        "crop": "dipotong dari berkas yang sama pada x=0 y=0 w=364 h=324 (satuan viewBox sumber); piksel tidak disentuh"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "sudut",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/sudut-ukir-kiri.png",
+          "format": "png",
+          "width": 697,
+          "height": 698,
+          "ratio": 0.999,
+          "bytes": 182669,
+          "sha256": "06d9bb4db87d4afafb3b1677f910545834e8c3b032c4dee268e90fcf558d959c",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/sudut-ukir-kiri.webp",
+          "format": "webp",
+          "width": 697,
+          "height": 698,
+          "ratio": 0.999,
+          "bytes": 102306,
+          "sha256": "cba4e892666d473da0d078e46146c2e37e49f9718448748c7b6bb325f32b3718",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    },
+    {
+      "id": "sudut-ukir-kanan",
+      "name": "Sudut ukir kanan",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "raster",
+        "impor-canva",
+        "canva-putih-cokelat",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/sudut-ukir.svg",
+        "sourceTemplate": "Putih Cokelat Elegan Klasik Undangan Pernikahan Mobile Video",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg",
+        "crop": "dipotong dari berkas yang sama pada x=365 y=0 w=364 h=324 (satuan viewBox sumber); piksel tidak disentuh"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "sudut",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/sudut-ukir-kanan.png",
+          "format": "png",
+          "width": 697,
+          "height": 697,
+          "ratio": 1,
+          "bytes": 183239,
+          "sha256": "291e7683b8d85a50d46d336111b98df690362687bacece2110887c20d5636bd6",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/sudut-ukir-kanan.webp",
+          "format": "webp",
+          "width": 697,
+          "height": 697,
+          "ratio": 1,
+          "bytes": 102304,
+          "sha256": "4d7319cd75955d9500b3a19be1e590900f1301bf895e552f41bba3f6fc1ef70c",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    },
+    {
+      "id": "bingkai-ukir",
+      "name": "Bingkai ukir",
+      "category": "frame",
+      "tags": [
+        "frame",
+        "raster",
+        "impor-canva",
+        "canva-putih-cokelat"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/bingkai-ukir.svg",
+        "sourceTemplate": "Putih Cokelat Elegan Klasik Undangan Pernikahan Mobile Video",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg",
+        "note": "Tidak dipecah — kedua separuhnya menyusun satu bingkai utuh."
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/bingkai-ukir.png",
+          "format": "png",
+          "width": 1600,
+          "height": 800,
+          "ratio": 2,
+          "bytes": 392105,
+          "sha256": "33c3684df6b5557b7712a562dd6aa22c7efccc1c74fe87714a2b33c326de2f55",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/bingkai-ukir.webp",
+          "format": "webp",
+          "width": 1600,
+          "height": 800,
+          "ratio": 2,
+          "bytes": 166892,
+          "sha256": "d7e81d688a0b15c241a1753f1f6790cea73e21b469e6726acc61f9076b2b642a",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    },
+    {
+      "id": "cincin-kawin",
+      "name": "Cincin kawin",
+      "category": "symbol",
+      "tags": [
+        "symbol",
+        "raster",
+        "impor-canva",
+        "canva-putih-cokelat",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/cincin-bunga.svg",
+        "sourceTemplate": "Putih Cokelat Elegan Klasik Undangan Pernikahan Mobile Video",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg",
+        "crop": "dipotong dari berkas yang sama pada x=0 y=0 w=465 h=100 (satuan viewBox sumber); piksel tidak disentuh"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "kepala",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/cincin-kawin.png",
+          "format": "png",
+          "width": 384,
+          "height": 282,
+          "ratio": 1.362,
+          "bytes": 192738,
+          "sha256": "b603fb7e3f41c2e751766b1fcf26df7b0df64419b8cd11c9c41b8b95fc164462",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/cincin-kawin.webp",
+          "format": "webp",
+          "width": 384,
+          "height": 282,
+          "ratio": 1.362,
+          "bytes": 29532,
+          "sha256": "ab8d78dbfa04d1d31bfab35ddef42698a69f806e82113b65b74d14cabf70d8a1",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    },
+    {
+      "id": "rangkai-bunga",
+      "name": "Rangkai bunga",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "raster",
+        "impor-canva",
+        "canva-putih-cokelat",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/cincin-bunga.svg",
+        "sourceTemplate": "Putih Cokelat Elegan Klasik Undangan Pernikahan Mobile Video",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg",
+        "crop": "dipotong dari berkas yang sama pada x=0 y=110 w=465 h=240 (satuan viewBox sumber); piksel tidak disentuh"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "crown",
+      "motion": {
+        "preset": "cascadeIn",
+        "amplitude": 18,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/rangkai-bunga.png",
+          "format": "png",
+          "width": 1318,
+          "height": 736,
+          "ratio": 1.791,
+          "bytes": 883069,
+          "sha256": "6cce5d7553e342ad484b99f431d17bda4af25cb168d94a1f35c8577bbf5d0a9a",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/rangkai-bunga.webp",
+          "format": "webp",
+          "width": 1318,
+          "height": 736,
+          "ratio": 1.791,
+          "bytes": 229828,
+          "sha256": "a7c7731a31814f19cd56deb9b1ffb738a3593c029e2acf228c86a223992d1919",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    },
+    {
+      "id": "motif-latar",
+      "name": "Motif latar",
+      "category": "motif",
+      "tags": [
+        "motif",
+        "impor-canva",
+        "canva-putih-cokelat",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/motif-latar.svg",
+        "sourceTemplate": "Putih Cokelat Elegan Klasik Undangan Pernikahan Mobile Video",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "note": "Sumbernya memuat tiga salinan ubin yang sama; hanya satu yang diambil.",
+        "split": "dipecah dari satu berkas sumber pada undefined = undefined; viewBox dirapatkan ke isinya, koordinat tidak digeser"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "tile"
+      ],
+      "anchor": "latar",
+      "motion": {
+        "preset": "static",
+        "amplitude": 0,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/motif-latar.svg",
+          "format": "svg",
+          "width": 324,
+          "height": 432,
+          "ratio": 0.75,
+          "bytes": 42134,
+          "sha256": "e19cbe8b1bc6176d9f99285b1705303628fa0afaf729735ce75fa2a39d72ac90",
+          "alpha": true
+        }
+      ]
+    }
+  ]
+}

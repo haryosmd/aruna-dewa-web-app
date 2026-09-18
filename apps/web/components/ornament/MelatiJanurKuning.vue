@@ -1,0 +1,16 @@
+<script setup lang="ts">
+/**
+ * Janur kuning — perangkat-upacara, pack melati.
+ *
+ * Peran kultural dirujuk `packs/melati/CULTURE.md`; diperiksa 2026-09-17.
+ *
+ * diimpor oleh scripts/ornament-pack dari `packs/melati/svg/janur-kuning.svg`; jangan sunting berkas ini dengan
+ * tangan — ubah SVG sumbernya lalu jalankan `pnpm ornament:pack --tulis`.
+ */
+</script>
+
+<template>
+  <svg viewBox="0 0 200 280" fill="var(--iv-orn-body, currentColor)" aria-hidden="true">
+    <g id="melati-janur-kuning-helai" data-layer="crown"><path data-draw="" fill="none" stroke="var(--iv-orn-deep, currentColor)" stroke-width="2.5" stroke-linecap="round" opacity="1" d="M100 268 C100 196 96 140 100 64" /><g transform="translate(100 250) rotate(-72) scale(0.5)"><path data-mass="" d="M-4.5 0 C-9.45 -29.64 -31.05 -57.72 -23.4 -78 C-16.65 -56.16 9.45 -28.08 4.5 0 Z" /></g><g transform="translate(100 250) rotate(72) scale(0.5)"><path data-mass="" d="M-4.5 0 C-9.45 -29.64 15.75 -57.72 23.4 -78 C30.15 -56.16 9.45 -28.08 4.5 0 Z" /></g><g transform="translate(100 220) rotate(-72) scale(0.6)"><path data-mass="" d="M-4.5 0 C-9.45 -29.64 -31.05 -57.72 -23.4 -78 C-16.65 -56.16 9.45 -28.08 4.5 0 Z" /></g><g transform="translate(100 220) rotate(72) scale(0.6)"><path data-mass="" d="M-4.5 0 C-9.45 -29.64 15.75 -57.72 23.4 -78 C30.15 -56.16 9.45 -28.08 4.5 0 Z" /></g><g transform="translate(100 190) rotate(-72) scale(0.7)"><path data-mass="" d="M-4.5 0 C-9.45 -29.64 -31.05 -57.72 -23.4 -78 C-16.65 -56.16 9.45 -28.08 4.5 0 Z" /></g><g transform="translate(100 190) rotate(72) scale(0.7)"><path data-mass="" d="M-4.5 0 C-9.45 -29.64 15.75 -57.72 23.4 -78 C30.15 -56.16 9.45 -28.08 4.5 0 Z" /></g><g transform="translate(100 160) rotate(-72) scale(0.8)"><path data-mass="" d="M-4.5 0 C-9.45 -29.64 -31.05 -57.72 -23.4 -78 C-16.65 -56.16 9.45 -28.08 4.5 0 Z" /></g><g transform="translate(100 160) rotate(72) scale(0.8)"><path data-mass="" d="M-4.5 0 C-9.45 -29.64 15.75 -57.72 23.4 -78 C30.15 -56.16 9.45 -28.08 4.5 0 Z" /></g><g transform="translate(100 130) rotate(-72) scale(0.9)"><path data-mass="" d="M-4.5 0 C-9.45 -29.64 -31.05 -57.72 -23.4 -78 C-16.65 -56.16 9.45 -28.08 4.5 0 Z" /></g><g transform="translate(100 130) rotate(72) scale(0.9)"><path data-mass="" d="M-4.5 0 C-9.45 -29.64 15.75 -57.72 23.4 -78 C30.15 -56.16 9.45 -28.08 4.5 0 Z" /></g><g transform="translate(100 100) rotate(-72)"><path data-mass="" d="M-4.5 0 C-9.45 -29.64 -31.05 -57.72 -23.4 -78 C-16.65 -56.16 9.45 -28.08 4.5 0 Z" /></g><g transform="translate(100 100) rotate(72)"><path data-mass="" d="M-4.5 0 C-9.45 -29.64 15.75 -57.72 23.4 -78 C30.15 -56.16 9.45 -28.08 4.5 0 Z" /></g><g transform="translate(100 70) rotate(-72) scale(1.1)"><path data-mass="" d="M-4.5 0 C-9.45 -29.64 -31.05 -57.72 -23.4 -78 C-16.65 -56.16 9.45 -28.08 4.5 0 Z" /></g><g transform="translate(100 70) rotate(72) scale(1.1)"><path data-mass="" d="M-4.5 0 C-9.45 -29.64 15.75 -57.72 23.4 -78 C30.15 -56.16 9.45 -28.08 4.5 0 Z" /></g><g transform="translate(100 58)"><path data-mass="" d="M0 0 C-11 -6.6 -9.02 -21.6 0 -30 C9.02 -21.6 11 -6.6 0 0 Z" /></g></g>
+  </svg>
+</template>

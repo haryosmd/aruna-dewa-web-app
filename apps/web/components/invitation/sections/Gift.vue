@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Copy } from 'lucide-vue-next'
 import { normalizeGift } from '@aruna/contracts'
-import { toast } from 'vue-sonner'
 import type { Section } from '~/types/aruna'
+
+const toast = useToast()
 
 const props = defineProps<{ section: Section; seed: number }>()
 const { orn, intensity, compact } = useInvitation()

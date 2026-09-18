@@ -3,7 +3,8 @@ import { getCoreRowModel, useVueTable, type ColumnDef } from '@tanstack/vue-tabl
 import type { GuestPage, ImportPreviewResult } from '@aruna/contracts/api'
 import type { Guest, Invitation } from '~/types/aruna'
 import { Clipboard, Link, Plus, Search, Trash2, Upload } from 'lucide-vue-next'
-import { toast } from 'vue-sonner'
+
+const toast = useToast()
 
 definePageMeta({ middleware: 'auth', layout: false })
 
@@ -55,9 +56,21 @@ async function save(guest: Guest) {
   return updated
 }
 
+/*
+ * Menolak menyalin tautan personal yang tokennya hilang, alih-alih menyalin tautan sapaan.
+ *
+ * `buildGuestUrl()` membuang `g` diam-diam kalau tokennya kosong, jadi tanpa penjagaan ini
+ * tombol RSVP personal akan menghasilkan tautan yang terlihat benar, mengumumkan "berhasil
+ * disalin", lalu dikirim ke tamu yang tidak akan pernah bisa memakainya untuk RSVP. Lebih baik
+ * berhenti dan mengatakan sebabnya.
+ */
 async function copyLink(guest: Guest, personal = false) {
   try {
     const saved = await save(guest)
+    if (personal && !saved.token) {
+      toast.error(`Tautan RSVP personal untuk ${saved.displayName} tidak bisa dibuka lagi`, { description: 'Tautan sapaan biasa masih bisa disalin. Hapus lalu tambahkan ulang tamu ini untuk mendapat tautan personal baru.' })
+      return
+    }
     const url = build(invitation.value!.slug, saved.displayName, personal ? saved.token : undefined)
     await navigator.clipboard.writeText(url)
     toast.success(`Tautan untuk ${saved.displayName} berhasil disalin`)
@@ -258,8 +271,11 @@ useHead({ title: () => invitation.value?.title
                 <button
                   :id="`guest-row-copy-personal-${row.original.id}`"
                   type="button"
-                  class="grid h-11 w-11 place-items-center rounded-md text-ink-muted transition-colors hover:bg-surface-3 hover:text-primary"
-                  :aria-label="`Salin tautan RSVP personal untuk ${row.original.displayName}`"
+                  class="grid h-11 w-11 place-items-center rounded-md text-ink-muted transition-colors enabled:hover:bg-surface-3 enabled:hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                  :disabled="row.original.tokenUnavailable"
+                  :aria-label="row.original.tokenUnavailable
+                    ? `Tautan RSVP personal untuk ${row.original.displayName} tidak bisa dibuka lagi`
+                    : `Salin tautan RSVP personal untuk ${row.original.displayName}`"
                   @click="copyLink(row.original, true)"
                 >
                   <Clipboard :size="17" aria-hidden="true" />

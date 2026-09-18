@@ -1,4 +1,6 @@
-import { ornamentsByCategory, type OrnamentId } from './ornaments'
+import { layerSlots, muatLayer, muatSlot, ornamentSlots, type OrnamentOverrides } from './ornament-slots'
+import { isOrnamentId, ornament, ornamentsByCategory, type OrnamentId } from './ornaments'
+import { themeOrnaments } from './theme'
 
 /**
  * Pilihan berbentuk enum yang hidup di `section.data`.
@@ -42,6 +44,68 @@ export const selectableGalleryMotions: { id: GalleryMotion; label: string; hint:
 
 export function toGalleryMotion(value: unknown): GalleryMotion {
   return (galleryMotions as readonly string[]).includes(String(value)) ? (value as GalleryMotion) : 'tema'
+}
+
+/* ── Varian ornamen ─────────────────────────────────────────────────────────── */
+
+/**
+ * Penukaran ornamen yang dipilih pasangan, disaring terhadap bank.
+ *
+ * **Inilah titik penegakannya.** `section.data` adalah `z.record(z.unknown())` dan zod tidak
+ * memeriksa apa pun di dalamnya, jadi dokumen yang disunting tangan bisa menuliskan apa saja —
+ * id yang tidak ada, bingkai di slot segel, atau keping ladang di jangkar yang salah. Semuanya
+ * dibuang di sini, dan hanya di sini.
+ *
+ * **Yang berubah pada fase 59, dan yang tidak.** Sampai fase 58 penyaringnya adalah kolam
+ * terkurasi per tema, jadi sebuah keping harus "seresep" untuk bisa masuk. Pemilik meminta
+ * seluruh bank dibuka, jadi syaratnya turun ke korektnes: id sah, kategori cocok dengan
+ * slotnya, jangkar cocok dengan ladangnya. Kurasi tidak hilang — ia pindah jadi urutan dan
+ * lencana di `ornament-search.ts`/`ornament-fit.ts`, yang memberi tahu alih-alih melarang.
+ *
+ * **Satu efek samping lama hilang bersamanya, dan itu perlu disebut.** Dulu mengganti tema
+ * otomatis melepas penukaran yang tidak berlaku lagi, karena penyaringannya dihitung ulang
+ * terhadap kolam tema baru. Dengan penyaring berbasis kategori, bingkai pilihan pasangan
+ * **bertahan** melewati pergantian tema. Itu perilaku yang benar untuk pemilih bebas — orang
+ * yang memilih sebuah bingkai tidak ingin kehilangannya saat mencoba tema lain — tapi ia
+ * menuntut Studio menyediakan "Kembalikan ke bawaan tema", karena tanpa itu tidak ada jalan
+ * keluar dari wajah campuran.
+ *
+ * **Aset referensi ditolak dari `layers`, dan itu batas berat, bukan batas selera.** Kelima
+ * keping referensi berkategori `layer` berjumlah 6,43 MB, dan `OrnamentField` memasang keping
+ * ladang 2–6 kali per section di sepuluh section. Slot lain memakai satu keping sekali, jadi
+ * hanya kombinasi inilah yang bisa melahirkan undangan puluhan megabita di data seluler tamu.
+ *
+ * Nilai yang sama dengan bawaan tema dibuang: dokumen tidak perlu membawa penukaran yang tidak
+ * menukar apa pun, dan pasangan yang kembali ke bawaan berhak ikut tema kalau temanya berubah.
+ */
+export function toOrnamentOverrides(value: unknown, templateId: string): OrnamentOverrides {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  const masuk = value as Record<string, unknown>
+  const set = themeOrnaments(templateId)
+  const keluar: OrnamentOverrides = {}
+
+  for (const slot of ornamentSlots) {
+    const pilihan = masuk[slot]
+    if (!isOrnamentId(pilihan) || !muatSlot(slot, pilihan)) continue
+    if (pilihan === set[slot]) continue
+    keluar[slot] = pilihan
+  }
+
+  const layers = masuk.layers
+  if (layers && typeof layers === 'object' && !Array.isArray(layers)) {
+    const masukLayer = layers as Record<string, unknown>
+    const keluarLayer: NonNullable<OrnamentOverrides['layers']> = {}
+    for (const jangkar of layerSlots) {
+      const pilihan = masukLayer[jangkar]
+      if (!isOrnamentId(pilihan) || !muatLayer(jangkar, pilihan)) continue
+      if (ornament(pilihan).asset) continue
+      if (set.layers.includes(pilihan)) continue
+      keluarLayer[jangkar] = pilihan
+    }
+    if (Object.keys(keluarLayer).length) keluar.layers = keluarLayer
+  }
+
+  return keluar
 }
 
 /* ── Ilustrasi gedung ───────────────────────────────────────────────────────── */

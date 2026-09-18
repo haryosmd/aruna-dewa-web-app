@@ -1,0 +1,394 @@
+{
+  "schemaVersion": 1,
+  "id": "canva-cokelat-krem",
+  "name": "Impor Canva — Cokelat Krem",
+  "scope": "imported-local-demo",
+  "builtAt": "2026-09-17",
+  "origin": {
+    "template": "Cokelat Krem Elegan Tradisional Undangan Pernikahan Video Seluler",
+    "exportedBy": "pemilik, dari akun Canva Pro",
+    "warning": "Bukan aset original. Aturan AGENTS.md/DESIGN.md tentang aset pihak ketiga tetap berlaku sampai pemilik memutuskan sebaliknya secara tertulis. Lihat PROVENANCE.md."
+  },
+  "palette": {
+    "source": [
+      "#483534",
+      "#544541",
+      "#ebd5c4",
+      "#f0e4db"
+    ],
+    "note": "Warna sumber disimpan di sini; glyph SVG memakai currentColor."
+  },
+  "assets": [
+    {
+      "id": "kayon-gunungan",
+      "name": "Kayon gunungan",
+      "category": "frame",
+      "tags": [
+        "frame",
+        "impor-canva",
+        "canva-cokelat-krem"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/gunungan.svg",
+        "sourceTemplate": "Cokelat Krem Elegan Tradisional Undangan Pernikahan Video Seluler",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1
+        ]
+      },
+      "layers": [
+        "silhouette"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/kayon-gunungan.svg",
+          "format": "svg",
+          "width": 434,
+          "height": 571,
+          "ratio": 0.76,
+          "bytes": 198040,
+          "sha256": "b67e1da2ca67de91e3aab9012e531372f1406ba903c4e06dbb4ee4cfe280ea3d",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "daun-sulur-kiri",
+      "name": "Daun sulur kiri",
+      "category": "floral",
+      "tags": [
+        "floral",
+        "impor-canva",
+        "canva-cokelat-krem"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/daun-sulur-a.svg",
+        "sourceTemplate": "Cokelat Krem Elegan Tradisional Undangan Pernikahan Video Seluler",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1,
+          0.7,
+          0.32
+        ]
+      },
+      "layers": [
+        "leaf"
+      ],
+      "anchor": "tepi",
+      "motion": {
+        "preset": "reveal+sway",
+        "amplitude": 16,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/daun-sulur-kiri.svg",
+          "format": "svg",
+          "width": 590,
+          "height": 686,
+          "ratio": 0.86,
+          "bytes": 209466,
+          "sha256": "4bc807789da0a53c2f23ccbcd20e4e4553488df6b23807c76054bdcab31cbb4f",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "daun-sulur-kanan",
+      "name": "Daun sulur kanan",
+      "category": "floral",
+      "tags": [
+        "floral",
+        "impor-canva",
+        "canva-cokelat-krem"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/daun-sulur-b.svg",
+        "sourceTemplate": "Cokelat Krem Elegan Tradisional Undangan Pernikahan Video Seluler",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1,
+          0.7,
+          0.32
+        ]
+      },
+      "layers": [
+        "leaf"
+      ],
+      "anchor": "tepi",
+      "motion": {
+        "preset": "reveal+sway",
+        "amplitude": 16,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/daun-sulur-kanan.svg",
+          "format": "svg",
+          "width": 614,
+          "height": 724,
+          "ratio": 0.848,
+          "bytes": 210048,
+          "sha256": "2fa6dc7aec930ce6df4825f126d66c44aa3b268fc2c2960521d84f31e37289db",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "pita-ceplok",
+      "name": "Pita ceplok",
+      "category": "divider",
+      "tags": [
+        "divider",
+        "impor-canva",
+        "canva-cokelat-krem"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/pita-ceplok.svg",
+        "sourceTemplate": "Cokelat Krem Elegan Tradisional Undangan Pernikahan Video Seluler",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1,
+          0.32
+        ]
+      },
+      "layers": [
+        "band"
+      ],
+      "anchor": "antar-blok",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 12,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/pita-ceplok.svg",
+          "format": "svg",
+          "width": 1313,
+          "height": 100,
+          "ratio": 13.158,
+          "bytes": 227180,
+          "sha256": "982f6bcc3ac50ba0af39b1e4a75d578c1ac8a5217f05a1e58697b9ee9ba0b6ec",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "rangkai-mawar-kiri",
+      "name": "Rangkai mawar kiri",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "raster",
+        "impor-canva",
+        "canva-cokelat-krem"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/rangkai-mawar-a.svg",
+        "sourceTemplate": "Cokelat Krem Elegan Tradisional Undangan Pernikahan Video Seluler",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-17",
+        "renderer": "librsvg"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "cluster",
+      "motion": {
+        "preset": "cascadeIn",
+        "amplitude": 18,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/rangkai-mawar-kiri.png",
+          "format": "png",
+          "width": 1028,
+          "height": 1588,
+          "ratio": 0.647,
+          "bytes": 1531413,
+          "sha256": "fcbc7996350d39d953ef694c2fb221ee40bacf01cd1e9402de98f014ae0da774",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/rangkai-mawar-kiri.webp",
+          "format": "webp",
+          "width": 1028,
+          "height": 1588,
+          "ratio": 0.647,
+          "bytes": 281866,
+          "sha256": "ef4aefe0bcf293d377c5a001dfca2fb1389ef00229df18f2b744461e0a65426e",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    },
+    {
+      "id": "rangkai-mawar-kanan",
+      "name": "Rangkai mawar kanan",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "raster",
+        "impor-canva",
+        "canva-cokelat-krem"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/rangkai-mawar-b.svg",
+        "sourceTemplate": "Cokelat Krem Elegan Tradisional Undangan Pernikahan Video Seluler",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-17",
+        "renderer": "librsvg"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "cluster",
+      "motion": {
+        "preset": "cascadeIn",
+        "amplitude": 18,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/rangkai-mawar-kanan.png",
+          "format": "png",
+          "width": 956,
+          "height": 1521,
+          "ratio": 0.629,
+          "bytes": 1127485,
+          "sha256": "6c282b454251217aba1bbf4b04ea1612b9c9d0f2573e6b2d6b6a3c673bdae75f",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/rangkai-mawar-kanan.webp",
+          "format": "webp",
+          "width": 956,
+          "height": 1521,
+          "ratio": 0.629,
+          "bytes": 222758,
+          "sha256": "593aa65633877958d49bd9846b58e9d67a3d2749c6f68e5c1b57b006140b75ca",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    }
+  ]
+}

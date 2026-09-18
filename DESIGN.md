@@ -96,9 +96,44 @@ Warna merek bank (teks di atas pita kepala kartu), diverifikasi dengan skrip yan
 
 Dimuat lewat modul `@nuxt/fonts` (self-host otomatis, nol CLS). Tidak ada `@fontsource` manual lagi.
 
+**Keluarga yang dipilih saat runtime WAJIB `global: true` di `nuxt.config.ts` (2026-09-17).**
+Pemindai `@nuxt/fonts` membaca CSS, bukan JavaScript. Nama keluarga di `fontStacks`
+(`utils/theme.ts`) hanya muncul sebagai string JS lalu disuntikkan sebagai `--iv-display`,
+jadi pemindai tidak pernah melihatnya dipakai dan tidak menulis satu pun `@font-face`.
+Akibatnya diam dan mahal: pasangan memilih Italiana di dasbor, dan yang dirender Georgia.
+Terukur pada build 2026-09-17 — hanya Fraunces, Plus Jakarta Sans, dan Cormorant Garamond
+punya `@font-face`, karena hanya ketiganya yang dipakai lewat `font-family: var(--font-…)`
+di `main.css`; `Italiana`, `Jost`, `Instrument Serif`, dan `Parisienne` tidak punya satu pun,
+dan `.nuxt/nuxt-fonts-global.css` berukuran 0 byte. Setelah `global: true`, kedelapan keluarga
+punya face dan lolos `document.fonts.check()` di build produksi.
+
+Ini murah: `@font-face` tidak mengunduh apa pun sampai ada glif yang benar-benar dirender.
+Yang bertambah beberapa KB CSS, bukan berkas fontnya.
+
 - **Display — Fraunces** (variable, sumbu `SOFT`/`WONK`). Serif editorial yang terasa digambar tangan. Heading landing & dashboard. Selalu `letter-spacing` negatif pada ukuran besar.
 - **UI/Body — Plus Jakarta Sans** (variable). Dirancang untuk Jakarta; terasa lokal tanpa jadi kampungan. Semua body, kontrol, nav, tabel.
 - Font tema undangan dideklarasikan per tema (lihat di bawah), tidak memakai dua di atas kecuali tema memilihnya.
+- **Lima script masuk daftar pilihan pada 2026-09-17**, dicari sebagai padanan gratis untuk Amoresa (font berbayar, tidak dipakai): **Charm** (OFL, Cadson Demak — serif kaligrafis, satu-satunya dengan bobot 700 nyata, paling terbaca), **Great Vibes** (paling dekat ke Amoresa), **Pinyon Script** (paling formal, goresan tipisnya paling rapuh di ponsel), **Allura**, dan **Parisienne** — yang sudah ada di repo sebagai aksen nama dan ternyata tidak pernah ditawarkan ke pasangan.
+
+  Keempatnya selain Charm **hanya punya bobot 400**, jadi semuanya dipatok 400 di `displayWeights`. Tanpa itu permintaan 600 membuat browser menebalkan sendiri, dan bold sintetis memutus sambungan huruf script. Charm ikut dipatok 400 karena 700-nya terbaca gemuk, bukan tegas.
+
+  `tokens.font` hanya mengendalikan **huruf judul** (`--iv-display`).
+
+  **Huruf body bisa dipilih sejak fase 59, dan aturannya berhenti ditegakkan oleh struktur.**
+  Sampai fase 58 huruf body datang dari `themePresentation.body` dan pasangan tidak punya jalan
+  menyentuhnya — jadi "script tidak pernah untuk paragraf atau navigasi" tidak bisa dilanggar,
+  bukan karena dijaga melainkan karena tidak ada pemilihnya. Membuka pemilihnya berarti aturan itu
+  harus benar-benar dijaga. Yang menjaganya dua lapis: `bodyFontChoices` (lima keluarga —
+  `jakarta`, `jost`, `cormorant`, `fraunces`, `instrument`) menyempitkan apa yang **ditawarkan**,
+  dan `bodyFontOf()` di `utils/theme.ts` menolak nilai di luar himpunan itu saat **render**, karena
+  skema tetap memvalidasi terhadap `fontChoices` penuh supaya dokumen lama terbaca. Tanpa lapis
+  kedua, satu dokumen hasil sunting tangan cukup untuk mengatur seluruh paragraf dalam Allura.
+
+  `italiana` ikut di luar walau bukan script, dan alasannya mudah hilang: penyaring "bukan huruf
+  sambung" meloloskannya. Ia display berbobot 400 bergoresan sangat tipis — sah sebagai huruf judul
+  (bawaan `aruna-pelita`) dan tidak sah sebagai huruf paragraf.
+
+**Subset tidak bisa dibatasi lewat konfigurasi `@nuxt/fonts` (diuji 2026-09-17, gagal).** `subsets` per-keluarga maupun `defaults.subsets` diterima TypeScript — keduanya ada di tipenya — tapi keluaran build identik byte-per-byte dengan tanpa keduanya, dan `unicode-range` Thai milik Charm tetap tertulis. Konsekuensinya seluruh subset tiap keluarga ikut ke CSS: **60 KB `@font-face` di `entry.css` yang 129 KB**. Tidak ada yang diunduh kalau glifnya tidak dipakai, jadi ini biaya CSS, bukan biaya font — tapi angkanya cukup besar untuk jadi pekerjaan tersendiri, dan jalurnya menyaring di `providers/google-woff2.ts`, bukan memasang ulang opsi yang terbukti mati.
 
 Skala fluid (`clamp`, 7 langkah): `display-1 · display-2 · h1 · h2 · h3 · body-lg · body · caption`.
 Body minimal 16px. Heading pakai `text-balance`, paragraf pakai `text-pretty`. Script/handwriting tidak pernah untuk paragraf atau navigasi.
@@ -241,6 +276,88 @@ aksi yang dipilih.
 
 ## Tema undangan
 
+**Id yang diterima schema dipisah dari id yang bisa dipilih.** `templateIds` **hanya tumbuh** —
+ia satu-satunya sumber `z.enum(templateIds)`, jadi mencabut sebuah id dari sana membuat tiap draft
+dan tiap revisi terbit yang memakainya gagal divalidasi, termasuk undangan yang sedang dibaca tamu.
+Yang dicabut saat sebuah tema dipensiunkan adalah keanggotaannya di `liveTemplateIds`, ditambah
+satu entri di `templateAliases` yang menunjuk penggantinya. Tipe aliasnya
+`Record<Exclude<TemplateId, LiveTemplateId>, LiveTemplateId>`, jadi compiler **menuntut** alias
+ditulis begitu sebuah id dipensiunkan — tidak mungkin ada id pensiun yang tidak punya tujuan.
+Bentuknya menyalin preseden `fontChoices` versus `selectableFonts` di berkas yang sama.
+
+`resolveTemplateId()` adalah satu-satunya penerjemah, dan ia dipanggil di dalam `themeOf()` —
+bukan di pemanggilnya — supaya tidak ada jalur render yang bisa menerima id pensiun tanpa
+melewatinya. Pelanggaran pertama aturan itu ditemukan dalam hitungan menit: `pages/i/[slug].vue`
+mengukur `?tema=` terhadap `templateIds` lalu mencarinya di `invitationThemes` dengan non-null
+assertion, jadi `?tema=aruna-sogan` menjawab **500**.
+
+**Set ornamen tema pensiun tidak ikut dihapus**, dan itu bukan kesentimentilan. `bacaTema()` di
+`scripts/ornament-forge/verify.mjs` membangun peta kepemilikan glyph dari `theme.ts`, lalu
+`gerbangKeunikan` melewati glyph tanpa pemilik **diam-diam**. Menghapus delapan tema akan
+menurunkan cakupannya dari 54 slot ke 6 sambil tetap melaporkan "0 pelanggaran" — hijau, dan tidak
+berarti apa-apa. Terukur pada bentuk yang sengaja dirusak: gerbang lama melaporkan
+`tema: 1 · pelanggaran keunikan: 0 · tema tidak kohesif: 0`, dan hanya penjaga cakupan di
+`ornament-quality.spec.ts` yang merah. Set mereka karena itu tinggal di `ornamenPensiun` dengan
+bentuk blok yang sama, dan parameternya di `temaPensiun` pada resep forge.
+
+**Dua jalur memilih ornamen, dan yang kedua dibuka fase 59 atas keputusan pemilik.**
+
+Sampai fase 58 pasangan hanya bisa menukar bingkai, pemisah, sudut, dan segel, dari kolam
+terkurasi — **59 glyph dari 328**. Alasannya ditulis di sini dan masih berlaku: pemilih bebas
+penuh mengubah lima tema jadi satu tema dengan lima nilai awal, alasan yang sama yang dipakai
+menolak color picker bebas. Pemilik meminta seluruh bank dibuka. Yang dilakukan bukan mencabut
+kurasinya melainkan **menaruh jalur kedua di sebelahnya**, dan memindahkan kurasi dari larangan
+ke keterangan.
+
+- **Tab "Disarankan"** — kolam `themeVariants` apa adanya, dijaga syarat yang sama:
+  **ketebalan garis yang sama dengan tema induknya**, karena itulah yang diukur `gerbangKohesi`.
+  `ornament-variants.spec.ts` mengukur ulang tiap kandidat lewat mesin gerbang yang sama, jadi
+  kolam yang salah tidak bisa lolos hanya karena daftarnya terlihat masuk akal. Untuk lima slot
+  dan lima jangkar yang tidak punya kolam tangan, "disarankan" berarti yang lolos `fitOf()` —
+  ukuran yang sama, dihitung per keping.
+- **Tab "Semua"** — seluruh kategori slot itu, dengan lencana yang mengatakan **dengan kalimat**
+  kenapa sebuah keping tidak seresep: ketebalan garis berbeda, tidak punya lapisan garis, palet
+  terpanggang, atau berkas besar. Lencana tidak pernah warna saja; alasannya ikut ke `aria-label`.
+
+**Yang menjaga kejujurannya adalah satu tes jembatan, bukan niat baik.** Lencana browser membaca
+`apps/web/utils/ornament-metrics.ts`, berkas hasil generate `pnpm ornament:metrics` dari
+`jalankan()` — gerbang yang sama yang menjaga kolam. `ornament-metrics.spec.ts` menuntut tiap
+anggota kolam terkurasi lolos `fitOf()` juga, jadi dua mesin itu tidak bisa menyimpang tanpa
+sebuah tes merah. Berkas generate punya gerbang kesegarannya sendiri, bergaya
+`forge-idempotent.spec.ts`: tanpa itu ia basi diam-diam tiap kali satu glyph digambar ulang, dan
+lencananya mulai berbohong.
+
+**Sembilan slot skalar, bukan sepuluh.** `motif` sengaja tidak ditawarkan: ia terdaftar di
+`OrnamentSet`, dijaga gerbang keunikan, dan **tidak pernah dirender di undangan** — diukur pada
+seluruh `components/invitation/`, satu-satunya pembacanya penghitung teaser di
+`components/landing/Themes.vue`. Slot yang bisa dipilih tapi tidak mengubah apa pun yang bisa
+dilihat pasangan terbaca sebagai aplikasi yang rusak. Memberinya tempat render adalah keputusan
+desain tersendiri. Kelima jangkar ladang (`bloom`, `cascade`, `crown`, `cluster`, `swag`) ikut
+bisa ditukar, satu per jangkar — `terapkanOverrides()` memetakan, tidak menyebar, supaya invarian
+"lima layer, satu per jangkar" tidak bisa dilanggar lewat pemilih.
+
+**Pilihannya tetap hidup di `cover.data.ornamentOverrides`, bukan di `tokens` — tapi bukan lagi
+karena entitlement.** Sejak fase 59 `designFingerprint()` di API ikut membaca `ornamentOverrides`,
+jadi penukaran ornamen tergerbang `design` persis seperti warna dan huruf. Yang membuatnya tetap
+di `section.data` adalah bentuknya: `tokens` hidup di `packages/contracts`, dan menaruh id ornamen
+di sana memaksa kontrak mengenal bank 328 keping atau melemahkannya jadi `z.record(z.string())`
+yang justru memvalidasi lebih sedikit daripada `toOrnamentOverrides()`.
+
+**Penyaringnya berbasis kategori, dan satu perilaku lama hilang bersamanya.** Dulu mengganti tema
+otomatis melepas penukaran yang tidak berlaku di kolam tema baru. Sekarang bingkai pilihan
+pasangan **bertahan** melewati pergantian tema — benar untuk pemilih bebas, dan karena itu Studio
+wajib menyediakan "Kembalikan ke bawaan tema" beserta penghitung slot yang ditimpa. Tanpa
+keduanya tidak ada jalan keluar dari wajah campuran.
+
+**Aset referensi ditolak dari slot `layers`, dan itu batas berat.** Kelima keping referensi
+berkategori `layer` berjumlah 6,43 MB, dan `OrnamentField` memasang keping ladang 2–6 kali per
+section di sepuluh section. Slot lain memakai satu keping sekali; hanya kombinasi itu yang bisa
+melahirkan undangan puluhan megabita.
+
+Ubin pratinjaunya mengikuti `ratio` tiap glyph: ubin persegi membuat kelima pemisah berasio 8:1
+terbaca sebagai garis tipis yang sama persis, dan pasangan tidak bisa memilih bentuk yang tidak
+bisa ia bedakan.
+
 `templateId` adalah `z.enum(templateIds)` di `packages/contracts`, dan kontraknya sengaja tipis:
 tiga warna plus satu font. Sisa identitas tema hidup di lapisan web, pada `themePresentation` di
 `apps/web/utils/theme.ts` — pasangan font, foto cover, aksen kaligrafi, dan **set ornamen** yang
@@ -251,14 +368,27 @@ undangan, bukan hanya paletnya. Tidak ada direktori layout per tema; satu render
 | Tema | Mood | bg / fg / primary / accent | Font | Galeri |
 |---|---|---|---|---|
 | **aruna-bloom** | Botanical ivory, hangat, klasik | `#FBF6EE` / `#241A14` / `#A93F23` / `#7A8B6F` | Cormorant Garamond + Plus Jakarta Sans | masonry |
-| **aruna-lumine** | Modern luxe, emas sampanye, tenang | `#F7F5F1` / `#1C1C1A` / `#7E6020` / `#2E3330` | Italiana + Jost | mosaic |
-| **aruna-senja** | Senja Jawa, plum & amber, dramatis | `#FBF3EA` / `#2E1A26` / `#7D3350` / `#C2803A` | Fraunces + Plus Jakarta Sans | rail |
-| **aruna-alba** | Minimalis modern, putih tulang, garis tegas | `#F4F3F1` / `#15161A` / `#4A5560` / `#9AA3A8` | Instrument Serif + Plus Jakarta Sans | mosaic |
-| **aruna-sogan** | Terinspirasi adat Jawa: sogan, kunir, kawung | `#F6EEE2` / `#241809` / `#7A4A18` / `#A9833F` | Cormorant Garamond + Plus Jakarta Sans | masonry |
-| **aruna-gonjong** | Terinspirasi adat Minang: marun, songket | `#FBF1E7` / `#25101A` / `#8E2433` / `#BE9440` | Fraunces + Plus Jakarta Sans | rail |
-| **aruna-mendung** | Mega mendung Cirebon: awan berundak, biru laut | `#F2F6F8` / `#10222E` / `#1F4E68` / `#B8842B` | Cormorant Garamond + Jost | mosaic |
-| **aruna-kenanga** | Blush kenanga: merah jambu pudar, kupu-kupu | `#FBF1EF` / `#2A1A1C` / `#97364A` / `#C08A7A` | Italiana + Plus Jakarta Sans | rail |
-| **aruna-bentar** | Terinspirasi adat Bali: candi bentar, poleng, padas | `#F5F1E8` / `#1C211E` / `#2B6252` / `#B08A3C` | Instrument Serif + Jost | masonry |
+| **aruna-wastra** | Etnik modern: motif diabstraksi jadi bidang besar | `#F3EDE3` / `#20191A` / `#7E3B2C` / `#3E5C57` | Fraunces + Plus Jakarta Sans | rail |
+| **aruna-hening** | Editorial minimal: huruf yang jadi ornamennya | `#FAFAF8` / `#14150F` / `#3A4F48` / `#9AA3A8` | Instrument Serif + Jost | mosaic |
+| **aruna-pelita** | Mewah gelap: emas pada bidang malam | `#141719` / `#F1ECE2` / `#D9B978` / `#8E6B3A` | Italiana + Plus Jakarta Sans | masonry |
+| **aruna-sekar** | Krem sogan: damask, sulur, cat air bergradasi | `#F3EBDE` / `#382C24` / `#7A5C44` / `#C89F3B` | Cormorant Garamond + Jost | masonry |
+
+**Latar bagian bisa dipilih sejak fase 59, dari enam ubin yang sudah lama ada.**
+`public/textures/` berisi `catur`, `kawung`, `kenanga`, `mega-mendung`, `sekar-damask`, dan
+`songket`; sampai fase 58 **hanya satu tersambung** — `sekar-damask` ke `aruna-sekar` — dan lima
+sisanya digambar, di-commit, dan tidak pernah tayang sekali pun. Pilihannya di `tokens.backdrop`
+(`tema` | `tanpa` | id ubin) plus `tokens.backdropWeight` (`halus` 0,04 · `sedang` 0,07 · `tegas`
+0,11).
+
+Dua hal yang mengikat. **Kosong berarti ikut tema, dan cabang itu wajib menghasilkan nilai yang
+identik dengan sebelum fase 59** — setiap undangan yang sudah terbit lewat sana, dan
+`backdrops.spec.ts` menguncinya dengan membandingkan kelima tema hidup. Dan **kepekatan hanya tiga
+tingkat, bukan slider**: ubin dicat `background-color: var(--iv-accent)` tepat di belakang teks,
+sementara laporan keterbacaan editor mengukur teks terhadap `--iv-bg` dan **tidak** terhadap ubin.
+Menaikkan pagu 0,11 menuntut `checkPalette()` diperluas lebih dulu.
+
+`ThemeBackdrop.plate` dihapus di fase yang sama: dideklarasikan, tidak pernah diisi, tidak pernah
+dibaca.
 
 **Ladang ornamen.** Section tidak lagi memasang satu `frame` 34rem di tengah pada `opacity-[0.18]`.
 `<InvitationOrnamentField>` memasang 2–6 keping kategori `layer` pada jangkar tepi (`top-left`,
@@ -275,12 +405,117 @@ Frame, divider, corner, motif, symbol, dan seal **tidak pernah berulang antar te
 memakai glyph yang sama pada salah satu slot itu, salah satunya belum benar-benar punya wajah.
 Floral, monogram, dan garland boleh berbagi.
 
-**Tema gelap belum mungkin.** Tinta tombol dipanggang sebagai `#FFFDF7` di
-`MusicPlayer.vue` dan di `contrast.ts`, jadi pasangan `button` menuntut `primary` cukup gelap
-untuk menampung teks nyaris putih; sementara pasangan `accent` menuntut `primary` cukup terang
-di atas latar. Pada latar gelap kedua tuntutan itu saling meniadakan — diuji, bahkan latar hitam
-murni hanya mencapai 3,55:1 pada `accent`. Tema gelap karena itu menunggu tinta tombol diturunkan
-dari tema (mis. `--iv-on-primary`), bukan menunggu palet yang lebih pintar.
+**Keluarga bingkai, segel, dan simbol forge dipensiunkan pada fase 58**, atas penilaian pemilik
+setelah lembar kontaknya dibuka: sudut tidak sempurna, garis tebal. Empat puluh glyph, dan
+cacatnya cacat resep — bukan cacat satu-dua keping. **Berkasnya tidak dihapus**: `ornamenPensiun`
+dan gerbang keunikan bergantung padanya, persis alasan yang sudah tertulis di atas. Yang dicabut
+keanggotaannya di `themePresentation` dan `themeVariants` — dua-duanya satu-satunya jalan sebuah
+glyph bisa sampai ke mata tamu atau pasangan.
+
+**Yang dipelajari saat menambalnya berlaku untuk penggantian slot berikutnya.** `gerbangKohesi`
+punya DUA syarat, dan yang kedua memangkas paling banyak: ketebalan garis seragam **dan** tiap
+anggota wajib punya lapisan garis. Diukur pada seluruh bank non-forge, enam keping terbaik tidak
+punya `data-draw` sama sekali — relnya ditambahkan di SVG sumber packnya, bukan diakali di
+`theme.ts`. Ketebalan diselesaikan `strokeGlyph` di importir, penimpaan per-glyph yang aman justru
+karena aturan keunikan di atas: glyph yang ditimpa ketebalannya hanya pernah dipakai satu tema.
+
+**Dan kolam varian menuntut alternatif, bukan satu pilihan.** Sesudah forge keluar, bank cuma
+punya tujuh segel non-forge untuk lima tema yang masing-masing butuh dua. Kekurangan itu diisi
+pack `pusaka` — empat keping yang lahir dari hitungan, bukan dari tema.
+
+**Pack `sekar` menambahkan syarat kesepuluh yang sebelumnya tidak pernah ditulis: jangan datar.**
+Sampai fase 42 seluruh bank satu tinta, dan `ornament-palette.ts` menjawabnya dengan ramp empat
+stop — tapi ramp itu hanya menyediakan warnanya, tidak mewajibkan glyph memakainya. Diukur, 128
+dari 133 glyph tetap hidup di dua tingkat. Kedua puluh dua glyph `sekar` karena itu wajib memakai
+**tiga dari empat stop** dan membawa **minimal satu `<linearGradient>`** pada bidang bermassa
+terbesarnya, dengan `stop-color` berupa `var(--iv-orn-*)` supaya gradasinya ikut palet pasangan
+dan bukan warna yang dipanggang ke berkas.
+
+**Dan ramp empat stop itu ternyata belum cukup, karena keempatnya satu keluarga rona.** Diaudit
+berdampingan dengan referensinya, itulah satu-satunya perbedaan warna yang tersisa: tiap daun,
+pakis, dan tangkai memakai rona yang sama dengan bunganya. `--iv-orn-leaf` menutupnya, dan
+angkanya diambil dari referensi pemilik sendiri — dedaunan di sana duduk **+90° dari rona
+bunganya dengan sekitar sepertiga kejenuhannya** (H 118 lawan 28, S 0,15 lawan 0,43, diukur pada
+21 stop di atas 1,2% tinta). `ornamentLeaf()` menerapkan kedua angka itu pada `accent` tema, jadi
+ia tetap **diturunkan, bukan disimpan**: pasangan yang menggeser paletnya tetap mendapat dedaunan
+yang selaras.
+
+Ia **tidak** ikut `ornamentStops`. Gerbang `checkRamp`/`rampSteps` mengukur "empat langkah yang
+terbaca berbeda" di dalam satu keluarga rona; memasukkan rona asing ke deret itu akan mengukur hal
+yang salah pada kelima tema sekaligus. Yang menjaganya adalah gerbangnya sendiri — dedaunan
+terlihat di atas latarnya, diukur 2,50–7,68 pada kelima tema. Yang sengaja tidak dijaga adalah
+jaraknya terhadap `accent`: 1,02 pada `aruna-hening` dan 1,31 pada `aruna-sekar`, dan keduanya
+benar, karena tema yang aksennya sudah kelabu tidak boleh tiba-tiba menumbuhkan hijau jenuh.
+
+**Tangkai keping floral adalah massa, bukan `stroke`, dan sebabnya aritmetika.** Importir
+menyeragamkan tiap `stroke-width` ke ketebalan pack, dan ketebalan itu satuan viewBox — jadi
+tangkai yang sama tayang 2,3% lebar pada keping floral selebar 140 dan 0,5% pada keping layer
+selebar 600. Empat kali lebih tebal, relatif, untuk keping yang justru paling kecil. Dibandingkan
+berdampingan dengan referensinya itulah yang paling mencolok: tangkai jadi balok kelabu yang
+memotong rangkaiannya. Massa tidak punya `stroke-width`, jadi ia bisa meruncing seperti tangkai
+sungguhan; `data-draw` keping floral tinggal satu urat sepanjang 18% untuk memenuhi gerbangnya.
+
+Gradasi itu gratis bagi gerbang: `subPathPolyline()` melewati `d` yang mengandung kurva, jadi
+bentuk kubik memang tidak diukur `potong-diri`, `lonjakan`, dan `runtuh` — dan bentuk kubik juga
+yang paling murah. Satu kelopak butuh empat perintah, bukan empat puluh titik. Yang **tetap**
+berlaku dan harus dijaga tangan adalah `massa-tertimbun`, dan ia langsung menangkap satu cecek
+yang duduk persis di bawah palang sewarna di `motif-damask`.
+
+### Gerbang perlu, tapi tidak pernah cukup
+
+**Aturan tetap, dan ia lahir dari kegagalan yang terukur.** Fase 41 menyatakan tiga belas bingkai
+selesai setelah kedelapan gerbang mutu hijau. Empat bug kemudian ditemukan **dengan melihat layar**,
+tiga di antaranya lolos dari seluruh delapan gerbang: isen yang ditimpakan alih-alih dilubangi
+(delapan belas keping ada di berkas, di koordinat yang benar, dan tidak satu pun terlihat), offset
+yang melahirkan simpul, dan penggeser yang meninggalkan titik kontrol di titik asal. Gerbang mengukur
+kepadatan, kelengkungan, bobot, dan keunikan; tidak satu pun bisa melihat poligon yang memotong
+dirinya sendiri.
+
+Empat gerbang geometris ditambahkan sesudahnya (`potong-diri`, `lonjakan`, `runtuh`,
+`massa-tertimbun`), dan yang pertama **langsung menemukan sepuluh dari tiga belas bingkai yang sudah
+dinyatakan selesai masih bersimpul**. Itu membuktikan kedua hal sekaligus: gerbang memang perlu, dan
+gerbang yang ada memang belum cukup.
+
+Karena itu:
+
+1. **Tidak ada kategori ornamen yang boleh dinyatakan selesai sebelum lembar kontaknya dibuka dan
+   tiap glyph dilihat** pada dua latar (kertas dan bidang gelap) dan dua lebar (375px dan 1440px).
+   `pnpm ornament:sheet` membangunnya, `pnpm ornament:sheet:serve` menyajikannya.
+2. **Tiap gerbang baru wajib diuji pada bentuk yang sudah diketahui jawabannya**, bukan sekadar
+   dijalankan pada bank lalu dipercaya karena angkanya terlihat masuk akal. Tiga metrik sudah salah
+   dengan cara itu: huruf kurva (fase 39), hitung elemen (fase 41), dan kotak pembatas pada
+   `massa-tertimbun` (fase 45, menuduh empat ornamen yang baik-baik saja).
+3. **Jangan mengukur bentuk lewat cara penulisannya.** Itu akar ketiga kesalahan di atas.
+4. **Ambang diukur, bukan dikarang.** Plafon bobot 10240 fase 39 ditetapkan sebelum ada satu pun
+   ornamen terisi untuk diukur, dan ia langsung salah. Kalau sebuah ornamen melewati plafon, potong
+   dulu yang memang bisa dipotong tanpa kehilangan bentuk (kerapatan sampel, kerapatan isen,
+   desimasi rel) — lalu naikkan plafonnya dengan angka, bukan dengan mengurangi ornamennya.
+
+Yang dilihat mata dan tidak bisa dilihat gerbang mana pun, terbukti dari fase 45–47: pemisah yang
+bandnya terjepit jadi deretan oval, dan simbol yang kartusnya memikul lebih banyak luas daripada
+figurnya sendiri. Keduanya lolos sembilan gerbang.
+
+**Tema gelap akhirnya mungkin, dan yang membukanya satu token.** Selama tinta tombol dipanggang
+`#FFFDF7` di `MusicPlayer.vue` dan di `contrast.ts`, pasangan `accent` menuntut `primary` cukup
+TERANG untuk terbaca di atas latar gelap sementara pasangan `button` menuntutnya cukup GELAP untuk
+menampung tinta nyaris putih. Terukur: emas `#D8B26A` memberi accent 8,76 dan **button 1,97**;
+primary yang cukup gelap untuk tombol memberi **accent 3,08**. Tidak ada palet di antaranya.
+
+`onPrimary()` di `utils/contrast.ts` memilih di antara `inkLight` dan `inkDark` mana pun yang lebih
+terbaca di atas `primary`, dan `themeStyle()` memancarkannya sebagai `--iv-on-primary`. Palet yang
+sama lalu memberi **button 9,09**. Ia **diturunkan, bukan disimpan**: menaruhnya di `tokens`
+menggerbangi perubahannya di balik entitlement `design` dan memecah `tests/contracts.test.ts`.
+Efek sampingnya ikut benar — pasangan yang menggeser `primary` jadi terang mendapat tinta gelap
+tanpa perlu tahu tombolnya punya token.
+
+**Yang ikut terbalik pada tema gelap, dan tidak satu pun gerbang bisa melihatnya.** Bidang
+`data-tone="ink"` dicat `--iv-fg` dan `data-tone="primary"` dicat `primary` — pada tema terang
+keduanya bidang paling gelap di halaman, pada `aruna-pelita` keduanya justru yang paling TERANG.
+Enam tempat memanggang `#fffdf7` dengan asumsi itu: `ornamentRampOnDark()` (accent jatuh ke 1,03
+dan rampnya runtuh dari empat langkah jadi satu — ini satu-satunya yang tertangkap gerbang), rel
+dan titik `Story.vue`, ladang ornamen ber-`data-dark`, motif `::before`, dan penanda timeline.
+Semuanya sekarang mengikuti `--iv-orn-dark-body` atau `--iv-bg`. Tiga `#fffdf7` yang tersisa
+memang benar: keduanya di atas FOTO, dan foto tetap foto pada tema mana pun.
 
 `primary` bloom dan lumine dikoreksi pada 2026-09-12: `#B4472A` hanya 4,45:1 di atas tone `tint`
 dan `#9C7C38` hanya 3,60:1 di atas latarnya sendiri, padahal keduanya dipakai sebagai teks biasa.
@@ -293,6 +528,19 @@ dipindai sendiri di `tests/e2e/public.spec.ts`.
 Tema tanpa `backdrop` memancarkan mask `none` dan opacity `0` — identik dengan sebelumnya.
 Tekstur **tidak** masuk `ornamentBank`: tile CSS tidak bisa `currentColor` dan tidak boleh di-DrawSVG.
 
+**`aruna-sekar` adalah tema pertama yang benar-benar menyalakannya**, dan dua hal yang ditemukan di
+sana berlaku untuk tekstur berikutnya. Pertama, **ubin latar digambar berongga, bukan bermassa**:
+versi pertamanya memakai siluet penuh dan pada 5% opacity ia terbaca sebagai noda besar, bukan
+sebagai kain — latar bekerja pada siluet, dan siluet yang tepat untuk latar adalah garis.
+Kedua, **opacity-nya dilihat, bukan disalin**: 0,05 yang diusulkan catatan pack kayon ditulis untuk
+ubin bermassa; ubin bergaris menghilang di sana dan mulai berebut dengan keping ladang di 0,10.
+`aruna-sekar` mendarat di 0,07 setelah ketiganya dibandingkan di layar.
+
+**Dan ubinnya tidak boleh menyebut nama custom property di dalam komentar XML.** Tanda hubung
+ganda membuat berkasnya tidak sah, dan kegagalannya sepenuhnya senyap: server menjawab 200,
+`mask-image` terpasang, `--iv-backdrop-*` benar semua, dan latarnya kosong tanpa satu galat pun.
+Yang menemukannya adalah membuka halamannya.
+
 Pasangan tetap bisa mengubah `background`/`foreground`/`primary` sendiri (fitur premium `design`); preset hanya titik awal yang terkurasi. Keempat pasangan kontras dihitung ulang setiap kali color picker bergerak dan dilaporkan lengkap dengan rasionya di panel "Tema & warna", plus tombol **Perbaiki warna otomatis** yang mencari nilai terdekat yang lolos dengan menggeser terang-gelapnya saja (hue dan saturasi pilihan pasangan dipertahankan, `background` tidak pernah disentuh). **Simpan draft tidak diblokir** — pasangan sering berhenti di tengah penyetelan dan autosave tidak boleh menghukum itu; yang diblokir adalah **publish**, karena itulah titik ketika tamu mulai membacanya.
 
 Anatomi undangan (urutan konvensi genre, section bisa dimatikan):
@@ -303,7 +551,7 @@ cover gate (amplop + segel) → pasangan → acara (+kalender, peta) → countdo
 ## Aset
 
 - **Ornamen**: komponen SVG di `apps/web/components/ornament/`, terdaftar di `apps/web/utils/ornaments.ts`.
-  Digambar sendiri, satu warna, `currentColor`. Tidak ada PNG untuk ornamen.
+  Digambar sendiri, **empat tingkat warna**, tanpa PNG.
   Render lewat `<OrnamentGlyph :glyph="id" />`, bukan dengan menyebut nama komponennya — ornamen
   dipilih saat runtime, dan auto-import Nuxt hanya menangkap komponen yang muncul sebagai tag di template.
 
@@ -318,6 +566,45 @@ cover gate (amplop + segel) → pasangan → acara (+kalender, peta) → countdo
   - Dua bidang nilai per glyph (`opacity` 1 dan ~0,45) supaya terbaca sebagai cetakan, bukan outline.
   - Bingkai dan cincin tetap berongga; massanya datang dari tebal bandnya lewat `fill-rule="evenodd"`,
     bukan dari mengisi bagian dalamnya.
+
+  **Ramp warna ornamen (2026-09-18).** Sebelum ini seluruh bank satu tinta: diukur pada 133 komponen,
+  283 `fill="currentColor"`, 60 `stroke="currentColor"`, dan **nol** hex, gradient, atau pattern.
+  Kedalaman dipalsukan sepenuhnya dengan `opacity`, dan 128 dari 133 glyph hanya punya dua tingkat.
+  Pemilik produk menilainya monoton dan menunjuk pack Canva yang ia impor sendiri sebagai pembanding —
+  pack itu memang punya ramp sungguhan (`canva-emas-hitam`: `#423d35 → #8c8153 → #ccb554 → #dbcd93`).
+
+  Empat stop, diturunkan dari token tema di `apps/web/utils/ornament-palette.ts`, dipancarkan
+  `themeStyle()` sebagai hex:
+
+  | stop | turunan | peran |
+  |---|---|---|
+  | `--iv-orn-deep` | `mix(primary 64%, foreground 36%)` | kedalaman ukiran, lapisan garis |
+  | `--iv-orn-body` | `primary` **persis** | badan bentuk |
+  | `--iv-orn-accent` | `accent` tema | plat di balik rongga, inlay |
+  | `--iv-orn-glow` | `mix(accent 55%, background 45%)` | sorot, rel tipis |
+
+  Aturan yang menyertainya:
+  - Tiap `var()` **wajib** membawa `currentColor` sebagai cadangan. Itu yang membuat glyph yang belum
+    digubah dan empat belas tempat yang memaksa `color:` sendiri terus bekerja tanpa disentuh.
+  - **Aksen adalah massa, bukan garis.** Diukur pada sembilan tema, `accent` serendah 2,32:1 terhadap
+    latarnya dan 1,68:1 terhadap `primary` — cukup untuk bidang seluas band, tidak cukup untuk garis
+    selebar tiga satuan viewBox. Lapisan `data-draw` memakai `deep`.
+  - Susunan baku tiap ornamen tiga lapis: **plat aksen di bawah, badan bertinta di atasnya yang
+    diperkecil sedikit supaya platnya menyembul sebagai tepi, lalu rongga isen `evenodd` menembus
+    badan** sehingga aksennya terbaca lewat tiap ukiran. Warna jadi berarti tanpa satu bentuk baru.
+  - Ambangnya **ambang dekoratif, bukan ambang teks**: tiap stop ≥ 1,18:1 terhadap latarnya dan dua
+    stop bertetangga terpisah ≥ 1,12:1. Memaksakan 4,5:1 WCAG ke sini akan menolak aksen di hampir
+    semua tema. Dijaga `apps/web/test/ornament-palette.spec.ts` pada 27 ramp (9 terang + 18 gelap).
+  - Bidang gelap menukar rampnya **sekali** di `.iv-root` (`Renderer.vue`), bukan di empat belas
+    tempat yang masing-masing sudah memaksa `color: #fffdf7`.
+
+  **Keunikan dijamin konstruksi, bukan ketelitian.** Sidik jari gerbang keunikan tahan geser **dan
+  tahan skala**, jadi persegi panjang selalu cocok dengan persegi panjang dan lingkaran selalu cocok
+  dengan lingkaran — memperbesar bentuk satu tema tidak pernah menolong. Karena itu tiap kategori
+  menurunkan siluet, band, rel, dan isennya dari `profilTema(mahkota)` di
+  `scripts/ornament-forge/resep/tata.mjs`, dan tiap pertumbuhan membawa kuncup `unitTema` di
+  pangkalnya. Dibuktikan: membangun sudut dan pemisah dari persegi panjang generik melonjakkan
+  pelanggaran keunikan dari 1 jadi **144**; setelah diturunkan dari profil tema, **0**.
 
   Konsekuensi yang mahal kalau dilupakan: **DrawSVG hanya menganimasi stroke.** Bentuk berisi tidak
   bisa diungkap dengannya — `bloomIn`/`cascadeIn`/`orchestrate` yang menggantikannya.
@@ -334,6 +621,28 @@ cover gate (amplop + segel) → pasangan → acara (+kalender, peta) → countdo
   clamp menggigit; dan **pemanggil tidak mengoper pengali ukuran**. Sebelum ini kartu tema landing
   mengoper `:scale="0.46"` — benar angkanya, salah tempatnya. Yang perlu tahu lebar bidang adalah
   ladangnya sendiri, jadi ladang yang sama bekerja di section selebar layar maupun di kartu 302px.
+
+  **Aset referensi punya tiga salinan, dan yang dikirim ke tamu bukan yang penuh (2026-09-18).**
+  Enam puluh lima aset kiriman pemilik berjumlah **24,11 MB**, terberat 1,8 MB. Sampai fase 58
+  beratnya hanya biaya repo: `grep -n "ref-"` di `theme.ts` dan `ornament-variants.ts` nol hit,
+  jadi tidak satu tamu pun pernah mengunduhnya. Studio Ornamen membuatnya bisa terbit, dan sejak
+  itu ia biaya kuota tamu. `scripts/ornament-reference/derive.mjs` memancarkan dua turunan:
+  `ubin/` 240px WebP untuk grid pemilih (789 KB untuk keenam puluh lima) dan `web/` 960px WebP
+  untuk undangan (3,4 MB total, terberat 313 KB). `asset` tetap menunjuk berkas penuh; **tidak ada
+  jalur yang merendernya**.
+
+  Lebar 960 diturunkan dari lebar tayang, bukan dipilih bulat: tempat render terbesar adalah keping
+  ladang sampai 600px CSS, dan aset referensi ditolak dari sana, jadi yang tersisa bingkai cover di
+  sekitar 480px CSS — 960 menutupinya pada layar 2×. Diukur, 1200px menambah 238 KB pada tiga aset
+  terberat tanpa selisih yang terlihat.
+
+  Sumbernya `packs/referensi/` yang terlacak git, **bukan** arsip di `docs/` yang binernya
+  diabaikan — tanpa itu langkahnya tidak bisa diulang di mesin lain. Dan `ReferenceAsset.vue`
+  akhirnya membawa `width`/`height`: tanpa dimensi intrinsik tiap aset adalah sumber CLS, yang
+  tidak pernah terlihat hanya karena sebelumnya tidak ada yang bisa dicapai. Berkas turunan
+  **tidak** di-hash di tes — keluaran libvips tidak dijamin identik antar platform, dan hash di
+  sana mengubah pemutakhiran sharp jadi build merah tanpa cacat di belakangnya.
+
 - **Foto**: hanya CC0/PD terverifikasi (jalur Wikimedia Commons yang sudah terbukti di `docs/REFERENCE-REVIEW.md`). Konversi WebP, provenance dicatat.
 - **Lambang bank** di `apps/web/public/banks/<bankId>.svg`, presentasinya di `apps/web/utils/banks.ts`.
   Ini **bukan** ornamen: lambang merek berwarna banyak, jadi tidak `currentColor`, tidak `data-draw`,

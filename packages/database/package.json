@@ -10,6 +10,7 @@
     "migrate": "prisma migrate dev",
     "deploy": "prisma migrate deploy",
     "seed": "tsx --env-file-if-exists=.env prisma/seed.ts",
+    "migrate:templates": "tsx --env-file-if-exists=.env scripts/migrate-template-ids.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

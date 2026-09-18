@@ -40,6 +40,20 @@ try {
   const created = await owner.call('/invitations', 'POST', { title: 'QA Aruna & Dewa', partner1: 'Aruna', partner2: 'Dewa', slug: `qa-${run}`, date: '2027-10-18', venue: 'Taman Aruna', address: 'Jakarta' })
   check(created.status === 201, 'create invitation')
   const id = created.data.id, slug = created.data.slug
+  /*
+   * Undangan kedua, milik akun biasa yang **tidak pernah** dinaikkan jadi `OPERATOR`.
+   *
+   * `canEditDesign()` bernilai `isOperator || features.includes('design')`, dan pemilik fixture
+   * utama dinaikkan jadi operator beberapa baris di bawah supaya bisa mengaktifkan tanpa bayar.
+   * Akibatnya keadaan terkunci tidak pernah bisa terjadi di undangan itu, dan tes e2e yang
+   * mengujinya dulu melewati dirinya sendiri di keempat project — lulus tanpa pernah berjalan.
+   * Undangan inilah yang membuat keadaan itu benar-benar ada untuk diuji.
+   */
+  const terkunci = await stranger.call('/invitations', 'POST', { title: 'QA Terkunci', partner1: 'Sekar', partner2: 'Jagad', slug: `qa-terkunci-${run}`, date: '2027-11-20', venue: 'Pendopo', address: 'Yogyakarta' })
+  check(terkunci.status === 201, 'akun biasa boleh membuat undangan')
+  const terkunciId = terkunci.data.id
+  check(!(await stranger.call(`/invitations/${terkunciId}`)).data.features?.includes('design'), 'undangan akun biasa tidak punya entitlement design')
+
   check((await stranger.call(`/invitations/${id}`)).status === 403, 'account isolation on invitation read')
   check((await stranger.call(`/invitations/${id}/guests`)).status === 403, 'account isolation on guest list')
   check((await owner.call(`/public/${slug}`)).status === 404, 'unpublished draft is not public')
@@ -141,7 +155,7 @@ try {
   owner.cookies = beforeLogout
   check((await owner.call('/auth/me')).status === 401, 'logout revokes prior access JWT')
   await mkdir('.data', { recursive: true })
-  await writeFile('.data/qa-account.json', JSON.stringify({ email: `qa-owner-${run}@example.test`, password, invitationId: id, slug }), { mode: 0o600 })
+  await writeFile('.data/qa-account.json', JSON.stringify({ email: `qa-owner-${run}@example.test`, password, invitationId: id, slug, locked: { email: `qa-stranger-${run}@example.test`, password, invitationId: terkunciId } }), { mode: 0o600 })
   await mkdir('docs/features/operations/verification', { recursive: true })
   // Versi dibaca dari database yang benar-benar dipakai, bukan diketik. Literal 'PostgreSQL 18.4
   // local' salah di CI (postgres:17-alpine) — dan satu-satunya guna berkas ini adalah jadi bukti.

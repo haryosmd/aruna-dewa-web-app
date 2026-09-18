@@ -1,0 +1,12 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+const args=process.argv.slice(2);
+const option=(name,fallback)=>{const i=args.indexOf(name);return i<0?fallback:args[i+1];};
+const theme=option('--theme','sunda').toLowerCase();
+const style=option('--style','botanical').toLowerCase();
+const file=path.resolve(option('--catalog','docs/features/ornament-builder/originals/sunda/catalog.json'));
+const c=JSON.parse(await fs.readFile(file,'utf8'));
+const candidates=c.assets.filter(a=>a.usage==='original-local-demo'||a.usage==='production-approved').filter(a=>a.tags.includes(theme)).map(a=>({asset:a,score:(a.tags.includes(style)?3:0)+(a.culturalRole.startsWith('cultural-')?2:0)})).sort((a,b)=>b.score-a.score||a.asset.id.localeCompare(b.asset.id));
+const categories=['venue','symbol','motif','frame','divider','corner','floral','layer'];
+const selected=categories.map(category=>candidates.find(x=>x.asset.category===category)).filter(Boolean).map(({asset:a,score})=>({id:a.id,category:a.category,score,reason:`Tema ${theme}; ${a.culturalRole}; ${a.tags.includes(style)?'gaya sesuai':'pendamping gaya'}.`,variants:a.variants.map(v=>v.file),anchor:a.anchor,motion:a.motion}));
+console.log(JSON.stringify({schemaVersion:1,theme,style,catalog:file,selected,missing:categories.filter(k=>!selected.some(s=>s.category===k)),note:'Ranking assists curation; verify cultural meaning, visual coherence and composition using the skill. No asset is promoted to production automatically.'},null,2));

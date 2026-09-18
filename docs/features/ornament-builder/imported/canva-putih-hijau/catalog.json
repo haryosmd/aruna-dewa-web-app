@@ -1,0 +1,276 @@
+{
+  "schemaVersion": 1,
+  "id": "canva-putih-hijau",
+  "name": "Impor Canva — Putih Hijau",
+  "scope": "imported-local-demo",
+  "builtAt": "2026-09-18",
+  "origin": {
+    "template": "Putih Hijau Bunga Floral Minimalist Undangan Pernikahan Instagram Story",
+    "exportedBy": "pemilik, dari akun Canva Pro",
+    "warning": "Bukan aset original. Aturan AGENTS.md/DESIGN.md tentang aset pihak ketiga tetap berlaku sampai pemilik memutuskan sebaliknya secara tertulis. Lihat PROVENANCE.md."
+  },
+  "palette": {
+    "source": [
+      "#5b6b43"
+    ],
+    "note": "Hati memakai satu warna; sudut bunga berwarna penuh sebagai raster."
+  },
+  "assets": [
+    {
+      "id": "sudut-bunga-kiri",
+      "name": "Sudut bunga kiri",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "raster",
+        "impor-canva",
+        "canva-putih-hijau",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/sudut-bunga-putih.svg",
+        "sourceTemplate": "Putih Hijau Bunga Floral Minimalist Undangan Pernikahan Instagram Story",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg",
+        "crop": "dipotong dari berkas yang sama pada x=0 y=0 w=466 h=429 (satuan viewBox sumber); piksel tidak disentuh"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "sudut",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/sudut-bunga-kiri.png",
+          "format": "png",
+          "width": 764,
+          "height": 707,
+          "ratio": 1.081,
+          "bytes": 313558,
+          "sha256": "4e554b8c853e19de7d5e10aa682b8a3d2f9961a431dd7b873836616beb44525e",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/sudut-bunga-kiri.webp",
+          "format": "webp",
+          "width": 764,
+          "height": 707,
+          "ratio": 1.081,
+          "bytes": 92910,
+          "sha256": "f84b7460bec28df84d66f62f9265e919bf7454bf240e5771efec50e032178a9f",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    },
+    {
+      "id": "sudut-bunga-kanan",
+      "name": "Sudut bunga kanan",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "raster",
+        "impor-canva",
+        "canva-putih-hijau",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/sudut-bunga-putih.svg",
+        "sourceTemplate": "Putih Hijau Bunga Floral Minimalist Undangan Pernikahan Instagram Story",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg",
+        "crop": "dipotong dari berkas yang sama pada x=503 y=0 w=466 h=429 (satuan viewBox sumber); piksel tidak disentuh"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "sudut",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/sudut-bunga-kanan.png",
+          "format": "png",
+          "width": 764,
+          "height": 707,
+          "ratio": 1.081,
+          "bytes": 313807,
+          "sha256": "5f775cd3b9a8f6ae3d80688326974c51e501f3cd55912c16033a7ce35d2afe1c",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/sudut-bunga-kanan.webp",
+          "format": "webp",
+          "width": 764,
+          "height": 707,
+          "ratio": 1.081,
+          "bytes": 92674,
+          "sha256": "97c354b708ae32054ead1efe751e1c78707568fe17d87f6c9ed7b06070ebe12f",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    },
+    {
+      "id": "hati-rangkai-a",
+      "name": "Hati rangkai A",
+      "category": "symbol",
+      "tags": [
+        "symbol",
+        "impor-canva",
+        "canva-putih-hijau"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/hati-a.svg",
+        "sourceTemplate": "Putih Hijau Bunga Floral Minimalist Undangan Pernikahan Instagram Story",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1
+        ]
+      },
+      "layers": [
+        "heart"
+      ],
+      "anchor": "sela-teks",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/hati-rangkai-a.svg",
+          "format": "svg",
+          "width": 107,
+          "height": 110,
+          "ratio": 0.973,
+          "bytes": 6360,
+          "sha256": "9ee967ef1b5e55ee5f51750b2d64da565bcc9463582cd04adf0e0fb385c843d0",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "hati-rangkai-b",
+      "name": "Hati rangkai B",
+      "category": "symbol",
+      "tags": [
+        "symbol",
+        "impor-canva",
+        "canva-putih-hijau"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/hati-b.svg",
+        "sourceTemplate": "Putih Hijau Bunga Floral Minimalist Undangan Pernikahan Instagram Story",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1
+        ]
+      },
+      "layers": [
+        "heart"
+      ],
+      "anchor": "sela-teks",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/hati-rangkai-b.svg",
+          "format": "svg",
+          "width": 107,
+          "height": 110,
+          "ratio": 0.973,
+          "bytes": 5698,
+          "sha256": "b58e99b44da44ed3535b653b54815a3c7933261559e8cafa407863da372d04a1",
+          "alpha": true
+        }
+      ]
+    }
+  ]
+}

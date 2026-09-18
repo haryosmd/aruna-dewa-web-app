@@ -1,0 +1,246 @@
+{
+  "schemaVersion": 1,
+  "id": "pusaka",
+  "name": "Pusaka — pengisi kolam varian sesudah forge dipensiunkan",
+  "scope": "original-local-demo",
+  "builtAt": "2026-09-18",
+  "generator": "packs/pusaka/buat.mjs + packs/sekar/geometri.mjs",
+  "palette": {
+    "note": "Tidak membawa warna sendiri; seluruhnya var(--iv-orn-*)."
+  },
+  "fonts": {
+    "demo": "tidak ada"
+  },
+  "composition": {
+    "anchorRule": "Segel di penutup, bingkai membingkai section.",
+    "source": "packs/pusaka/CULTURE.md"
+  },
+  "motionRecipe": {
+    "ease": "power2.out",
+    "catatan": "Menyalin resep reveal; tidak diukur ulang."
+  },
+  "assets": [
+    {
+      "id": "pusaka-segel-tumpal-jajar",
+      "name": "Segel tumpal berjajar",
+      "category": "seal",
+      "tags": [
+        "seal",
+        "pusaka"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik",
+        "generator": "buat.mjs + sekar/geometri.mjs",
+        "referenceStudy": [
+          "packs/sekar/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "layers": [
+        "seal",
+        "isen"
+      ],
+      "anchor": "penutup",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 1.1,
+        "ease": "power2.out",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/pusaka-segel-tumpal-jajar.svg",
+          "format": "svg",
+          "width": 200,
+          "height": 200,
+          "ratio": 1,
+          "bytes": 5503,
+          "sha256": "954fd13b9c98baf10ac91f678535a970ce4e33b880bf2efbfbbeb19242da1948",
+          "alpha": true
+        }
+      ],
+      "viewBox": "0 0 200 200",
+      "catatan": "Gerigi tumpal mengelilingi cincin; alternatif segel untuk tema beretnik bidang besar."
+    },
+    {
+      "id": "pusaka-segel-sulur-bintang",
+      "name": "Segel sulur bintang",
+      "category": "seal",
+      "tags": [
+        "seal",
+        "pusaka"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik",
+        "generator": "buat.mjs + sekar/geometri.mjs",
+        "referenceStudy": [
+          "packs/sekar/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "layers": [
+        "seal",
+        "isen"
+      ],
+      "anchor": "penutup",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 1.1,
+        "ease": "power2.out",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/pusaka-segel-sulur-bintang.svg",
+          "format": "svg",
+          "width": 200,
+          "height": 200,
+          "ratio": 1,
+          "bytes": 5114,
+          "sha256": "f913f93d1f0817c6b336012b441a07d4f995413347c9f565691ff34426a63552",
+          "alpha": true
+        }
+      ],
+      "viewBox": "0 0 200 200",
+      "catatan": "Mahkota berkelopak sepuluh dengan enam ukel berputar di jantungnya."
+    },
+    {
+      "id": "pusaka-segel-karangan-tipis",
+      "name": "Segel karangan tipis",
+      "category": "seal",
+      "tags": [
+        "seal",
+        "pusaka"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik",
+        "generator": "buat.mjs + sekar/geometri.mjs",
+        "referenceStudy": [
+          "packs/sekar/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "layers": [
+        "floral",
+        "seal",
+        "isen"
+      ],
+      "anchor": "penutup",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 1.1,
+        "ease": "power2.out",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/pusaka-segel-karangan-tipis.svg",
+          "format": "svg",
+          "width": 200,
+          "height": 200,
+          "ratio": 1,
+          "bytes": 3013,
+          "sha256": "498d31d6abb62a0ee45433b46494a33d04d10e8c28299c699637649cf22f915e",
+          "alpha": true
+        }
+      ],
+      "viewBox": "0 0 200 200",
+      "catatan": "Cincin tipis dengan lima daun; ditahan untuk tema editorial."
+    },
+    {
+      "id": "pusaka-bingkai-kubah",
+      "name": "Bingkai kubah",
+      "category": "frame",
+      "tags": [
+        "frame",
+        "pusaka"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik",
+        "generator": "buat.mjs + sekar/geometri.mjs",
+        "referenceStudy": [
+          "packs/sekar/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "layers": [
+        "frame",
+        "crown",
+        "isen"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 1.1,
+        "ease": "power2.out",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/pusaka-bingkai-kubah.svg",
+          "format": "svg",
+          "width": 300,
+          "height": 420,
+          "ratio": 0.714,
+          "bytes": 3578,
+          "sha256": "328811d880c5ebf6b83edf378c1ef9da81cb5f3e340a1b65537a2f53a7bdaed3",
+          "alpha": true
+        }
+      ],
+      "viewBox": "0 0 300 420",
+      "catatan": "Kubah berbahu takik; alternatif bingkai untuk tema emas malam."
+    }
+  ]
+}

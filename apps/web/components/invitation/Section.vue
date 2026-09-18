@@ -74,7 +74,8 @@ withDefaults(
     radial-gradient(75% 60% at 50% 42%, color-mix(in srgb, var(--iv-primary) 22%, var(--iv-fg)) 0%, var(--iv-fg) 78%);
 }
 .iv-section[data-tone='primary'] {
-  color: #fffdf7;
+  /* Tinta mengikuti `primary`. Bidang ini adalah pasangan kontras `button` yang sama. */
+  color: var(--iv-on-primary, #fffdf7);
   background:
     radial-gradient(80% 65% at 50% 38%, color-mix(in srgb, #ffffff 16%, var(--iv-primary)) 0%, var(--iv-primary) 76%);
 }
@@ -100,9 +101,13 @@ withDefaults(
   -webkit-mask-size: var(--iv-backdrop-size, 240px);
   -webkit-mask-repeat: repeat;
 }
-/* Di atas bidang gelap motifnya harus terang, bukan aksen yang ikut tenggelam. */
+/*
+ * Di atas bidang bertone motifnya mengikuti ramp bidang itu, bukan aksen yang ikut tenggelam.
+ * Dulu dipanggang terang karena bertone selalu berarti gelap; pada tema gelap bertone justru
+ * bidang paling terang di halaman.
+ */
 .iv-section[data-tone='ink']::before,
-.iv-section[data-tone='primary']::before { background-color: #fffdf7; }
+.iv-section[data-tone='primary']::before { background-color: var(--iv-orn-dark-body, #fffdf7); }
 
 /*
  * Butiran kertas. Sangat tipis dan ditumpuk di atas warna section, tapi cukup untuk

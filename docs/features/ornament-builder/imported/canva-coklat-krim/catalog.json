@@ -1,0 +1,400 @@
+{
+  "schemaVersion": 1,
+  "id": "canva-coklat-krim",
+  "name": "Impor Canva — Coklat Krim",
+  "scope": "imported-local-demo",
+  "builtAt": "2026-09-18",
+  "origin": {
+    "template": "Coklat dan Krim Aesthetic Bunga Undangan Pernikahan Invitation",
+    "exportedBy": "pemilik, dari akun Canva Pro",
+    "warning": "Bukan aset original. Aturan AGENTS.md/DESIGN.md tentang aset pihak ketiga tetap berlaku sampai pemilik memutuskan sebaliknya secara tertulis. Lihat PROVENANCE.md."
+  },
+  "palette": {
+    "source": [
+      "#957149"
+    ],
+    "note": "Bagian vektornya satu warna; wayang dan sapuan kuas berwarna penuh sebagai raster."
+  },
+  "assets": [
+    {
+      "id": "gunungan-monogram",
+      "name": "Gunungan monogram",
+      "category": "monogram",
+      "tags": [
+        "monogram",
+        "impor-canva",
+        "canva-coklat-krim",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/nameplate-gunungan.svg",
+        "sourceTemplate": "Coklat dan Krim Aesthetic Bunga Undangan Pernikahan Invitation",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "note": "Hanya gunungan tengahnya yang diambil; nama contoh \"Olivia\"/\"Morgan\" sengaja tidak diimpor.",
+        "split": "dipecah dari satu berkas sumber pada undefined = undefined; viewBox dirapatkan ke isinya, koordinat tidak digeser"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1
+        ]
+      },
+      "layers": [
+        "gunungan"
+      ],
+      "anchor": "kepala",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/gunungan-monogram.svg",
+          "format": "svg",
+          "width": 33,
+          "height": 52,
+          "ratio": 0.641,
+          "bytes": 96606,
+          "sha256": "0dbc57b15a6e69f48e788401876707087ccf54e1cf593ddc0707629b8eeddb3d",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sudut-garis-atas",
+      "name": "Sudut garis atas",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "impor-canva",
+        "canva-coklat-krim",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/wayang-sudut.svg",
+        "sourceTemplate": "Coklat dan Krim Aesthetic Bunga Undangan Pernikahan Invitation",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "split": "dipecah dari satu berkas sumber pada undefined = undefined; viewBox dirapatkan ke isinya, koordinat tidak digeser"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1
+        ]
+      },
+      "layers": [
+        "scroll"
+      ],
+      "anchor": "sudut",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sudut-garis-atas.svg",
+          "format": "svg",
+          "width": 96,
+          "height": 96,
+          "ratio": 1,
+          "bytes": 37187,
+          "sha256": "4eabcb8190eefcd30b0f1eac61ed829b1e3f4e499f054d0b5b423d942d00235f",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sudut-sulur-bawah",
+      "name": "Sudut sulur bawah",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "impor-canva",
+        "canva-coklat-krim",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/wayang-sudut.svg",
+        "sourceTemplate": "Coklat dan Krim Aesthetic Bunga Undangan Pernikahan Invitation",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "split": "dipecah dari satu berkas sumber pada undefined = undefined; viewBox dirapatkan ke isinya, koordinat tidak digeser"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1
+        ]
+      },
+      "layers": [
+        "scroll"
+      ],
+      "anchor": "sudut",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sudut-sulur-bawah.svg",
+          "format": "svg",
+          "width": 155,
+          "height": 155,
+          "ratio": 0.998,
+          "bytes": 114420,
+          "sha256": "ce382ef37085e5010a2e5ecb52c3ed1783ccff02fa95a82657e932c169cb6604",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "wayang-pengantin",
+      "name": "Wayang sepasang",
+      "category": "symbol",
+      "tags": [
+        "symbol",
+        "raster",
+        "impor-canva",
+        "canva-coklat-krim"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/wayang-sudut.svg",
+        "sourceTemplate": "Coklat dan Krim Aesthetic Bunga Undangan Pernikahan Invitation",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg",
+        "stripVector": "path vektor dibuang sebelum dipanggang; bagian vektornya keluar sebagai glyph tersendiri dari berkas yang sama",
+        "note": "Dua tokoh wayang yang tongkat dan busurnya saling menyilang; tidak dipecah per tokoh."
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "kepala",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/wayang-pengantin.png",
+          "format": "png",
+          "width": 1333,
+          "height": 1013,
+          "ratio": 1.316,
+          "bytes": 1902744,
+          "sha256": "fb301c4d637ecef3b43d30a5c3af832b8522e03dae86093c0499c0bcf0f28ee2",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/wayang-pengantin.webp",
+          "format": "webp",
+          "width": 1333,
+          "height": 1013,
+          "ratio": 1.316,
+          "bytes": 653434,
+          "sha256": "23df80adf3e2b27bf2f839fab4b2c688e4d91901ace694d31a4d4ca34f750fed",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    },
+    {
+      "id": "sudut-garis-halus",
+      "name": "Sudut garis halus",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "impor-canva",
+        "canva-coklat-krim",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/sudut-kuas.svg",
+        "sourceTemplate": "Coklat dan Krim Aesthetic Bunga Undangan Pernikahan Invitation",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "split": "dipecah dari satu berkas sumber pada undefined = undefined; viewBox dirapatkan ke isinya, koordinat tidak digeser"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1
+        ]
+      },
+      "layers": [
+        "scroll"
+      ],
+      "anchor": "sudut",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sudut-garis-halus.svg",
+          "format": "svg",
+          "width": 96,
+          "height": 96,
+          "ratio": 1,
+          "bytes": 35560,
+          "sha256": "787d2b62a7b62d42e987a1d702dd0682164345f6ed32ad3c73f4d8d7d8e84d61",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sapuan-kuas",
+      "name": "Sapuan kuas",
+      "category": "motif",
+      "tags": [
+        "motif",
+        "raster",
+        "impor-canva",
+        "canva-coklat-krim",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/sudut-kuas.svg",
+        "sourceTemplate": "Coklat dan Krim Aesthetic Bunga Undangan Pernikahan Invitation",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg",
+        "crop": "dipotong dari berkas yang sama pada x=225 y=0 w=280 h=238 (satuan viewBox sumber); piksel tidak disentuh",
+        "stripVector": "path vektor dibuang sebelum dipanggang; bagian vektornya keluar sebagai glyph tersendiri dari berkas yang sama"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster wash (semi-transparan, tidak pernah pekat)",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "latar",
+      "motion": {
+        "preset": "static",
+        "amplitude": 0,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/sapuan-kuas.png",
+          "format": "png",
+          "width": 821,
+          "height": 702,
+          "ratio": 1.17,
+          "bytes": 809830,
+          "sha256": "ce46182f3485b0531065a3b3a4212a4ff1a660bd986f529245d1c16d2b0a2957",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/sapuan-kuas.webp",
+          "format": "webp",
+          "width": 821,
+          "height": 702,
+          "ratio": 1.17,
+          "bytes": 309158,
+          "sha256": "3905f5946cb1a65ef40f6d1f7009848fa5b44df66a3dbf9eb675be9a462b930d",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    }
+  ]
+}

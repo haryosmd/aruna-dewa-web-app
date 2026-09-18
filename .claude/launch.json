@@ -13,12 +13,37 @@
       "autoPort": true
     },
     {
+      "name": "web-e2e",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@aruna/web",
+        "dev",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "3000"
+      ],
+      "port": 3000,
+      "autoPort": false
+    },
+    {
       "name": "web-prod",
       "runtimeExecutable": "node",
       "runtimeArgs": [
         "apps/web/.output/server/index.mjs"
       ],
       "port": 3100
+    },
+    {
+      "name": "ornament-sheet",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "tsx",
+        "scripts/ornament-forge/lihat.ts",
+        "--sajikan"
+      ],
+      "port": 4173
     }
   ]
 }

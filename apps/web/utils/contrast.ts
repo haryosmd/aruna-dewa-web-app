@@ -11,8 +11,34 @@
 /** Ambang teks normal WCAG 2.1 AA. Teks undangan tidak pernah dijamin "large text". */
 export const textContrastMinimum = 4.5
 
-/** Tinta tombol dan bidang bertone `primary` di renderer — nilainya dipanggang di CSS. */
-const buttonInk = '#FFFDF7'
+/**
+ * Tinta terang, dipakai saat `primary` cukup gelap untuk menampungnya.
+ *
+ * Dulu ini satu-satunya tinta tombol, dipanggang di `MusicPlayer.vue` dan di sini — dan
+ * itulah yang membuat tema gelap mustahil. Pada latar gelap, pasangan `accent` menuntut
+ * `primary` cukup TERANG untuk terbaca di atas latar, sementara pasangan `button` menuntut
+ * `primary` cukup GELAP untuk menampung tinta nyaris putih. Kedua tuntutan itu saling
+ * meniadakan: diukur, emas terang `#D8B26A` memberi accent 8,76 tapi button **1,97**, dan
+ * primary yang cukup gelap untuk tombol memberi accent **3,08**.
+ */
+export const inkLight = '#FFFDF7'
+
+/** Tinta gelap, pasangannya. Bukan hitam murni — hitam di atas emas terbaca sebagai lubang. */
+export const inkDark = '#171203'
+
+/**
+ * Tinta tombol untuk sebuah `primary`: yang mana pun dari keduanya yang lebih terbaca.
+ *
+ * Inilah yang membuka tema gelap, dan ia **diturunkan, bukan disimpan**. Menaruhnya di
+ * `tokens` akan menggerbangi perubahannya di balik entitlement `design` dan membuat
+ * `tests/contracts.test.ts` gagal karena preset tema tidak lagi identik. Palet yang sama
+ * dengan tinta turunan `#171203` memberi button **9,09** — pasangan yang tadinya saling
+ * meniadakan jadi lolos keduanya.
+ */
+export function onPrimary(primary: string): string {
+  return contrastRatio(inkLight, primary) >= contrastRatio(inkDark, primary) ? inkLight : inkDark
+}
+
 
 /** Bidang `tint` di `Section.vue`: `color-mix(in srgb, var(--iv-primary) 9%, var(--iv-bg))`. */
 const tintPrimaryShare = 0.09
@@ -70,7 +96,7 @@ export function formatRatio(ratio: number): string {
 }
 
 /** `color-mix(in srgb, …)` mencampur nilai sRGB ber-gamma apa adanya, jadi campuran lurus sudah tepat. */
-function mix(top: string, bottom: string, share: number): string {
+export function mixSrgb(top: string, bottom: string, share: number): string {
   const a = parseHex(top)
   const b = parseHex(bottom)
   return toHex(a.map((channel, index) => channel * share + b[index]! * (1 - share)) as Rgb)
@@ -78,7 +104,7 @@ function mix(top: string, bottom: string, share: number): string {
 
 /** Bidang bertinta tempat aksen paling sering gagal — pasangan paling ketat dari keempatnya. */
 export function tintSurface(tokens: PaletteTokens): string {
-  return mix(tokens.primary, tokens.background, tintPrimaryShare)
+  return mixSrgb(tokens.primary, tokens.background, tintPrimaryShare)
 }
 
 /**
@@ -104,7 +130,8 @@ export function checkPalette(tokens: PaletteTokens): ContrastCheck[] {
     { id: 'body', label: 'Teks isi di atas latar', where: 'Seluruh paragraf undangan', blame: 'foreground', on: [tokens.foreground, tokens.background] },
     { id: 'accent', label: 'Warna aksi di atas latar', where: 'Jam rundown, label acara, tautan', blame: 'primary', on: [tokens.primary, tokens.background] },
     { id: 'accentOnTint', label: 'Warna aksi di atas bidang bertinta', where: 'Section berlatar nuansa warna aksi', blame: 'primary', on: [tokens.primary, tint] },
-    { id: 'button', label: 'Tulisan tombol di atas warna aksi', where: 'Tombol kirim RSVP dan pemutar musik', blame: 'primary', on: [buttonInk, tokens.primary] },
+    // Tinta tombol mengikuti `primary`, jadi pasangan ini mengukur tinta yang benar-benar dipakai.
+    { id: 'button', label: 'Tulisan tombol di atas warna aksi', where: 'Tombol kirim RSVP dan pemutar musik', blame: 'primary', on: [onPrimary(tokens.primary), tokens.primary] },
   ]
   return pairs.map(({ on, ...rest }) => {
     const ratio = contrastRatio(on[0], on[1])

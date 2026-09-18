@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { readFileSync, existsSync } from 'node:fs'
 
 const fixturePath = '.data/qa-account.json'
-const account = existsSync(fixturePath) ? JSON.parse(readFileSync(fixturePath, 'utf8')) as { email: string; password: string; invitationId: string; slug: string } : null
+const account = existsSync(fixturePath) ? JSON.parse(readFileSync(fixturePath, 'utf8')) as { email: string; password: string; invitationId: string; slug: string; locked?: { email: string; password: string; invitationId: string } } : null
 
 /*
  * Di mesin pengembang, tidak adanya fixture adalah keadaan wajar dan `test.skip` di bawah memberi
@@ -29,6 +29,29 @@ async function hydrated(page: import('@playwright/test').Page) {
 async function openSection(page: import('@playwright/test').Page, sectionId: string) {
   await hydrated(page)
   await page.locator(`#editor-section-${sectionId}`).click()
+}
+
+/**
+ * Membuka pratinjau perangkat dan mengembalikan panggungnya.
+ *
+ * **Wajib dipanggil ulang setiap kali lebar jendela berubah**, dan itu bukan kehati-hatian
+ * berlebih. `mobilePanel` bawaannya `'settings'`, jadi di 1440 tab `Pratinjau` yang ber-`xl:hidden`
+ * tidak pernah diklik dan panelnya tampil semata-mata berkat `xl:block`. Begitu jendela menyempit
+ * melewati 1280, panel itu jadi `hidden` — `offsetHeight`-nya 0, angka yang terbaca persis seperti
+ * "tinggi rendernya berubah", yakni kegagalan palsu yang bentuknya sama dengan cacat yang dicari.
+ *
+ * Cabangnya dibaca dari `matchMedia`, bukan dari `tab.isVisible()`: yang kedua sekali baca dan
+ * bisa mendarat di tengah relayout sesudah `setViewportSize`.
+ */
+async function openPreview(page: import('@playwright/test').Page) {
+  await hydrated(page)
+  const berdampingan = await page.evaluate(() => matchMedia('(min-width: 80rem)').matches)
+  if (!berdampingan) await page.getByRole('tab', { name: 'Pratinjau', exact: true }).click()
+  // Dikaitkan lewat `data-preview-stage`, bukan lewat inline style: undangannya sendiri
+  // penuh `transform: scale(...)` milik GSAP dan ornamen.
+  const stage = page.locator('[data-preview-stage]')
+  await expect(stage).toBeVisible()
+  return stage
 }
 
 /**
@@ -102,7 +125,7 @@ test('signed-in editor and guest management use persisted data', async ({ page }
 })
 
 /*
- * Axe selama ini hanya menyapu landing, auth, dan keenam tema undangan — tidak satu pun
+ * Axe selama ini hanya menyapu landing, auth, dan tiap tema undangan — tidak satu pun
  * halaman dasbor. Karena itu empat halaman bisa berjalan tanpa `<title>` sama sekali, dan
  * `<dl>` ringkasan memuat `<p>` di dalam pembungkus `dt`/`dd`, tanpa pernah tertangkap.
  *
@@ -138,11 +161,27 @@ test('dashboard screens are accessible and titled', async ({ page }) => {
 
 /*
  * Pratinjau perangkat harus benar-benar mengubah apa yang dirender, bukan sekadar
- * memperkecilnya. Buktinya tinggi: cover `split-editorial` menumpuk di bawah 768px dan
- * membelah di atasnya, jadi render 390px selalu lebih tinggi daripada render 834px.
- * Kalau seseorang mengembalikan `@min-[48rem]:` di undangan jadi `md:`, breakpoint-nya
- * kembali membaca lebar layar editor — 1440, selalu benar — kedua tinggi jadi sama, dan
- * tes ini merah. Itulah satu-satunya hal yang membedakan pratinjau jujur dari sekadar zoom.
+ * memperkecilnya. Dua hal yang membuktikannya, dan keduanya dibutuhkan.
+ *
+ * Yang pertama tinggi relatif: wadah yang lebih sempit selalu lebih tinggi, karena teksnya
+ * membungkus jadi lebih banyak baris. Komentar lama menyebut cover `split-editorial` yang
+ * menumpuk di bawah 768px sebagai sebabnya — itu **tidak lagi benar untuk fixture ini**, yang
+ * covernya `arch-potret` dan tidak pernah membelah. Yang menanggung urutannya sekarang
+ * pembungkusan teks di tiga belas section, bukan satu cabang layout.
+ *
+ * Yang kedua kemandirian dari jendela: lebar perangkat yang sama wajib menghasilkan tinggi yang
+ * sama, berapa pun lebar jendela yang kebetulan membuka editornya. Itu janji `DESIGN.md` —
+ * undangan sepenuhnya container query, nol breakpoint viewport — dan selama ditepati, satu-satunya
+ * yang berubah saat relnya menyempit adalah `transform: scale(...)`, yang tidak dibaca
+ * `offsetHeight`. Kalau seseorang mengembalikan `@min-[48rem]:` jadi `md:`, atau meloloskan satu
+ * satuan `vw` ke jalur `compact`, render "Ponsel" berubah bentuk hanya karena editornya dibuka di
+ * layar lebar — pratinjau yang menampilkan tata letak yang tidak akan pernah dilihat tamu.
+ *
+ * `expect(heights.Tablet).toBe(heights.Laptop)` **dicabut di fase 61 karena tidak pernah menjaga
+ * apa pun**: media query membaca jendela yang sama untuk ketiga panggung, jadi `md:` yang kembali
+ * menggeser Tablet dan Laptop bersama-sama dan kesetaraannya tetap hijau. Yang sebenarnya
+ * dituntutnya — tata letak berhenti berubah di atas 48rem — tidak pernah dijanjikan siapa pun, dan
+ * `Segue.vue` (`clamp(1.5rem, 4cqw, 3rem)`) memang melanggarnya dengan sengaja.
  */
 test('device preview renders each width for real, without overflowing its rail', async ({ page }) => {
   test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
@@ -154,55 +193,81 @@ test('device preview renders each width for real, without overflowing its rail',
   await page.goto(`/dashboard/${account!.invitationId}/editor`)
   await expect(page.getByRole('button', { name: 'Simpan draft', exact: true })).toBeVisible()
 
-  // Di bawah `xl` pratinjau ada di balik tab; di 1280+ ketiga panel tampil sekaligus.
-  await hydrated(page)
-  const tab = page.getByRole('tab', { name: 'Pratinjau', exact: true })
-  if (await tab.isVisible()) await tab.click()
+  const stage = await openPreview(page)
 
-  // Dikaitkan lewat `data-preview-stage`, bukan lewat inline style: undangannya sendiri
-  // penuh `transform: scale(...)` milik GSAP dan ornamen.
-  const stage = page.locator('[data-preview-stage]')
-  const heights: Record<string, number> = {}
+  const ukur = async (panggung: typeof stage) => {
+    const heights: Record<string, number> = {}
 
-  for (const [device, width] of [['Ponsel', 390], ['Tablet', 834], ['Laptop', 1280]] as const) {
-    await page.getByRole('button', { name: device, exact: true }).click()
-    await expect(page.getByText(`Selebar ${width}px`, { exact: true })).toBeVisible()
-    await expect(stage).toHaveCSS('width', `${width}px`)
+    for (const [device, width] of [['Ponsel', 390], ['Tablet', 834], ['Laptop', 1280]] as const) {
+      await page.getByRole('button', { name: device, exact: true }).click()
+      await expect(page.getByText(`Selebar ${width}px`, { exact: true })).toBeVisible()
+      await expect(panggung).toHaveCSS('width', `${width}px`)
 
-    /*
-     * Diukur setelah setiap foto benar-benar termuat.
-     *
-     * Foto galeri `loading="lazy"`, dan berapa banyak yang termuat bergantung pada seberapa
-     * jauh render diperkecil — yang sendiri bergantung pada lebar layar yang menjalankan tes.
-     * Tanpa penyetaraan ini, tinggi yang sama diukur berbeda di 360px dan di 1440px, dan
-     * tesnya lulus atau gagal karena hal yang sama sekali tidak ingin diujinya.
-     */
-    await stage.evaluate(async (el) => {
-      const images = [...el.querySelectorAll('img')]
-      for (const image of images) image.loading = 'eager'
-      await Promise.all(images.map(image => image.complete
-        ? Promise.resolve()
-        : new Promise<void>(resolve => {
-            image.addEventListener('load', () => resolve(), { once: true })
-            image.addEventListener('error', () => resolve(), { once: true })
-          })))
-    })
+      /*
+       * Diukur setelah setiap foto benar-benar termuat.
+       *
+       * Foto galeri `loading="lazy"`, dan berapa banyak yang termuat bergantung pada seberapa
+       * jauh render diperkecil — yang sendiri bergantung pada lebar layar yang menjalankan tes.
+       * Tanpa penyetaraan ini, tinggi yang sama diukur berbeda di 360px dan di 1440px, dan
+       * tesnya lulus atau gagal karena hal yang sama sekali tidak ingin diujinya.
+       */
+      await panggung.evaluate(async (el) => {
+        const images = [...el.querySelectorAll('img')]
+        for (const image of images) image.loading = 'eager'
+        await Promise.all(images.map(image => image.complete
+          ? Promise.resolve()
+          : new Promise<void>(resolve => {
+              image.addEventListener('load', () => resolve(), { once: true })
+              image.addEventListener('error', () => resolve(), { once: true })
+            })))
+      })
 
-    await fontsUsedBy(stage)
-    heights[device] = await stage.evaluate(el => (el as HTMLElement).offsetHeight)
+      await fontsUsedBy(panggung)
+      heights[device] = await panggung.evaluate(el => (el as HTMLElement).offsetHeight)
 
-    // Render yang diperkecil tidak boleh melebihi viewport yang menggulungnya: selisih
-    // selebar scrollbar sudah cukup untuk memotong tepi kanan undangan.
-    const fits = await stage.evaluate((el) => {
-      const viewport = el.parentElement!.parentElement!
-      return viewport.scrollWidth <= viewport.clientWidth
-    })
-    expect(fits, `${device} preview overflows its rail horizontally`).toBe(true)
+      /*
+       * Render yang diperkecil tidak boleh melebihi viewport yang menggulungnya: selisih
+       * selebar scrollbar sudah cukup untuk memotong tepi kanan undangan.
+       *
+       * `expect.poll`, bukan sekali baca: `previewScale` lahir dari `useElementSize` yang
+       * berjalan di atas `ResizeObserver`, jadi sesudah jendela berubah lebar skalanya baru
+       * menyusul satu frame kemudian. Sekali baca di antaranya melaporkan render yang belum
+       * sempat diperkecil sebagai rel yang kesempitan.
+       */
+      await expect.poll(
+        () => panggung.evaluate((el) => {
+          const viewport = el.parentElement!.parentElement!
+          return viewport.scrollWidth <= viewport.clientWidth
+        }),
+        { message: `${device} preview overflows its rail horizontally` },
+      ).toBe(true)
+    }
+
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    return heights
   }
 
+  const heights = await ukur(stage)
   expect(heights.Ponsel, 'phone render must stack the cover, so it is taller than tablet').toBeGreaterThan(heights.Tablet)
-  expect(heights.Tablet).toBe(heights.Laptop)
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+
+  /*
+   * Lintasan kedua di lebar jendela yang berseberangan: di sinilah kemandirian dari viewport
+   * benar-benar diuji. Satu project Playwright hanya pernah melihat satu lebar jendela, jadi
+   * tanpa perbandingan dua lebar di dalam satu tes tidak ada yang bisa membedakan undangan yang
+   * mengukur dirinya sendiri dari undangan yang diam-diam membaca layar.
+   *
+   * Lebar pembandingnya selalu menyeberangi 1280 dari lebar project-nya sendiri, jadi keempat
+   * project menguji seberangan yang berbeda dengan tes yang sama: 360↔1440, 768↔1440, 390↔1440,
+   * dan 1440↔420. `toEqual` atas record memberi sembilan perbandingan sekaligus, dan diff-nya
+   * menyebut perangkat mana yang bergeser.
+   */
+  const jendela = page.viewportSize()!
+  await page.setViewportSize({ width: jendela.width < 1280 ? 1440 : 420, height: jendela.height })
+  const lagi = await openPreview(page)
+  expect(
+    await ukur(lagi),
+    'tinggi tiap lebar perangkat harus lepas dari lebar jendela editor',
+  ).toEqual(heights)
 })
 
 /*
@@ -266,10 +331,10 @@ test('footer sitemap follows the session', async ({ page }) => {
  * berkas 12 MB selesai naik lewat data seluler. Yang diuji di sini persisnya itu: penolakan
  * terjadi **sebelum** ada satu permintaan jaringan pun.
  */
-async function signIn(page: import('@playwright/test').Page) {
+async function signIn(page: import('@playwright/test').Page, sebagai: { email: string; password: string } = account!) {
   await page.goto('/login')
-  await page.getByLabel('Email', { exact: true }).fill(account!.email)
-  await page.getByLabel('Kata sandi', { exact: true }).fill(account!.password)
+  await page.getByLabel('Email', { exact: true }).fill(sebagai.email)
+  await page.getByLabel('Kata sandi', { exact: true }).fill(sebagai.password)
   await page.getByRole('button', { name: 'Masuk', exact: true }).click()
   await expect(page).toHaveURL(/dashboard/)
 }
@@ -665,13 +730,158 @@ test('account menu carries the way out of the account', async ({ page }) => {
 })
 
 /**
- * Toast `vue-sonner` muncul di `top-center` dan, pada lebar ponsel, ia menutupi persis sudut
- * tempat pemicu menu akun berdiri. Klik yang mendarat di atasnya tidak membuka apa pun dan
- * tidak melaporkan apa pun — tes gagal di baris berikutnya, jauh dari sebabnya. Menunggunya
- * pergi lebih jujur daripada menambah `waitForTimeout` yang angkanya cuma tebakan.
+ * Toast muncul di `top-center` dan, pada lebar ponsel, ia menutupi persis sudut tempat pemicu
+ * menu akun berdiri. Klik yang mendarat di atasnya tidak membuka apa pun dan tidak melaporkan
+ * apa pun — tes gagal di baris berikutnya, jauh dari sebabnya. Menunggunya pergi lebih jujur
+ * daripada menambah `waitForTimeout` yang angkanya cuma tebakan.
  */
 async function openAccountMenu(page: import('@playwright/test').Page) {
-  await expect(page.locator('[data-sonner-toast]')).toHaveCount(0)
+  await expect(page.locator('[data-aruna-toast]')).toHaveCount(0)
   await page.locator('#account-menu-trigger').click()
   await expect(page.locator('#account-menu-logout')).toBeVisible()
 }
+
+/**
+ * Studio Ornamen: pemilih bank penuh, dan tiga hal yang hanya bisa dibuktikan di browser.
+ *
+ * Tiga spec node sudah menjaga datanya — kosakata slot, kesegaran metrik, dan urutan grid. Yang
+ * tidak bisa mereka jawab: apakah dialognya benar-benar terbuka, apakah pilihannya benar-benar
+ * sampai ke dokumen tersimpan, dan apakah undangannya mengirim salinan ringan alih-alih berkas
+ * penuh. Ketiganya pernah salah di fase ini — Studio versi pertama mendarat di cabang `v-else`
+ * yang mati, dan tiap gerbang statis tetap hijau.
+ */
+test.describe('studio ornamen', () => {
+  test('membuka bank penuh, menyimpan pilihan, dan melayani salinan ringan', async ({ page }) => {
+    test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
+    await signIn(page)
+    await page.goto(`/dashboard/${account!.invitationId}/editor`)
+    await openSection(page, 'cover')
+
+    /*
+     * Mulai dari bawaan tema, bukan dari apa pun yang tertinggal di draft.
+     *
+     * Tanpa langkah ini tes ini gagal dengan cara yang menyesatkan: kalau pilihan yang hendak
+     * diklik KEBETULAN sudah tersimpan, dokumennya tidak berubah, tombol simpan tetap mati, dan
+     * yang dilaporkan adalah "tombol tidak pernah aktif" — bukan "tidak ada yang berubah".
+     * Terjadi sungguhan saat tes ini ditulis, karena draft QA masih membawa sisa verifikasi manual.
+     */
+    const reset = page.locator('#ornament-kembalikan-semua')
+    if (await reset.count()) {
+      await reset.click()
+      await saveDraft(page)
+    }
+
+    // Ringkasan menggantikan empat grid ubin: sembilan slot skalar + lima jangkar ladang.
+    await expect(page.locator('[id^="ornament-ganti-"]')).toHaveCount(14)
+
+    await page.locator('#ornament-ganti-divider').click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+
+    // Kolam terkurasi selalu lebih kecil daripada bank — itu yang membuat tab kedua berarti.
+    const terkurasi = await page.locator('#studio-grid [role="radio"]').count()
+    await page.locator('#studio-tab-semua').click()
+    const semua = await page.locator('#studio-grid [role="radio"]').count()
+    expect(semua).toBeGreaterThan(terkurasi)
+
+    /*
+     * Lencana wajib terbaca sebagai TEKS, bukan hanya warna.
+     *
+     * Fase 59 mengganti larangan dengan keterangan; keterangan yang hanya berupa ikon berwarna
+     * tidak sampai ke pembaca layar, dan pasangan yang memakainya kehilangan satu-satunya
+     * peringatan yang kami punya.
+     */
+    const beralasan = page.locator('#studio-grid [role="radio"][aria-label*="Ketebalan garis berbeda"]')
+    expect(await beralasan.count()).toBeGreaterThan(0)
+
+    /*
+     * Sapuan axe pada dialog yang SEDANG TERBUKA — yang tidak pernah dilihat sapuan halaman.
+     *
+     * Sampai fase 60 baris ini mengecualikan `[data-sonner-toaster]`: tes ini menyimpan draft
+     * lebih dulu, jadi ia sapuan pertama di seluruh suite yang kebetulan menatap toast, dan
+     * markup `vue-sonner` menaruh `role="status"` pada `<li>` di dalam `<ol>`-nya — `serious` di
+     * `list`/`only-listitems`. Toaster-nya sekarang milik kita dan wadahnya bukan daftar, jadi
+     * tidak ada lagi yang perlu dikecualikan. Yang menjaganya tetap begitu ada di `public.spec.ts`
+     * ("landing tetap bersih dengan toast di layar") — sapuan yang SENGAJA menampilkan toast,
+     * bukan yang kebetulan.
+     */
+    const sapuan = await new AxeBuilder({ page })
+      .exclude('nuxt-devtools-frame')
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .analyze()
+    expect(sapuan.violations.map(v => `${v.id} (${v.impact})`)).toEqual([])
+
+    // Aset referensi: jalur terberat yang ada, dan satu-satunya yang paletnya terpanggang.
+    /*
+     * Id-nya dikunci lebih dulu, dan itu bukan kerapian.
+     *
+     * `:not([aria-checked="true"])` adalah locator HIDUP: begitu ubinnya terpilih ia berhenti
+     * cocok, Playwright menyelesaikan ulang ke ubin lain, dan assert berikutnya memeriksa elemen
+     * yang tidak pernah diklik. Gejalanya "klik tidak memilih apa pun" — salah sasaran, dan
+     * persis jenis kegagalan yang membuat orang mencurigai produknya.
+     */
+    const kandidat = page.locator('#studio-grid [role="radio"][id^="studio-ubin-ref-"]:not([aria-checked="true"])').first()
+    await expect(kandidat).toHaveAttribute('aria-label', /Warna tetap/)
+    const idReferensi = await kandidat.getAttribute('id')
+    await kandidat.click()
+    await expect(page.locator(`#${idReferensi}`)).toHaveAttribute('aria-checked', 'true')
+    await page.locator('#studio-selesai').click()
+    await expect(dialog).toBeHidden()
+
+    /*
+     * Yang dirender undangan wajib salinan `web/`, bukan berkas penuh.
+     *
+     * Aset terberat 1,8 MB dan keenam puluh lima-nya 24 MB. Sebelum fase 59 tidak satu pun bisa
+     * dicapai pasangan, jadi beratnya tidak pernah sampai ke tamu; membuka pemilihnya tanpa
+     * varian ringan akan mengirim angka itu ke tiap ponsel yang membuka undangan.
+     */
+    const sumber = page.locator('.iv-root img[src*="/ornaments/referensi/"]').first()
+    await expect(sumber).toHaveAttribute('src', /\/ornaments\/referensi\/web\//)
+    await expect(sumber).toHaveAttribute('width', /\d+/)
+
+    await saveDraft(page)
+    await page.reload()
+    await openSection(page, 'cover')
+
+    /*
+     * Sesudah muat ulang, buktinya diambil dari DOM yang ADA — bukan dari yang terlihat.
+     *
+     * Pada tata letak ponsel panel pratinjau disembunyikan di balik tab, jadi `toBeVisible()`
+     * di sini menguji tata letak dan bukan penyimpanan; ia lulus di desktop dan gagal di mobile
+     * pada fitur yang sama-sama bekerja. Yang ingin dibuktikan adalah pilihannya bertahan, dan
+     * itu terbaca dari `src` yang dirender renderer plus penanda "Diganti" di ringkasan.
+     */
+    await expect(page.locator('.iv-root img[src*="/ornaments/referensi/web/"]').first()).toHaveAttribute('src', /web\//)
+    await expect(page.locator('#ornament-ganti-divider').locator('xpath=ancestor::div[1]')).toContainText('Diganti')
+
+    // Jalan keluar dari wajah campuran — tanpa ini penukaran bertahan lintas tema tanpa cara kembali.
+    await page.locator('#ornament-kembalikan-semua').click()
+    await saveDraft(page)
+    await expect(page.locator('.iv-root img[src*="/ornaments/referensi/"]')).toHaveCount(0)
+  })
+
+  /*
+   * Kontrol yang terlihat hidup tapi berujung simpan ditolak adalah bentuk kegagalan yang paling
+   * membingungkan, dan API memang menolaknya sejak `ornamentOverrides` ikut `designFingerprint()`.
+   *
+   * Diuji pada undangan **kedua**, milik akun yang tidak pernah dinaikkan jadi `OPERATOR`.
+   * `canEditDesign()` bernilai `isOperator || features.includes('design')`, jadi pemilik fixture
+   * utama — yang sengaja dioperatorkan supaya bisa mengaktifkan tanpa bayar — tidak akan pernah
+   * melihat keadaan terkunci. Versi lama tes ini menghadapi itu dengan `test.skip` saat
+   * `#ornament-locked` tidak ada, dan akibatnya ia lulus di keempat project tanpa sekali pun
+   * berjalan. Sebuah tes yang melewati dirinya sendiri persis ketika subjeknya tidak ada bukan
+   * tes; ia laporan hijau. Fixture-nya yang diperbaiki, bukan tesnya yang dilonggarkan.
+   */
+  test('mengunci pemilih saat add-on desain belum dibeli', async ({ page }) => {
+    test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
+    const terkunci = account!.locked
+    expect(terkunci, 'fixture QA wajib memuat akun tanpa add-on desain; jalankan ulang `pnpm test:integration`').toBeTruthy()
+    await signIn(page, terkunci!)
+    await page.goto(`/dashboard/${terkunci!.invitationId}/editor`)
+    await openSection(page, 'cover')
+
+    await expect(page.locator('#ornament-locked')).toHaveCount(1)
+    await expect(page.locator('#ornament-ganti-divider')).toBeDisabled()
+    await expect(page.locator('#ornament-ganti-divider')).toHaveAttribute('aria-describedby', 'ornament-locked')
+  })
+})
