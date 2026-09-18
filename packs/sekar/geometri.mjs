@@ -186,6 +186,58 @@ export function pita(luar, dalam) {
 }
 
 /**
+ * Tangkai — pita bermassa yang meruncing, bukan garis.
+ *
+ * **Ini menggantikan `stroke` pada keping floral, dan alasannya terukur.** Importir
+ * menyeragamkan tiap `stroke-width` ke ketebalan pack (3,2 satuan viewBox), sementara viewBox
+ * keping floral cuma 140 satuan lebarnya. Satu tangkai karena itu tayang selebar 2,3% keping —
+ * empat kali lebih tebal, relatif, daripada tangkai yang sama di keping `layer` selebar 600.
+ * Dibandingkan berdampingan dengan referensinya, itulah yang paling mencolok: tangkai jadi
+ * balok kelabu yang menutupi bunganya.
+ *
+ * Massa tidak punya `stroke-width`, jadi ia bisa setipis yang memang dituntut bentuknya, dan
+ * bisa meruncing dari pangkal ke ujung seperti tangkai sungguhan.
+ */
+export function tangkai(titik, pangkal, ujung) {
+  // Kerapatan sampel dipotong lebih dulu, sesuai DESIGN.md:355: empat glyph melewati plafon
+  // bobot begitu tangkai bermassa masuk, dan yang memang bisa dipotong tanpa kehilangan bentuk
+  // adalah ini. 14 → 6 sampel per ruas; pita tangkai tetap mulus karena `halus()` yang
+  // melengkungkannya, bukan kerapatan titiknya.
+  const sampel = 6
+  const cr = (i) => {
+    const m = titik.length
+    const k = Math.min(m - 1, Math.max(0, i))
+    return titik[k]
+  }
+  const jalur = []
+  for (let i = 0; i < titik.length - 1; i++) {
+    for (let j = 0; j < sampel; j++) {
+      const t = j / sampel
+      const p0 = cr(i - 1); const p1 = cr(i); const p2 = cr(i + 1); const p3 = cr(i + 2)
+      const t2 = t * t; const t3 = t2 * t
+      jalur.push([
+        0.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * t + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3),
+        0.5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * t + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3),
+      ])
+    }
+  }
+  jalur.push(titik[titik.length - 1])
+  const kiri = []; const kanan = []
+  for (let i = 0; i < jalur.length; i++) {
+    const a = jalur[Math.max(0, i - 1)]; const b = jalur[Math.min(jalur.length - 1, i + 1)]
+    const dx = b[0] - a[0]; const dy = b[1] - a[1]
+    const l = Math.hypot(dx, dy) || 1
+    const w = (pangkal + (ujung - pangkal) * (i / (jalur.length - 1))) / 2
+    kiri.push([jalur[i][0] - (dy / l) * w, jalur[i][1] + (dx / l) * w])
+    kanan.push([jalur[i][0] + (dy / l) * w, jalur[i][1] - (dx / l) * w])
+  }
+  // Disederhanakan ke tiap titik ketiga: pita tangkai tidak butuh kerapatan sampel penuh, dan
+  // tiap titik yang disimpan adalah byte terhadap plafon bobot.
+  const jarang = (xs) => xs.filter((_, i) => i % 2 === 0 || i === xs.length - 1)
+  return halus([...jarang(kiri), ...jarang(kanan).reverse()], { tegangan: 0.4 })
+}
+
+/**
  * Simpul damask — medalion simetri cermin di dalam belah ketupat.
  *
  * Diukur dari ubin referensi: satu rapport 144 satuan, medalion mengisi ±0,62 tingginya, dan

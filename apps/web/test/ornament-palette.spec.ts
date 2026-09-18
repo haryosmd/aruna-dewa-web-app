@@ -49,6 +49,45 @@ describe('ramp ornamen terlihat di kesembilan tema', () => {
   )
 })
 
+/**
+ * Dedaunan diuji SENDIRI, dan tidak ikut deret empat langkah.
+ *
+ * `leaf` adalah satu-satunya nilai ramp yang keluar dari keluarga rona aksen — ia dipakai
+ * keping floral pack `sekar` supaya daun tidak berona sama dengan bunganya. Memasukkannya ke
+ * `ornamentStops` akan membuat `rampSteps` mengukur jarak antar-rona sebagai kalau ia jarak
+ * antar-terang, pada kelima tema sekaligus. Yang harus benar tentangnya cuma satu: ia terlihat
+ * di atas latarnya.
+ *
+ * Yang sengaja TIDAK diuji: jaraknya terhadap `accent`. Diukur, ia 1,02 pada `aruna-hening`
+ * dan 1,31 pada `aruna-sekar`, dan keduanya benar — aksen hening memang sudah kelabu, jadi
+ * dedaunan yang diturunkan darinya juga kelabu. Tema yang aksennya sudah pucat tidak boleh
+ * tiba-tiba menumbuhkan hijau jenuh hanya supaya sebuah angka naik.
+ */
+describe('rona dedaunan terlihat di tiap tema', () => {
+  it.each(templates.map(t => [t.id, t] as const))('%s — bidang terang', (_id, t) => {
+    const ramp = ornamentRamp(t.tokens, t.accent)
+    const ratio = contrastRatio(ramp.leaf, t.tokens.background)
+    expect({ leaf: ramp.leaf, passes: ratio >= rampMinimum.terhadapLatar }).toMatchObject({ passes: true })
+  })
+
+  it.each(templates.flatMap(t => gelapDari(t).map(g => [`${t.id}/${g.nama}`, t, g.ground] as const)))(
+    '%s — bidang gelap',
+    (_label, t, ground) => {
+      const ramp = ornamentRampOnDark(t.accent, ground)
+      const ratio = contrastRatio(ramp.leaf, ground)
+      expect({ leaf: ramp.leaf, passes: ratio >= rampMinimum.terhadapLatar }).toMatchObject({ passes: true })
+    },
+  )
+
+  it('menurunkannya dari aksen, bukan menyimpannya', () => {
+    // Aksen digeser, dedaunan harus ikut bergeser. Kalau tidak, ada hijau yang dipanggang.
+    const t = templates[0]!
+    const a = ornamentRamp(t.tokens, '#C89F3B').leaf
+    const b = ornamentRamp(t.tokens, '#3B6FC8').leaf
+    expect(a).not.toBe(b)
+  })
+})
+
 describe('ramp terbaca empat langkah, bukan dua', () => {
   it.each(templates.map(t => [t.id, t] as const))('%s — bidang terang', (_id, t) => {
     for (const langkah of rampSteps(ornamentRamp(t.tokens, t.accent))) {

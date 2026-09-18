@@ -21,10 +21,11 @@
  *
  *   node packs/sekar/buat.mjs
  */
-import { writeFileSync, mkdirSync } from 'node:fs'
+import { writeFileSync, mkdirSync, readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { busur, cakram, cincin, daun, damask, halus, kelopak, n, pada, segiBulat, tumpal, ukel } from './geometri.mjs'
+import { busur, cakram, cincin, daun, damask, halus, kelopak, n, pada, segiBulat, tangkai, tumpal, ukel } from './geometri.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SVG = join(HERE, 'svg')
@@ -34,6 +35,17 @@ const TEKSTUR = join(HERE, 'tekstur')
 
 const AKSEN = 'var(--iv-orn-accent, currentColor)'
 const GLOW = 'var(--iv-orn-glow, currentColor)'
+const DALAM = 'var(--iv-orn-deep, currentColor)'
+
+/**
+ * Rona dedaunan.
+ *
+ * Cadangannya bertingkat dengan sengaja: tema yang belum memancarkan `--iv-orn-leaf` jatuh ke
+ * aksen, dan konteks yang tidak memancarkan ramp sama sekali — empat belas tempat di undangan
+ * memaksa `color:` sendiri — jatuh ke `currentColor`. Jadi keping ini tidak pernah hilang, ia
+ * hanya kehilangan ronanya.
+ */
+const DAUN = 'var(--iv-orn-leaf, var(--iv-orn-accent, currentColor))'
 
 /** Massa berwarna ramp. Tanpa `isi`, ia mewarisi `body` dari elemen `<svg>` induknya. */
 const massa = (d, { isi, evenodd = false } = {}) =>
@@ -84,8 +96,17 @@ function tambah({ id, nama, kategori, w, h, peran, defs = '', isi, catatan }) {
     + (defs ? `<defs>${defs}</defs>` : '')
     + isi
     + '</svg>\n'
-  writeFileSync(join(SVG, `${penuh}.svg`), svg)
-  daftar.push({ id: penuh, nama, kategori, w, h, peran, catatan, bytes: Buffer.byteLength(svg) })
+  const berkas = join(SVG, `${penuh}.svg`)
+  writeFileSync(berkas, svg)
+  // `data-layer` dibaca balik dari hasilnya, bukan didaftar tangan: itu yang membuat entri
+  // katalog tidak bisa berselisih dengan berkasnya.
+  const lapisan = [...new Set([...svg.matchAll(/data-layer="([^"]+)"/g)].map(m => m[1]))]
+  daftar.push({
+    id: penuh, nama, kategori, w, h, peran, catatan,
+    bytes: Buffer.byteLength(svg),
+    lapisan,
+    sha256: createHash('sha256').update(readFileSync(berkas)).digest('hex'),
+  })
 }
 
 /* ── cecek: butiran isen, dipakai di hampir semua glyph ─────────────────────── */
@@ -194,7 +215,7 @@ mkdirSync(TEKSTUR, { recursive: true })
     isi:
       grup('sekar-bingkai-oval-band', 'frame',
         massa(stadion(90, 60, 240) + stadion(79, 71, 229), { isi: 'url(#sekar-bingkai-oval-ramp)', evenodd: true }))
-      + grup('sekar-bingkai-oval-patran', 'floral', massa(daunTepi, { isi: AKSEN }))
+      + grup('sekar-bingkai-oval-patran', 'floral', massa(daunTepi, { isi: DAUN }))
       + grup('sekar-bingkai-oval-cecek', 'isen',
         massa(cecekBusur(150, 130, 68, 196, 344, 7, 3.4) + cecekBusur(150, 290, 68, 16, 164, 7, 3.4)),
         { opacity: '0.4' })
@@ -303,7 +324,7 @@ mkdirSync(TEKSTUR, { recursive: true })
         massa([
           daun(90, 20, 106, 6, 6), daun(160, 28, 160, 6, 7), daun(230, 20, 214, 6, 6),
           daun(36, 24, 20, 12, 5), daun(284, 24, 300, 12, 5),
-        ].join(''), { isi: 'url(#sekar-pemisah-sulur-ramp)' }))
+        ].join(''), { isi: DAUN }))
       + grup('sekar-pemisah-sulur-mata', 'isen',
         massa(cakram(60, 22, 3.4) + cakram(120, 24, 3) + cakram(200, 24, 3) + cakram(260, 22, 3.4), { isi: AKSEN }),
         { opacity: '0.85' })
@@ -336,7 +357,7 @@ mkdirSync(TEKSTUR, { recursive: true })
         massa(tumpal(72, 42, 48, 62) + anyaman(72, 60, 30, 30, 4), { isi: 'url(#sekar-sudut-sulur-kiri-ramp)', evenodd: true }))
       + grup('sekar-sudut-sulur-kiri-daun', 'floral',
         massa(daun(120, 24, 148, 42, 11) + daun(40, 96, 22, 68, 10) + daun(96, 34, 116, 56, 8) + daun(34, 132, 56, 150, 8),
-          { isi: AKSEN }), { opacity: '0.9' })
+          { isi: DAUN }))
       + grup('sekar-sudut-sulur-kiri-cecek', 'isen',
         massa(cecekGaris(142, 30, 30, 142, 6, 3)), { opacity: '0.45' })
       + grup('sekar-sudut-sulur-kiri-rel', 'corner',
@@ -362,8 +383,7 @@ mkdirSync(TEKSTUR, { recursive: true })
       grup('sekar-sudut-sulur-kanan-tumpal', 'crown',
         massa(tumpal(104, 50, 54, 68) + anyaman(104, 70, 34, 34, 4), { isi: 'url(#sekar-sudut-sulur-kanan-ramp)', evenodd: true }))
       + grup('sekar-sudut-sulur-kanan-daun', 'floral',
-        massa(daun(44, 22, 20, 46, 11) + daun(140, 120, 158, 96, 10) + daun(70, 30, 58, 58, 8), { isi: AKSEN }),
-        { opacity: '0.9' })
+        massa(daun(44, 22, 20, 46, 11) + daun(140, 120, 158, 96, 10) + daun(70, 30, 58, 58, 8), { isi: DAUN }))
       + grup('sekar-sudut-sulur-kanan-cecek', 'isen',
         massa(cecekGaris(28, 36, 140, 148, 5, 3.2) + cakram(154, 154, 4)), { opacity: '0.45' })
       + grup('sekar-sudut-sulur-kanan-rel', 'corner',
@@ -395,7 +415,9 @@ mkdirSync(TEKSTUR, { recursive: true })
       + grup('sekar-sudut-damask-cuping', 'motif', massa(cuping, { isi: AKSEN }), { opacity: '0.85' })
       + grup('sekar-sudut-damask-sulur', 'motif', garis(sulur, { opacity: 0.55 }))
       + grup('sekar-sudut-damask-tetangga', 'motif',
-        massa(damask(142, 60, 46, 54).badan + damask(60, 142, 46, 54).badan, { isi: AKSEN }), { opacity: '0.5' })
+        massa(damask(142, 60, 46, 54).badan, { isi: AKSEN }), { opacity: '0.55' })
+      + grup('sekar-sudut-damask-tetangga-bawah', 'motif',
+        massa(damask(60, 142, 46, 54).badan, { isi: GLOW }), { opacity: '0.95' })
       + grup('sekar-sudut-damask-palang', 'isen',
         massa(cecekGaris(106, 60, 126, 60, 3, 3.4) + cecekGaris(60, 106, 60, 126, 3, 3.4) + cakram(118, 118, 5)),
         { opacity: '0.7' })
@@ -417,23 +439,62 @@ mkdirSync(TEKSTUR, { recursive: true })
  */
 const mawar = (cx, cy, r) => ({
   luar: Array.from({ length: 6 }, (_, i) => kelopak(cx, cy, r, r * 0.46, -90 + i * 60 + 10)).join(''),
-  tengah: Array.from({ length: 5 }, (_, i) => kelopak(cx, cy, r * 0.68, r * 0.34, -90 + i * 72 + 40)).join(''),
-  jantung: Array.from({ length: 3 }, (_, i) => kelopak(cx, cy, r * 0.36, r * 0.24, -90 + i * 120 + 70)).join('')
-    + cakram(cx, cy, r * 0.13),
+  /*
+   * Cincin kedua dipilin 40° terhadap yang pertama dan cincin ketiga 26° lagi, jadi tiap
+   * kelopak jatuh di sela kelopak di bawahnya. Versi pertama memakai dua cincin sepilinan dan
+   * hasilnya bunga bersegi lima yang rata — dibandingkan berdampingan dengan mawar cat air
+   * referensi, yang hilang bukan warnanya melainkan tumpukannya.
+   */
+  tengah: Array.from({ length: 5 }, (_, i) => kelopak(cx, cy, r * 0.72, r * 0.36, -90 + i * 72 + 40)).join(''),
+  /*
+   * Cincin keempat hanya untuk mawar yang memang besar.
+   *
+   * Dipotong dari kuncup karena dua alasan yang sejalan: kuncup berjari-jari di bawah 24 tidak
+   * pernah memperlihatkan empat tingkat kelopak pada lebar pakainya, dan dua keping
+   * `rangkaian-*` melewati plafon bobot 8192 begitu tangkai bermassa masuk. Yang dipotong
+   * adalah yang tidak terlihat, bukan bentuknya.
+   */
+  dalam: r < 24 ? '' : Array.from({ length: 4 }, (_, i) => kelopak(cx, cy, r * 0.48, r * 0.28, -90 + i * 90 + 66)).join(''),
+  jantung: Array.from({ length: 3 }, (_, i) => kelopak(cx, cy, r * 0.28, r * 0.2, -90 + i * 120 + 84)).join('')
+    + cakram(cx, cy, r * 0.11),
 })
 
 /** Pakis: tulang daun dengan patran berpasangan yang mengecil ke ujung. */
 const pakis = (x0, y0, x1, y1, jml, lebar) => {
+  /*
+   * Helai dipisah jadi dua bidang nilai, bukan satu.
+   *
+   * Begitu dedaunan punya ronanya sendiri, ia berhenti ikut gradient bunganya — dan diukur,
+   * itu justru MERATAKAN enam keping: rentang terangnya jatuh ke 0,05. Referensinya tidak
+   * begitu; pakis dan eukaliptusnya bertumpuk, yang di belakang lebih gelap. Helai sisi pertama
+   * karena itu tayang di bidang yang lebih redup daripada sisi kedua.
+   */
+  const belakang = []
   const helai = []
   for (let i = 0; i < jml; i++) {
     const t = (i + 0.6) / (jml + 0.6)
     const x = x0 + (x1 - x0) * t; const y = y0 + (y1 - y0) * t
     const sisa = 1 - t * 0.72
     const dx = (x1 - x0) / (jml * 1.1); const dy = (y1 - y0) / (jml * 1.1)
-    helai.push(daun(x, y, x - dy * 1.5 * sisa, y + dx * 1.5 * sisa, lebar * sisa))
+    belakang.push(daun(x, y, x - dy * 1.5 * sisa, y + dx * 1.5 * sisa, lebar * sisa))
     helai.push(daun(x, y, x + dy * 1.5 * sisa, y - dx * 1.5 * sisa, lebar * sisa))
   }
-  return { tulang: halus([[x0, y0], [x0 + (x1 - x0) * 0.5 - (y1 - y0) * 0.1, y0 + (y1 - y0) * 0.5 + (x1 - x0) * 0.1], [x1, y1]], { tutup: false }), helai: helai.join('') }
+  const spine = [[x0, y0], [x0 + (x1 - x0) * 0.5 - (y1 - y0) * 0.1, y0 + (y1 - y0) * 0.5 + (x1 - x0) * 0.1], [x1, y1]]
+  return {
+    tulang: halus(spine, { tutup: false }),
+    batang: tangkai(spine, lebar * 0.5, lebar * 0.16),
+    helai: helai.join(''),
+    belakang: belakang.join(''),
+    /*
+     * Potongan pendek di pangkal, dan inilah satu-satunya `data-draw` keping floral.
+     *
+     * Gerbang `data-draw` menuntut ada lapisan garis, tapi versi pertama memenuhinya dengan
+     * MENGGARIS SELURUH TULANG. Pada viewBox 140 satuan, garis seketebalan 3,2 sepanjang itu
+     * tayang sebagai balok kelabu yang memotong rangkaiannya — terlihat jelas begitu
+     * disandingkan dengan referensinya. Gerbangnya tetap lolos dengan satu urat sepanjang 18%.
+     */
+    urat: `M${n(x0)} ${n(y0)}L${n(x0 + (x1 - x0) * 0.18)} ${n(y0 + (y1 - y0) * 0.18)}`,
+  }
 }
 
 /**
@@ -444,6 +505,7 @@ const pakis = (x0, y0, x1, y1, jml, lebar) => {
  */
 const karangan = (cx, cy, r, a0, a1, jml, panjang, lebar) => {
   const helai = []
+  const belakang = []
   for (let i = 0; i < jml; i++) {
     const t = i / (jml - 1)
     const a = a0 + (a1 - a0) * t
@@ -451,9 +513,17 @@ const karangan = (cx, cy, r, a0, a1, jml, panjang, lebar) => {
     const [x, y] = pada(cx, cy, r, a)
     const [x1, y1] = pada(cx, cy, r + panjang * sisa, a - (a1 > a0 ? 26 : -26))
     const [x2, y2] = pada(cx, cy, r - panjang * sisa * 0.62, a - (a1 > a0 ? 22 : -22))
-    helai.push(daun(x, y, x1, y1, lebar * sisa), daun(x, y, x2, y2, lebar * sisa * 0.7))
+    helai.push(daun(x, y, x1, y1, lebar * sisa))
+    belakang.push(daun(x, y, x2, y2, lebar * sisa * 0.7))
   }
-  return { helai: helai.join(''), tulang: `M${n(pada(cx, cy, r, a0)[0])} ${n(pada(cx, cy, r, a0)[1])}${busur(cx, cy, r, a0, a1)}` }
+  const spine = Array.from({ length: 7 }, (_, i) => pada(cx, cy, r, a0 + ((a1 - a0) * i) / 6))
+  return {
+    helai: helai.join(''),
+    belakang: belakang.join(''),
+    tulang: `M${n(pada(cx, cy, r, a0)[0])} ${n(pada(cx, cy, r, a0)[1])}${busur(cx, cy, r, a0, a1)}`,
+    batang: tangkai(spine, lebar * 0.42, lebar * 0.16),
+    urat: `M${n(spine[0][0])} ${n(spine[0][1])}L${n(spine[1][0])} ${n(spine[1][1])}`,
+  }
 }
 
 /* ── segel ──────────────────────────────────────────────────────────────────── */
@@ -524,13 +594,13 @@ const karangan = (cx, cy, r, a0, a1, jml, panjang, lebar) => {
     w: 360, h: 120,
     peran: 'dekorasi-original',
     catatan: 'Rapport 120 satuan; bentuk yang sama dengan ubin latar tema.',
-    defs: rampDef('motif-damask', [0, 0, 360, 120], [['0', AKSEN], ['0.5', GLOW], ['1', AKSEN]]),
+    defs: rampDef('motif-damask', [0, 0, 360, 120], [['0', 'currentColor'], ['0.5', AKSEN], ['1', 'currentColor']]),
     isi:
       grup('sekar-motif-damask-simpul', 'motif',
         massa(simpul.map(s => s.badan + s.inti).join('') + tepi.map(s => s.badan).join(''),
           { isi: 'url(#sekar-motif-damask-ramp)', evenodd: true }))
       + grup('sekar-motif-damask-cuping', 'motif',
-        massa(simpul.map(s => s.cuping).join(''), { isi: 'currentColor' }), { opacity: '0.85' })
+        massa(simpul.map(s => s.cuping).join(''), { isi: GLOW }), { opacity: '0.9' })
       + grup('sekar-motif-damask-palang', 'isen',
         // Cecek sengaja TIDAK jatuh di x=120/240: di sana sudah ada palangnya sendiri, dan
         // butiran yang duduk persis di bawah massa sewarna tidak akan terlihat — itu yang
@@ -557,12 +627,15 @@ const karangan = (cx, cy, r, a0, a1, jml, panjang, lebar) => {
     catatan: 'Gradasi kelopak mengikuti arah terukur referensi: pucat di tepi, pekat di jantung.',
     defs: rampAir('simbol-kembang-air', [58, 24, 58, 100]),
     isi:
-      grup('sekar-simbol-kembang-air-luar', 'floral',
+      grup('sekar-simbol-kembang-air-batang', 'floral', massa(p.batang, { isi: DAUN }), { opacity: '0.85' })
+      + grup('sekar-simbol-kembang-air-belakang', 'floral', massa(p.belakang, { isi: DAUN }), { opacity: '0.6' })
+      + grup('sekar-simbol-kembang-air-pakis', 'floral', massa(p.helai, { isi: DAUN }))
+      + grup('sekar-simbol-kembang-air-luar', 'floral',
         massa(m.luar, { isi: 'url(#sekar-simbol-kembang-air-ramp)' }))
-      + grup('sekar-simbol-kembang-air-dalam', 'floral', massa(m.tengah, { isi: AKSEN }), { opacity: '0.88' })
-      + grup('sekar-simbol-kembang-air-jantung', 'floral', massa(m.jantung, { isi: 'var(--iv-orn-deep, currentColor)' }), { opacity: '0.75' })
-      + grup('sekar-simbol-kembang-air-pakis', 'floral', massa(p.helai, { isi: AKSEN }), { opacity: '0.7' })
-      + grup('sekar-simbol-kembang-air-rel', 'floral', garis(p.tulang, { opacity: 0.55 })),
+      + grup('sekar-simbol-kembang-air-tengah', 'floral', massa(m.tengah, { isi: AKSEN }), { opacity: '0.88' })
+      + grup('sekar-simbol-kembang-air-dalam', 'floral', massa(m.dalam, { isi: GLOW }), { opacity: '0.8' })
+      + grup('sekar-simbol-kembang-air-jantung', 'floral', massa(m.jantung, { isi: DALAM }), { opacity: '0.72' })
+      + grup('sekar-simbol-kembang-air-rel', 'floral', garis(p.urat, { opacity: 0.45 })),
   })
 }
 
@@ -581,16 +654,19 @@ const karangan = (cx, cy, r, a0, a1, jml, panjang, lebar) => {
     catatan: 'Tengahnya kosong; yang mengisi adalah inisial pasangan.',
     defs: rampEmas('monogram-karangan', [20, 180, 180, 20]),
     isi:
-      grup('sekar-monogram-karangan-daun', 'floral',
-        massa(kiri.helai + kanan.helai, { isi: 'url(#sekar-monogram-karangan-ramp)' }))
+      grup('sekar-monogram-karangan-batang', 'floral',
+        massa(kiri.batang + kanan.batang, { isi: DAUN }), { opacity: '0.8' })
+      + grup('sekar-monogram-karangan-belakang', 'floral',
+        massa(kiri.belakang + kanan.belakang, { isi: DAUN }), { opacity: '0.55' })
+      + grup('sekar-monogram-karangan-daun', 'floral', massa(kiri.helai + kanan.helai, { isi: DAUN }))
       + grup('sekar-monogram-karangan-mahkota', 'crown',
         massa(kelopak(100, 46, 24, 9, -90) + kelopak(100, 46, 17, 7, -128) + kelopak(100, 46, 17, 7, -52)
           + cakram(100, 24, 5), { isi: AKSEN }), { opacity: '0.9' })
       + grup('sekar-monogram-karangan-cecek', 'isen',
         massa(cecekBusur(100, 104, 46, 40, 140, 6, 3)), { opacity: '0.45' })
       + grup('sekar-monogram-karangan-rel', 'monogram',
-        garis(kiri.tulang + kanan.tulang, { opacity: 0.6 })
-        + garis(`M${100 + 56} 104${busur(100, 104, 56, 0, 360)}`, { opacity: 0.28 })),
+        garis(kiri.urat + kanan.urat, { opacity: 0.5 })
+        + garis(`M${100 + 56} 104${busur(100, 104, 56, 0, 360)}`, { opacity: 0.26 })),
   })
 }
 
@@ -632,17 +708,22 @@ const karangan = (cx, cy, r, a0, a1, jml, panjang, lebar) => {
       catatan: 'Rumpun cat air digambar ulang; gradasi kelopak mengikuti arah terukur referensi.',
       defs: rampAir(b.id, b.arah),
       isi:
-        grup(`sekar-${b.id}-pakis`, 'floral',
-          massa(b.pakisan.map(p => p.helai).join(''), { isi: AKSEN }), { opacity: '0.72' })
+        grup(`sekar-${b.id}-batang`, 'floral',
+          massa(b.pakisan.map(p => p.batang).join(''), { isi: DAUN }), { opacity: '0.82' })
+        + grup(`sekar-${b.id}-belakang`, 'floral',
+          massa(b.pakisan.map(p => p.belakang).join(''), { isi: DAUN }), { opacity: '0.6' })
+        + grup(`sekar-${b.id}-pakis`, 'floral',
+          massa(b.pakisan.map(p => p.helai).join(''), { isi: DAUN }))
         + grup(`sekar-${b.id}-kelopak`, 'floral',
           massa(b.mawarUtama.luar + b.kuncup.map(k => k.luar).join(''), { isi: `url(#sekar-${b.id}-ramp)` }))
-        + grup(`sekar-${b.id}-dalam`, 'floral',
+        + grup(`sekar-${b.id}-tengah`, 'floral',
           massa(b.mawarUtama.tengah + b.kuncup.map(k => k.tengah).join(''), { isi: AKSEN }), { opacity: '0.9' })
+        + grup(`sekar-${b.id}-dalam`, 'floral',
+          massa(b.mawarUtama.dalam + b.kuncup.map(k => k.dalam).join(''), { isi: GLOW }), { opacity: '0.82' })
         + grup(`sekar-${b.id}-jantung`, 'floral',
-          massa(b.mawarUtama.jantung + b.kuncup.map(k => k.jantung).join(''),
-            { isi: 'var(--iv-orn-deep, currentColor)' }), { opacity: '0.7' })
+          massa(b.mawarUtama.jantung + b.kuncup.map(k => k.jantung).join(''), { isi: DALAM }), { opacity: '0.7' })
         + grup(`sekar-${b.id}-rel`, 'floral',
-          garis(b.pakisan.map(p => p.tulang).join(''), { opacity: 0.5 })),
+          garis(b.pakisan.map(p => p.urat).join(''), { opacity: 0.4 })),
     })
   }
 }
@@ -668,13 +749,15 @@ const karangan = (cx, cy, r, a0, a1, jml, panjang, lebar) => {
       catatan: 'Separuh karangan daun; belahannya digambar terpisah, bukan dicerminkan.',
       defs: rampEmas(id, [10, 20, 110, 150]),
       isi:
-        grup(`sekar-${id}-helai`, 'floral', massa(k.helai, { isi: `url(#sekar-${id}-ramp)` }))
+        grup(`sekar-${id}-batang`, 'floral', massa(k.batang, { isi: DAUN }), { opacity: '0.78' })
+        + grup(`sekar-${id}-belakang`, 'floral', massa(k.belakang, { isi: DAUN }), { opacity: '0.55' })
+        + grup(`sekar-${id}-helai`, 'floral', massa(k.helai, { isi: DAUN }))
         + grup(`sekar-${id}-kuncup`, 'floral',
           massa(kelopak(...pada(60, 84, 46, a0), 18, 7, a0 - (a1 > a0 ? 90 : -90))
             + cakram(...pada(60, 84, 46, a1), 5), { isi: AKSEN }), { opacity: '0.88' })
         + grup(`sekar-${id}-cecek`, 'isen',
           massa(cecekBusur(60, 84, 30, a0, a1, 6, 3)), { opacity: '0.45' })
-        + grup(`sekar-${id}-rel`, 'floral', garis(k.tulang, { opacity: 0.6 })),
+        + grup(`sekar-${id}-rel`, 'floral', garis(k.urat, { opacity: 0.4 })),
     })
   }
 }
@@ -736,7 +819,9 @@ const karangan = (cx, cy, r, a0, a1, jml, panjang, lebar) => {
     const pakisan = b.pakisan ?? []
     const karanganan = [...(b.karanganan ?? []), ...(b.untaian ? [b.untaian] : [])]
     const helai = pakisan.map(p => p.helai).join('') + karanganan.map(k => k.helai).join('')
-    const tulang = pakisan.map(p => p.tulang).join('') + karanganan.map(k => k.tulang).join('')
+    const belakang = pakisan.map(p => p.belakang).join('') + karanganan.map(k => k.belakang).join('')
+    const batang = pakisan.map(p => p.batang).join('') + karanganan.map(k => k.batang).join('')
+    const tulang = [...pakisan, ...karanganan].map(x => x.urat).join('')
     tambah({
       id: b.id,
       nama: b.nama,
@@ -746,7 +831,9 @@ const karangan = (cx, cy, r, a0, a1, jml, panjang, lebar) => {
       catatan: 'Keping ladang; rasio menyalin slot yang sudah tayang.',
       defs: rampAir(b.id, b.arah),
       isi:
-        grup(`sekar-${b.id}-helai`, 'floral', massa(helai, { isi: AKSEN }), { opacity: '0.7' })
+        grup(`sekar-${b.id}-batang`, 'floral', massa(batang, { isi: DAUN }), { opacity: '0.8' })
+        + grup(`sekar-${b.id}-belakang`, 'floral', massa(belakang, { isi: DAUN }), { opacity: '0.58' })
+        + grup(`sekar-${b.id}-helai`, 'floral', massa(helai, { isi: DAUN }))
         + (b.damaskan
           ? grup(`sekar-${b.id}-damask`, 'motif',
             massa(b.damaskan.badan + b.damaskan.inti, { isi: `url(#sekar-${b.id}-ramp)`, evenodd: true })
@@ -754,11 +841,13 @@ const karangan = (cx, cy, r, a0, a1, jml, panjang, lebar) => {
           : '')
         + grup(`sekar-${b.id}-kelopak`, 'floral',
           massa(b.bunga.map(m => m.luar).join(''), { isi: `url(#sekar-${b.id}-ramp)` }))
-        + grup(`sekar-${b.id}-dalam`, 'floral',
+        + grup(`sekar-${b.id}-tengah`, 'floral',
           massa(b.bunga.map(m => m.tengah).join(''), { isi: AKSEN }), { opacity: '0.9' })
+        + grup(`sekar-${b.id}-dalam`, 'floral',
+          massa(b.bunga.map(m => m.dalam).join(''), { isi: GLOW }), { opacity: '0.82' })
         + grup(`sekar-${b.id}-jantung`, 'floral',
-          massa(b.bunga.map(m => m.jantung).join(''), { isi: 'var(--iv-orn-deep, currentColor)' }), { opacity: '0.72' })
-        + grup(`sekar-${b.id}-rel`, 'floral', garis(tulang, { opacity: 0.5 })),
+          massa(b.bunga.map(m => m.jantung).join(''), { isi: DALAM }), { opacity: '0.72' })
+        + grup(`sekar-${b.id}-rel`, 'floral', garis(tulang, { opacity: 0.35 })),
     })
   }
 }
@@ -832,6 +921,30 @@ daftar.sort((a, b) => a.id.localeCompare(b.id))
  * mungkin berselisih: importir melewati aset yang berkasnya tidak ada **tanpa suara**, dan
  * pack sunda sudah kehilangan dua aset persis begitu.
  */
+/** Jangkar pakai tiap kategori — ke mana keping ini menempel di dalam section. */
+const jangkar = {
+  frame: 'section', divider: 'antar-blok', corner: 'sudut-section', seal: 'penutup',
+  motif: 'pita', symbol: 'sisipan', monogram: 'tengah', floral: 'tepi', layer: 'ladang',
+}
+
+/**
+ * Resep motion per kategori, mengikuti `references/creation-motion.md`.
+ *
+ * `amplitudeMeasured: false` karena angka-angka ini **diadaptasi**, bukan diukur dari klip —
+ * satu-satunya pengukuran motion di repo ini ada di pack kayon, dan itu untuk template lain.
+ */
+const gerak = (kategori) => ({
+  preset: kategori === 'layer' || kategori === 'floral' ? 'sway' : 'reveal',
+  amplitude: kategori === 'layer' || kategori === 'floral' ? 1.5 : 14,
+  unit: kategori === 'layer' || kategori === 'floral' ? 'deg' : 'px',
+  duration: kategori === 'layer' || kategori === 'floral' ? 6 : 1.1,
+  ease: kategori === 'layer' || kategori === 'floral' ? 'sine.inOut' : 'power2.out',
+  stagger: kategori === 'layer' ? 0.12 : 0,
+  rigid: false,
+  reducedMotion: 'langsung-ke-keadaan-akhir',
+  amplitudeMeasured: false,
+})
+
 const tag = {
   frame: ['frame', 'gapura', 'sekar'],
   divider: ['divider', 'sulur', 'sekar'],
@@ -897,8 +1010,26 @@ writeFileSync(join(HERE, 'catalog.json'), JSON.stringify({
     },
     usage: 'original-local-demo',
     style: { palette: 'ramp empat stop lewat var(--iv-orn-*)', medium: 'vektor kubik bermassa' },
+    /*
+     * Empat medan di bawah dituntut `scripts/validate.mjs` milik skill, dan pack ini sempat
+     * tidak punya satu pun — jadi pemeriksa keamanan SVG, tabrakan id, dan checksum-nya tidak
+     * pernah bisa dijalankan. Dibangkitkan, bukan ditulis tangan: `layers` dibaca balik dari
+     * berkasnya dan `sha256` dihitung dari byte yang benar-benar ditulis.
+     */
+    layers: g.lapisan,
+    anchor: jangkar[g.kategori],
+    motion: gerak(g.kategori),
+    variants: [{
+      file: `svg/${g.id}.svg`,
+      format: 'svg',
+      width: g.w,
+      height: g.h,
+      ratio: Math.round((g.w / g.h) * 1000) / 1000,
+      bytes: g.bytes,
+      sha256: g.sha256,
+      alpha: true,
+    }],
     viewBox: `0 0 ${g.w} ${g.h}`,
-    bytes: g.bytes,
     catatan: g.catatan,
   })),
 }, null, 2) + '\n')

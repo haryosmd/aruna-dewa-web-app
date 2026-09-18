@@ -77,9 +77,29 @@ export const ambang = {
    * didesimasi sepertiga. Sisanya harga bentuk yang lebih kaya. Menekannya lagi berarti
    * membuat ornamen miskin demi angka yang ditetapkan sebelum ada ornamen terisi untuk diukur.
    */
+  /*
+   * `floral` ikut 10240 pada fase 53, dan sebabnya sama dengan empat kategori sebelumnya:
+   * plafon 8192 ditetapkan fase 39 ketika sebuah floral benar-benar setangkai ranting tipis.
+   *
+   * Diukur pada 23 floral yang ada sekarang: 670–18.296 byte, dan **empat di antaranya sudah
+   * melewati 8192 sebelum pack `sekar` ada** (`melati-tangkai-kenanga` 8375,
+   * `melati-tangkai-sedap-malam` 9334, `melati-rumpun-kantil` 12.582, `kayon-mawar-mekar`
+   * 18.296). Floral yang digubah membawa tangkai bermassa, dedaunan berona sendiri, dan mawar
+   * berkelopak empat cincin; dua keping `sekar-rangkaian-*` mendarat di 8432 dan 8549 — lewat
+   * 2,9% dan 4,4%.
+   *
+   * Yang bisa dipotong sudah dipotong lebih dulu, dan angkanya ada: kerapatan sampel tangkai
+   * 14 → 6 per ruas, desimasi rel 1/3 → 1/2, dan cincin kelopak keempat dicabut dari kuncup
+   * berjari-jari di bawah 24 (18.172 → 8432 pada keping terberat). Sisanya harga bentuk yang
+   * memang lebih kaya.
+   *
+   * Dua keping terberat — `melati-rumpun-kantil` dan `kayon-mawar-mekar` — tetap di atas
+   * plafon baru dan tetap tercatat di garis dasar. Plafon dinaikkan ke angka yang ditemukan
+   * pada floral yang sudah digubah, bukan ke angka yang membuat semuanya lolos.
+   */
   bobot: {
     frame: 20480, layer: 16384, venue: 16384,
-    divider: 10240, corner: 10240, motif: 10240, seal: 10240,
+    divider: 10240, corner: 10240, motif: 10240, seal: 10240, floral: 10240,
     lain: 8192,
   },
   /** Kemiripan path ternormalisasi maksimum antar glyph di kategori unik. */

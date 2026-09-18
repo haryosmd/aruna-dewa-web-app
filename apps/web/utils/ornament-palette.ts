@@ -38,9 +38,78 @@ export interface OrnamentRamp {
   accent: string
   /** Sorot dan rel tipis. */
   glow: string
+  /**
+   * Rona dedaunan — satu-satunya stop yang keluar dari keluarga rona aksen.
+   *
+   * **Ia tidak ikut `ornamentStops`, dan itu disengaja.** Gerbang `checkRamp`/`rampSteps`
+   * mengukur "empat langkah yang terbaca berbeda" pada satu keluarga rona; memasukkan sebuah
+   * rona asing ke deret itu akan mengukur hal yang salah pada kelima tema sekaligus. Yang
+   * menjaganya adalah gerbangnya sendiri di `ornament-palette.spec.ts`: dedaunan cukup
+   * terlihat di atas latarnya, dan cukup terpisah dari `accent` untuk terbaca sebagai daun,
+   * bukan sebagai bunga yang kusam.
+   */
+  leaf: string
 }
 
 export const ornamentStops = ['deep', 'body', 'accent', 'glow'] as const
+
+const keHsl = (hex: string): [number, number, number] => {
+  const r = parseInt(hex.slice(1, 3), 16) / 255
+  const g = parseInt(hex.slice(3, 5), 16) / 255
+  const b = parseInt(hex.slice(5, 7), 16) / 255
+  const maks = Math.max(r, g, b); const min = Math.min(r, g, b); const d = maks - min
+  let h = 0
+  if (d) {
+    if (maks === r) h = ((g - b) / d) % 6
+    else if (maks === g) h = (b - r) / d + 2
+    else h = (r - g) / d + 4
+    h *= 60; if (h < 0) h += 360
+  }
+  const l = (maks + min) / 2
+  return [h, d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1)), l]
+}
+
+const dariHsl = (h: number, s: number, l: number): string => {
+  const c = (1 - Math.abs(2 * l - 1)) * s
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1))
+  const m = l - c / 2
+  const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x]
+    : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x]
+  return '#' + [r, g, b].map(v => Math.round((v + m) * 255).toString(16).padStart(2, '0')).join('')
+}
+
+/**
+ * Rona dedaunan, **diturunkan dari hubungan yang diukur**, bukan dipilih.
+ *
+ * Kenapa ia ada: sampai fase 53 tiap daun, pakis, dan tangkai di bank memakai rona yang sama
+ * dengan bunganya, karena ramp empat stop seluruhnya satu keluarga rona. Diukur berdampingan
+ * dengan referensi cat air pemilik, itulah satu-satunya perbedaan rona yang tersisa — dan yang
+ * paling terlihat, karena pada keping floral dedaunan memakai lebih banyak bidang daripada
+ * bunganya.
+ *
+ * Angkanya dari referensi itu sendiri
+ * (`imported/canva-sekar/`, 21 stop di atas ambang 1,2% tinta):
+ *
+ *   dedaunan  H 94–141 (median 118) · S 0,10–0,21 (median 0,15)
+ *   kayu/bunga H 28            · S 0,43–0,44
+ *
+ * Jadi dedaunan duduk **+90° dari rona bunganya** dengan **kira-kira sepertiga kejenuhannya**
+ * (0,15 / 0,43 = 0,35). Dua angka itu yang dipakai di sini, diterapkan pada `accent` tema —
+ * jadi pasangan yang menggeser paletnya tetap mendapat dedaunan yang selaras, dan tidak ada
+ * hijau yang dipanggang ke berkas mana pun.
+ */
+export function ornamentLeaf(accent: string, ground: string): string {
+  const [h, s, l] = keHsl(accent)
+  const terang = contrastRatio(inkLight, ground) >= contrastRatio(inkDark, ground)
+  let warna = dariHsl((h + 90) % 360, s * 0.35, l)
+  // Rona yang benar tidak ada gunanya kalau ia tenggelam di latarnya. Digeser terangnya —
+  // bukan ronanya — sampai lolos ambang yang sama dengan stop lain.
+  for (let i = 0; i < 24 && contrastRatio(warna, ground) < rampMinimum.terhadapLatar; i++) {
+    const [hh, ss, ll] = keHsl(warna)
+    warna = dariHsl(hh, ss, terang ? Math.min(1, ll + 0.03) : Math.max(0, ll - 0.03))
+  }
+  return warna
+}
 
 /**
  * Ramp untuk bidang terang (kertas tema).
@@ -54,6 +123,7 @@ export function ornamentRamp(tokens: PaletteTokens, accent: string): OrnamentRam
     body: tokens.primary,
     accent,
     glow: mixSrgb(accent, tokens.background, 0.55),
+    leaf: ornamentLeaf(accent, tokens.background),
   }
 }
 
@@ -88,6 +158,9 @@ export function ornamentRampOnDark(accent: string, ground: string): OrnamentRamp
     // Kertas yang diberi rona aksen, bukan aksen yang diberi rona kertas.
     accent: mixSrgb(accent, paper, 0.47),
     glow: mixSrgb(paper, ground, 0.89),
+    // Di bidang bertone dedaunan ikut diberi kertas, persis seperti aksen — tanpa itu ia jadi
+    // satu-satunya keping yang tetap gelap di atas bidang gelap.
+    leaf: mixSrgb(ornamentLeaf(accent, ground), paper, 0.47),
   }
 }
 
@@ -98,6 +171,7 @@ export function rampStyle(ramp: OrnamentRamp, awalan = '--iv-orn'): Record<strin
     [`${awalan}-body`]: ramp.body,
     [`${awalan}-accent`]: ramp.accent,
     [`${awalan}-glow`]: ramp.glow,
+    [`${awalan}-leaf`]: ramp.leaf,
   }
 }
 

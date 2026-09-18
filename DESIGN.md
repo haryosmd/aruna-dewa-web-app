@@ -336,6 +336,30 @@ dari 133 glyph tetap hidup di dua tingkat. Kedua puluh dua glyph `sekar` karena 
 terbesarnya, dengan `stop-color` berupa `var(--iv-orn-*)` supaya gradasinya ikut palet pasangan
 dan bukan warna yang dipanggang ke berkas.
 
+**Dan ramp empat stop itu ternyata belum cukup, karena keempatnya satu keluarga rona.** Diaudit
+berdampingan dengan referensinya, itulah satu-satunya perbedaan warna yang tersisa: tiap daun,
+pakis, dan tangkai memakai rona yang sama dengan bunganya. `--iv-orn-leaf` menutupnya, dan
+angkanya diambil dari referensi pemilik sendiri — dedaunan di sana duduk **+90° dari rona
+bunganya dengan sekitar sepertiga kejenuhannya** (H 118 lawan 28, S 0,15 lawan 0,43, diukur pada
+21 stop di atas 1,2% tinta). `ornamentLeaf()` menerapkan kedua angka itu pada `accent` tema, jadi
+ia tetap **diturunkan, bukan disimpan**: pasangan yang menggeser paletnya tetap mendapat dedaunan
+yang selaras.
+
+Ia **tidak** ikut `ornamentStops`. Gerbang `checkRamp`/`rampSteps` mengukur "empat langkah yang
+terbaca berbeda" di dalam satu keluarga rona; memasukkan rona asing ke deret itu akan mengukur hal
+yang salah pada kelima tema sekaligus. Yang menjaganya adalah gerbangnya sendiri — dedaunan
+terlihat di atas latarnya, diukur 2,50–7,68 pada kelima tema. Yang sengaja tidak dijaga adalah
+jaraknya terhadap `accent`: 1,02 pada `aruna-hening` dan 1,31 pada `aruna-sekar`, dan keduanya
+benar, karena tema yang aksennya sudah kelabu tidak boleh tiba-tiba menumbuhkan hijau jenuh.
+
+**Tangkai keping floral adalah massa, bukan `stroke`, dan sebabnya aritmetika.** Importir
+menyeragamkan tiap `stroke-width` ke ketebalan pack, dan ketebalan itu satuan viewBox — jadi
+tangkai yang sama tayang 2,3% lebar pada keping floral selebar 140 dan 0,5% pada keping layer
+selebar 600. Empat kali lebih tebal, relatif, untuk keping yang justru paling kecil. Dibandingkan
+berdampingan dengan referensinya itulah yang paling mencolok: tangkai jadi balok kelabu yang
+memotong rangkaiannya. Massa tidak punya `stroke-width`, jadi ia bisa meruncing seperti tangkai
+sungguhan; `data-draw` keping floral tinggal satu urat sepanjang 18% untuk memenuhi gerbangnya.
+
 Gradasi itu gratis bagi gerbang: `subPathPolyline()` melewati `d` yang mengandung kurva, jadi
 bentuk kubik memang tidak diukur `potong-diri`, `lonjakan`, dan `runtuh` — dan bentuk kubik juga
 yang paling murah. Satu kelopak butuh empat perintah, bukan empat puluh titik. Yang **tetap**

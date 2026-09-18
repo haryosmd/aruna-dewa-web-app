@@ -19,11 +19,12 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const gelap = process.argv.includes('gelap')
 
 /** Ramp terukur dari `imported/canva-sekar/measurements.json`, bukan dikarang. */
-const terang = { deep: '#4a3d33', body: '#847665', accent: '#c89f3b', glow: '#e2d0b8', kertas: '#f4ece0' }
-const malam = { deep: '#c8b79c', body: '#e2d0b8', accent: '#e6bd49', glow: '#f6ead6', kertas: '#2a231d' }
+const terang = { deep: '#4a3d33', body: '#847665', accent: '#c89f3b', glow: '#e2d0b8', leaf: '#699a73', kertas: '#f4ece0' }
+const malam = { deep: '#c8b79c', body: '#e2d0b8', accent: '#e6bd49', glow: '#f6ead6', leaf: '#b9ceb9', kertas: '#2a231d' }
 const ramp = gelap ? malam : terang
 
 const warnai = (svg) => svg
+  .replace(/var\(--iv-orn-leaf, var\(--iv-orn-accent, currentColor\)\)/g, ramp.leaf)
   .replace(/var\(--iv-orn-deep, currentColor\)/g, ramp.deep)
   .replace(/var\(--iv-orn-accent, currentColor\)/g, ramp.accent)
   .replace(/var\(--iv-orn-glow, currentColor\)/g, ramp.glow)

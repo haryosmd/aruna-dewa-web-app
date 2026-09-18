@@ -253,7 +253,7 @@ memicu gerbang add-on. Nol perubahan pada `invitationDocumentSchema`.
 | 50 | Template `aruna-wastra` — etnik modern; partitur pertama yang hidup. **Selesai 2026-09-18** |
 | 51 | Template `aruna-hening` — editorial minimal. **Selesai 2026-09-18** |
 | 52 | Template `aruna-pelita` — mewah gelap, sekaligus bukti fase 45. **Selesai 2026-09-18** |
-| 53 | Tema `aruna-sekar` — permintaan pemilik, dibangun dari sembilan referensi Canva miliknya sendiri plus satu ubin damask. Pack `sekar` 22 glyph bergradasi, dan backdrop pertama yang benar-benar menyala. **Selesai 2026-09-18** |
+| 53 | Tema `aruna-sekar` — permintaan pemilik, dibangun dari sembilan referensi Canva miliknya sendiri plus satu ubin damask. Pack `sekar` 22 glyph bergradasi, dan backdrop pertama yang benar-benar menyala. **Selesai 2026-09-18**; diaudit ulang terhadap referensinya hari yang sama — `--iv-orn-leaf`, tangkai bermassa, plafon floral 10240 |
 | 54 | Migrasi `draftDocument` + pembebasan gerbang `design`. **Skrip selesai 2026-09-18; belum dijalankan di produksi** |
 | 55 | `DESIGN.md` diperbarui 2026-09-18. **`playLegacyScore` belum bisa dihapus** — bloom sengaja belum diberi partitur |
 | 57 | Artefak berhenti di-gitignore: skill, `packs/`, dan docs teks ikut terlacak supaya progres terbaca dari mesin lain. **Selesai 2026-09-18** — 134 berkas docs (1,15 MB), 126 berkas packs (1,40 MB), 23 berkas skill (0,09 MB) |

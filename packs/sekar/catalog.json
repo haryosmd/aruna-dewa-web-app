@@ -60,8 +60,36 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "frame",
+        "crown",
+        "isen"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 1.1,
+        "ease": "power2.out",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-bingkai-gapura.svg",
+          "format": "svg",
+          "width": 300,
+          "height": 420,
+          "ratio": 0.714,
+          "bytes": 3445,
+          "sha256": "6af02e48500223cce57b798deb14ef7e211d4a21ce79aa790aa209e8740c4ce5",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 300 420",
-      "bytes": 3445,
       "catatan": "Siluet gapura; band berongga, bukan garis rambut."
     },
     {
@@ -89,8 +117,36 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "frame",
+        "floral",
+        "isen"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 1.1,
+        "ease": "power2.out",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-bingkai-oval.svg",
+          "format": "svg",
+          "width": 300,
+          "height": 420,
+          "ratio": 0.714,
+          "bytes": 3906,
+          "sha256": "51411f0b374e62f15c7ed99dff2e5098661cd9b42d0b8b65afa058c83e81b886",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 300 420",
-      "bytes": 3886,
       "catatan": "Bingkai stadion dengan patran di dua sudut berlawanan."
     },
     {
@@ -118,8 +174,35 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "frame",
+        "isen"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 1.1,
+        "ease": "power2.out",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-bingkai-segi.svg",
+          "format": "svg",
+          "width": 320,
+          "height": 320,
+          "ratio": 1,
+          "bytes": 3983,
+          "sha256": "72baa58fdd9c70f7669d5db50ff38361e0b02ada91a4c5e7dc5d4ad233786fda",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 320 320",
-      "bytes": 3983,
       "catatan": "Dua poligon bersilang; gradasi satu definisi, bukan 774 serpih."
     },
     {
@@ -147,8 +230,34 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "ladang",
+      "motion": {
+        "preset": "sway",
+        "amplitude": 1.5,
+        "unit": "deg",
+        "duration": 6,
+        "ease": "sine.inOut",
+        "stagger": 0.12,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-layer-jatuh.svg",
+          "format": "svg",
+          "width": 260,
+          "height": 480,
+          "ratio": 0.542,
+          "bytes": 11468,
+          "sha256": "65094b2b29cb045f8cb96133c1cfa0e3af7e1ccc09f9c622330665182faa8186",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 260 480",
-      "bytes": 8620,
       "catatan": "Keping ladang; rasio menyalin slot yang sudah tayang."
     },
     {
@@ -176,8 +285,35 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "floral",
+        "motif"
+      ],
+      "anchor": "ladang",
+      "motion": {
+        "preset": "sway",
+        "amplitude": 1.5,
+        "unit": "deg",
+        "duration": 6,
+        "ease": "sine.inOut",
+        "stagger": 0.12,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-layer-mahkota.svg",
+          "format": "svg",
+          "width": 480,
+          "height": 200,
+          "ratio": 2.4,
+          "bytes": 15551,
+          "sha256": "ead8980c9926a851c5355522933a0fc58fc385315ab887089133ad68be9b24d0",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 480 200",
-      "bytes": 11257,
       "catatan": "Keping ladang; rasio menyalin slot yang sudah tayang."
     },
     {
@@ -205,8 +341,34 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "ladang",
+      "motion": {
+        "preset": "sway",
+        "amplitude": 1.5,
+        "unit": "deg",
+        "duration": 6,
+        "ease": "sine.inOut",
+        "stagger": 0.12,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-layer-mekar.svg",
+          "format": "svg",
+          "width": 480,
+          "height": 260,
+          "ratio": 1.846,
+          "bytes": 12781,
+          "sha256": "3d13cb39c1c449f062a6e04141466d623592ecd50659952a7ae926cef2a2819e",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 480 260",
-      "bytes": 9177,
       "catatan": "Keping ladang; rasio menyalin slot yang sudah tayang."
     },
     {
@@ -234,8 +396,34 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "ladang",
+      "motion": {
+        "preset": "sway",
+        "amplitude": 1.5,
+        "unit": "deg",
+        "duration": 6,
+        "ease": "sine.inOut",
+        "stagger": 0.12,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-layer-rumpun.svg",
+          "format": "svg",
+          "width": 320,
+          "height": 320,
+          "ratio": 1,
+          "bytes": 11370,
+          "sha256": "8193d6810922ca4c1a08b8993a2ee5d0c69cab36c75661e5bfbd1e17a0c140aa",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 320 320",
-      "bytes": 8296,
       "catatan": "Keping ladang; rasio menyalin slot yang sudah tayang."
     },
     {
@@ -263,8 +451,34 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "ladang",
+      "motion": {
+        "preset": "sway",
+        "amplitude": 1.5,
+        "unit": "deg",
+        "duration": 6,
+        "ease": "sine.inOut",
+        "stagger": 0.12,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-layer-untai.svg",
+          "format": "svg",
+          "width": 600,
+          "height": 220,
+          "ratio": 2.727,
+          "bytes": 12262,
+          "sha256": "739da2a6d7cada4d8945af3b03251b49d985b743f3b1d1d2531c8873832bbed7",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 600 220",
-      "bytes": 8683,
       "catatan": "Keping ladang; rasio menyalin slot yang sudah tayang."
     },
     {
@@ -292,8 +506,37 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "floral",
+        "crown",
+        "isen",
+        "monogram"
+      ],
+      "anchor": "tengah",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 1.1,
+        "ease": "power2.out",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-monogram-karangan.svg",
+          "format": "svg",
+          "width": 200,
+          "height": 200,
+          "ratio": 1,
+          "bytes": 7475,
+          "sha256": "c7ee9bc60d3638761d4836556401d2439a770eea6c86da5f5106032a0267677d",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 200 200",
-      "bytes": 4778,
       "catatan": "Tengahnya kosong; yang mengisi adalah inisial pasangan."
     },
     {
@@ -321,8 +564,35 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "motif",
+        "isen"
+      ],
+      "anchor": "pita",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 1.1,
+        "ease": "power2.out",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-motif-damask.svg",
+          "format": "svg",
+          "width": 360,
+          "height": 120,
+          "ratio": 3,
+          "bytes": 5687,
+          "sha256": "e6b3a77b1362ecd853333aa1878309829762db53a41e31cc9963727ce6c8e389",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 360 120",
-      "bytes": 5710,
       "catatan": "Rapport 120 satuan; bentuk yang sama dengan ubin latar tema."
     },
     {
@@ -350,8 +620,37 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "crown",
+        "floral",
+        "isen",
+        "divider"
+      ],
+      "anchor": "antar-blok",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 1.1,
+        "ease": "power2.out",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-pemisah-mahkota.svg",
+          "format": "svg",
+          "width": 320,
+          "height": 40,
+          "ratio": 8,
+          "bytes": 3009,
+          "sha256": "c99e4c34188696918756538284e653e8d293921b28a14ef1b1d6c3ca7e1cc908",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 320 40",
-      "bytes": 3009,
       "catatan": "Mahkota ukel di antara dua rel; rel ditebalkan agar terbaca."
     },
     {
@@ -379,8 +678,36 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "floral",
+        "isen",
+        "divider"
+      ],
+      "anchor": "antar-blok",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 1.1,
+        "ease": "power2.out",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-pemisah-sulur.svg",
+          "format": "svg",
+          "width": 320,
+          "height": 40,
+          "ratio": 8,
+          "bytes": 2506,
+          "sha256": "41af59aa815b2a37e544f3173691f7d0d9c6bf984dc7fa2ac70505cfedb1ce34",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 320 40",
-      "bytes": 2482,
       "catatan": "Ukel bergantian arah tiap unit."
     },
     {
@@ -408,8 +735,34 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "tepi",
+      "motion": {
+        "preset": "sway",
+        "amplitude": 1.5,
+        "unit": "deg",
+        "duration": 6,
+        "ease": "sine.inOut",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-rangkaian-kanan.svg",
+          "format": "svg",
+          "width": 140,
+          "height": 176,
+          "ratio": 0.795,
+          "bytes": 8390,
+          "sha256": "40f3e1ff2fa0bb00c4a38ace142f67178aae1d6dfb1edc5394aa90b87b5e1186",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 140 176",
-      "bytes": 6456,
       "catatan": "Rumpun cat air digambar ulang; gradasi kelopak mengikuti arah terukur referensi."
     },
     {
@@ -437,8 +790,34 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "tepi",
+      "motion": {
+        "preset": "sway",
+        "amplitude": 1.5,
+        "unit": "deg",
+        "duration": 6,
+        "ease": "sine.inOut",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-rangkaian-kiri.svg",
+          "format": "svg",
+          "width": 140,
+          "height": 176,
+          "ratio": 0.795,
+          "bytes": 8271,
+          "sha256": "758ed8338abab973b394adad87902bfa5343942043a3bd77933b29f32f1fd0dc",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 140 176",
-      "bytes": 6421,
       "catatan": "Rumpun cat air digambar ulang; gradasi kelopak mengikuti arah terukur referensi."
     },
     {
@@ -466,8 +845,35 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "floral",
+        "isen"
+      ],
+      "anchor": "tepi",
+      "motion": {
+        "preset": "sway",
+        "amplitude": 1.5,
+        "unit": "deg",
+        "duration": 6,
+        "ease": "sine.inOut",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-ranting-kanan.svg",
+          "format": "svg",
+          "width": 120,
+          "height": 168,
+          "ratio": 0.714,
+          "bytes": 4903,
+          "sha256": "0947b118115c717f8d8f67e14cc7a42a8e7ccb0cc0e85c0957ba5c5c1e2f8ca7",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 120 168",
-      "bytes": 3410,
       "catatan": "Separuh karangan daun; belahannya digambar terpisah, bukan dicerminkan."
     },
     {
@@ -495,8 +901,35 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "floral",
+        "isen"
+      ],
+      "anchor": "tepi",
+      "motion": {
+        "preset": "sway",
+        "amplitude": 1.5,
+        "unit": "deg",
+        "duration": 6,
+        "ease": "sine.inOut",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-ranting-kiri.svg",
+          "format": "svg",
+          "width": 120,
+          "height": 168,
+          "ratio": 0.714,
+          "bytes": 4787,
+          "sha256": "ce5fabb2827f3b7aff6ef3d2c83cd72fd822977dba4b38cc194ff3cd605f1c98",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 120 168",
-      "bytes": 3343,
       "catatan": "Separuh karangan daun; belahannya digambar terpisah, bukan dicerminkan."
     },
     {
@@ -524,8 +957,35 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "seal",
+        "isen"
+      ],
+      "anchor": "penutup",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 1.1,
+        "ease": "power2.out",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-segel-rozet.svg",
+          "format": "svg",
+          "width": 120,
+          "height": 120,
+          "ratio": 1,
+          "bytes": 5266,
+          "sha256": "5d92e2dc0e4651d5cdb0d5efaffe630cf196c62b3eb0d8de06c1ebabc3545229",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 120 120",
-      "bytes": 5266,
       "catatan": "Medalion radial; jantungnya berongga agar tidak jadi gumpalan."
     },
     {
@@ -553,8 +1013,36 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "seal",
+        "crown",
+        "isen"
+      ],
+      "anchor": "penutup",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 1.1,
+        "ease": "power2.out",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-segel-tumpal.svg",
+          "format": "svg",
+          "width": 120,
+          "height": 160,
+          "ratio": 0.75,
+          "bytes": 3708,
+          "sha256": "4a21e4fab63520706095f7c81494735a5344d7157280ea2de5abe9f8f3aa94d8",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 120 160",
-      "bytes": 3708,
       "catatan": "Liontin beranyaman dengan mahkota ukel."
     },
     {
@@ -582,8 +1070,34 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "sisipan",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 1.1,
+        "ease": "power2.out",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-simbol-kembang-air.svg",
+          "format": "svg",
+          "width": 140,
+          "height": 120,
+          "ratio": 1.167,
+          "bytes": 4085,
+          "sha256": "1c5af0176ba42df8252e24e6b0763d22b1601e719d3f9f22b798023e032ff462",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 140 120",
-      "bytes": 2949,
       "catatan": "Gradasi kelopak mengikuti arah terukur referensi: pucat di tepi, pekat di jantung."
     },
     {
@@ -611,8 +1125,36 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "motif",
+        "isen",
+        "corner"
+      ],
+      "anchor": "sudut-section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 1.1,
+        "ease": "power2.out",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-sudut-damask.svg",
+          "format": "svg",
+          "width": 170,
+          "height": 170,
+          "ratio": 1,
+          "bytes": 4110,
+          "sha256": "f42b596ccfd468699a65d2b67e2c09185f8ee2104b54223b99dd8b62e47b3a03",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 170 170",
-      "bytes": 3964,
       "catatan": "Simpul ubin latar yang sama, dipadatkan jadi siku."
     },
     {
@@ -640,8 +1182,37 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "crown",
+        "floral",
+        "isen",
+        "corner"
+      ],
+      "anchor": "sudut-section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 1.1,
+        "ease": "power2.out",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-sudut-sulur-kanan.svg",
+          "format": "svg",
+          "width": 170,
+          "height": 170,
+          "ratio": 1,
+          "bytes": 3882,
+          "sha256": "89d336b741205bf58940f4404abf8890875ec8feb0c061d6bc1db8505af450d9",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 170 170",
-      "bytes": 3876,
       "catatan": "Dua ukel besar dan tumpal di ujung luar."
     },
     {
@@ -669,8 +1240,37 @@
         "palette": "ramp empat stop lewat var(--iv-orn-*)",
         "medium": "vektor kubik bermassa"
       },
+      "layers": [
+        "crown",
+        "floral",
+        "isen",
+        "corner"
+      ],
+      "anchor": "sudut-section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 1.1,
+        "ease": "power2.out",
+        "stagger": 0,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sekar-sudut-sulur-kiri.svg",
+          "format": "svg",
+          "width": 170,
+          "height": 170,
+          "ratio": 1,
+          "bytes": 4106,
+          "sha256": "6113a61705c3f106d754b4f05be71ef57156631be67ee3f9437c90f628f2368e",
+          "alpha": true
+        }
+      ],
       "viewBox": "0 0 170 170",
-      "bytes": 4100,
       "catatan": "Tiga ukel menyusut di sepanjang tulang diagonal."
     }
   ]

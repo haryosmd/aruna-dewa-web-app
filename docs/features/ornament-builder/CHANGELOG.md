@@ -1,5 +1,56 @@
 # Changelog
 
+## 2026-09-18 — Audit `sekar` terhadap referensinya: rona dedaunan, tangkai bermassa, dan validator yang belum pernah jalan
+
+Pemilik melihat packnya dan bilang "ada yang beda dan kurang". Ia benar, dan penyebabnya bisa
+ditunjuk angkanya setelah pack-nya disandingkan dengan referensinya.
+
+**Validator skill sendiri ternyata belum pernah bisa dijalankan pada pack ini.**
+`scripts/validate.mjs` menuntut sembilan medan per aset; `catalog.json` versi pertama punya lima.
+Jadi pemeriksa keamanan SVG, tabrakan id global, dan checksum tidak pernah menyentuhnya. Keempat
+medan yang kurang — `layers`, `anchor`, `motion`, `variants` — sekarang **dibangkitkan**, bukan
+ditulis tangan: `layers` dibaca balik dari berkas hasilnya dan `sha256` dihitung dari byte yang
+benar-benar ditulis, jadi katalog tidak bisa berselisih dengan isinya. Hasil: 22 aset, 22 varian,
+0 galat.
+
+**Rona: pack 1,0 · referensi 2,0.** Diukur dengan histogram yang sama yang dipakai `studi.mjs`,
+tiap glyph pack ini hidup di satu keluarga rona sementara referensi cat airnya hidup di dua
+(H 28 bunga, H 118 dedaunan). Itu satu-satunya perbedaan warna yang tersisa — dan yang paling
+terlihat, karena pada keping floral dedaunan memakai lebih banyak bidang daripada bunganya.
+
+`--iv-orn-leaf` menutupnya, diturunkan dari hubungan yang terukur di referensi itu sendiri:
+dedaunan **+90° dengan sepertiga kejenuhan** bunganya (H 118 lawan 28 · S 0,15 lawan 0,43, dari
+21 stop di atas ambang 1,2% tinta). Diterapkan pada `accent` tema, jadi tidak ada hijau yang
+dipanggang ke berkas mana pun. Sesudahnya: rona rata-rata **1,7**, dan 14 dari 22 glyph membawa
+dua keluarga rona.
+
+**Tangkai adalah balok kelabu, dan itu aritmetika viewBox.** `seragamkanGaris()` menyeragamkan
+`stroke-width` ke satuan viewBox, jadi tangkai yang sama tayang **2,3% lebar** pada keping floral
+selebar 140 dan **0,5%** pada keping layer selebar 600. Tangkai sekarang bermassa dan meruncing
+(`tangkai()`), dan `data-draw` keping floral tinggal satu urat sepanjang 18% — cukup untuk
+gerbangnya, tidak cukup untuk menutupi bunganya.
+
+**Plafon bobot `floral` naik 8192 → 10240, dan urutannya mengikuti DESIGN.md:355.** Yang bisa
+dipotong dipotong dulu, dengan angkanya: kerapatan sampel tangkai 14 → 6 per ruas, desimasi rel
+1/3 → 1/2, dan cincin kelopak keempat dicabut dari kuncup berjari-jari di bawah 24 — keping
+terberat turun **18.172 → 8432 byte**. Baru sesudah itu plafonnya dinaikkan, ke angka yang
+ditemukan pada floral yang sudah digubah: diukur pada 23 floral, 670–18.296 byte, dan **empat
+sudah melewati 8192 sebelum pack ini ada**. Efek sampingnya bagus — dua kegagalan lama
+(`melati-tangkai-kenanga`, `melati-tangkai-sedap-malam`) ikut pensiun, dan garis dasar mutu
+**mengecil** dua entri.
+
+**Mawar berkelopak empat cincin, dipilin.** Versi pertama dua cincin sepilinan dan hasilnya bunga
+bersegi lima yang rata. Cincin kedua kini dipilin 40° dan ketiga 26° lagi, jadi tiap kelopak jatuh
+di sela kelopak di bawahnya.
+
+**Dua kali salah arah pada `motif-damask`, dan keduanya ketahuan dari melihat.** Pertama terlalu
+pekat — terbaca deretan lonjong hitam. Dikoreksi ke `accent → glow` dan jadi terlalu pucat sampai
+nyaris hilang. Yang dipakai akhirnya `currentColor → accent → currentColor` dengan cuping `glow`.
+
+Gerbang sesudahnya: 22/22 glyph lolos, 13 tema, 0 pelanggaran keunikan, 0 tema tidak kohesif.
+**812** tes unit hijau (naik dari 796 — enam belas di antaranya gerbang dedaunan baru), 112 tes
+e2e `public.spec.ts` hijau di empat project.
+
 ## 2026-09-18 — Pack `sekar`: 22 glyph bergradasi, tema `aruna-sekar`, dan latar yang akhirnya menyala
 
 Pack keempat yang tayang, dan yang pertama lahir dari permintaan pemilik langsung. Sembilan
