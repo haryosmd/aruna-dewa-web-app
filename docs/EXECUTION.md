@@ -33,3 +33,25 @@ External integration success must be reported separately from local fixture test
 ## 2026-09-17 — Ornament Builder
 
 Selesai: skill lokal aruna-ornament-builder, arsip delapan situs, metadata/font/motion, enam SVG dan dua raster original Sunda, demo GSAP offline. Validasi dan keterbatasan tercatat di [hasil verifikasi](features/ornament-builder/verification/RESULTS.md). Renderer/API/backend tidak diubah.
+
+
+### 2026-09-18 — Bank ornamen referensi
+65 aset SVG/PNG dan renderer palet tetap ditambahkan; skill Codex/Claude sinkron. Lihat `features/ornament-builder/verification/reference/results.json`.
+
+
+### 2026-09-18 — Fase 59: Studio Ornamen
+
+Pemilih ornamen layar penuh di editor: sembilan slot skalar + lima jangkar ladang dari bank 328
+keping, enam ubin latar, dan huruf paragraf. Kolam terkurasi tetap ada sebagai tab "Disarankan";
+tab "Semua" membuka bank penuh dengan lencana ber-kalimat. `designFingerprint()` menggantikan
+perbandingan `JSON.stringify(tokens)` yang peka urutan key di gerbang entitlement, dan
+`ornamentOverrides` ikut digerbangi `design`.
+
+Aset referensi mendapat varian `web` 960px dan ubin 240px: 24,11 MB → 3,34 MB untuk yang dikirim
+tamu. Sebelum fase ini tidak satu pun dari 65 aset itu bisa dicapai pasangan, jadi beratnya belum
+pernah sampai ke seorang tamu.
+
+Hasil: 1024 tes unit hijau, `lint` dan `typecheck` hijau, e2e Studio hijau di mobile/tablet/desktop
+termasuk axe pada dialog terbuka. **Tiga kegagalan e2e yang sudah ada sebelumnya tidak diperbaiki
+di fase ini** dan terbukti tidak berhubungan — dibandingkan langsung dengan perubahan di-stash,
+angkanya identik. Rinciannya di `features/invitation-builder/CHANGELOG.md`.

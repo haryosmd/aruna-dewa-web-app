@@ -117,7 +117,21 @@ Yang bertambah beberapa KB CSS, bukan berkas fontnya.
 
   Keempatnya selain Charm **hanya punya bobot 400**, jadi semuanya dipatok 400 di `displayWeights`. Tanpa itu permintaan 600 membuat browser menebalkan sendiri, dan bold sintetis memutus sambungan huruf script. Charm ikut dipatok 400 karena 700-nya terbaca gemuk, bukan tegas.
 
-  `tokens.font` hanya mengendalikan **huruf judul** (`--iv-display`); huruf body datang dari `themePresentation.body`. Jadi aturan "script tidak pernah untuk paragraf atau navigasi" tidak bisa dilanggar lewat pemilih ini.
+  `tokens.font` hanya mengendalikan **huruf judul** (`--iv-display`).
+
+  **Huruf body bisa dipilih sejak fase 59, dan aturannya berhenti ditegakkan oleh struktur.**
+  Sampai fase 58 huruf body datang dari `themePresentation.body` dan pasangan tidak punya jalan
+  menyentuhnya — jadi "script tidak pernah untuk paragraf atau navigasi" tidak bisa dilanggar,
+  bukan karena dijaga melainkan karena tidak ada pemilihnya. Membuka pemilihnya berarti aturan itu
+  harus benar-benar dijaga. Yang menjaganya dua lapis: `bodyFontChoices` (lima keluarga —
+  `jakarta`, `jost`, `cormorant`, `fraunces`, `instrument`) menyempitkan apa yang **ditawarkan**,
+  dan `bodyFontOf()` di `utils/theme.ts` menolak nilai di luar himpunan itu saat **render**, karena
+  skema tetap memvalidasi terhadap `fontChoices` penuh supaya dokumen lama terbaca. Tanpa lapis
+  kedua, satu dokumen hasil sunting tangan cukup untuk mengatur seluruh paragraf dalam Allura.
+
+  `italiana` ikut di luar walau bukan script, dan alasannya mudah hilang: penyaring "bukan huruf
+  sambung" meloloskannya. Ia display berbobot 400 bergoresan sangat tipis — sah sebagai huruf judul
+  (bawaan `aruna-pelita`) dan tidak sah sebagai huruf paragraf.
 
 **Subset tidak bisa dibatasi lewat konfigurasi `@nuxt/fonts` (diuji 2026-09-17, gagal).** `subsets` per-keluarga maupun `defaults.subsets` diterima TypeScript — keduanya ada di tipenya — tapi keluaran build identik byte-per-byte dengan tanpa keduanya, dan `unicode-range` Thai milik Charm tetap tertulis. Konsekuensinya seluruh subset tiap keluarga ikut ke CSS: **60 KB `@font-face` di `entry.css` yang 129 KB**. Tidak ada yang diunduh kalau glifnya tidak dipakai, jadi ini biaya CSS, bukan biaya font — tapi angkanya cukup besar untuk jadi pekerjaan tersendiri, dan jalurnya menyaring di `providers/google-woff2.ts`, bukan memasang ulang opsi yang terbukti mati.
 
@@ -286,17 +300,63 @@ berarti apa-apa. Terukur pada bentuk yang sengaja dirusak: gerbang lama melapork
 `ornament-quality.spec.ts` yang merah. Set mereka karena itu tinggal di `ornamenPensiun` dengan
 bentuk blok yang sama, dan parameternya di `temaPensiun` pada resep forge.
 
-**Varian ornamen terkurasi.** Pasangan bisa menukar bingkai, pemisah, sudut, dan segel lewat panel
-"Ornamen" di editor. Yang ditawarkan bukan 132 ornamen melainkan beberapa alternatif seresep —
-alasan yang sama yang dipakai untuk menolak color picker bebas: pemilih bebas penuh mengubah lima
-tema jadi satu tema dengan lima nilai awal. **Syarat keanggotaan kolam adalah ketebalan garis yang
-sama dengan tema induknya**, karena itulah yang diukur `gerbangKohesi`; `ornament-variants.spec.ts`
-mengukur ulang tiap kandidat lewat mesin gerbang yang sama, jadi kolam yang salah tidak bisa lolos
-hanya karena daftarnya terlihat masuk akal. Pilihannya hidup di `cover.data.ornamentOverrides`,
-**bukan** di `tokens`, jadi ia lolos `hasDesignChange()` dan tidak menyentuh
-`invitationDocumentSchema` sama sekali. Ubin pratinjaunya mengikuti `ratio` tiap glyph: ubin
-persegi membuat kelima pemisah berasio 8:1 terbaca sebagai garis tipis yang sama persis, dan
-pasangan tidak bisa memilih bentuk yang tidak bisa ia bedakan.
+**Dua jalur memilih ornamen, dan yang kedua dibuka fase 59 atas keputusan pemilik.**
+
+Sampai fase 58 pasangan hanya bisa menukar bingkai, pemisah, sudut, dan segel, dari kolam
+terkurasi — **59 glyph dari 328**. Alasannya ditulis di sini dan masih berlaku: pemilih bebas
+penuh mengubah lima tema jadi satu tema dengan lima nilai awal, alasan yang sama yang dipakai
+menolak color picker bebas. Pemilik meminta seluruh bank dibuka. Yang dilakukan bukan mencabut
+kurasinya melainkan **menaruh jalur kedua di sebelahnya**, dan memindahkan kurasi dari larangan
+ke keterangan.
+
+- **Tab "Disarankan"** — kolam `themeVariants` apa adanya, dijaga syarat yang sama:
+  **ketebalan garis yang sama dengan tema induknya**, karena itulah yang diukur `gerbangKohesi`.
+  `ornament-variants.spec.ts` mengukur ulang tiap kandidat lewat mesin gerbang yang sama, jadi
+  kolam yang salah tidak bisa lolos hanya karena daftarnya terlihat masuk akal. Untuk lima slot
+  dan lima jangkar yang tidak punya kolam tangan, "disarankan" berarti yang lolos `fitOf()` —
+  ukuran yang sama, dihitung per keping.
+- **Tab "Semua"** — seluruh kategori slot itu, dengan lencana yang mengatakan **dengan kalimat**
+  kenapa sebuah keping tidak seresep: ketebalan garis berbeda, tidak punya lapisan garis, palet
+  terpanggang, atau berkas besar. Lencana tidak pernah warna saja; alasannya ikut ke `aria-label`.
+
+**Yang menjaga kejujurannya adalah satu tes jembatan, bukan niat baik.** Lencana browser membaca
+`apps/web/utils/ornament-metrics.ts`, berkas hasil generate `pnpm ornament:metrics` dari
+`jalankan()` — gerbang yang sama yang menjaga kolam. `ornament-metrics.spec.ts` menuntut tiap
+anggota kolam terkurasi lolos `fitOf()` juga, jadi dua mesin itu tidak bisa menyimpang tanpa
+sebuah tes merah. Berkas generate punya gerbang kesegarannya sendiri, bergaya
+`forge-idempotent.spec.ts`: tanpa itu ia basi diam-diam tiap kali satu glyph digambar ulang, dan
+lencananya mulai berbohong.
+
+**Sembilan slot skalar, bukan sepuluh.** `motif` sengaja tidak ditawarkan: ia terdaftar di
+`OrnamentSet`, dijaga gerbang keunikan, dan **tidak pernah dirender di undangan** — diukur pada
+seluruh `components/invitation/`, satu-satunya pembacanya penghitung teaser di
+`components/landing/Themes.vue`. Slot yang bisa dipilih tapi tidak mengubah apa pun yang bisa
+dilihat pasangan terbaca sebagai aplikasi yang rusak. Memberinya tempat render adalah keputusan
+desain tersendiri. Kelima jangkar ladang (`bloom`, `cascade`, `crown`, `cluster`, `swag`) ikut
+bisa ditukar, satu per jangkar — `terapkanOverrides()` memetakan, tidak menyebar, supaya invarian
+"lima layer, satu per jangkar" tidak bisa dilanggar lewat pemilih.
+
+**Pilihannya tetap hidup di `cover.data.ornamentOverrides`, bukan di `tokens` — tapi bukan lagi
+karena entitlement.** Sejak fase 59 `designFingerprint()` di API ikut membaca `ornamentOverrides`,
+jadi penukaran ornamen tergerbang `design` persis seperti warna dan huruf. Yang membuatnya tetap
+di `section.data` adalah bentuknya: `tokens` hidup di `packages/contracts`, dan menaruh id ornamen
+di sana memaksa kontrak mengenal bank 328 keping atau melemahkannya jadi `z.record(z.string())`
+yang justru memvalidasi lebih sedikit daripada `toOrnamentOverrides()`.
+
+**Penyaringnya berbasis kategori, dan satu perilaku lama hilang bersamanya.** Dulu mengganti tema
+otomatis melepas penukaran yang tidak berlaku di kolam tema baru. Sekarang bingkai pilihan
+pasangan **bertahan** melewati pergantian tema — benar untuk pemilih bebas, dan karena itu Studio
+wajib menyediakan "Kembalikan ke bawaan tema" beserta penghitung slot yang ditimpa. Tanpa
+keduanya tidak ada jalan keluar dari wajah campuran.
+
+**Aset referensi ditolak dari slot `layers`, dan itu batas berat.** Kelima keping referensi
+berkategori `layer` berjumlah 6,43 MB, dan `OrnamentField` memasang keping ladang 2–6 kali per
+section di sepuluh section. Slot lain memakai satu keping sekali; hanya kombinasi itu yang bisa
+melahirkan undangan puluhan megabita.
+
+Ubin pratinjaunya mengikuti `ratio` tiap glyph: ubin persegi membuat kelima pemisah berasio 8:1
+terbaca sebagai garis tipis yang sama persis, dan pasangan tidak bisa memilih bentuk yang tidak
+bisa ia bedakan.
 
 `templateId` adalah `z.enum(templateIds)` di `packages/contracts`, dan kontraknya sengaja tipis:
 tiga warna plus satu font. Sisa identitas tema hidup di lapisan web, pada `themePresentation` di
@@ -312,6 +372,23 @@ undangan, bukan hanya paletnya. Tidak ada direktori layout per tema; satu render
 | **aruna-hening** | Editorial minimal: huruf yang jadi ornamennya | `#FAFAF8` / `#14150F` / `#3A4F48` / `#9AA3A8` | Instrument Serif + Jost | mosaic |
 | **aruna-pelita** | Mewah gelap: emas pada bidang malam | `#141719` / `#F1ECE2` / `#D9B978` / `#8E6B3A` | Italiana + Plus Jakarta Sans | masonry |
 | **aruna-sekar** | Krem sogan: damask, sulur, cat air bergradasi | `#F3EBDE` / `#382C24` / `#7A5C44` / `#C89F3B` | Cormorant Garamond + Jost | masonry |
+
+**Latar bagian bisa dipilih sejak fase 59, dari enam ubin yang sudah lama ada.**
+`public/textures/` berisi `catur`, `kawung`, `kenanga`, `mega-mendung`, `sekar-damask`, dan
+`songket`; sampai fase 58 **hanya satu tersambung** — `sekar-damask` ke `aruna-sekar` — dan lima
+sisanya digambar, di-commit, dan tidak pernah tayang sekali pun. Pilihannya di `tokens.backdrop`
+(`tema` | `tanpa` | id ubin) plus `tokens.backdropWeight` (`halus` 0,04 · `sedang` 0,07 · `tegas`
+0,11).
+
+Dua hal yang mengikat. **Kosong berarti ikut tema, dan cabang itu wajib menghasilkan nilai yang
+identik dengan sebelum fase 59** — setiap undangan yang sudah terbit lewat sana, dan
+`backdrops.spec.ts` menguncinya dengan membandingkan kelima tema hidup. Dan **kepekatan hanya tiga
+tingkat, bukan slider**: ubin dicat `background-color: var(--iv-accent)` tepat di belakang teks,
+sementara laporan keterbacaan editor mengukur teks terhadap `--iv-bg` dan **tidak** terhadap ubin.
+Menaikkan pagu 0,11 menuntut `checkPalette()` diperluas lebih dulu.
+
+`ThemeBackdrop.plate` dihapus di fase yang sama: dideklarasikan, tidak pernah diisi, tidak pernah
+dibaca.
 
 **Ladang ornamen.** Section tidak lagi memasang satu `frame` 34rem di tengah pada `opacity-[0.18]`.
 `<InvitationOrnamentField>` memasang 2–6 keping kategori `layer` pada jangkar tepi (`top-left`,
@@ -544,6 +621,28 @@ cover gate (amplop + segel) → pasangan → acara (+kalender, peta) → countdo
   clamp menggigit; dan **pemanggil tidak mengoper pengali ukuran**. Sebelum ini kartu tema landing
   mengoper `:scale="0.46"` — benar angkanya, salah tempatnya. Yang perlu tahu lebar bidang adalah
   ladangnya sendiri, jadi ladang yang sama bekerja di section selebar layar maupun di kartu 302px.
+
+  **Aset referensi punya tiga salinan, dan yang dikirim ke tamu bukan yang penuh (2026-09-18).**
+  Enam puluh lima aset kiriman pemilik berjumlah **24,11 MB**, terberat 1,8 MB. Sampai fase 58
+  beratnya hanya biaya repo: `grep -n "ref-"` di `theme.ts` dan `ornament-variants.ts` nol hit,
+  jadi tidak satu tamu pun pernah mengunduhnya. Studio Ornamen membuatnya bisa terbit, dan sejak
+  itu ia biaya kuota tamu. `scripts/ornament-reference/derive.mjs` memancarkan dua turunan:
+  `ubin/` 240px WebP untuk grid pemilih (789 KB untuk keenam puluh lima) dan `web/` 960px WebP
+  untuk undangan (3,4 MB total, terberat 313 KB). `asset` tetap menunjuk berkas penuh; **tidak ada
+  jalur yang merendernya**.
+
+  Lebar 960 diturunkan dari lebar tayang, bukan dipilih bulat: tempat render terbesar adalah keping
+  ladang sampai 600px CSS, dan aset referensi ditolak dari sana, jadi yang tersisa bingkai cover di
+  sekitar 480px CSS — 960 menutupinya pada layar 2×. Diukur, 1200px menambah 238 KB pada tiga aset
+  terberat tanpa selisih yang terlihat.
+
+  Sumbernya `packs/referensi/` yang terlacak git, **bukan** arsip di `docs/` yang binernya
+  diabaikan — tanpa itu langkahnya tidak bisa diulang di mesin lain. Dan `ReferenceAsset.vue`
+  akhirnya membawa `width`/`height`: tanpa dimensi intrinsik tiap aset adalah sumber CLS, yang
+  tidak pernah terlihat hanya karena sebelumnya tidak ada yang bisa dicapai. Berkas turunan
+  **tidak** di-hash di tes — keluaran libvips tidak dijamin identik antar platform, dan hash di
+  sana mengubah pemutakhiran sharp jadi build merah tanpa cacat di belakangnya.
+
 - **Foto**: hanya CC0/PD terverifikasi (jalur Wikimedia Commons yang sudah terbukti di `docs/REFERENCE-REVIEW.md`). Konversi WebP, provenance dicatat.
 - **Lambang bank** di `apps/web/public/banks/<bankId>.svg`, presentasinya di `apps/web/utils/banks.ts`.
   Ini **bukan** ornamen: lambang merek berwarna banyak, jadi tidak `currentColor`, tidak `data-draw`,

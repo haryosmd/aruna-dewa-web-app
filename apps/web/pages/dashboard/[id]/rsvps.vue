@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Invitation, RsvpEntry, Wish } from '~/types/aruna'
 import { Check, X } from 'lucide-vue-next'
-import { toast } from 'vue-sonner'
+
+const toast = useToast()
 
 definePageMeta({ middleware: 'auth', layout: false })
 

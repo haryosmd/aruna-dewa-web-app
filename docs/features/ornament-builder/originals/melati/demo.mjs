@@ -102,6 +102,7 @@ const gallery = [...byCategory.entries()].map(([category, assets]) => `
  */
 const importedSection = !importedPacks.length ? '' : `
   <section class="scene wrap" id="impor">
+    <p><a href="referensi/index.html"><strong>Buka bank ornamen sesuai PNG — 65 aset SVG/PNG dan varian warna</strong></a></p>
     <h2>Impor dari Canva — ${importedCount} aset</h2>
     <p class="warn">
       <strong>Bukan aset original.</strong> Geometri di seksi ini milik ${importedPacks.length} template Canva,

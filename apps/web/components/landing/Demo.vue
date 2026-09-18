@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ArrowRight, Copy } from 'lucide-vue-next'
-import { toast } from 'vue-sonner'
 import { buildGuestUrl } from '@aruna/contracts'
+
+const toast = useToast()
 
 const root = ref<HTMLElement | null>(null)
 const demoName = ref('Yosi Susanti')

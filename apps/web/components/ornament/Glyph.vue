@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
-import { ornamentBank, type OrnamentId } from '~/utils/ornaments'
+import { ornamentBank, type OrnamentEntry, type OrnamentId } from '~/utils/ornaments'
 
 /**
  * Merender satu ornamen dari bank berdasarkan id-nya.
@@ -31,13 +31,22 @@ import { ornamentBank, type OrnamentId } from '~/utils/ornaments'
  */
 const modules = import.meta.glob<{ default: Component }>('./*.vue')
 
-const props = defineProps<{ glyph: OrnamentId | null | undefined; initials?: string }>()
+const props = defineProps<{ glyph: OrnamentId | null | undefined; initials?: string; ubin?: boolean }>()
 
-// External SVGs retain their fixed reference palette and isolate definition IDs per image.
-// Native raster illustrations follow the same sizing and decorative accessibility contract.
-const asset = computed(() => {
-  const entry = props.glyph ? ornamentBank[props.glyph] : null
-  return entry && 'asset' in entry ? entry.asset : null
+/*
+ * Aset referensi: SVG berpalet tetap dan raster asli dari koleksi pemilik.
+ *
+ * `ubin` memilih salinan mana yang dipakai. Pemilih di dasbor meminta ubin 240px karena ia bisa
+ * menampilkan 44 aset sekaligus; undangan memakai salinan `web` 960px. **Tidak ada jalur yang
+ * merender berkas penuh** — 65 aset itu 24 MB, dan yang terberat 1,8 MB sendirian.
+ *
+ * Dimensinya ikut diteruskan supaya `<img>` punya rasio intrinsik dan tata letak tidak melompat.
+ */
+const aset = computed(() => {
+  const entry = props.glyph ? (ornamentBank[props.glyph] as OrnamentEntry) : null
+  if (!entry?.asset) return null
+  const src = props.ubin ? (entry.thumb ?? entry.webAsset ?? entry.asset) : (entry.webAsset ?? entry.asset)
+  return { src, width: entry.width, height: entry.height }
 })
 
 const cache = new Map<string, Component>()
@@ -62,7 +71,7 @@ const resolved = computed(() => {
  */
 const extra = computed(() => ({
   ...(props.initials === undefined ? {} : { initials: props.initials }),
-  ...(asset.value ? { src: asset.value } : {}),
+  ...(aset.value ? { src: aset.value.src, width: aset.value.width, height: aset.value.height } : {}),
 }))
 </script>
 

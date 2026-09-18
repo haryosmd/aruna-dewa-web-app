@@ -104,3 +104,7 @@ Belum ada bukti yang menetapkan Canva sebagai asal ilustrasi. Lokasi hosting Wor
 ## Batas arsip
 
 Arsip adalah hasil pengamatan mobile pada waktu tertentu, bukan salinan lengkap seluruh website. Foto contoh, ikon, dan font global ikut terinventaris; tidak semuanya ornamen yang dipakai pada halaman itu. Audio/video dan dokumen embed tidak disalin sebagai aset ornamen. Setiap laporan mencatat kegagalan/pengecualian. Aset kompetitor tetap research-only di docs gitignored; paket Sunda memiliki provenance original terpisah.
+
+## Bank referensi pemilik — 2026-09-18
+
+[Galeri 65 SVG/PNG sesuai kiriman](originals/melati/demo/referensi/index.html) tersedia dari tautan pada `#impor`. Sumber produksi di `packs/referensi/` dan `apps/web/public/ornaments/referensi/`. Jalankan `pnpm ornament:reference` untuk membangun ulang, `pnpm ornament:reference:verify` untuk bukti visual. Skill tersedia identik di Codex dan Claude; panggil `$aruna-ornament-builder` dengan gambar referensi.

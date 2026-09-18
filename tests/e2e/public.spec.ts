@@ -81,6 +81,53 @@ test('landing keyboard navigation and accessibility', async ({ page }, testInfo)
   await page.screenshot({ path: `docs/features/landing-order/verification/landing-${testInfo.project.name}.png`, fullPage: true })
 })
 
+/**
+ * Sapuan yang SENGAJA menatap toast — satu-satunya di suite ini.
+ *
+ * Fase 60 mengganti `vue-sonner` karena markup-nya menaruh `role="status"` pada `<li>` di dalam
+ * `<ol>`, dan aturan `list` axe menilai itu `serious`. Yang membuatnya lolos bertahun-tahun bukan
+ * kebersihan melainkan waktu: cabang yang gagal hanya dimasuki anak yang terlihat pembaca layar,
+ * jadi selama tidak ada toast di layar wadahnya kosong dan aturannya lulus. Setiap sapuan lain di
+ * repo ini berjalan tepat setelah navigasi, saat tidak ada satu pun toast. Tanpa tes ini,
+ * kemunduran yang sama akan sunyi persis dengan cara yang sama.
+ *
+ * Dua hal di bawah ini yang membuatnya berarti, dan keduanya berasal dari kegagalan sungguhan
+ * saat tes ini ditulis:
+ *
+ * 1. **Clipboard dimatikan supaya cabang GAGAL yang terpakai.** Bukan untuk menguji kegagalannya,
+ *    melainkan karena cabang itu memasang `duration: 10000` sementara toast biasa pergi setelah
+ *    4 detik. Toast yang kedaluwarsa di tengah sapuan tidak membuat tes ini merah — ia membuatnya
+ *    HIJAU tanpa memeriksa apa pun, dan lubang itu persis jenis yang sedang ditutup di sini.
+ * 2. **Halaman dikembalikan ke puncak sebelum disapu.** Mengklik tombol salin menggulir ke seksi
+ *    demo yang gelap, dan di sana header lengket berlatar `bg-surface/85` sedang di tengah
+ *    transisi 300ms-nya; axe membaca warna campuran itu dan melaporkan `color-contrast` pada
+ *    wordmark. Diukur: pada posisi diam yang sama, setelah transisinya selesai, sapuannya nol
+ *    pelanggaran — jadi yang dilaporkan tadi memang artefak transisi, bukan cacat desain.
+ */
+test('landing stays clean with a toast on screen', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true })
+  })
+  await page.goto('/')
+
+  const copy = page.locator('#landing-demo-copy')
+  await expect(copy).toBeEnabled()
+  await copy.click()
+
+  const toast = page.locator('[data-aruna-toast]')
+  await expect(toast).toHaveCount(1)
+
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
+
+  const scan = await new AxeBuilder({ page }).exclude('nuxt-devtools-frame').withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
+  expect(scan.violations.map(v => ({ id: v.id, impact: v.impact, targets: v.nodes.map(n => n.target) }))).toEqual([])
+
+  // Toast-nya harus MASIH ada: kalau ia sudah pergi, sapuan di atas memeriksa halaman kosong.
+  await expect(toast).toHaveCount(1)
+})
+
 test('theme carousel previews every published template', async ({ page }) => {
   await page.goto('/')
   const themes = page.getByRole('region', { name: 'Tema undangan' })

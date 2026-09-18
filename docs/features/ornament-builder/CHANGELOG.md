@@ -337,3 +337,50 @@ wcag2a/2aa/21aa, reduced motion, tanpa-JS, dan jeda offscreen.
 
 **Belum dikerjakan:** pemasangan ke aplikasi. `originals/kayon/THEME.md` menyiapkan pemetaan
 slot dan palet terverifikasi, lalu mendaftar enam prasyarat yang belum satupun dikerjakan.
+
+
+## 2026-09-18 — Bank referensi PNG pemilik
+
+58 aset impor dipertahankan geometrinya dan ditambah 7 varian warna (41 SVG, 24 PNG). Semua masuk `ornamentBank` lewat registry `ornament-reference.ts`; palet tetap mengikuti referensi. Metadata editor dihapus dari SVG, asal/checksum tetap di `packs/referensi/catalog.json`. Dua mawar dan joglo memakai kanvas sumber utuh, karena trim lama mengubah posisi dan ukuran pada lembar referensi. Renderer mendukung gambar SVG eksternal dan PNG melalui `ReferenceAsset.vue`.
+
+Skill `aruna-ornament-builder` beserta panduan `image-to-svg.md` disinkronkan di `.codex/skills` dan `.claude/skills`. Verifikasi: 65 aset lolos pemeriksaan path/piksel, alpha, dan salinan produksi; 421 tes Vitest dan 3 tes sanitizer lulus; ESLint dan Nuxt typecheck lulus. Galeri diperiksa pada 375 dan 1440px tanpa overflow/ornamen menimpa caption, dengan latar terang/gelap. Selisih piksel penuh lembar terhadap empat referensi disimpan di `verification/reference/results.json`, bukan klaim 100% identik.
+
+## 2026-09-18 — Fase 59: bank referensi akhirnya bisa dicapai, dan itu mengubah biayanya
+
+Enam puluh lima aset yang didaftarkan fase 58 **tidak pernah dirujuk satu baris pun** — nol hit
+untuk `ref-` di `theme.ts` dan `ornament-variants.ts`. Mereka ada di `ornamentBank` dan hanya bisa
+dicapai dengan mengetik id-nya. Studio Ornamen membuat seluruh bank bisa dipilih pasangan, jadi
+24,11 MB itu berhenti jadi biaya repo dan mulai jadi biaya kuota tamu.
+
+`scripts/ornament-reference/derive.mjs` (`pnpm ornament:reference:turunkan`, ikut dijalankan
+`pnpm ornament:reference`) memancarkan dua turunan per aset dan menulis ulang registry:
+
+| | berkas | total | terberat |
+|---|---|---|---|
+| asal | 41 SVG + 24 PNG | 24,11 MB | 1,81 MB |
+| `web/` 960px WebP q80 | dirender undangan | 3,34 MB | 313 KB |
+| `ubin/` 240px WebP q78 | dirender pemilih | 789 KB | 32 KB |
+
+Lebar 960 diturunkan dari lebar tayang sebenarnya, bukan angka bulat: tempat render terbesar adalah
+keping ladang sampai 600px CSS, dan aset referensi **ditolak** dari slot `layers` (kelimanya 6,43
+MB, diulang 2–6 kali per section), jadi yang tersisa bingkai cover di sekitar 480px CSS. Diukur,
+1200px menambah 238 KB pada tiga aset terberat tanpa selisih yang terlihat.
+
+**Sumbernya `packs/referensi/`, bukan arsip `docs/.../imported/`.** `build.mjs` membaca arsip lokal
+yang binernya di luar git; langkah turunan harus bisa diulang di mesin mana pun yang meng-clone
+repo ini. Registry kini ditulis **satu tempat** (`derive.mjs`) — kalau `build.mjs` memancarkannya
+sendiri tanpa `thumb`/`webAsset`, menjalankannya akan diam-diam mencabut keduanya, dan gejalanya
+bukan galat melainkan undangan yang mulai mengirim 1,8 MB lagi.
+
+`ReferenceAsset.vue` akhirnya membawa `width`/`height` dan `loading="lazy"`. Tanpa dimensi
+intrinsik tiap aset adalah sumber CLS — tidak pernah terlihat hanya karena sebelum fase ini tidak
+ada satu pun yang bisa dicapai.
+
+**Berkas turunan tidak di-hash di tes.** Keluaran libvips tidak dijamin identik byte-per-byte antar
+versi atau platform; hash di sana mengubah pemutakhiran sharp di CI jadi build merah yang tidak
+punya cacat di belakangnya. Yang diperiksa: ada, magic byte `RIFF…WEBP`, dan pagu ukuran yang
+ditulis angkanya.
+
+Selain itu: `apps/web/utils/ornament-metrics.ts` baru — ketebalan garis dan `data-draw` tiap glyph,
+dibangkitkan `pnpm ornament:metrics` dari `jalankan()` supaya lencana kecocokan di browser memakai
+angka gerbang, bukan tebakan kedua. Gerbang kesegarannya bergaya `forge-idempotent.spec.ts`.

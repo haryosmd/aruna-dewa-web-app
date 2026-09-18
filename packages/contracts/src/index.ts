@@ -106,6 +106,59 @@ export const selectableFonts: { id: FontChoice; label: string }[] = [
 ]
 
 /**
+ * Font yang boleh jadi huruf BODY, dan itu himpunan yang berbeda dari `selectableFonts`.
+ *
+ * `DESIGN.md` menyatakan "script/handwriting tidak pernah untuk paragraf atau navigasi" sebagai
+ * aturan. Sampai fase 58 aturan itu ditegakkan oleh **struktur**: huruf body datang dari
+ * `themePresentation.body` dan pasangan tidak bisa menyentuhnya, jadi tidak ada jalan
+ * melanggarnya. Membuka pemilih body tanpa menyaring akan mencabut aturannya diam-diam — lima
+ * script di `selectableFonts` semuanya berbobot 400 dan bersambung, dan paragraf 16px dalam
+ * Allura tidak terbaca.
+ *
+ * `italiana` ikut di luar walau bukan script: ia display berbobot 400 dengan goresan sangat
+ * tipis, dirancang untuk ukuran besar. Ia sah sebagai huruf judul (dan memang bawaan
+ * `aruna-pelita`) dan tidak sah sebagai huruf paragraf.
+ *
+ * Validasinya tetap `z.enum(fontChoices)` supaya dokumen lama dengan nilai apa pun tetap
+ * terbaca; yang disempitkan hanya apa yang DITAWARKAN. Pola yang sama persis dengan
+ * `fontChoices` versus `selectableFonts` di atas.
+ */
+export const bodyFontChoices = ['jakarta', 'jost', 'cormorant', 'fraunces', 'instrument'] as const
+export type BodyFontChoice = (typeof bodyFontChoices)[number]
+export const selectableBodyFonts: { id: FontChoice; label: string }[] =
+  selectableFonts.filter(font => (bodyFontChoices as readonly string[]).includes(font.id))
+
+export function isBodyFont(value: unknown): value is BodyFontChoice {
+  return typeof value === 'string' && (bodyFontChoices as readonly string[]).includes(value)
+}
+
+/**
+ * Ubin latar yang bisa dipilih pasangan. **Append-only**, alasan yang sama dengan `templateIds`:
+ * ia sumber `z.enum`, jadi mencabut sebuah id membuat tiap dokumen yang memakainya gagal
+ * divalidasi — termasuk undangan yang sedang dibaca tamu.
+ *
+ * `'tema'` berarti ikut bawaan tema dan tidak sama dengan tidak memilih; `'tanpa'` berarti
+ * pasangan sengaja mematikannya. Keduanya perlu, karena tanpa `'tanpa'` pasangan `aruna-sekar`
+ * tidak punya cara melepas damask-nya.
+ */
+export const backdropTiles = ['catur', 'kawung', 'kenanga', 'mega-mendung', 'sekar-damask', 'songket'] as const
+export type BackdropTile = (typeof backdropTiles)[number]
+export const backdropChoices = ['tema', 'tanpa', ...backdropTiles] as const
+export type BackdropChoice = (typeof backdropChoices)[number]
+
+/**
+ * Kepekatan latar dalam tiga tingkat, bukan angka bebas — meniru `ornamentIntensities`.
+ *
+ * Ubin dicat `background-color: var(--iv-accent)` tepat di belakang teks. Laporan keterbacaan
+ * di editor mengukur teks terhadap `--iv-bg`, **bukan** terhadap ubin, jadi slider bebas akan
+ * membuka jalan ke latar yang menelan paragraf tanpa satu pun gerbang menyadarinya. Angkanya
+ * dipetakan di `apps/web/utils/backdrops.ts`; yang tertinggi sengaja dekat dengan nilai tema
+ * yang sudah terbit (0,07), bukan jauh di atasnya.
+ */
+export const backdropWeights = ['halus', 'sedang', 'tegas'] as const
+export type BackdropWeight = (typeof backdropWeights)[number]
+
+/**
  * Curated starting point for each template. Couples on the `design` entitlement can
  * still override the three colours; the preset only decides where they start.
  */
@@ -138,7 +191,25 @@ export function templateById(id: string) {
 const color = z.string().regex(/^#[0-9a-fA-F]{6}$/)
 export const invitationDocumentSchema = z.object({
   schemaVersion: z.literal(1), templateId: z.enum(templateIds), templateVersion: z.literal(1),
-  tokens: z.object({ background: color, foreground: color, primary: color, font: z.enum(fontChoices) }).strict(),
+  /*
+   * Ketiga key baru fase 59 **opsional dengan sengaja**, dan itu menyelesaikan tiga hal sekaligus.
+   *
+   * Dokumen yang ditulis sebelum fase ini tetap lolos tanpa migrasi. Preset tema tidak perlu
+   * mengisinya, jadi `tests/contracts.test.ts` yang menuntut `document.tokens` identik dengan
+   * `template.tokens` tetap hijau. Dan "kosong" tetap berarti "ikut tema" — yang membuat sebuah
+   * tema bisa mengubah huruf atau latarnya kelak tanpa memaksa dokumen lama ikut berubah.
+   *
+   * Letaknya di `tokens`, bukan di `section.data`, karena `designFingerprint()` di API
+   * menggerbangi `tokens` — jadi ketiganya otomatis ikut entitlement `design` bersama warna dan
+   * huruf judul, tanpa satu cabang baru pun di sisi server.
+   */
+  tokens: z.object({
+    background: color, foreground: color, primary: color,
+    font: z.enum(fontChoices),
+    bodyFont: z.enum(fontChoices).optional(),
+    backdrop: z.enum(backdropChoices).optional(),
+    backdropWeight: z.enum(backdropWeights).optional(),
+  }).strict(),
   sections: z.array(z.object({
     id: z.string().min(1).max(80), type: z.enum(sectionTypes), enabled: z.boolean(), data: z.record(z.unknown()),
   }).strict()).min(1).max(30),

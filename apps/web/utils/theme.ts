@@ -1,7 +1,8 @@
-import { templates, templateById, resolveTemplateId, type FontChoice, type InvitationDocument, type LiveTemplateId } from '@aruna/contracts'
+import { isBodyFont, templates, templateById, resolveTemplateId, type FontChoice, type InvitationDocument, type LiveTemplateId } from '@aruna/contracts'
 import type { ThemeMotion } from './motion-score'
 import type { OrnamentSet } from './ornaments'
 import { onPrimary } from './contrast'
+import { backdropStyle, toBackdrop, toBackdropWeight } from './backdrops'
 import { ornamentRamp, ornamentRampOnDark, rampStyle } from './ornament-palette'
 
 /** Aksen kaligrafi, dipakai hanya untuk nama pasangan pada tema yang cocok. */
@@ -38,11 +39,14 @@ const fontStacks: Record<FontChoice, string> = {
 /**
  * Lapisan latar milik tema. Motif dicat sebagai `mask-image` supaya warnanya mengikuti
  * `--iv-accent` saat pasangan mengubah palet, bukan warna yang sudah dipanggang ke berkas.
- * `plate` adalah foto yang dicuci sangat tipis di balik satu section bernada gelap.
+ *
+ * **`plate` dihapus pada fase 59.** Ia dideklarasikan, tidak pernah diisi satu tema pun, dan
+ * tidak pernah dibaca satu baris pun — diukur pada seluruh `utils/`, `components/`, dan
+ * `pages/`. Membiarkan cabang mati bersebelahan dengan `motif` yang justru baru saja jadi
+ * bisa dipilih pasangan adalah undangan terbuka untuk "sekalian disambungkan".
  */
 export interface ThemeBackdrop {
   motif?: { src: string; size: string; opacity: number }
-  plate?: { src: string; position?: string; opacity: number }
 }
 
 /** Bagaimana galeri undangan ditata. Watak tema yang memilih, bukan pasangan. */
@@ -459,11 +463,24 @@ export function themeMotion(templateId: string): ThemeMotion | undefined {
 export const invitationThemes = templates.map(template => ({ ...template, ...themePresentation[template.id] }))
 
 /** Inline custom properties every invitation section reads. */
+/**
+ * Huruf body yang berlaku: pilihan pasangan kalau sah, bawaan tema kalau tidak.
+ *
+ * Pemeriksaan `isBodyFont()` di sini **bukan** pengulangan validasi zod, dan menghapusnya akan
+ * mencabut satu aturan desain. Skema memvalidasi `bodyFont` terhadap `fontChoices` yang penuh
+ * supaya dokumen lama tetap terbaca, jadi sebuah dokumen yang disunting tangan bisa membawa
+ * `allura` dengan sah. Penjaga inilah yang membuat "script tidak pernah untuk paragraf" tetap
+ * ditegakkan setelah pemilihnya dibuka — bukan sekadar diasumsikan seperti sebelum fase 59.
+ */
+export function bodyFontOf(document: Pick<InvitationDocument, 'tokens' | 'templateId'>): FontChoice {
+  const pilihan = document.tokens.bodyFont
+  return isBodyFont(pilihan) ? pilihan : themeOf(document.templateId).body
+}
+
 export function themeStyle(document: Pick<InvitationDocument, 'tokens' | 'templateId'>): Record<string, string> {
   const preset = templateById(document.templateId) ?? templates[0]!
   const presentation = themeOf(document.templateId)
-  const body = presentation.body
-  const backdrop = presentation.backdrop
+  const body = bodyFontOf(document)
   return {
     '--iv-bg': document.tokens.background,
     '--iv-fg': document.tokens.foreground,
@@ -506,10 +523,11 @@ export function themeStyle(document: Pick<InvitationDocument, 'tokens' | 'templa
     // Bayangan dibangun dari warna teks tema, jadi ikut hangat/dingin mengikuti paletnya.
     '--iv-shadow-card': `0 18px 36px -26px color-mix(in srgb, ${document.tokens.foreground} 60%, transparent)`,
     '--iv-shadow-lift': `0 28px 60px -32px color-mix(in srgb, ${document.tokens.foreground} 70%, transparent)`,
-    // Latar tema. Nilai `none`/`0` membuat tema tanpa backdrop identik dengan sebelumnya.
-    '--iv-backdrop-mask': backdrop?.motif ? `url("${backdrop.motif.src}")` : 'none',
-    '--iv-backdrop-size': backdrop?.motif?.size ?? '240px',
-    '--iv-backdrop-opacity': String(backdrop?.motif?.opacity ?? 0),
+    /*
+     * Latar. Tanpa `tokens.backdrop` hasilnya identik dengan sebelum fase 59 — dan cabang itulah
+     * yang melayani setiap undangan yang sudah terbit, karena tak satu pun membawa key barunya.
+     */
+    ...backdropStyle(toBackdrop(document.tokens.backdrop), toBackdropWeight(document.tokens.backdropWeight), presentation.backdrop),
   }
 }
 

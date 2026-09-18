@@ -1,6 +1,6 @@
 ---
 name: aruna-ornament-builder
-description: Hunt and audit wedding ornament references, identify rendered fonts and motion, curate culturally grounded original SVG and transparent raster packs, and prepare local theme previews for Aruna Dewa. Use for ornament hunting, recreation, collections, and theme briefs such as Sunda, Bali, Batak, or vintage.
+description: Use when auditing ornament sources, rebuilding a supplied ornament image or SVG into an Aruna Dewa pack, curating culture-based ornament collections, or preparing local theme previews.
 ---
 
 # Aruna Ornament Builder
@@ -11,7 +11,8 @@ Work from the Aruna-dewa repository root. Read `AGENTS.md`, `DESIGN.md`, and the
 
 - **URL / inspect / font audit:** read [audit.md](references/audit.md). Collect page, CSS, network and rendered-font evidence. Generate the local gallery and report.
 - **Theme / cultural brief / ornament hunting:** read [curation.md](references/curation.md). Search authoritative cultural references, inspect existing catalogs, identify gaps, and choose a coherent set.
-- **Recreate / SVG / cutout:** read [creation-motion.md](references/creation-motion.md). Author real vector paths or generate transparent raster imagery; keep original provenance separate from reference downloads.
+- **Recreate supplied ornament / image-to-SVG / visual match:** read [image-to-svg.md](references/image-to-svg.md). Use it for an accuracy-led reconstruction, a source-SVG cleanup, or a transparent bitmap cutout. Do not claim a raster can always become a perfect editable SVG.
+- **New original SVG / cutout:** read [creation-motion.md](references/creation-motion.md). Author new vector paths or generate transparent raster imagery; keep original provenance separate from reference downloads.
 - **Compose / animate / new theme pack:** use the same creation reference, existing catalog and `DESIGN.md`. Deliver an offline local preview and metadata, then verify it at mobile and desktop sizes.
 
 For a brief spanning routes, continue through the required routes without asking for repeated permission. Ask only when an unresolved choice materially changes the output (for example true 3D versus layered 2.5D). Do not invent cultural meanings or claim exact font use from a CSS family declaration.
@@ -23,6 +24,8 @@ For a brief spanning routes, continue through the required routes without asking
 - Record actual failures and incomplete coverage. Do not describe a broken download, fallback font, generated raster, or untested motion as verified.
 - Catalog v1 fields and integration mapping are in [catalog.md](references/catalog.md). Reuse `ornamentBank`, `themePresentation`, and `useArunaMotion` when integration is requested, rather than creating another renderer.
 - SVGs must remain editable paths/groups. Never put a bitmap into an SVG wrapper and call it vector recreation. Font identification does not establish licensing, and a Canva-like appearance does not establish Canva provenance.
+- Source SVG paths are the fidelity baseline when they are available: preserve their geometry, transforms, fills, gradients, and clipping rather than retracing or flattening them. Remove editor metadata only as delivery cleanup; record the source and ownership status separately. Cleaning metadata never makes a copied design an original asset.
+- A supplied bitmap that is inherently photographic, watercolor, or otherwise raster-native stays a transparent PNG/WebP in the bank. Do not force it into SVG paths or silently use a raster-filled SVG.
 
 ## Helpers
 
@@ -40,4 +43,4 @@ The collector defaults to the eight seed URLs only when no URLs are supplied. `-
 
 ## Done means evidenced
 
-Verify file signatures, checksums, SVG safety and unique IDs, alpha, font declarations versus rendered glyphs, complete failure inventory, local links, responsive layout, readable static fallback, reduced motion, and offscreen pause. Show the user the gallery/demo and the shortest useful instructions for invoking this skill again.
+Verify file signatures, checksums, SVG safety and unique IDs, alpha, font declarations versus rendered glyphs, complete failure inventory, local links, responsive layout, readable static fallback, reduced motion, and offscreen pause. For a recreation, also retain the comparison evidence and bounds required by [image-to-svg.md](references/image-to-svg.md). Show the user the gallery/demo and the shortest useful instructions for invoking this skill again.

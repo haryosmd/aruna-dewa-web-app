@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Invitation } from '~/types/aruna'
 import { ExternalLink, PencilLine } from 'lucide-vue-next'
-import { toast } from 'vue-sonner'
+
+const toast = useToast()
 
 definePageMeta({ middleware: 'auth', layout: false })
 

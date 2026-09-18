@@ -21,6 +21,10 @@
     "images:optimize": "tsx scripts/optimize-images.ts",
     "ornament:forge": "node scripts/ornament-forge/forge.mjs",
     "ornament:pack": "node scripts/ornament-pack/pack.mjs",
+    "ornament:metrics": "node scripts/ornament-metrics/build.mjs",
+    "ornament:reference": "node scripts/ornament-reference/build.mjs",
+    "ornament:reference:turunkan": "node scripts/ornament-reference/derive.mjs",
+    "ornament:reference:verify": "node scripts/ornament-reference/verify.mjs",
     "ornament:sheet": "tsx scripts/ornament-forge/lihat.ts",
     "ornament:sheet:serve": "tsx scripts/ornament-forge/lihat.ts --sajikan",
     "ornament:verify": "node scripts/ornament-forge/verify.mjs"

@@ -43,6 +43,242 @@ alasannya.
 
 ## Sisa
 
+**Fase 61 — tiga e2e merah yang sudah merah sebelum fase 60, dan sebuah assertion yang tidak
+pernah menjaga apa pun.** Ditulis 2026-09-18, **sebelum satu berkas pun disentuh**. Fase 60
+mencatat ketiganya sebagai "di luar fase ini" dan menundanya; fase ini membereskannya. Dua akar,
+bukan satu.
+
+**Satu baris tamu menjatuhkan dua puluh empat yang sehat.** `GET /v1/invitations/:id/guests`
+menjawab 500 karena `decryptGuestToken()` dipanggil di dalam `.map()` tanpa penjaga
+(`guests.service.ts:80`). Dekripsi yang gagal bukan gangguan sesaat — kuncinya `sha256(JWT_SECRET)`
+mentah tanpa key id, jadi baris yang ditulis di bawah secret lain **tidak akan pernah** terbuka
+lagi. Yang sampai ke browser hanya `HTTP_500 / Terjadi kesalahan pada server`; sebabnya tidak
+pernah terlihat, dan halaman tamu tampil kosong seolah memang tidak ada tamu.
+
+**Yang teracun ternyata empat baris dari tiga puluh.** Diperiksa langsung ke Postgres lokal, bukan
+ditaksir: 30 baris tamu di 8 undangan, dan hanya undangan `e30bcfdd` — persis `invitationId` di
+`.data/qa-account.json` — yang gagal. Semua baris 09-11 dan 09-14 masih terbuka dengan secret yang
+ada di `apps/api/.env`. **Arah tuduhan di catatan fase 60 terbalik:** bukan `.env` yang dirotasi,
+melainkan satu run `api-smoke` 2026-09-16 yang berjalan dengan `JWT_SECRET` ambient dari shell.
+`env.ts:17-19` memang mendahulukan `process.env` di atas berkas `.env`, dan itu cukup untuk
+menulis empat baris yang tidak bisa dibaca siapa pun lagi.
+
+**Tautan tamunya sendiri tidak ikut mati**, dan itu yang menentukan seberapa besar perbaikannya.
+`public.service.ts` mencari lewat `hashGuestToken` — sha256 polos, tanpa kunci. Yang hilang hanya
+kemampuan operator menampilkan ulang tautannya, bukan kemampuan tamu membukanya.
+
+**Degradasinya diberi penanda, bukan didiamkan.** `buildGuestUrl()` membuang `g` diam-diam kalau
+token kosong, jadi "catch lalu lanjut" akan membuat tombol salin personal menghasilkan tautan
+sapaan tanpa RSVP sambil mengumumkan "berhasil disalin" — operator mengirim tautan rusak tanpa
+tahu. Karena itu `tokenUnavailable` dikirim eksplisit, terpisah dari `token` yang absen secara sah
+untuk `VIEWER`, dan tombolnya mati.
+
+**`expect(heights.Tablet).toBe(heights.Laptop)` dicabut karena tidak pernah menguji apa pun.**
+Komentar di atasnya mengklaim tes itu menangkap `@min-[48rem]:` yang dikembalikan jadi `md:` —
+tapi media query membaca jendela yang sama untuk ketiga panggung, jadi Tablet dan Laptop bergeser
+bersama dan kesetaraannya tetap hijau. Satu-satunya baris yang benar-benar menanggung beban di
+sana adalah `Ponsel > Tablet`.
+
+**Dugaan pertama soal penyebab selisihnya salah arah, dan dicatat apa adanya.** `Segue.vue`
+(`clamp(1.5rem, 4cqw, 3rem)`) memang beku baru di 75rem sementara setiap token fluid lain di
+undangan beku di ≤48,6rem — satu-satunya yang masih tumbuh antara 834 dan 1280. Tapi Segue membuat
+**Laptop** lebih tinggi, padahal yang terukur 5717 (Tablet) > 5616 (Laptop). Penyebab dominannya
+teks yang membungkus lebih sedikit baris di wadah yang lebih lebar. Artinya menurunkan cap Segue
+tidak akan pernah membuat tes itu hijau, dan kesetaraan itu memang menuntut sesuatu yang
+`DESIGN.md:167` tidak pernah janjikan: yang dijanjikan undangan sepenuhnya container query, bukan
+tata letak yang berhenti berubah di atas 48rem.
+
+**Penggantinya menguji janji yang sebenarnya:** lebar perangkat yang sama wajib menghasilkan tinggi
+yang sama, berapa pun lebar jendela editornya. Diukur dua kali dalam satu tes, di dua lebar jendela
+yang selalu menyeberangi 1280 — 360↔1440, 768↔1440, 390↔1440, 1440↔420 — jadi keempat project
+menguji seberangan yang berbeda. Jumlah tes sengaja tidak berubah: gate CI menuntut persis 156.
+
+**Jebakan yang ditemukan saat merancangnya:** `mobilePanel` bawaannya `'settings'`, jadi di 1440
+tab `Pratinjau` ber-`xl:hidden` tidak pernah diklik dan panelnya tampil semata-mata berkat
+`xl:block`. Begitu jendela menyempit melewati 1280 panel itu jadi `hidden` dan `offsetHeight`-nya
+**0** — angka yang terbaca persis seperti "tinggi rendernya berubah". Karena itu pratinjau
+dibuka ulang setiap kali lebar jendela berubah, dan cabangnya dibaca dari `matchMedia`, bukan dari
+`isVisible()` yang sekali baca.
+
+**Merahnya `device preview` ternyata bergantung fixture, dan itu memperkuat alasan mencabutnya —
+bukan melemahkannya.** Sesudah fixture QA diregenerasi, `heights.Tablet` dan `heights.Laptop`
+kembali identik (4720 = 4720), jadi assertion lama akan hijau lagi tanpa satu baris pun diubah.
+Fixture lama menyalakan gallery, story, rundown, dresscode, video dan gift; yang baru hanya
+sembilan section, dan selisih pembungkusan teksnya hilang. Sebuah assertion yang merah atau hijau
+tergantung berapa section yang kebetulan menyala tidak menjaga apa pun — ia hanya mencatat isi
+fixture. Yang menggantikannya dibuktikan lebih kuat, bukan lebih longgar: dengan
+`@min-[40rem]:py-5` di `Countdown.vue` diubah jadi `md:py-5`, ketiga lebar bergeser 8px antara
+jendela 360 dan 1440 dan tes barunya **merah** — sementara `Tablet === Laptop` tetap **hijau** di
+kedua lintasan (4384 = 4384, lalu 4392 = 4392).
+
+**Alasan `Ponsel > Tablet` yang tertulis sejak fase 16 sudah basi.** Komentarnya menyebut cover
+`split-editorial` yang menumpuk di bawah 768px; cover fixture sekarang `arch-potret` dan tidak
+pernah membelah. Urutannya tetap benar, tapi yang menanggungnya pembungkusan teks di tiga belas
+section. Komentarnya dikoreksi, bukan dibiarkan terdengar meyakinkan.
+
+**Menjalankan project `mobile` menemukan cacat keempat, milik fase 59.** Editor meluber horizontal
+2px di 360px — `scrollWidth` 362 lawan `innerWidth` 360. Penyebabnya `grid-cols-[auto_1fr_auto]`
+di `dashboard/ornament/SlotSummary.vue` (dua tempat): track `1fr` minimum bawaannya `min-content`,
+jadi kolom teks menolak menyempit dan kartunya butuh 341,9px di dalam kotak 278px. Diganti
+`minmax(0,1fr)` supaya teksnya boleh membungkus; sesudahnya `scrollWidth` 360 = `innerWidth` 360.
+Assertion yang menangkapnya (`documentElement.scrollWidth <= innerWidth`) sudah ada sejak lama —
+yang belum pernah ada adalah orang yang menjalankan project `mobile`.
+
+**`pnpm test:integration` kini 47/47.** Kegagalan `old refresh token replay denied` yang dicatat
+fase 16 sebagai pemblokir regenerasi fixture sudah tidak ada; keempat pemeriksaan rotasi refresh
+token lulus.
+
+**Gerbang "tidak boleh ada yang skip" di CI sudah basi dan akan merah karena dua hal sekaligus,
+keduanya warisan fase 59.** `ci.yml` menuntut persis 156 eksekusi; kenyataannya sekarang 168 lulus
+dan **4 di-skip**. Yang di-skip `mengunci pemilih saat add-on desain belum dibeli` di keempat
+project: ia melewati dirinya sendiri kalau `#ornament-locked` tidak ada, padahal pemilik fixture QA
+selalu dinaikkan jadi `OPERATOR` — jadi keadaan terkunci yang ingin diujinya tidak pernah bisa
+terjadi di fixture itu. Angka 156 sengaja **tidak** dinaikkan diam-diam di fase ini: menaikkannya
+akan menyembunyikan tes yang tidak pernah benar-benar berjalan. Keputusan pemilik, fase sendiri.
+
+**Sengaja ditunda: rotasi kunci sungguhan.** `Guest.tokenVersion` ada di schema tapi tidak pernah
+dibaca atau ditulis. Selama kunci diturunkan `sha256(JWT_SECRET)` tanpa key id, mengganti
+`JWT_SECRET` di produksi membuat setiap tautan personal tidak bisa ditampilkan ulang operator
+selamanya. Fase ini membuat gejalanya terlihat dan berhenti merusak halaman; memperbaiki
+penyebabnya butuh key id tersimpan per baris plus jalur re-issue, dan itu fase sendiri dengan
+keputusan pemilik soal tautan yang sudah beredar.
+
+
+**Fase 60 — toaster berhenti berpura-pura jadi daftar.** Ditulis 2026-09-18, **sebelum satu
+berkas pun disentuh**. Lahir dari fase 59: sapuan axe pertama yang kebetulan berjalan saat
+sebuah toast tampil, dan ia langsung merah.
+
+**Temuannya bukan milik fase 59, dan bukan milik kita.** `vue-sonner` merender wadahnya sebagai
+`<ol data-sonner-toaster>` dan tiap toast sebagai `<li role="status">`. `role` itulah yang
+merusaknya: ia menimpa peran `listitem` bawaan `<li>`, jadi sebuah `<ol>` berisi anak yang bukan
+listitem — `serious`, `list`/`only-listitems`, wcag2a/wcag131.
+
+**Yang membuatnya tidak pernah merah selama ini adalah waktu, bukan kebersihan.** Cabang yang
+gagal di `only-listitems` hanya dimasuki anak yang `isVisibleToScreenReaders`; tanpa toast di
+layar wadahnya kosong, `isEmpty` tetap benar, dan aturannya lulus. Seluruh sapuan yang ada
+berjalan tepat setelah navigasi, saat tidak ada satu pun toast. Tes Studio menyimpan draft dulu —
+jadi ia sapuan pertama yang menatap toast sukses, dan satu-satunya alasan ia menemukan ini.
+
+**Dua dari tiga jalan keluar yang direncanakan ternyata buntu, dan keduanya buntu karena alasan
+yang bisa ditunjuk.** `ToastOptions` di `vue-sonner.d.ts` hanya mengenal `class`, `style`,
+`duration`, `unstyled`, `classes`, dan dua gaya tombol — tidak ada `role`, tidak ada `as`, tidak
+ada pintu untuk mengganti elemennya; `role: "status"` dan `"li"` dua-duanya literal di dalam
+render terkompilasi. Membungkus toaster dengan wadah non-daftar juga tidak menolong: yang
+dinilai axe adalah `<ol>` itu sendiri beserta anak langsungnya, bukan leluhurnya.
+
+**Jalan ketiga sempat tampak murah, dan ternyata rusak di hulu.** `useVueSonner()` mengekspor
+`activeToasts`, yang seharusnya cukup untuk merender markup sendiri sambil tetap memakai
+`toast.*` milik pustaka. Cabang dismiss-nya berbunyi `return s.value.filter(...)` — hasilnya
+tidak pernah ditugaskan kembali ke `s.value`, jadi toast yang sudah pergi tidak pernah keluar
+dari daftar. Membangun di atasnya berarti mewarisi kebocoran itu.
+
+**Maka toaster-nya dimiliki sendiri, dan `vue-sonner` dicabut.** Biayanya kecil dan terukur:
+permukaan yang benar-benar dipakai repo hanya `toast.success` (21), `toast.error` (11),
+`toast.message` (1), dan `toast.warning` (1), dengan dua opsi saja — `description` dan
+`duration`. Tidak ada `promise`, `custom`, `loading`, atau `dismiss` di satu berkas pun.
+Bentuknya mengikuti popup yang sudah ada apa adanya — `stores/toast.ts` untuk antrean dan
+pewaktunya, `composables/useToast.ts` sebagai satu-satunya permukaan halaman, dan satu pemapar
+yang dipasang sekali di `app.vue` — karena alasan `AtomicPopup` dipasang di sana berlaku sama
+persis di sini.
+
+**Wadahnya `<div>` dengan satu `aria-live`, bukan daftar.** Peran `status` per-toast dilepas
+bersama elemennya: satu daerah live di wadah sudah mengumumkan toast yang datang, dan daerah
+live bersarang adalah cara paling mudah membuat pembaca layar mengumumkan hal yang sama dua kali.
+
+**Pengecualian `[data-sonner-toaster]` di tes Studio dicabut di fase ini**, dan diganti sesuatu
+yang tidak bisa diam-diam benar lagi: satu sapuan yang **sengaja** berjalan dengan toast di
+layar, di landing — permukaan publik tanpa auth, tanpa API, tanpa fixture QA. Tombol salin di
+`LandingDemo` menerbitkan toast di kedua cabangnya, berhasil maupun gagal, jadi sapuannya tidak
+bergantung pada izin clipboard.
+
+**Diukur, bukan diperkirakan.** Repro-nya satu tombol salin di landing, `AxeBuilder` tanpa
+pengecualian apa pun selain bingkai devtools, tag `wcag2a`/`wcag2aa`/`wcag21aa`:
+
+| | Pelanggaran | Yang mana |
+|---|---|---|
+| Sebelum | **1** | `list` — `serious`, wcag2a/wcag131, pada `ol[data-sonner-toaster]`. Pesan axe: "List element has direct children that are not allowed: [role=status]" |
+| Sesudah | **0** | — |
+
+Sesudahnya hijau di keempat project Playwright, WebKit ikut. Tes Studio fase 59 juga hijau
+**tanpa** `.exclude('[data-sonner-toaster]')`, dan `public.spec.ts` bertambah dari 28 ke 29 tes.
+
+**Sapuan pertama sempat melaporkan dua pelanggaran, dan yang kedua ternyata bukan cacat.**
+`color-contrast` pada wordmark header, #b4472a di atas #dcdbdb — 3,92:1. Mengklik tombol salin
+menggulir ke seksi demo yang gelap, dan header lengket `bg-surface/85` sedang di tengah transisi
+300ms-nya saat axe membaca warnanya. Diukur pada posisi diam yang sama setelah transisinya
+selesai: nol pelanggaran. Jadi artefak transisi, bukan cacat desain — tapi cukup untuk menentukan
+bentuk tes barunya, yang kini mengembalikan halaman ke puncak sebelum menyapu.
+
+**Yang dipakai repo ternyata jauh lebih sempit dari yang disediakan pustaka**, dan itu yang
+membuat pencabutannya murah: `toast.success` (21), `toast.error` (11), `toast.message` (1),
+`toast.warning` (1), dengan hanya `description` dan `duration` sebagai opsi. Nol pemakaian
+`promise`, `custom`, `loading`, dan `dismiss`. Gantinya 96 baris store, satu composable, dan satu
+komponen; `vue-sonner` keluar dari `package.json` dan lockfile. Tes unit bertambah 7 (1018 → 1025).
+
+**Satu tes unit versi pertama tidak menguji apa pun, dan itu ketahuan dengan mencobanya.**
+Pembatalan pewaktu toast yang terdorong keluar batas tampil diuji lewat isi daftar — lalu
+pembatalannya dihapus dan tesnya tetap hijau, karena `key` unik membuat pewaktu yatim tidak
+pernah merusak daftar. Diganti `vi.getTimerCount()`; sekarang kedua mutasi (pembatalan dihapus,
+batas tampil dilepas) merah. Yang ikut terkoreksi: komentar di `stores/toast.ts` yang tadinya
+mengklaim gejalanya "toast lain hilang lebih cepat" — itu tidak pernah benar.
+
+**Tiga tes `dashboard.spec.ts` merah, dan ketiganya sudah merah sebelum fase ini.** Dibuktikan,
+bukan diasumsikan: dua di antaranya (`signed-in editor…`, `dashboard screens are accessible…`)
+berhenti di halaman tamu yang kosong karena `GET /v1/invitations/:id/guests` menjawab **500** —
+`Error: Unsupported state or unable to authenticate data`, yakni GCM auth tag gagal di
+`decryptGuestToken()`, yang kuncinya diturunkan dari `JWT_SECRET`. Baris tamu di fixture QA
+tampaknya ditulis dengan secret yang berbeda. Gejala yang sama muncul pada API 3001 yang berjalan
+terpisah, jadi ia bukan akibat pasangan API/web yang dipakai fase ini. Yang ketiga (`device
+preview`) gagal di `heights.Tablet === heights.Laptop`, 5717 vs 5616 — dan angkanya **identik**
+saat `<AtomicToaster />` dilepas sementara dari `app.vue`. Ketiganya di luar fase ini; yang
+pertama dan kedua menunggu fixture QA yang bisa diregenerasi.
+
+**Yang sengaja tidak diubah:** ikon keempat nada tetap berwarna `--color-primary`, sama seperti
+`.aruna-toast [data-icon]` sebelumnya. Mewarnainya per nada memang lebih informatif, tapi itu
+keputusan desain dan fase ini tentang markup — menyelipkannya di sini akan membuat perubahan
+visual menumpang pada perbaikan aksesibilitas.
+
+
+**Fase 59 — Studio Ornamen, dan 269 glyph yang selama ini tidak bisa dicapai siapa pun.** Ditulis
+2026-09-18, **sebelum satu berkas pun disentuh**. Lahir dari permintaan pemilik: pemilih ornamen,
+font, dan latar seperti Canva di pengaturan undangan, dengan akses ke **seluruh** bank.
+
+**Yang ada sebelumnya menawarkan 59 dari 328.** Empat slot (bingkai, pemisah, sudut, segel)
+sebagai ubin kecil di kolom pengaturan. Sisanya — 269 glyph — tidak punya satu pun jalur ke mata
+pasangan. Enam ubin latar ada di `apps/web/public/textures/` dan **hanya satu tersambung**; empat
+tema hidup memancarkan `mask: none; opacity: 0`. Font body dipatok tema dan tidak pernah
+ditawarkan.
+
+**Penyempitan itu disengaja, dan alasannya tetap benar.** `DESIGN.md` menolak "pemilih bank penuh"
+dengan alasan yang dipakai menolak color picker bebas: lima tema berubah jadi satu tema dengan
+lima nilai awal. Pemilik memutuskan membukanya **dengan penanda**, bukan mencabut kurasinya — jadi
+fase ini menambah jalur kedua di samping kolam terkurasi. Tab "Disarankan" tetap kolam
+`themeVariants` yang dijaga `gerbangKohesi`; tab "Semua" membuka bank penuh dengan lencana
+"ketebalan garis berbeda dari tema" dan "warna tetap, tidak ikut palet".
+
+**Temuan yang mengubah rencananya sendiri: 65 aset referensi belum pernah diunduh satu tamu pun.**
+`grep -n "ref-"` di `theme.ts` dan `ornament-variants.ts` nol hit — mereka terdaftar di
+`ornamentBank` sejak fase 58 dan tidak dirujuk satu baris pun. Fase inilah yang pertama kali
+membuatnya sampai ke undangan terbit, jadi berat mereka berhenti jadi biaya repo dan mulai jadi
+biaya tamu: **24,11 MB**, terbesar 1,8 MB, dan kategori `layer` sendiri 6,43 MB untuk lima keping
+yang `OrnamentField` ulang 2–6 kali per section. Thumbnail 240px untuk pemilih **tidak cukup**;
+yang ditambahkan varian `web` 1200px (1,8 MB → ~150 KB), dimensi intrinsik di `ReferenceAsset.vue`
+yang selama ini tidak punya `width`/`height`, dan penolakan aset referensi masuk slot `layers`.
+
+**Gerbang entitlement ternyata sudah rapuh sebelum disentuh.** `hasDesignChange()` membandingkan
+`JSON.stringify(tokens)` — peka urutan key. Menambah key yang kadang ada kadang tidak (`bodyFont`,
+`backdrop`) membuat false positive jauh lebih mungkin, dan gejalanya simpan ditolak untuk perubahan
+yang tidak pernah dibuat pasangan. Diganti `designFingerprint()` dengan proyeksi eksplisit dan
+tokens tersortir. `ornamentOverrides` ikut digerbangi atas keputusan pemilik; `ornamentIntensity`
+sengaja tetap gratis.
+
+**Lencana kecocokan butuh angka yang hanya ada di Node.** `jalankan().ukuran` membaca berkas dari
+disk. Jalurnya satu berkas hasil generate (`apps/web/utils/ornament-metrics.ts`) plus gerbang
+kesegaran bergaya `forge-idempotent.spec.ts`, ditambah satu tes jembatan: tiap anggota
+`semuaVarian()` wajib `fitOf().ok === true`, supaya lencana di browser mewarisi otoritas gerbang
+Node alih-alih menebak ulang.
+
+
 **Fase 58 — bingkai, segel, dan simbol forge dipensiunkan.** Ditulis 2026-09-18 setelah pemilik
 membuka lembar kontak dan menilai ketiga keluarga itu tidak memenuhi standar: sudut tidak
 sempurna, garis tebal. Empat puluh glyph, dan cacatnya cacat resep — bukan cacat satu-dua keping.

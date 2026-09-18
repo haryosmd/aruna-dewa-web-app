@@ -14,6 +14,8 @@
  * diungkap dengannya. `bloomIn`/`cascadeIn` di `useArunaMotion()` yang menggantikannya.
  */
 
+import { referenceOrnaments } from './ornament-reference'
+
 export type OrnamentCategory =
   | 'frame' | 'divider' | 'corner' | 'floral' | 'monogram' | 'motif' | 'symbol'
   | 'layer' | 'venue' | 'attire' | 'seal'
@@ -37,12 +39,29 @@ export interface OrnamentEntry {
   /** Fixed-color vector or native raster from the owner's reference collection. */
   asset?: string
   format?: 'svg' | 'png'
+  /**
+   * Piksel asli aset referensi, dipancarkan supaya `<img>` punya dimensi intrinsik.
+   *
+   * Tanpa ini tiap aset referensi adalah sumber CLS: `ReferenceAsset.vue` merender `<img>`
+   * tanpa `width`/`height`, jadi tata letak melompat saat gambarnya tiba. Selama fase 58 itu
+   * tidak pernah terlihat karena tidak ada satu pun aset referensi yang bisa dicapai.
+   */
+  width?: number
+  height?: number
+  /** Salinan 240px untuk grid pemilih. Grid tidak pernah memuat aset penuh. */
+  thumb?: string
+  /**
+   * Salinan yang dikirim ke tamu — 960px WebP, atau berkas aslinya kalau memang lebih kecil.
+   * `asset` tetap menunjuk berkas penuh; yang dirender undangan adalah yang ini.
+   */
+  webAsset?: string
 }
 
 const layer = (component: string, name: string, slot: LayerSlot, ratio: number) =>
   ({ component, name, category: 'layer', ratio, slot }) as const
 
 export const ornamentBank = {
+  ...referenceOrnaments,
   // Frame
   'arch': { component: 'OrnamentArch', name: 'Gerbang ganda', category: 'frame', ratio: 300 / 420 },
   'frame-oval': { component: 'OrnamentFrameOval', name: 'Oval', category: 'frame', ratio: 300 / 420 },

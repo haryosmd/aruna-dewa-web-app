@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { jalankan } from '../../../scripts/ornament-forge/verify.mjs'
 import { isOrnamentId, ornament } from '../utils/ornaments'
-import { semuaVarian, themeVariants, variantSlots, variantsFor } from '../utils/ornament-variants'
+import { semuaVarianTerkurasi, themeVariants, variantSlots, variantsFor } from '../utils/ornament-variants'
 import { themeOrnaments } from '../utils/theme'
 
 /**
@@ -14,6 +14,17 @@ import { themeOrnaments } from '../utils/theme'
  * terbaca salah saat seorang tamu melihat bingkai tipis di sebelah pemisah tebal. `ukur()`
  * adalah mesin yang sama yang dipakai `gerbangKohesi`, jadi kolam diukur dengan penggaris
  * yang sama dengan temanya.
+ *
+ * **Cakupannya menyempit pada fase 59, dan berkas ini harus jujur soal itu.** Sampai fase 58
+ * kolam terkurasi adalah satu-satunya jalan sebuah glyph bisa dipilih pasangan, jadi tes di
+ * bawah menjaga seluruh permukaan pilihan. Sejak Studio Ornamen membuka bank penuh, yang
+ * dijaga di sini tinggal tab "Disarankan". Itu tetap perlu — melonggarkan kolam karena ada
+ * jalur bebas di sebelahnya akan menghapus satu-satunya himpunan yang terbukti seresep — tapi
+ * ia bukan lagi jaminan menyeluruh, dan tidak boleh dibaca begitu.
+ *
+ * Jalur bebasnya dijaga di tempat lain: `ornament-slots.spec.ts` untuk korektnes slot, dan
+ * `ornament-metrics.spec.ts` untuk kesegaran angka beserta satu tes jembatan yang menuntut
+ * tiap anggota kolam di sini lolos `fitOf()` juga.
  */
 type Ukuran = { strokes: number[], punyaDraw: boolean, kategori: string }
 const hasil = jalankan() as unknown as { ukuran: Record<string, Ukuran | undefined> }
@@ -42,11 +53,11 @@ describe('kolam varian ornamen', () => {
   })
 
   it('tidak menawarkan glyph yang tidak terdaftar di bank', () => {
-    for (const { tema, slot, glyph } of semuaVarian()) expect(isOrnamentId(glyph), `${tema}.${slot}=${glyph}`).toBe(true)
+    for (const { tema, slot, glyph } of semuaVarianTerkurasi()) expect(isOrnamentId(glyph), `${tema}.${slot}=${glyph}`).toBe(true)
   })
 
   it('menawarkan glyph dari kategori slotnya sendiri', () => {
-    for (const { tema, slot, glyph } of semuaVarian()) expect(ornament(glyph).category, `${tema}.${slot}=${glyph}`).toBe(slot)
+    for (const { tema, slot, glyph } of semuaVarianTerkurasi()) expect(ornament(glyph).category, `${tema}.${slot}=${glyph}`).toBe(slot)
   })
 
   it('tidak pernah menawarkan glyph yang sama dua kali dalam satu slot', () => {
@@ -63,10 +74,15 @@ describe('kolam varian ornamen', () => {
      * Gerbang keunikan forge menjaga glyph BAWAAN antar tema. Ia tidak pernah melihat kolam
      * varian — jadi tanpa tes ini dua tema hidup bisa menawarkan bingkai yang sama, dan dua
      * undangan bertema berbeda berakhir identik pada slot itu begitu pasangan memilihnya.
-     * Aturan "tidak pernah berulang antar tema" runtuh lewat pintu yang tidak dijaga.
+     *
+     * **Yang dijaga sekarang lebih sempit dari kalimat itu, dan itu keputusan pemilik.** Dengan
+     * tab "Semua", dua undangan bertema berbeda MEMANG bisa berakhir identik pada sebuah slot —
+     * pasangan diberi tahu lewat lencana, tidak dilarang. Yang tetap dijamin: rekomendasi yang
+     * kami ajukan sendiri tidak pernah mengarahkan dua tema ke keping yang sama. Perbedaannya
+     * antara "tidak mungkin" dan "tidak kami sarankan", dan hanya yang kedua yang masih benar.
      */
     const pemilik = new Map<string, string>()
-    for (const { tema, slot, glyph } of semuaVarian()) {
+    for (const { tema, slot, glyph } of semuaVarianTerkurasi()) {
       const kunci = `${slot}:${glyph}`
       const sebelumnya = pemilik.get(kunci)
       expect(sebelumnya ?? tema, `${glyph} ditawarkan ${sebelumnya} dan ${tema}`).toBe(tema)
@@ -98,7 +114,7 @@ describe('kolam varian ornamen', () => {
   it('hanya menawarkan glyph yang punya lapisan garis', () => {
     // Syarat kedua `gerbangKohesi`: glyph tanpa `data-draw` tidak bisa ikut koreografi
     // DrawSVG dan terbaca sebagai bidang mati di antara tetangganya yang bergerak.
-    for (const { tema, slot, glyph } of semuaVarian()) {
+    for (const { tema, slot, glyph } of semuaVarianTerkurasi()) {
       expect(hasil.ukuran[glyph]?.punyaDraw, `${tema}.${slot}=${glyph}`).toBe(true)
     }
   })

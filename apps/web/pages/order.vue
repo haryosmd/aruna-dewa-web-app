@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ArrowLeft, ArrowRight, Check, CreditCard, Loader2 } from 'lucide-vue-next'
-import { toast } from 'vue-sonner'
 import { createDefaultDocument, priceOrder, type LiveTemplateId } from '@aruna/contracts'
 import type { ApiError } from '@aruna/contracts/api'
 import type { Catalog, InvitationDocument } from '~/types/aruna'
 import { ornamentRamp, rampStyle } from '~/utils/ornament-palette'
+
+const toast = useToast()
 
 definePageMeta({ middleware: 'auth', layout: false })
 

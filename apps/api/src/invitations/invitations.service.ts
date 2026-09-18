@@ -62,7 +62,7 @@ export class InvitationsService {
     // Aturan yang sama persis dipakai editor untuk mematikan kontrolnya, supaya kontrol
     // yang terlihat hidup tidak pernah berujung pada autosave yang ditolak.
     const designUnlocked = canEditDesign({ isOperator: isOperator(user), features: existing.entitlements.map((item) => item.featureId) });
-    if (!designUnlocked && hasDesignChange(existing.draftDocument, document)) throw new BadRequestException('Perubahan warna, font, atau urutan section memerlukan add-on desain');
+    if (!designUnlocked && hasDesignChange(existing.draftDocument, document)) throw new BadRequestException('Perubahan warna, huruf, latar, ornamen, atau urutan section memerlukan add-on desain');
     const update = await this.prisma.invitation.updateMany({ where: { id: invitationId, draftRevision: revision }, data: { draftDocument: toJson(document), draftRevision: { increment: 1 } } });
     if (!update.count) {
       const current = await this.prisma.invitation.findUnique({ where: { id: invitationId }, select: { draftRevision: true, draftDocument: true } });
@@ -124,6 +124,53 @@ export class InvitationsService {
 
 function isPrismaUniqueError(error: unknown): boolean { return typeof error === 'object' && error !== null && 'code' in error && (error as { code?: string }).code === 'P2002'; }
 
+/**
+ * Proyeksi dokumen yang digerbangi entitlement `design`.
+ *
+ * **Urutan key tidak boleh ikut menentukan, dan sebelum fase 59 ia menentukan.** Bentuk lamanya
+ * membandingkan `JSON.stringify(tokens)` langsung, jadi dua objek bernilai sama dengan urutan
+ * key berbeda terbaca sebagai perubahan desain. Selama `tokens` punya empat key wajib yang
+ * selalu ditulis dalam urutan yang sama, itu tidak pernah menyala. Fase 59 menambah tiga key
+ * **opsional** — yang kadang ada, kadang tidak, dan mendarat di tengah objek begitu ditulis
+ * lewat `{ ...tokens, bodyFont }` — dan sejak itu false positive berhenti jadi teori. Gejalanya
+ * mahal dan membingungkan: simpan ditolak `BadRequestException` untuk perubahan yang tidak
+ * pernah dibuat pasangan.
+ *
+ * `ornamentOverrides` ikut digerbangi sejak fase 59, atas keputusan pemilik: pemilih ornamen
+ * yang dibuka Studio adalah fitur desain, sekelas dengan warna dan huruf. `ornamentIntensity`
+ * dan seluruh isi cover lainnya — judul, foto, komposisi — **sengaja tidak ikut** dan tetap
+ * gratis.
+ *
+ * Penggerbangannya membandingkan lama terhadap baru, jadi penukaran yang sudah tersimpan saat
+ * masih gratis tetap di tempatnya; yang tergerbang hanya suntingan berikutnya.
+ */
+export function designFingerprint(document: InvitationDocument): string {
+  const tokens = Object.fromEntries(Object.entries(document.tokens ?? {}).sort(([a], [b]) => (a < b ? -1 : 1)));
+  const cover = document.sections?.find((section) => section.type === 'cover');
+  return JSON.stringify({ tokens, order: document.sections?.map((section) => section.id) ?? [], ornaments: kanonik(cover?.data?.ornamentOverrides) });
+}
+
+/**
+ * Bentuk `ornamentOverrides` yang bisa dibandingkan, dari nilai yang belum tentu berbentuk.
+ *
+ * `previous` datang sebagai JSON mentah Prisma dan `section.data` adalah `z.record(z.unknown())`,
+ * jadi apa pun bisa ada di sana — termasuk dokumen lama yang tidak punya section cover sama
+ * sekali. Nilai non-string dibuang supaya sampah tidak bisa dipakai memicu gerbang.
+ */
+function kanonik(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const masuk = value as Record<string, unknown>;
+  const keluar: Record<string, unknown> = {};
+  for (const key of Object.keys(masuk).sort()) {
+    const nilai = masuk[key];
+    // `layers` diperiksa LEBIH DULU, bukan sesudah cabang string. Diperiksa belakangan, sebuah
+    // `layers: 'apa saja'` lolos sebagai string biasa dan menyalakan gerbang dari sampah.
+    if (key === 'layers') { const bersarang = kanonik(nilai); if (bersarang) keluar[key] = bersarang; }
+    else if (typeof nilai === 'string') keluar[key] = nilai;
+  }
+  return Object.keys(keluar).length ? keluar : null;
+}
+
 export function hasDesignChange(previous: unknown, next: InvitationDocument): boolean {
   if (!previous || typeof previous !== 'object') return true;
   const oldDocument = previous as InvitationDocument;
@@ -137,7 +184,7 @@ export function hasDesignChange(previous: unknown, next: InvitationDocument): bo
    * tidak bisa dipakai lagi.
    */
   if (!isLiveTemplateId(oldDocument.templateId)) return false;
-  return JSON.stringify(oldDocument.tokens) !== JSON.stringify(next.tokens) || oldDocument.sections.map((section) => section.id).join('|') !== next.sections.map((section) => section.id).join('|');
+  return designFingerprint(oldDocument) !== designFingerprint(next);
 }
 
 function toJson(value: unknown): Prisma.InputJsonValue { return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue; }

@@ -1,5 +1,41 @@
 # Revision history
 
+## 2026-09-18: Fase 61 — tiga e2e merah dibereskan, dan cacat keempat yang baru ketahuan
+
+`GET /v1/invitations/:id/guests` berhenti menjawab 500 karena satu baris tamu. `decryptGuestToken()`
+dulu dipanggil telanjang di dalam `.map()`, jadi satu ciphertext yang ditulis di bawah `JWT_SECRET`
+lain menjatuhkan seluruh halaman 25 baris dan halaman tamu tampil kosong. Sekarang
+`tryDecryptGuestToken()` mengembalikan `null`, barisnya tetap terkirim dengan `tokenUnavailable`,
+dan `GuestsService` mencatat `warn` per baris supaya kegagalannya tidak jadi senyap.
+
+Degradasinya **diberi penanda, bukan didiamkan**. `buildGuestUrl()` membuang `g` diam-diam kalau
+tokennya kosong, jadi tanpa penjagaan ini tombol salin personal akan menghasilkan tautan sapaan
+tanpa RSVP sambil mengumumkan "berhasil disalin". Tombolnya kini mati untuk baris yang rusak, dan
+`copyLink()` menolak dengan alasan; tombol salin biasa tetap hidup karena tautan sapaan tidak
+butuh token.
+
+Datanya: 4 dari 30 baris teracun, semuanya di undangan fixture QA yang ditulis 2026-09-16. Empat
+baris itu dihapus, fixture diregenerasi, dan ketiga puluh baris sekarang terbuka dengan secret di
+`apps/api/.env`. `pnpm test:integration` 47/47 — kegagalan `old refresh token replay denied` yang
+dicatat fase 16 sudah tidak ada.
+
+`expect(heights.Tablet).toBe(heights.Laptop)` dicabut. Ia tidak pernah menangkap `md:` yang kembali
+(media query membaca jendela yang sama untuk ketiga panggung), dan merah-hijaunya ternyata ikut isi
+fixture: sesudah regenerasi ia identik lagi, 4720 = 4720. Penggantinya mengukur lebar perangkat yang
+sama di dua lebar jendela yang menyeberangi 1280, dan dibuktikan lebih kuat lewat mutasi —
+`@min-[40rem]:py-5` → `md:py-5` membuatnya merah (8px di ketiga lebar) sementara assertion lama
+tetap hijau.
+
+Cacat keempat, milik fase 59, ketemu hanya karena project `mobile` dijalankan: editor meluber 2px
+di 360px (`scrollWidth` 362 lawan 360). `grid-cols-[auto_1fr_auto]` di
+`dashboard/ornament/SlotSummary.vue` menahan kolom teks di `min-content`; diganti `minmax(0,1fr)`.
+
+Hasil: 1029 tes unit hijau (+4), `lint` dan `typecheck` hijau, dan **seluruh suite e2e hijau di
+keempat project — 168 lulus, nol gagal**. Sisa yang belum dibereskan dan sengaja diserahkan ke
+pemilik: 4 eksekusi masih di-skip (`mengunci pemilih saat add-on desain belum dibeli`, yang keadaan
+terkuncinya tidak pernah bisa terjadi di fixture QA ber-`OPERATOR`), dan gerbang `ci.yml` masih
+menuntut 156 padahal kenyataannya 168.
+
 ## 2026-09-11: execution started
 
 Materialized approved plan; current frontend decisions override earlier React choices.
@@ -292,3 +328,44 @@ berkas asli.
 
 Gerbang: `typecheck` · `lint` · **189 tes unit** · **148 e2e (37 × 4 project)** hijau, termasuk
 WebKit 390 yang belum pernah hijau sama sekali. Axe 0 violation di keenam layar dasbor.
+
+## 2026-09-18 — Fase 59: Studio Ornamen, huruf paragraf, dan latar bagian
+
+Editor mendapat pemilih layar penuh untuk **seluruh bank ornamen**, bukan lagi 59 glyph dari 328.
+Permintaan pemilik: "seperti Canva… berikan akses ke semua ornamen ya atau glyph atau background."
+
+**Yang dibuka.** Sembilan slot skalar (dulu empat) plus lima jangkar ladang; enam ubin latar di
+`public/textures/` yang selama ini hanya satu tersambung; dan huruf paragraf, yang sebelumnya
+dipatok tema. `motif` **sengaja tidak** ditawarkan — ia tidak pernah dirender di undangan, dan
+kontrol yang tidak mengubah apa pun terbaca sebagai aplikasi yang rusak.
+
+**Kurasi tidak dicabut, ia pindah tempat.** Tab "Disarankan" tetap kolam `themeVariants` dengan
+syarat gerbang yang sama; tab "Semua" membuka bank penuh dengan lencana ber-**kalimat** (ikut ke
+`aria-label`, tidak pernah warna saja). `ornament-metrics.ts` hasil generate menyuplai angkanya,
+dan satu tes jembatan menuntut tiap anggota kolam lolos `fitOf()` juga — dua mesin, satu jawaban.
+
+**Temuan yang mengubah rencananya sendiri: 65 aset referensi belum pernah diunduh satu tamu pun.**
+Nol rujukan di `theme.ts` dan `ornament-variants.ts`. Fase ini yang pertama membuatnya bisa terbit,
+jadi 24,11 MB berhenti jadi biaya repo dan mulai jadi biaya kuota tamu. Ditambahkan varian `web`
+960px (1,8 MB → 313 KB, total 24,1 MB → 3,4 MB), ubin 240px untuk pemilih (789 KB), dimensi
+intrinsik di `ReferenceAsset.vue` yang selama ini tidak punya `width`/`height`, dan penolakan aset
+referensi di slot `layers` — lima keping 6,43 MB yang diulang 2–6 kali per section.
+
+**Gerbang entitlement ternyata sudah rapuh sebelum disentuh.** `hasDesignChange()` membandingkan
+`JSON.stringify(tokens)`, peka urutan key. Tiga key opsional baru membuat false positive berhenti
+jadi teori — gejalanya simpan ditolak untuk perubahan yang tidak pernah dibuat pasangan. Diganti
+`designFingerprint()` dengan tokens tersortir dan proyeksi eksplisit. `ornamentOverrides` ikut
+digerbangi `design` atas keputusan pemilik; `ornamentIntensity` sengaja tetap gratis.
+
+**Regresi yang disengaja dan harus disebut:** penukaran ornamen yang dulu gratis kini butuh add-on
+`design`. Nilai yang sudah tersimpan tidak hilang — gerbang membandingkan lama terhadap baru — tapi
+suntingan berikutnya berbayar. Dan penukaran kini **bertahan** saat tema diganti (penyaringnya
+berbasis kategori, bukan kolam per tema), jadi Studio wajib membawa "Kembalikan ke bawaan tema".
+
+**Bug yang ditemukan dengan melihat layar, bukan dari gerbang:** Studio versi pertama mendarat di
+cabang `v-else` milik keadaan memuat. Markup benar, typecheck hijau, lint bersih, dan tombol
+"Ganti" tidak melakukan apa pun — cabang itu mati begitu editor selesai memuat.
+
+Verifikasi: 1024 tes unit, e2e Studio hijau di mobile/tablet/desktop termasuk **axe pada dialog
+yang sedang terbuka** (sapuan halaman tidak pernah melihatnya). Diperiksa di 375 dan 1440,
+`scrollWidth <= innerWidth` keduanya.

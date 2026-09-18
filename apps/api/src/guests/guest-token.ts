@@ -16,6 +16,25 @@ export function decryptGuestToken(value: string): string {
   return Buffer.concat([decipher.update(Buffer.from(encrypted, 'base64url')), decipher.final()]).toString('utf8');
 }
 
+/**
+ * Versi yang boleh gagal, untuk daftar tamu.
+ *
+ * Kuncinya `sha256(JWT_SECRET)` tanpa key id, jadi baris yang ditulis di bawah secret lain
+ * tidak akan pernah terbuka lagi: GCM auth tag-nya gagal dan Node melempar `Unsupported state
+ * or unable to authenticate data`. Itu keadaan permanen, bukan gangguan sesaat — dan satu baris
+ * seperti itu tidak boleh ikut menjatuhkan dua puluh empat baris lain yang sehat.
+ *
+ * Yang memanggil ini wajib membedakan `null` dari token yang memang tidak diminta: tautan yang
+ * kehilangan `g` diam-diam tetap bisa dibuka, cuma tidak bisa dipakai RSVP.
+ */
+export function tryDecryptGuestToken(value: string): string | null {
+  try {
+    return decryptGuestToken(value);
+  } catch {
+    return null;
+  }
+}
+
 function encryptGuestToken(token: string): string {
   const iv = randomBytes(12);
   const cipher = createCipheriv('aes-256-gcm', encryptionKey(), iv);

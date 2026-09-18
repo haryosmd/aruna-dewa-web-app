@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { isLiveTemplateId, normalizeDisplayName, type LiveTemplateId } from '@aruna/contracts'
 import { galleryMotions, type GalleryMotion } from '~/utils/invitation-options'
-import { toast } from 'vue-sonner'
 import type { InvitationDocument } from '@aruna/contracts'
 import type { GuestProfile, PublicInvitation, Wish } from '@aruna/contracts/api'
 import { fallbackDocument } from '~/composables/useDocument'
+
+const toast = useToast()
 
 definePageMeta({ layout: false })
 

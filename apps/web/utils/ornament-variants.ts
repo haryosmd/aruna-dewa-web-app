@@ -3,14 +3,21 @@ import { liveTemplateIds, resolveTemplateId, type LiveTemplateId } from '@aruna/
 import type { OrnamentId } from './ornaments'
 
 /**
- * Varian ornamen terkurasi: yang boleh ditukar pasangan, dan yang tidak.
+ * Kolam ornamen **terkurasi**: alternatif yang memang seresep dengan tema induknya.
  *
- * Pemilik meminta ornamen "bisa dipilih dan disesuaikan". Pemilih bank penuh menjawab itu
- * dengan cara yang menghapus temanya — alasan yang sama persis dipakai untuk menolak color
- * picker bebas: lima tema berubah jadi satu tema dengan lima nilai awal. Yang ditawarkan
- * karena itu bukan 132 ornamen melainkan beberapa alternatif yang memang seresep.
+ * **Premisnya berubah pada fase 59, dan berkas ini tidak.** Sampai fase 58 kolam ini adalah
+ * satu-satunya jalan sebuah glyph bisa dipilih pasangan, jadi ia sekaligus berarti "yang
+ * seresep" dan "yang bisa dicapai". Pemilik lalu meminta seluruh bank dibuka. Yang dibuka
+ * adalah jalur kedua (`ornament-slots.ts` + Studio Ornamen), **bukan berkas ini** — kolam di
+ * bawah tetap kolam yang sama, dijaga syarat yang sama, dan sekarang tayang sebagai tab
+ * "Disarankan".
  *
- * **Syarat keanggotaan kolam: ketebalan garis yang sama dengan tema induknya.** Itu bukan
+ * Pemisahan itu yang menjaga dua hal sekaligus tetap benar. Kurasi tidak dilemahkan supaya
+ * bank bisa dibuka; kebebasan tidak dibayar dengan menghapus ukuran yang membuat sebuah tema
+ * punya wajah. Yang dulu jadi larangan sekarang jadi urutan dan lencana: keping seresep tampil
+ * lebih dulu, dan yang tidak membawa kalimat yang mengatakan kenapa.
+ *
+ * **Syarat keanggotaan kolam tetap: ketebalan garis yang sama dengan tema induknya.** Itu bukan
  * selera; `gerbangKohesi` di `scripts/ornament-forge/verify.mjs` mengukur persis itu, dan
  * alasannya tertulis di sana — bingkai berstroke 3 di sebelah pemisah berstroke 2,6 tidak
  * akan pernah terbaca sebagai satu keluarga. `apps/web/test/ornament-variants.spec.ts`
@@ -18,15 +25,24 @@ import type { OrnamentId } from './ornaments'
  * kolam yang salah tidak bisa lolos hanya karena daftarnya terlihat masuk akal.
  *
  * Keluarga isen BOLEH berbeda, dan itu justru yang membuat sebuah varian terasa varian.
- * Batasnya: satu slot ditukar sekali. Empat slot di antara sebelas keping tema tetap terbaca
- * sebagai aksen, bukan sebagai tema yang kehilangan wajahnya.
  */
 
-/** Slot yang boleh ditukar. Sengaja bukan kesebelasnya. */
+/**
+ * Slot yang punya kolam terkurasi. Sengaja bukan kesembilannya.
+ *
+ * Sejak fase 59 ini **tidak** lagi berarti "slot yang boleh ditukar" — kesembilan slot skalar
+ * dan kelima jangkar ladang semuanya bisa ditukar lewat Studio. Yang dibatasi di sini adalah
+ * slot mana yang punya daftar alternatif yang sudah dikurasi tangan.
+ */
 export const variantSlots = ['frame', 'divider', 'corner', 'seal'] as const
 export type VariantSlot = (typeof variantSlots)[number]
 
-export type OrnamentOverrides = Partial<Record<VariantSlot, OrnamentId>>
+/*
+ * `OrnamentOverrides` pindah ke `./ornament-slots.ts` pada fase 59 dan **tidak** dire-ekspor dari
+ * sini. Re-ekspornya sempat ada dan langsung ditolak pemindai auto-import Nuxt: dua modul
+ * mengekspor nama yang sama, salah satunya dimenangkan diam-diam, dan yang menang adalah berkas
+ * ini — yang justru bukan pemiliknya lagi. Impor dari `ornament-slots.ts`.
+ */
 
 export const variantSlotLabels: Record<VariantSlot, { label: string, hint: string }> = {
   frame: { label: 'Bingkai', hint: 'Dipakai sampul dan amplop pembuka.' },
@@ -122,8 +138,21 @@ export function isVariantOf(templateId: string, slot: VariantSlot, glyph: unknow
   return typeof glyph === 'string' && variantsFor(templateId, slot).includes(glyph as OrnamentId)
 }
 
-/** Setiap glyph yang bisa dicapai pasangan lewat pemilih mana pun. Dipakai tes kohesi. */
-export function semuaVarian(): { tema: LiveTemplateId, slot: VariantSlot, glyph: OrnamentId }[] {
+/**
+ * Setiap glyph yang ditawarkan **kolam terkurasi**. Dipakai tes kohesi.
+ *
+ * Namanya diperjelas pada fase 59, dan itu bukan kosmetik. Bentuk lamanya, `semuaVarian()`,
+ * berdokumentasi "setiap glyph yang bisa dicapai pasangan lewat pemilih mana pun" — kalimat
+ * yang benar selama kolam ini satu-satunya pemilih, dan **salah** sejak Studio Ornamen membuka
+ * seluruh bank. Tes yang membacanya akan tetap hijau sambil mengukur himpunan yang jauh lebih
+ * kecil daripada yang dikiranya, yaitu persis bentuk kegagalan yang sudah ditulis di
+ * `DESIGN.md` soal gerbang keunikan yang menyusut dari 54 slot ke 6 tanpa satu pun merah.
+ *
+ * Yang menjaga jalur bebas bukan berkas ini melainkan `ornament-fit.ts`, dan keduanya diikat
+ * satu tes jembatan di `ornament-metrics.spec.ts`: tiap anggota kolam di bawah wajib
+ * `fitOf().ok === true`, jadi lencana di browser tidak bisa menyimpang dari gerbang di node.
+ */
+export function semuaVarianTerkurasi(): { tema: LiveTemplateId, slot: VariantSlot, glyph: OrnamentId }[] {
   return liveTemplateIds.flatMap(tema =>
     variantSlots.flatMap(slot =>
       themeVariants[tema][slot].map(glyph => ({ tema, slot, glyph }))))

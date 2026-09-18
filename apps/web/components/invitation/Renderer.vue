@@ -5,7 +5,8 @@ import { toOrnamentOverrides } from '~/utils/invitation-options'
 import { toIntensity } from '~/utils/ornaments'
 import { playLegacyScore, playScore } from '~/utils/motion-play'
 import { resolveScore, sectionRole } from '~/utils/motion-score'
-import { themeMotion } from '~/utils/theme'
+import { themeMotion, themeOrnaments } from '~/utils/theme'
+import { terapkanOverrides } from '~/utils/ornament-slots'
 
 /*
  * Diimpor eksplisit, bukan disebut lewat nama auto-import.
@@ -128,17 +129,27 @@ const coverImage = computed(() => text(coverSection.value, 'image') || themeOf(p
 
 /**
  * Set ornamen milik tema — inilah yang membedakan wajah tiap tema, bukan hanya warnanya —
- * ditimpa penukaran terkurasi yang dipilih pasangan.
+ * ditimpa penukaran yang dipilih pasangan di Studio Ornamen.
  *
- * Penukarannya hidup di `cover.data`, bukan di `tokens`, karena alasan yang sama dengan
- * `ornamentIntensity` di bawah. `toOrnamentOverrides()` menyaringnya terhadap kolam tema yang
- * sedang dipakai, jadi glyph di luar resep tidak bisa masuk lewat dokumen yang disunting
- * tangan, dan penukaran milik tema lama lepas sendiri begitu temanya diganti.
+ * Penukarannya hidup di `cover.data`, bukan di `tokens`. Alasannya bukan lagi entitlement:
+ * sejak fase 59 `designFingerprint()` di API ikut membaca `ornamentOverrides`, jadi penukaran
+ * ornamen **tergerbang `design`** persis seperti warna dan font. Yang membuatnya tetap di
+ * `section.data` adalah bentuknya — `tokens` ada di `packages/contracts` dan menaruh id
+ * ornamen di sana akan memaksa kontrak mengenal bank yang 328 keping, atau melemahkannya jadi
+ * `z.record(z.string())` yang justru memvalidasi lebih sedikit daripada `toOrnamentOverrides()`.
+ *
+ * `toOrnamentOverrides()` menyaringnya terhadap kategori slot, jadi glyph yang salah tempat
+ * tidak bisa masuk lewat dokumen yang disunting tangan. Ia **tidak lagi** melepas penukaran
+ * saat tema diganti; itu disengaja dan alasannya ada di sana.
+ *
+ * `terapkanOverrides()` yang menggabungkannya, bukan spread biasa: `layers` adalah array lima
+ * keping yang dibedakan jangkarnya, dan menyebarnya akan merusak invarian "lima layer, satu per
+ * jangkar" yang dijaga `theme-identity.spec.ts`.
  */
-const orn = computed(() => ({
-  ...themeOrnaments(props.document.templateId),
-  ...toOrnamentOverrides(coverSection.value?.data.ornamentOverrides, props.document.templateId),
-}))
+const orn = computed(() => terapkanOverrides(
+  themeOrnaments(props.document.templateId),
+  toOrnamentOverrides(coverSection.value?.data.ornamentOverrides, props.document.templateId),
+))
 
 /**
  * Seberapa kental ornamen dipasang. Hidup di `cover.data`, bukan di `tokens`: menambah
