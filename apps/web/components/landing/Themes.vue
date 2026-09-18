@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ArrowUpRight } from 'lucide-vue-next'
 import { ornament, type OrnamentSet } from '~/utils/ornaments'
+import { ornamentRamp, rampStyle } from '~/utils/ornament-palette'
 
 const root = ref<HTMLElement | null>(null)
 const themes = invitationThemes
@@ -51,7 +52,7 @@ useArunaMotion(root, ({ revealText, revealUp, bloomIn, cascadeIn }) => {
 
       <UiCarousel label="Tema undangan" align="start" control-id="landing-themes">
         <article
-          v-for="theme in themes"
+          v-for="(theme, index) in themes"
           :key="theme.id"
           data-theme-card
           class="group min-w-0 shrink-0 basis-[76%] sm:basis-[46%] lg:basis-[calc(25%-1rem)]"
@@ -63,6 +64,10 @@ useArunaMotion(root, ({ revealText, revealUp, bloomIn, cascadeIn }) => {
               Contoh hidup: palet, font, dan ladang ornamen milik tema itu sendiri, bukan
               tangkapan layar. `--iv-primary` dipasang di sini karena `OrnamentField`
               mewarnai kepingnya dari variabel tema undangan, yang tidak ada di landing.
+
+              Sejak ornamen punya ramp empat tingkat, `--iv-primary` saja tidak cukup: tanpa
+              `rampStyle()` keping di kartu ini jatuh ke `currentColor` dan tetap satu warna,
+              jadi pasangan memilih tema dari kartu yang tidak menunjukkan warnanya.
             -->
             <div
               class="relative aspect-[4/5] overflow-hidden"
@@ -70,6 +75,7 @@ useArunaMotion(root, ({ revealText, revealUp, bloomIn, cascadeIn }) => {
                 background: theme.tokens.background,
                 color: theme.tokens.foreground,
                 '--iv-primary': theme.tokens.primary,
+                ...rampStyle(ornamentRamp(theme.tokens, theme.accent)),
               }"
             >
               <!--
@@ -95,11 +101,18 @@ useArunaMotion(root, ({ revealText, revealUp, bloomIn, cascadeIn }) => {
                 Tidak ada pengali di sini: ladangnya sendiri yang mengukur lebar kartu
                 lewat container query, sama seperti saat ia mengisi section selebar layar.
               -->
+              <!--
+                `seed` = indeks kartu, bukan 1 untuk semuanya. `OrnamentField` memilih satu
+                dari empat resep jangkar lewat `seed % 4`, jadi seed yang dipatok membuat
+                keempat kartu memasang kepingnya di koordinat yang sama persis — hanya
+                bentuknya yang berganti. Berderet-deret, itu terbaca sebagai satu kartu yang
+                diulang empat kali, bukan empat tema.
+              -->
               <InvitationOrnamentField
                 :set="theme.ornaments"
                 intensity="seimbang"
                 tone="base"
-                :seed="1"
+                :seed="index"
               />
 
               <div class="absolute inset-x-0 bottom-0 grid gap-1 p-4 text-center">

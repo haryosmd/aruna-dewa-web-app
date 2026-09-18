@@ -1,0 +1,2787 @@
+{
+  "schemaVersion": 1,
+  "id": "melati",
+  "name": "Ronce Melati",
+  "scope": "original-local-demo",
+  "builtAt": "2026-09-17",
+  "palette": {
+    "paper": "#FBF7EF",
+    "ink": "#22301F",
+    "sage": "#6D8065",
+    "gold": "#A9873F",
+    "note": "Palet demo pack. Token aplikasi tidak diubah; glyph memakai currentColor."
+  },
+  "fonts": {
+    "demo": "Georgia / Arial bawaan sistem, supaya demo jalan offline",
+    "recommendation": "Cormorant Garamond + Plus Jakarta Sans dari sumber resmi berlisensi",
+    "note": "Belum diuji di demo; tidak ada biner font yang disalin ke pack ini."
+  },
+  "composition": {
+    "anchorRule": "Ornamen di tepi dan sudut; zona teks tidak dianimasikan.",
+    "source": "sources/canva/MOTION-DALAM.md — densitas pusat 0,00 pada klip botanical"
+  },
+  "assets": [
+    {
+      "id": "bingkai-ronce",
+      "name": "Bingkai ronce",
+      "category": "frame",
+      "tags": [
+        "frame",
+        "flora-upacara",
+        "melati",
+        "ronce",
+        "lengkung"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "strand",
+        "crown"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/bingkai-ronce.svg",
+          "format": "svg",
+          "width": 420,
+          "height": 588,
+          "ratio": 0.714,
+          "bytes": 10466,
+          "sha256": "9b0bea20bd63a8c27591401b4d65045d1d14e94bc424fc8ffd9ab7c22cf8616a",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "bingkai-segi",
+      "name": "Bingkai segi melati",
+      "category": "frame",
+      "tags": [
+        "frame",
+        "hiasan-original",
+        "karangan",
+        "geometris",
+        "segi-tujuh"
+      ],
+      "culturalRole": "hiasan-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "floral"
+      ],
+      "anchor": "foto",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/bingkai-segi.svg",
+          "format": "svg",
+          "width": 420,
+          "height": 420,
+          "ratio": 1,
+          "bytes": 9577,
+          "sha256": "8467fbd02bebf2a10085a3050ad0977c5925c1d7b404c95191ea3370180944d4",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "bingkai-kembar-mayang",
+      "name": "Bingkai kembar mayang",
+      "category": "frame",
+      "tags": [
+        "frame",
+        "perangkat-upacara",
+        "janur",
+        "gerbang"
+      ],
+      "culturalRole": "perangkat-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "crown",
+        "floral"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/bingkai-kembar-mayang.svg",
+          "format": "svg",
+          "width": 420,
+          "height": 588,
+          "ratio": 0.714,
+          "bytes": 7459,
+          "sha256": "cf9c6d45acdff83d4175663d61347206827eb7b7475caf842bcafff52c3dc8bc",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "bingkai-oval-kantil",
+      "name": "Bingkai oval kantil",
+      "category": "frame",
+      "tags": [
+        "frame",
+        "flora-upacara",
+        "kantil",
+        "oval"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "floral"
+      ],
+      "anchor": "foto",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/bingkai-oval-kantil.svg",
+          "format": "svg",
+          "width": 420,
+          "height": 588,
+          "ratio": 0.714,
+          "bytes": 7937,
+          "sha256": "efdfd1a6be7e86d5e9cada5a3714cfa64f3b7fbe1d378a1868bc40da196baab6",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "bingkai-anyaman",
+      "name": "Bingkai anyaman janur",
+      "category": "frame",
+      "tags": [
+        "frame",
+        "bahan-upacara",
+        "janur",
+        "anyaman"
+      ],
+      "culturalRole": "bahan-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "weave",
+        "strand",
+        "floral"
+      ],
+      "anchor": "section",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/bingkai-anyaman.svg",
+          "format": "svg",
+          "width": 420,
+          "height": 588,
+          "ratio": 0.714,
+          "bytes": 15962,
+          "sha256": "c480889b1e00843cca95fe66e055257693cace9c0a52b858cc63323e43cfd276",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "pemisah-ronce",
+      "name": "Pemisah ronce",
+      "category": "divider",
+      "tags": [
+        "divider",
+        "flora-upacara",
+        "melati",
+        "ronce"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "strand",
+        "floral"
+      ],
+      "anchor": "antar-blok",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 12,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/pemisah-ronce.svg",
+          "format": "svg",
+          "width": 480,
+          "height": 60,
+          "ratio": 8,
+          "bytes": 7107,
+          "sha256": "699794c679c2347a56b805779e08262465daa002fa9a30044e1c0b9690c275fe",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "pemisah-kenanga",
+      "name": "Pemisah kenanga",
+      "category": "divider",
+      "tags": [
+        "divider",
+        "flora-upacara",
+        "kenanga"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "floral",
+        "rule"
+      ],
+      "anchor": "antar-blok",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 12,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/pemisah-kenanga.svg",
+          "format": "svg",
+          "width": 480,
+          "height": 60,
+          "ratio": 8,
+          "bytes": 8843,
+          "sha256": "4c70d29f947d3c4f82c1045e0d218e59452631a8af1826dcc2a120790e3489f1",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "pemisah-janur",
+      "name": "Pemisah janur",
+      "category": "divider",
+      "tags": [
+        "divider",
+        "bahan-upacara",
+        "janur",
+        "anyaman"
+      ],
+      "culturalRole": "bahan-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "weave",
+        "floral"
+      ],
+      "anchor": "antar-blok",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 12,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/pemisah-janur.svg",
+          "format": "svg",
+          "width": 480,
+          "height": 60,
+          "ratio": 8,
+          "bytes": 3558,
+          "sha256": "3281db377ae4cfe21b5b7f7ae47678e5349942f96c2724ea3ed0c28874612690",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "pemisah-titik",
+      "name": "Pemisah titik melati",
+      "category": "divider",
+      "tags": [
+        "divider",
+        "hiasan-original",
+        "minimal",
+        "manik"
+      ],
+      "culturalRole": "hiasan-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "rule"
+      ],
+      "anchor": "antar-blok",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 12,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/pemisah-titik.svg",
+          "format": "svg",
+          "width": 480,
+          "height": 60,
+          "ratio": 8,
+          "bytes": 791,
+          "sha256": "399af698314cc18c63b14934d33ec75807b886e215691e14db7370b060be37fd",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "pemisah-sulur",
+      "name": "Pemisah sulur melati",
+      "category": "divider",
+      "tags": [
+        "divider",
+        "hiasan-original",
+        "sulur",
+        "cermin"
+      ],
+      "culturalRole": "hiasan-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "scroll",
+        "floral"
+      ],
+      "anchor": "antar-blok",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 12,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/pemisah-sulur.svg",
+          "format": "svg",
+          "width": 480,
+          "height": 60,
+          "ratio": 8,
+          "bytes": 7310,
+          "sha256": "0b0889c9e6343eb40283e620693b3bf1b2aecd1c5eee93f5dc34fa1f21c0ebf4",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "pemisah-kantil",
+      "name": "Pemisah kantil",
+      "category": "divider",
+      "tags": [
+        "divider",
+        "flora-upacara",
+        "kantil"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "antar-blok",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 12,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/pemisah-kantil.svg",
+          "format": "svg",
+          "width": 480,
+          "height": 60,
+          "ratio": 8,
+          "bytes": 10605,
+          "sha256": "ca8fa30fd7925bbf3b415d7b76e14262aab350e2f87fc96c0fbcf0330569c63c",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sudut-sulur",
+      "name": "Sudut sulur melati",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "hiasan-original",
+        "sulur",
+        "spiral"
+      ],
+      "culturalRole": "hiasan-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "scroll",
+        "floral"
+      ],
+      "anchor": "sudut",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sudut-sulur.svg",
+          "format": "svg",
+          "width": 180,
+          "height": 180,
+          "ratio": 1,
+          "bytes": 5286,
+          "sha256": "dcb4959d6a32bef1b8824bd6070f2718e04835473c4e69df9f5a218141477245",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sudut-kantil",
+      "name": "Sudut kantil",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "flora-upacara",
+        "kantil"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "scroll",
+        "floral"
+      ],
+      "anchor": "sudut",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sudut-kantil.svg",
+          "format": "svg",
+          "width": 180,
+          "height": 180,
+          "ratio": 1,
+          "bytes": 8734,
+          "sha256": "9b06de0bf57a91d51edcdac1f182574521462a4daf5c163f92d84bf034464ae1",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sudut-anyam",
+      "name": "Sudut anyaman",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "bahan-upacara",
+        "janur",
+        "anyaman"
+      ],
+      "culturalRole": "bahan-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "weave",
+        "floral"
+      ],
+      "anchor": "sudut",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sudut-anyam.svg",
+          "format": "svg",
+          "width": 180,
+          "height": 180,
+          "ratio": 1,
+          "bytes": 4965,
+          "sha256": "225b94692c8ffc0aa84319a9540792ca07d60ca8b04429fdce5e9b1374cc2876",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sudut-ceplok",
+      "name": "Sudut ceplok",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "hiasan-original",
+        "geometris",
+        "ceplok"
+      ],
+      "culturalRole": "hiasan-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "motif",
+        "rule"
+      ],
+      "anchor": "sudut",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sudut-ceplok.svg",
+          "format": "svg",
+          "width": 180,
+          "height": 180,
+          "ratio": 1,
+          "bytes": 2178,
+          "sha256": "7827919f0e56c56131e53f7c2c93d7b30526170b37a0cc63c4939c1909b6dac0",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sudut-ronce",
+      "name": "Sudut ronce",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "flora-upacara",
+        "melati",
+        "ronce"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "strand",
+        "floral"
+      ],
+      "anchor": "sudut",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sudut-ronce.svg",
+          "format": "svg",
+          "width": 180,
+          "height": 180,
+          "ratio": 1,
+          "bytes": 5513,
+          "sha256": "19bff96375ddc59875fbff816cc1a213572195c94994dea76187b2f0d49ddbe1",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sudut-melati",
+      "name": "Sudut melati",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "flora-upacara",
+        "melati",
+        "ringkas"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "sudut",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sudut-melati.svg",
+          "format": "svg",
+          "width": 180,
+          "height": 180,
+          "ratio": 1,
+          "bytes": 5360,
+          "sha256": "9eb6430199d96634cd6fd2462787689942b4564e078d1b9a040b851d20041c91",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "tangkai-melati",
+      "name": "Tangkai melati",
+      "category": "floral",
+      "tags": [
+        "floral",
+        "flora-upacara",
+        "melati",
+        "tangkai"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "tepi",
+      "motion": {
+        "preset": "reveal+sway",
+        "amplitude": 16,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "sway": {
+          "amplitude": 1.5,
+          "unit": "deg",
+          "duration": 6,
+          "ease": "sine.inOut"
+        },
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/tangkai-melati.svg",
+          "format": "svg",
+          "width": 200,
+          "height": 320,
+          "ratio": 0.625,
+          "bytes": 6778,
+          "sha256": "a39a2fc2e5222e3bfc2c72891e697480a9283636cefb3009795155eff00cf63e",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "tangkai-kenanga",
+      "name": "Tangkai kenanga",
+      "category": "floral",
+      "tags": [
+        "floral",
+        "flora-upacara",
+        "kenanga",
+        "tangkai"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "tepi",
+      "motion": {
+        "preset": "reveal+sway",
+        "amplitude": 16,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "sway": {
+          "amplitude": 1.5,
+          "unit": "deg",
+          "duration": 6,
+          "ease": "sine.inOut"
+        },
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/tangkai-kenanga.svg",
+          "format": "svg",
+          "width": 200,
+          "height": 320,
+          "ratio": 0.625,
+          "bytes": 7882,
+          "sha256": "6a9df91ab4c3469620fecdf1e16140b7653f555c6143cd1ab9f767d73e675d76",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "tangkai-sedap-malam",
+      "name": "Tangkai sedap malam",
+      "category": "floral",
+      "tags": [
+        "floral",
+        "flora-upacara",
+        "sedap-malam",
+        "tangkai"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "tepi",
+      "motion": {
+        "preset": "reveal+sway",
+        "amplitude": 16,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "sway": {
+          "amplitude": 1.5,
+          "unit": "deg",
+          "duration": 6,
+          "ease": "sine.inOut"
+        },
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/tangkai-sedap-malam.svg",
+          "format": "svg",
+          "width": 200,
+          "height": 320,
+          "ratio": 0.625,
+          "bytes": 8866,
+          "sha256": "df8a84fb00b32197f25bae9dbb344c7861d6d6e8907c5f924e7688b376befa45",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "rumpun-kantil",
+      "name": "Rumpun kantil",
+      "category": "floral",
+      "tags": [
+        "floral",
+        "flora-upacara",
+        "kantil",
+        "rumpun"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "tepi",
+      "motion": {
+        "preset": "reveal+sway",
+        "amplitude": 16,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "sway": {
+          "amplitude": 1.5,
+          "unit": "deg",
+          "duration": 6,
+          "ease": "sine.inOut"
+        },
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/rumpun-kantil.svg",
+          "format": "svg",
+          "width": 240,
+          "height": 240,
+          "ratio": 1,
+          "bytes": 11859,
+          "sha256": "3028ecdb9567ce5f3a92f142ffb3dee86f1fb3ed14212710d78d19e22278dba5",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "dedaunan-pandan",
+      "name": "Dedaunan pandan",
+      "category": "floral",
+      "tags": [
+        "floral",
+        "flora-upacara",
+        "pandan",
+        "daun"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "tepi",
+      "motion": {
+        "preset": "reveal+sway",
+        "amplitude": 16,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "sway": {
+          "amplitude": 1.5,
+          "unit": "deg",
+          "duration": 6,
+          "ease": "sine.inOut"
+        },
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/dedaunan-pandan.svg",
+          "format": "svg",
+          "width": 240,
+          "height": 320,
+          "ratio": 0.75,
+          "bytes": 1516,
+          "sha256": "3863dcc5b4173bb48ca432d5e39c592429594327c82f10209379fbe52fd9e985",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "ranting-kuncup",
+      "name": "Ranting kuncup",
+      "category": "floral",
+      "tags": [
+        "floral",
+        "flora-upacara",
+        "melati",
+        "kuncup"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "sela-teks",
+      "motion": {
+        "preset": "reveal+sway",
+        "amplitude": 16,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "sway": {
+          "amplitude": 1.5,
+          "unit": "deg",
+          "duration": 6,
+          "ease": "sine.inOut"
+        },
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/ranting-kuncup.svg",
+          "format": "svg",
+          "width": 200,
+          "height": 200,
+          "ratio": 1,
+          "bytes": 3601,
+          "sha256": "8ca52bdee6009867dc9060e712d904a97c2837525352e41f1a65209c5c3ae9b1",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "layer-ronce-gantung",
+      "name": "Ronce gantung",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "flora-upacara",
+        "melati",
+        "ronce",
+        "gantung"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "strand"
+      ],
+      "anchor": "cascade",
+      "motion": {
+        "preset": "cascadeIn",
+        "amplitude": 18,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "sway": {
+          "amplitude": 1.5,
+          "unit": "deg",
+          "duration": 6,
+          "ease": "sine.inOut"
+        },
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/layer-ronce-gantung.svg",
+          "format": "svg",
+          "width": 260,
+          "height": 360,
+          "ratio": 0.722,
+          "bytes": 15734,
+          "sha256": "109364617037283d20e25832503eab77d45be510133f6acca5e34865495f9a19",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "layer-karangan",
+      "name": "Karangan melati",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "flora-upacara",
+        "melati",
+        "karangan"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "crown",
+      "motion": {
+        "preset": "cascadeIn",
+        "amplitude": 18,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "sway": {
+          "amplitude": 1.5,
+          "unit": "deg",
+          "duration": 6,
+          "ease": "sine.inOut"
+        },
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/layer-karangan.svg",
+          "format": "svg",
+          "width": 420,
+          "height": 200,
+          "ratio": 2.1,
+          "bytes": 7835,
+          "sha256": "c280e194f51fcd4fec498ffbf334259b52db63c1f72ae8386a6b1c500adc2b9a",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "layer-rumpun",
+      "name": "Rumpun melati",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "flora-upacara",
+        "melati",
+        "rumpun"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "cluster",
+      "motion": {
+        "preset": "cascadeIn",
+        "amplitude": 18,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "sway": {
+          "amplitude": 1.5,
+          "unit": "deg",
+          "duration": 6,
+          "ease": "sine.inOut"
+        },
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/layer-rumpun.svg",
+          "format": "svg",
+          "width": 240,
+          "height": 240,
+          "ratio": 1,
+          "bytes": 9104,
+          "sha256": "5650ae3e8927b83eb9a59e4fa2ddd7e845b56865551ae7e8dc50103a08a20dc1",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "layer-untaian",
+      "name": "Untaian melati",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "flora-upacara",
+        "melati",
+        "untaian"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "strand",
+        "floral"
+      ],
+      "anchor": "swag",
+      "motion": {
+        "preset": "cascadeIn",
+        "amplitude": 18,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "sway": {
+          "amplitude": 1.5,
+          "unit": "deg",
+          "duration": 6,
+          "ease": "sine.inOut"
+        },
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/layer-untaian.svg",
+          "format": "svg",
+          "width": 480,
+          "height": 200,
+          "ratio": 2.4,
+          "bytes": 9770,
+          "sha256": "c656a8209c779bcba239eaf1f296c7bcd951a28f7047348a46e7b823d0f80a6d",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "layer-mekar",
+      "name": "Mekar kantil",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "flora-upacara",
+        "kantil",
+        "mekar"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "floral"
+      ],
+      "anchor": "bloom",
+      "motion": {
+        "preset": "cascadeIn",
+        "amplitude": 18,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "sway": {
+          "amplitude": 1.5,
+          "unit": "deg",
+          "duration": 6,
+          "ease": "sine.inOut"
+        },
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/layer-mekar.svg",
+          "format": "svg",
+          "width": 300,
+          "height": 300,
+          "ratio": 1,
+          "bytes": 5176,
+          "sha256": "6928205a4849c3d66c7984cdde6fc34c2916c464e5542d0e5c0f2bbe7816cd73",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "layer-untai-tunggal",
+      "name": "Untai tunggal",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "flora-upacara",
+        "melati",
+        "ronce"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "strand"
+      ],
+      "anchor": "cascade",
+      "motion": {
+        "preset": "cascadeIn",
+        "amplitude": 18,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "sway": {
+          "amplitude": 1.5,
+          "unit": "deg",
+          "duration": 6,
+          "ease": "sine.inOut"
+        },
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/layer-untai-tunggal.svg",
+          "format": "svg",
+          "width": 120,
+          "height": 400,
+          "ratio": 0.3,
+          "bytes": 6168,
+          "sha256": "b6e6637d35b3d8340c588a00cfa8b1b475372bae6bb731de0fa9d233a455bed6",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "monogram-cincin",
+      "name": "Monogram cincin ronce",
+      "category": "monogram",
+      "tags": [
+        "monogram",
+        "hiasan-original",
+        "cincin",
+        "inisial"
+      ],
+      "culturalRole": "hiasan-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "ring",
+        "strand",
+        "floral"
+      ],
+      "anchor": "kepala",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 12,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/monogram-cincin.svg",
+          "format": "svg",
+          "width": 244,
+          "height": 244,
+          "ratio": 1,
+          "bytes": 5985,
+          "sha256": "c9285512f58db8cd5624063ce89de6666f1e2867b5a551a039500c189201d461",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "monogram-perisai",
+      "name": "Monogram perisai melati",
+      "category": "monogram",
+      "tags": [
+        "monogram",
+        "hiasan-original",
+        "kartus",
+        "inisial"
+      ],
+      "culturalRole": "hiasan-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "frame",
+        "floral",
+        "strand"
+      ],
+      "anchor": "kepala",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 12,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/monogram-perisai.svg",
+          "format": "svg",
+          "width": 244,
+          "height": 260,
+          "ratio": 0.938,
+          "bytes": 3174,
+          "sha256": "b17e501d87ed83a3be79b323154fc6e971d5e04d2f53ae7c68a2ad4984b83244",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "monogram-lingkar",
+      "name": "Monogram lingkar ronce",
+      "category": "monogram",
+      "tags": [
+        "monogram",
+        "flora-upacara",
+        "melati",
+        "inisial"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "strand"
+      ],
+      "anchor": "kepala",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 12,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": false,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/monogram-lingkar.svg",
+          "format": "svg",
+          "width": 244,
+          "height": 244,
+          "ratio": 1,
+          "bytes": 9117,
+          "sha256": "b411ddf0039710b80c989c685ab4445ed8e0c7b8b083fd19961ccf3e9a11e4fd",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "motif-ceplok",
+      "name": "Motif ceplok melati",
+      "category": "motif",
+      "tags": [
+        "motif",
+        "hiasan-original",
+        "geometris",
+        "ubin"
+      ],
+      "culturalRole": "hiasan-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "motif"
+      ],
+      "anchor": "latar",
+      "motion": {
+        "preset": "static",
+        "amplitude": 0,
+        "unit": "px",
+        "duration": 0,
+        "ease": "none",
+        "stagger": 0,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/motif-ceplok.svg",
+          "format": "svg",
+          "width": 160,
+          "height": 160,
+          "ratio": 1,
+          "bytes": 5509,
+          "sha256": "1f06b7e77b655edd366f190b3585ab3d8c2de36e0c0bf567d257bfae15a6200b",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "motif-anyaman",
+      "name": "Motif anyaman janur",
+      "category": "motif",
+      "tags": [
+        "motif",
+        "bahan-upacara",
+        "janur",
+        "ubin"
+      ],
+      "culturalRole": "bahan-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "motif"
+      ],
+      "anchor": "latar",
+      "motion": {
+        "preset": "static",
+        "amplitude": 0,
+        "unit": "px",
+        "duration": 0,
+        "ease": "none",
+        "stagger": 0,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/motif-anyaman.svg",
+          "format": "svg",
+          "width": 160,
+          "height": 160,
+          "ratio": 1,
+          "bytes": 2244,
+          "sha256": "12982f0a9ca50c617e16149a8330be17ec7c02db7616fb59cfa16d1f14e33f83",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "motif-kuncup",
+      "name": "Motif kuncup",
+      "category": "motif",
+      "tags": [
+        "motif",
+        "flora-upacara",
+        "melati",
+        "ubin"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "motif"
+      ],
+      "anchor": "latar",
+      "motion": {
+        "preset": "static",
+        "amplitude": 0,
+        "unit": "px",
+        "duration": 0,
+        "ease": "none",
+        "stagger": 0,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/motif-kuncup.svg",
+          "format": "svg",
+          "width": 160,
+          "height": 160,
+          "ratio": 1,
+          "bytes": 2744,
+          "sha256": "a7348359794bec063d1b1e4ee55335843e8565c62c58052a981a5d1aca13fd0b",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "motif-tumpal",
+      "name": "Motif tumpal melati",
+      "category": "motif",
+      "tags": [
+        "motif",
+        "hiasan-original",
+        "tumpal",
+        "segitiga"
+      ],
+      "culturalRole": "hiasan-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "motif",
+        "rule"
+      ],
+      "anchor": "pita",
+      "motion": {
+        "preset": "static",
+        "amplitude": 0,
+        "unit": "px",
+        "duration": 0,
+        "ease": "none",
+        "stagger": 0,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/motif-tumpal.svg",
+          "format": "svg",
+          "width": 160,
+          "height": 160,
+          "ratio": 1,
+          "bytes": 1353,
+          "sha256": "cd02b280f046e97a51f9fb7041b93262b4d145fba63fadd85473eac57b831b14",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "motif-jala",
+      "name": "Motif jala melati",
+      "category": "motif",
+      "tags": [
+        "motif",
+        "hiasan-original",
+        "jala",
+        "ubin"
+      ],
+      "culturalRole": "hiasan-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "motif"
+      ],
+      "anchor": "latar",
+      "motion": {
+        "preset": "static",
+        "amplitude": 0,
+        "unit": "px",
+        "duration": 0,
+        "ease": "none",
+        "stagger": 0,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/motif-jala.svg",
+          "format": "svg",
+          "width": 160,
+          "height": 160,
+          "ratio": 1,
+          "bytes": 17088,
+          "sha256": "976bffc53b6ca679cb9be1f755bde257c500694f198487311448822e14ef53fa",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "kembar-mayang",
+      "name": "Kembar mayang",
+      "category": "symbol",
+      "tags": [
+        "symbol",
+        "perangkat-upacara",
+        "janur",
+        "kembar-mayang"
+      ],
+      "culturalRole": "perangkat-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "crown",
+        "stem",
+        "floral"
+      ],
+      "anchor": "kepala",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/kembar-mayang.svg",
+          "format": "svg",
+          "width": 200,
+          "height": 280,
+          "ratio": 0.714,
+          "bytes": 3192,
+          "sha256": "92f5a1ce2438606da2bb5ce4ac06188fac7009b27fe5a7874e9a5ff706e13095",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "janur-kuning",
+      "name": "Janur kuning",
+      "category": "symbol",
+      "tags": [
+        "symbol",
+        "perangkat-upacara",
+        "janur",
+        "penanda"
+      ],
+      "culturalRole": "perangkat-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "crown"
+      ],
+      "anchor": "tepi",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/janur-kuning.svg",
+          "format": "svg",
+          "width": 200,
+          "height": 280,
+          "ratio": 0.714,
+          "bytes": 2793,
+          "sha256": "f649763b05cfbcb68fa2a280e83b4b6715807f785c95aacc5928949bfbb087c1",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "payung-teduh",
+      "name": "Payung teduh",
+      "category": "symbol",
+      "tags": [
+        "symbol",
+        "perangkat-upacara",
+        "payung"
+      ],
+      "culturalRole": "perangkat-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "dome",
+        "rule",
+        "strand",
+        "stem"
+      ],
+      "anchor": "kepala",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/payung-teduh.svg",
+          "format": "svg",
+          "width": 200,
+          "height": 280,
+          "ratio": 0.714,
+          "bytes": 2658,
+          "sha256": "7a205af9e98178b6f429f622390bd6ad4f34cca83144a2a15c5b27cfd3795cc8",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "merpati-sepasang",
+      "name": "Sepasang merpati",
+      "category": "symbol",
+      "tags": [
+        "symbol",
+        "hiasan-original",
+        "merpati",
+        "sepasang"
+      ],
+      "culturalRole": "hiasan-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "bird",
+        "strand"
+      ],
+      "anchor": "kepala",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/merpati-sepasang.svg",
+          "format": "svg",
+          "width": 260,
+          "height": 200,
+          "ratio": 1.3,
+          "bytes": 6233,
+          "sha256": "ce9b2dc56fd7a0e131744d448939f8091de29433407de6c2ad9ab362667346c2",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "segel-melati",
+      "name": "Segel melati",
+      "category": "seal",
+      "tags": [
+        "seal",
+        "hiasan-original",
+        "segel",
+        "melati"
+      ],
+      "culturalRole": "hiasan-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "seal",
+        "floral"
+      ],
+      "anchor": "penutup",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 10,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/segel-melati.svg",
+          "format": "svg",
+          "width": 160,
+          "height": 160,
+          "ratio": 1,
+          "bytes": 3794,
+          "sha256": "f75baa9762ff9cf4d9809637020934eab26d477c0bf3cd607792dbf2040eac75",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "segel-janur",
+      "name": "Segel janur",
+      "category": "seal",
+      "tags": [
+        "seal",
+        "bahan-upacara",
+        "segel",
+        "anyaman"
+      ],
+      "culturalRole": "bahan-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "seal",
+        "weave"
+      ],
+      "anchor": "penutup",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 10,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/segel-janur.svg",
+          "format": "svg",
+          "width": 160,
+          "height": 160,
+          "ratio": 1,
+          "bytes": 2114,
+          "sha256": "f5d33130f133c4c02aef181c27db313341ba8415cd5d70f7b06546e1660d8511",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "segel-kuncup",
+      "name": "Segel kuncup",
+      "category": "seal",
+      "tags": [
+        "seal",
+        "flora-upacara",
+        "segel",
+        "kuncup"
+      ],
+      "culturalRole": "flora-upacara",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "seal",
+        "floral"
+      ],
+      "anchor": "penutup",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 10,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/segel-kuncup.svg",
+          "format": "svg",
+          "width": 160,
+          "height": 160,
+          "ratio": 1,
+          "bytes": 3330,
+          "sha256": "fc2fcc5b5720adb887becb3e15f19bde9105ade17b6ad28cf97071173d6e6ecd",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "pendopo-joglo",
+      "name": "Pendopo joglo",
+      "category": "venue",
+      "tags": [
+        "venue",
+        "arsitektur",
+        "pendopo",
+        "joglo"
+      ],
+      "culturalRole": "arsitektur",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, digambar untuk pack ini",
+        "generator": "build.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/sources/canva/MOTION-DALAM.md",
+          "docs/features/ornament-builder/originals/melati/CULTURE.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor bermassa",
+        "inkFields": [
+          1,
+          0.45
+        ]
+      },
+      "layers": [
+        "roof",
+        "pillar",
+        "base",
+        "floral"
+      ],
+      "anchor": "seksi-acara",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "rigid": true,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/pendopo-joglo.svg",
+          "format": "svg",
+          "width": 200,
+          "height": 260,
+          "ratio": 0.769,
+          "bytes": 1109,
+          "sha256": "61bef6a15be830b8af25338ec9d0d2ce0fe96e4c4a87f0b7ad62ce9bf4e81348",
+          "alpha": true
+        }
+      ]
+    }
+  ]
+}

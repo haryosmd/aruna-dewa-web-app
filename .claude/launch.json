@@ -19,6 +19,16 @@
         "apps/web/.output/server/index.mjs"
       ],
       "port": 3100
+    },
+    {
+      "name": "ornament-sheet",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "tsx",
+        "scripts/ornament-forge/lihat.ts",
+        "--sajikan"
+      ],
+      "port": 4173
     }
   ]
 }

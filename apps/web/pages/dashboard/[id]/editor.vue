@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { canEditDesign as designUnlocked, createDefaultDocument, designFeatureId, galleryPhotoLimit, giftAccountLimit, invitationDocumentSchema, normalizeGift, selectableFonts, type FontChoice, type TemplateId } from '@aruna/contracts'
+import { canEditDesign as designUnlocked, createDefaultDocument, designFeatureId, galleryPhotoLimit, giftAccountLimit, invitationDocumentSchema, isLiveTemplateId, normalizeGift, selectableFonts, templateById, type FontChoice, type LiveTemplateId } from '@aruna/contracts'
 import {
   selectableAttire, selectableCoverLayouts, selectableGalleryMotions, selectableVenues,
-  toAttire, toCoverLayout, toGalleryMotion,
+  toAttire, toCoverLayout, toGalleryMotion, toOrnamentOverrides,
 } from '~/utils/invitation-options'
-import { selectableIntensities, toIntensity } from '~/utils/ornaments'
+import { selectableIntensities, toIntensity, type OrnamentId } from '~/utils/ornaments'
+import { variantSlotLabels, variantSlots, variantsFor, type VariantSlot } from '~/utils/ornament-variants'
+import { ornamentRamp, rampStyle } from '~/utils/ornament-palette'
 import type { Invitation, InvitationDocument } from '~/types/aruna'
 import type { MusicTrack } from '~/utils/music-library'
 import { AlertCircle, ArrowDown, ArrowUp, Check, Eye, Laptop, Lock, Pause, Play, Plus, Redo2, RotateCcw, Save, Send, Smartphone, Tablet, Trash2, Undo2, Wand2 } from 'lucide-vue-next'
@@ -131,6 +133,19 @@ const canEditDesign = computed(() => designUnlocked({
   features: invitation.value?.features ?? [],
 }))
 
+/**
+ * Preset yang sedang menggantikan tema pensiun, atau `null` kalau temanya masih hidup.
+ *
+ * Pasangan yang temanya dipensiunkan harus tahu kenapa wajah undangannya berubah — dan harus
+ * bisa keluar dari sana. `hasDesignChange()` di API membebaskan perpindahan yang berasal dari
+ * id pensiun, jadi tombolnya tidak dikunci `canEditDesign` seperti perpindahan biasa.
+ */
+const templatePensiun = computed(() => {
+  const id = document.value?.templateId
+  if (!id || isLiveTemplateId(id)) return null
+  return templateById(id) ?? null
+})
+
 /** Nama dan harga add-on diambil dari katalog, bukan ditulis ulang di sini. */
 async function loadDesignAddon() {
   if (canEditDesign.value || designAddon.value) return
@@ -202,8 +217,11 @@ function move(index: number, direction: -1 | 1) {
 }
 
 /** Swapping template also swaps the curated palette, unless the couple already recoloured it. */
-function applyTemplate(id: TemplateId) {
-  if (!canEditDesign.value) return
+function applyTemplate(id: LiveTemplateId) {
+  // Pasangan bertema pensiun boleh pindah sekali tanpa add-on — aturan yang sama persis
+  // dengan `hasDesignChange()` di API, supaya kontrol yang terlihat hidup tidak pernah
+  // berujung pada simpan yang ditolak.
+  if (!canEditDesign.value && !templatePensiun.value) return
   const preset = invitationThemes.find(theme => theme.id === id)
   if (!preset) return
   checkpoint()
@@ -340,6 +358,55 @@ function writeOption(key: string, value: string) {
   if (!section) return
   checkpoint()
   section.data[key] = value
+}
+
+/* ── Varian ornamen ─────────────────────────────────────────────────────────── */
+
+/** Aksen tema yang sedang berlaku — pratinjau ornamen diwarnai ramp yang sama dengan undangan. */
+// `accent` hidup di preset kontrak, bukan di `ThemePresentation`; `templateById()` yang
+// menerjemahkan id pensiun, jadi pratinjau tetap berwarna untuk tema yang dipensiunkan.
+const themeAccent = computed(() => templateById(document.value?.templateId ?? '')?.accent ?? '#7A8B6F')
+
+
+/**
+ * `ornamentOverrides` bernilai objek, bukan string, jadi ia tidak perlu masuk `enumKeys` —
+ * `textFields` sudah menyaring dengan `typeof value === 'string'`. Tapi ia juga karena itu
+ * tidak bisa lewat `writeOption()`, yang hanya menerima string.
+ */
+const ornamentOverrides = computed(() =>
+  toOrnamentOverrides(selected.value?.data.ornamentOverrides, document.value?.templateId ?? ''))
+
+/** Glyph yang sedang berlaku untuk sebuah slot: penukaran kalau ada, bawaan tema kalau tidak. */
+function variantAktif(slot: VariantSlot) {
+  return ornamentOverrides.value[slot] ?? variantsFor(document.value?.templateId ?? '', slot)[0]!
+}
+
+/**
+ * Lebar ubin pratinjau, diturunkan dari rasio glyph-nya sendiri.
+ *
+ * Ubin persegi terbukti tidak bisa dipakai: pemisah berasio 8:1 dijejalkan ke kotak 64px
+ * membuat kelimanya terbaca sebagai garis tipis yang sama persis — pasangan tidak bisa
+ * memilih bentuk yang tidak bisa ia bedakan. Tingginya tetap supaya barisnya rata; yang
+ * melebar hanya yang memang lebar.
+ */
+function tileWidth(glyph: OrnamentId) {
+  const ratio = ornament(glyph).ratio
+  return `${Math.round(Math.min(168, Math.max(64, 56 * ratio)))}px`
+}
+
+function writeVariant(slot: VariantSlot, glyph: OrnamentId) {
+  const section = selected.value
+  if (!section) return
+  checkpoint()
+  const bawaan = variantsFor(document.value.templateId, slot)[0]
+  const berikut = { ...ornamentOverrides.value }
+  // Pilihan yang sama dengan bawaan tema tidak disimpan: dokumen tidak perlu membawa
+  // penukaran yang tidak menukar apa pun, dan pasangan yang kembali ke bawaan berhak
+  // ikut tema kalau temanya kelak berubah.
+  if (glyph === bawaan) delete berikut[slot]
+  else berikut[slot] = glyph
+  if (Object.keys(berikut).length) section.data.ornamentOverrides = berikut
+  else delete section.data.ornamentOverrides
 }
 
 const coverLayout = computed(() => toCoverLayout(selected.value?.data.layout))
@@ -861,6 +928,42 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
               </UiSelect>
             </UiField>
             <p class="m-0 text-caption text-ink-subtle">Berlaku untuk seluruh undangan, bukan hanya bagian pembuka.</p>
+
+            <div class="grid gap-3 rounded-md border border-border bg-surface-2 p-3.5">
+              <div class="grid gap-1">
+                <h3 class="m-0 text-[0.9375rem] font-semibold text-ink">Ornamen</h3>
+                <p class="m-0 text-caption text-ink-subtle">
+                  Pilihannya sudah disaring agar tetap seresep dengan tema — ketebalan garisnya sama,
+                  jadi apa pun yang kamu pilih tetap terbaca sebagai satu keluarga.
+                </p>
+              </div>
+
+              <div v-for="slot in variantSlots" :key="slot" class="grid gap-1.5">
+                <div class="flex flex-wrap items-baseline gap-x-2">
+                  <span :id="`editor-variant-${slot}-label`" class="text-[0.8125rem] font-medium text-ink">{{ variantSlotLabels[slot].label }}</span>
+                  <span class="text-caption text-ink-subtle">{{ variantSlotLabels[slot].hint }}</span>
+                </div>
+                <div class="flex flex-wrap gap-2" role="radiogroup" :aria-labelledby="`editor-variant-${slot}-label`">
+                  <button
+                    v-for="(glyph, index) in variantsFor(document.templateId, slot)"
+                    :id="`editor-variant-${slot}-${glyph}`"
+                    :key="glyph"
+                    type="button"
+                    role="radio"
+                    :aria-checked="variantAktif(slot) === glyph"
+                    :aria-label="`${variantSlotLabels[slot].label}: ${ornament(glyph).name}${index === 0 ? ' (bawaan tema)' : ''}`"
+                    :class="cn(
+                      'grid h-16 shrink-0 place-items-center rounded-md border p-1.5 transition-[border-color,box-shadow] duration-200',
+                      variantAktif(slot) === glyph ? 'border-primary shadow-lift' : 'border-border hover:border-border-strong',
+                    )"
+                    :style="{ ...rampStyle(ornamentRamp(document.tokens, themeAccent)), width: tileWidth(glyph) }"
+                    @click="writeVariant(slot, glyph)"
+                  >
+                    <OrnamentGlyph :glyph="glyph" class="max-h-full max-w-full text-[color:var(--iv-orn-body)]" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            </div>
 
             <DashboardPhotoField
               id="editor-cover-image"
@@ -1392,6 +1495,19 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
               </span>
             </p>
 
+            <p
+              v-if="templatePensiun"
+              id="template-pensiun"
+              class="m-0 flex items-start gap-2 rounded-md border border-border bg-surface-2 p-3.5 text-[0.8125rem] text-ink-muted"
+            >
+              <Lock :size="15" class="mt-0.5 shrink-0 text-ink-subtle" aria-hidden="true" />
+              <span>
+                Tema undangan ini sudah tidak tersedia lagi, dan sekarang ditampilkan memakai
+                <span class="text-ink">{{ templatePensiun.name }}</span>. Pilih penggantinya kapan saja —
+                undangan yang sudah terbit tetap tampil seperti semula sampai kamu menerbitkannya ulang.
+              </span>
+            </p>
+
             <div class="grid gap-2 @xs:grid-cols-2 @md:grid-cols-3">
               <button
                 v-for="theme in invitationThemes"
@@ -1399,12 +1515,12 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
                 :key="theme.id"
                 type="button"
                 :aria-pressed="document.templateId === theme.id"
-                :disabled="!canEditDesign"
-                :aria-describedby="canEditDesign ? undefined : 'design-locked'"
+                :disabled="!canEditDesign && !templatePensiun"
+                :aria-describedby="canEditDesign || templatePensiun ? undefined : 'design-locked'"
                 :class="cn(
                   'grid gap-2 rounded-md border p-2 text-left transition-[border-color,box-shadow] duration-200',
                   document.templateId === theme.id ? 'border-primary shadow-lift' : 'border-border',
-                  canEditDesign
+                  canEditDesign || templatePensiun
                     ? (document.templateId === theme.id ? '' : 'hover:border-border-strong')
                     : 'cursor-not-allowed opacity-60',
                 )"

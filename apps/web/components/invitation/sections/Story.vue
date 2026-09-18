@@ -214,7 +214,14 @@ useArunaMotion(root, ({ gsap, drawSvg, travelPath }) => {
   width: 62%;
   height: 100%;
   transform: translateX(-50%);
-  color: #fffdf7;
+  /*
+   * Mengikuti ramp bidang bertone, bukan kertas yang dipanggang.
+   *
+   * Section ini selalu `tone="ink"`, dan sampai ada tema gelap itu selalu berarti bidang
+   * gelap. Pada `aruna-pelita` `--iv-fg` justru krem, jadi relnya nyaris putih di atas krem —
+   * terlihat di layar, tidak terlihat oleh satu gerbang pun.
+   */
+  color: var(--iv-orn-dark-body, #fffdf7);
   pointer-events: none;
 }
 
@@ -227,8 +234,8 @@ useArunaMotion(root, ({ gsap, drawSvg, travelPath }) => {
   height: 0.85rem;
   margin: -0.425rem 0 0 -0.425rem;
   border-radius: 999px;
-  background: #fffdf7;
-  box-shadow: 0 0 0 6px color-mix(in srgb, #fffdf7 22%, transparent);
+  background: var(--iv-orn-dark-body, #fffdf7);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--iv-orn-dark-body, #fffdf7) 22%, transparent);
   pointer-events: none;
 }
 
@@ -269,6 +276,6 @@ useArunaMotion(root, ({ gsap, drawSvg, travelPath }) => {
   width: min(58%, 11rem);
   height: auto;
   aspect-ratio: 1;
-  color: #fffdf7;
+  color: var(--iv-orn-dark-body, #fffdf7);
 }
 </style>

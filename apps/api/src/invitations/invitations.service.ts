@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { canEditDesign, createDefaultDocument, templateIds, type InvitationDocument, type TemplateId } from '@aruna/contracts';
+import { canEditDesign, createDefaultDocument, isLiveTemplateId, type InvitationDocument } from '@aruna/contracts';
 import type { CreateInvitationBody } from '@aruna/contracts/api';
 import { PrismaService } from '../database/prisma.service.js';
 import { Prisma } from '@aruna/database';
@@ -24,8 +24,10 @@ export class InvitationsService {
   async create(user: AuthenticatedUser, input: CreateInvitationBody) {
     const slug = input.slug.trim().toLowerCase();
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(slug)) throw new BadRequestException('Slug tidak valid');
-    const templateId = (input.templateId?.trim() || 'aruna-bloom') as TemplateId;
-    if (!templateIds.includes(templateId)) throw new BadRequestException('Template tidak tersedia');
+    // Diukur terhadap tema yang HIDUP, bukan seluruh id yang diterima schema: undangan baru
+    // tidak boleh lahir langsung memakai tema yang sudah pensiun dari pemilih.
+    const templateId = input.templateId?.trim() || 'aruna-bloom';
+    if (!isLiveTemplateId(templateId)) throw new BadRequestException('Template tidak tersedia');
     const document = createDefaultDocument(input.partner1.trim(), input.partner2.trim(), templateId);
     const eventSection = document.sections.find((section) => section.type === 'events');
     const date = input.date?.trim() ?? '';
@@ -122,9 +124,19 @@ export class InvitationsService {
 
 function isPrismaUniqueError(error: unknown): boolean { return typeof error === 'object' && error !== null && 'code' in error && (error as { code?: string }).code === 'P2002'; }
 
-function hasDesignChange(previous: unknown, next: InvitationDocument): boolean {
+export function hasDesignChange(previous: unknown, next: InvitationDocument): boolean {
   if (!previous || typeof previous !== 'object') return true;
   const oldDocument = previous as InvitationDocument;
+  /*
+   * Satu pembebasan: pindah KELUAR dari tema yang sudah dipensiunkan selalu boleh.
+   *
+   * Tanpa ini pasangan tanpa add-on `design` terkunci di tema yang tidak ada lagi di pemilih
+   * mana pun — kami yang menghapus temanya, lalu menagih mereka untuk keluar dari sana.
+   * Pembebasannya sempit dengan sengaja: hanya berlaku saat id LAMA pensiun, jadi pindah
+   * antar tema hidup tetap digerbangi seperti biasa, dan sekali pasangan sudah pindah ia
+   * tidak bisa dipakai lagi.
+   */
+  if (!isLiveTemplateId(oldDocument.templateId)) return false;
   return JSON.stringify(oldDocument.tokens) !== JSON.stringify(next.tokens) || oldDocument.sections.map((section) => section.id).join('|') !== next.sections.map((section) => section.id).join('|');
 }
 

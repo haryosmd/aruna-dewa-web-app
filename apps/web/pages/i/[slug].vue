@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { normalizeDisplayName, templateIds, type TemplateId } from '@aruna/contracts'
+import { isLiveTemplateId, normalizeDisplayName, type LiveTemplateId } from '@aruna/contracts'
 import { galleryMotions, type GalleryMotion } from '~/utils/invitation-options'
 import { toast } from 'vue-sonner'
 import type { InvitationDocument } from '@aruna/contracts'
@@ -29,10 +29,17 @@ const guestGreeting = computed(() => {
 })
 const token = computed(() => (typeof route.query.g === 'string' ? route.query.g : ''))
 
-/** `?tema=` only affects the local demo, so the landing carousel can preview each theme. */
-const demoTemplate = computed<TemplateId>(() => {
+/**
+ * `?tema=` only affects the local demo, so the landing carousel can preview each theme.
+ *
+ * Diukur terhadap tema yang HIDUP, bukan terhadap `templateIds`. Yang kedua ikut memuat id
+ * pensiun, dan `demoDocument()` di bawah mencarinya di `invitationThemes` yang hanya berisi
+ * tema hidup — `?tema=aruna-sogan` karena itu menjawab 500 selama beberapa menit di fase 48.
+ * Non-null assertion di sana yang berbohong; ini sumbernya.
+ */
+const demoTemplate = computed<LiveTemplateId>(() => {
   const requested = typeof route.query.tema === 'string' ? route.query.tema : ''
-  return (templateIds as readonly string[]).includes(requested) ? (requested as TemplateId) : 'aruna-bloom'
+  return isLiveTemplateId(requested) ? requested : 'aruna-bloom'
 })
 
 /** `?galeri=` juga hanya berlaku di demo, supaya tiap gaya galeri bisa dilihat langsung. */

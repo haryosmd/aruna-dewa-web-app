@@ -1,0 +1,431 @@
+{
+  "diukur": "2026-09-18",
+  "alat": "sharp/librsvg",
+  "berkas": [
+    {
+      "berkas": "a-sudut-sulur.svg",
+      "bytes": 488447,
+      "viewBox": "0 0 816 1440.749935",
+      "piksel": "4533×8004",
+      "path": 386,
+      "clipPath": 7,
+      "imageTertanam": 0,
+      "fillUnik": 3,
+      "pangsaTinta": 0.0404,
+      "stop": [
+        {
+          "warna": "#5d5245",
+          "pangsa": 0.035,
+          "lum": 0.087
+        },
+        {
+          "warna": "#847665",
+          "pangsa": 0.882,
+          "lum": 0.186
+        },
+        {
+          "warna": "#857965",
+          "pangsa": 0.032,
+          "lum": 0.196
+        },
+        {
+          "warna": "#dfcdb7",
+          "pangsa": 0.026,
+          "lum": 0.63
+        }
+      ]
+    },
+    {
+      "berkas": "b-pengantin.svg",
+      "bytes": 669326,
+      "viewBox": "0 0 878.88 989.999987",
+      "piksel": "4883×5500",
+      "path": 394,
+      "clipPath": 7,
+      "imageTertanam": 0,
+      "fillUnik": 28,
+      "pangsaTinta": 0.1908,
+      "stop": [
+        {
+          "warna": "#92704b",
+          "pangsa": 0.053,
+          "lum": 0.183
+        },
+        {
+          "warna": "#847665",
+          "pangsa": 0.09,
+          "lum": 0.187
+        },
+        {
+          "warna": "#d37258",
+          "pangsa": 0.046,
+          "lum": 0.266
+        },
+        {
+          "warna": "#9c9085",
+          "pangsa": 0.043,
+          "lum": 0.287
+        },
+        {
+          "warna": "#ae967f",
+          "pangsa": 0.016,
+          "lum": 0.322
+        },
+        {
+          "warna": "#c6a279",
+          "pangsa": 0.15,
+          "lum": 0.392
+        },
+        {
+          "warna": "#edbd7f",
+          "pangsa": 0.157,
+          "lum": 0.56
+        },
+        {
+          "warna": "#f1cea5",
+          "pangsa": 0.086,
+          "lum": 0.655
+        },
+        {
+          "warna": "#f1d8b9",
+          "pangsa": 0.022,
+          "lum": 0.713
+        },
+        {
+          "warna": "#e6e7ea",
+          "pangsa": 0.205,
+          "lum": 0.798
+        }
+      ]
+    },
+    {
+      "berkas": "c-rozet.svg",
+      "bytes": 222061,
+      "viewBox": "0 0 878.88 963.749993",
+      "piksel": "4883×5354",
+      "path": 103,
+      "clipPath": 12,
+      "imageTertanam": 0,
+      "fillUnik": 2,
+      "pangsaTinta": 0.1373,
+      "stop": [
+        {
+          "warna": "#847665",
+          "pangsa": 0.127,
+          "lum": 0.188
+        },
+        {
+          "warna": "#bcaa94",
+          "pangsa": 0.865,
+          "lum": 0.415
+        }
+      ]
+    },
+    {
+      "berkas": "d-karangan-daun.svg",
+      "bytes": 30085,
+      "viewBox": "0 0 562.5 600.749987",
+      "piksel": "3125×3338",
+      "path": 1,
+      "clipPath": 0,
+      "imageTertanam": 0,
+      "fillUnik": 1,
+      "pangsaTinta": 0.0921,
+      "stop": [
+        {
+          "warna": "#ae4c92",
+          "pangsa": 0.99,
+          "lum": 0.162
+        }
+      ]
+    },
+    {
+      "berkas": "e-mahkota.svg",
+      "bytes": 323310,
+      "viewBox": "0 0 202.5 328.499999",
+      "piksel": "1125×1825",
+      "path": 15,
+      "clipPath": 2,
+      "imageTertanam": 0,
+      "fillUnik": 1,
+      "pangsaTinta": 0.1129,
+      "stop": [
+        {
+          "warna": "#eed7b8",
+          "pangsa": 0.014,
+          "lum": 0.701
+        },
+        {
+          "warna": "#f2d6b8",
+          "pangsa": 0.037,
+          "lum": 0.706
+        },
+        {
+          "warna": "#efd9b8",
+          "pangsa": 0.175,
+          "lum": 0.713
+        },
+        {
+          "warna": "#f0d9b9",
+          "pangsa": 0.774,
+          "lum": 0.716
+        }
+      ]
+    },
+    {
+      "berkas": "f-bingkai-segi.svg",
+      "bytes": 516275,
+      "viewBox": "0 0 357 347.999987",
+      "piksel": "1983×1933",
+      "path": 774,
+      "clipPath": 517,
+      "imageTertanam": 0,
+      "fillUnik": 233,
+      "pangsaTinta": 0.044,
+      "stop": [
+        {
+          "warna": "#ad832e",
+          "pangsa": 0.037,
+          "lum": 0.253
+        },
+        {
+          "warna": "#b58b33",
+          "pangsa": 0.129,
+          "lum": 0.284
+        },
+        {
+          "warna": "#bc9235",
+          "pangsa": 0.09,
+          "lum": 0.316
+        },
+        {
+          "warna": "#c89f3b",
+          "pangsa": 0.196,
+          "lum": 0.374
+        },
+        {
+          "warna": "#d4ac40",
+          "pangsa": 0.081,
+          "lum": 0.438
+        },
+        {
+          "warna": "#dfb645",
+          "pangsa": 0.171,
+          "lum": 0.497
+        },
+        {
+          "warna": "#e6bd49",
+          "pangsa": 0.068,
+          "lum": 0.536
+        },
+        {
+          "warna": "#ebc34a",
+          "pangsa": 0.101,
+          "lum": 0.573
+        },
+        {
+          "warna": "#f5cd4e",
+          "pangsa": 0.115,
+          "lum": 0.635
+        }
+      ]
+    },
+    {
+      "berkas": "g-bingkai-cipratan.svg",
+      "bytes": 1883408,
+      "viewBox": "0 0 291.75 295.499996",
+      "piksel": "1621×1642",
+      "path": 3,
+      "clipPath": 3,
+      "imageTertanam": 2,
+      "fillUnik": 1,
+      "pangsaTinta": 0.1098,
+      "stop": [
+        {
+          "warna": "#7f6e7b",
+          "pangsa": 0.139,
+          "lum": 0.171
+        },
+        {
+          "warna": "#d0a051",
+          "pangsa": 0.058,
+          "lum": 0.392
+        },
+        {
+          "warna": "#dbae5b",
+          "pangsa": 0.027,
+          "lum": 0.46
+        },
+        {
+          "warna": "#e3b56b",
+          "pangsa": 0.137,
+          "lum": 0.504
+        },
+        {
+          "warna": "#f6b783",
+          "pangsa": 0.06,
+          "lum": 0.55
+        },
+        {
+          "warna": "#f5c784",
+          "pangsa": 0.043,
+          "lum": 0.618
+        },
+        {
+          "warna": "#f9c89b",
+          "pangsa": 0.071,
+          "lum": 0.64
+        },
+        {
+          "warna": "#fbd2b0",
+          "pangsa": 0.063,
+          "lum": 0.699
+        },
+        {
+          "warna": "#fbdbb8",
+          "pangsa": 0.044,
+          "lum": 0.748
+        },
+        {
+          "warna": "#fce4cb",
+          "pangsa": 0.093,
+          "lum": 0.804
+        }
+      ]
+    },
+    {
+      "berkas": "h-gapura.svg",
+      "bytes": 7740,
+      "viewBox": "0 0 657 938.249976",
+      "piksel": "3650×5213",
+      "path": 4,
+      "clipPath": 3,
+      "imageTertanam": 0,
+      "fillUnik": 2,
+      "pangsaTinta": 0.0414,
+      "stop": [
+        {
+          "warna": "#052009",
+          "pangsa": 0.028,
+          "lum": 0.011
+        },
+        {
+          "warna": "#745359",
+          "pangsa": 0.972,
+          "lum": 0.106
+        }
+      ]
+    },
+    {
+      "berkas": "i-oval-cat-air.svg",
+      "bytes": 8041287,
+      "viewBox": "0 0 944.25 1148.999949",
+      "piksel": "5246×6383",
+      "path": 625,
+      "clipPath": 469,
+      "imageTertanam": 2,
+      "fillUnik": 1,
+      "pangsaTinta": 0.0604,
+      "stop": [
+        {
+          "warna": "#39553c",
+          "pangsa": 0.022,
+          "lum": 0.078
+        },
+        {
+          "warna": "#536e53",
+          "pangsa": 0.036,
+          "lum": 0.135
+        },
+        {
+          "warna": "#698059",
+          "pangsa": 0.019,
+          "lum": 0.191
+        },
+        {
+          "warna": "#6b856a",
+          "pangsa": 0.049,
+          "lum": 0.211
+        },
+        {
+          "warna": "#b98250",
+          "pangsa": 0.075,
+          "lum": 0.268
+        },
+        {
+          "warna": "#82996f",
+          "pangsa": 0.022,
+          "lum": 0.285
+        },
+        {
+          "warna": "#839d83",
+          "pangsa": 0.046,
+          "lum": 0.305
+        },
+        {
+          "warna": "#9db39a",
+          "pangsa": 0.032,
+          "lum": 0.419
+        },
+        {
+          "warna": "#e49a9e",
+          "pangsa": 0.019,
+          "lum": 0.421
+        },
+        {
+          "warna": "#b5c8b3",
+          "pangsa": 0.018,
+          "lum": 0.545
+        }
+      ]
+    },
+    {
+      "berkas": "z-damask.webp",
+      "bytes": 224884,
+      "viewBox": null,
+      "piksel": "864×864",
+      "path": 0,
+      "clipPath": 0,
+      "imageTertanam": 0,
+      "fillUnik": 0,
+      "pangsaTinta": 1,
+      "stop": [
+        {
+          "warna": "#b29f87",
+          "pangsa": 0.204,
+          "lum": 0.359
+        },
+        {
+          "warna": "#bcaa93",
+          "pangsa": 0.038,
+          "lum": 0.417
+        },
+        {
+          "warna": "#c8b69f",
+          "pangsa": 0.116,
+          "lum": 0.482
+        },
+        {
+          "warna": "#d5c3ab",
+          "pangsa": 0.035,
+          "lum": 0.56
+        },
+        {
+          "warna": "#e2d0b8",
+          "pangsa": 0.171,
+          "lum": 0.645
+        },
+        {
+          "warna": "#ead7c0",
+          "pangsa": 0.02,
+          "lum": 0.698
+        },
+        {
+          "warna": "#e9dac3",
+          "pangsa": 0.401,
+          "lum": 0.714
+        }
+      ]
+    }
+  ]
+}

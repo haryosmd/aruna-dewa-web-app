@@ -1,0 +1,22 @@
+<script setup lang="ts">
+/**
+ * Rumah Julang Ngapak — cultural-architecture, pack sunda.
+ *
+ * Peran kultural dirujuk `packs/sunda/CULTURE.md`.
+ *
+ * diimpor oleh scripts/ornament-pack dari `packs/sunda/svg/sunda-julang-ngapak.svg`; jangan sunting berkas ini dengan
+ * tangan — ubah SVG sumbernya lalu jalankan `pnpm ornament:pack --tulis`.
+ */
+</script>
+
+<template>
+  <svg viewBox="0 0 720 480" fill="var(--iv-orn-body, currentColor)" aria-hidden="true">
+    <g id="sunda-house-foundation" data-layer="foundation" opacity=".65"><path data-mass="" d="M151 362H168V420H151ZM255 362H272V420H255ZM448 362H465V420H448ZM552 362H569V420H552Z" /><path d="M132 416H182V425H132ZM238 416H289V425H238ZM431 416H482V425H431ZM536 416H587V425H536Z" /></g>
+  <g id="sunda-house-walls" data-layer="walls"><path data-mass="" opacity=".22" d="M151 208H569V362H151Z" /><path data-mass="" d="M145 206H158V368H145ZM562 206H575V368H562ZM151 349H569V366H151ZM150 242H570V250H150Z" />
+  <g opacity=".32" stroke="var(--iv-orn-deep, currentColor)" stroke-width="3"><path d="M164 253V345" /><path d="M182 253V345" /><path d="M200 253V345" /><path d="M218 253V345" /><path d="M236 253V345" /><path d="M254 253V345" /><path d="M272 253V345" /><path d="M290 253V345" /><path d="M308 253V345" /><path d="M326 253V345" /><path d="M344 253V345" /><path d="M362 253V345" /><path d="M380 253V345" /><path d="M398 253V345" /><path d="M416 253V345" /><path d="M434 253V345" /><path d="M452 253V345" /><path d="M470 253V345" /><path d="M488 253V345" /><path d="M506 253V345" /><path d="M524 253V345" /><path d="M542 253V345" /><path d="M158 259H563" /><path d="M158 275H563" /><path d="M158 291H563" /><path d="M158 307H563" /><path d="M158 323H563" /><path d="M158 339H563" /></g>
+  <path data-mass="" d="M315 251H405V350H315Z" opacity=".75" /><path d="M330 264H390V341H330Z" opacity=".23" /><path d="M196 261H266V316H196ZM454 261H524V316H454Z" opacity=".78" />
+  <g fill="none" stroke="var(--iv-orn-deep, currentColor)" stroke-width="3" data-draw=""><path d="M210 266V310M230 266V310M251 266V310M468 266V310M489 266V310M509 266V310" /></g></g>
+  <g id="sunda-house-roof" data-layer="roof"><path data-mass="" d="M360 68L470 153Q559 172 657 157L641 183Q549 204 472 184L360 96L248 184Q164 205 78 183L62 157Q156 174 250 153Z" /><path data-mass="" opacity=".46" d="M360 99L472 188Q546 206 626 195L602 218Q531 226 467 208L360 134L253 208Q184 226 114 218L91 195Q174 206 248 188Z" /><path data-mass="" d="M352 71L333 41L344 36L368 73L388 39L398 44L373 83Z" /><g data-draw="" fill="none" stroke="var(--iv-orn-deep, currentColor)" stroke-width="3" opacity=".5"><path d="M133 210l-9 19" /><path d="M165 210l-9 19" /><path d="M197 210l-9 19" /><path d="M229 204.8l-9 19" /><path d="M261 179.2l-9 19" /><path d="M293 153.6l-9 19" /><path d="M325 128l-9 19" /><path d="M357 102.4l-9 19" /><path d="M389 123.2l-9 19" /><path d="M421 148.8l-9 19" /><path d="M453 174.4l-9 19" /><path d="M485 200l-9 19" /><path d="M517 210l-9 19" /><path d="M549 210l-9 19" /><path d="M581 210l-9 19" /></g></g>
+  <g id="sunda-house-veranda" data-layer="veranda"><path data-mass="" d="M126 345H594V358H126ZM135 362H585V373H135ZM300 376H420V387H300ZM289 393H431V404H289ZM279 410H441V421H279Z" /></g>
+  </svg>
+</template>

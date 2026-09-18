@@ -16,11 +16,77 @@ export function buildGuestUrl(base: string, slug: string, displayName: string, t
 
 export const sectionTypes = ['cover', 'couple', 'events', 'countdown', 'gallery', 'story', 'rundown', 'dresscode', 'video', 'gift', 'rsvp', 'wishes', 'closing', 'music'] as const
 
-export const templateIds = ['aruna-bloom', 'aruna-lumine', 'aruna-senja', 'aruna-alba', 'aruna-sogan', 'aruna-gonjong', 'aruna-mendung', 'aruna-kenanga', 'aruna-bentar'] as const
+/**
+ * Setiap id yang pernah sah di dalam sebuah dokumen, termasuk yang temanya sudah pensiun.
+ *
+ * Daftar ini **hanya tumbuh**. Ia satu-satunya sumber `z.enum(templateIds)`, jadi mencabut
+ * sebuah id dari sini membuat tiap draft dan tiap revisi terbit yang memakainya gagal
+ * divalidasi — undangan yang sedang dibaca tamu ikut mati. Yang dicabut saat sebuah tema
+ * dipensiunkan adalah keanggotaannya di `liveTemplateIds`, bukan di sini.
+ *
+ * Bentuknya menyalin preseden `fontChoices` (12, termasuk `dm-sans` yang pensiun) versus
+ * `selectableFonts` (11) di berkas yang sama.
+ */
+export const templateIds = ['aruna-bloom', 'aruna-wastra', 'aruna-hening', 'aruna-pelita', 'aruna-sekar', 'aruna-lumine', 'aruna-senja', 'aruna-alba', 'aruna-sogan', 'aruna-gonjong', 'aruna-mendung', 'aruna-kenanga', 'aruna-bentar'] as const
 export type TemplateId = (typeof templateIds)[number]
 
+/**
+ * Id yang benar-benar punya wajah hari ini: palet, set ornamen, dan partitur.
+ *
+ * Inilah yang diiterasi setiap pemilih — kartu landing, langkah tema `/order`, grid tema
+ * editor — jadi tema pensiun hilang dari ketiganya sekaligus tanpa satu pun ikut diubah.
+ */
+export const liveTemplateIds = ['aruna-bloom', 'aruna-wastra', 'aruna-hening', 'aruna-pelita', 'aruna-sekar'] as const satisfies readonly TemplateId[]
+export type LiveTemplateId = (typeof liveTemplateIds)[number]
+
+/**
+ * Id pensiun → tema hidup yang menggantikan wajahnya.
+ *
+ * Tipenya `Record<Exclude<TemplateId, LiveTemplateId>, LiveTemplateId>` dengan sengaja: saat
+ * sebuah id dicabut dari `liveTemplateIds`, compiler **menuntut** aliasnya ditulis di sini.
+ * Tidak mungkin ada id pensiun yang tidak punya tujuan, dan tidak mungkin ada alias yang
+ * menunjuk tema yang juga sudah pensiun.
+ */
+export const templateAliases: Record<Exclude<TemplateId, LiveTemplateId>, LiveTemplateId> = {
+  /*
+   * Dipetakan ke pengganti TERDEKAT, bukan semuanya ke bawaan.
+   *
+   * Pasangan yang temanya dipensiunkan tidak memilih perpindahan ini, jadi yang paling sedikit
+   * mengejutkan adalah wajah yang paling dekat dengan yang dulu ia pilih. Dipilih dari watak,
+   * bukan dari urutan: emas sampanye → emas malam, dan keempat tema yang dulu menyebut suku
+   * tertentu → gaya etnik modern yang tidak mengklaim satu tradisi pun.
+   */
+  'aruna-lumine': 'aruna-pelita',
+  'aruna-senja': 'aruna-wastra',
+  'aruna-alba': 'aruna-hening',
+  'aruna-sogan': 'aruna-wastra',
+  'aruna-gonjong': 'aruna-wastra',
+  'aruna-mendung': 'aruna-wastra',
+  'aruna-kenanga': 'aruna-bloom',
+  'aruna-bentar': 'aruna-wastra',
+}
+
+const liveTemplateIdSet: ReadonlySet<string> = new Set(liveTemplateIds)
+
+export function isLiveTemplateId(id: string): id is LiveTemplateId {
+  return liveTemplateIdSet.has(id)
+}
+
+/**
+ * Terjemahkan id apa pun jadi tema yang benar-benar bisa dirender.
+ *
+ * Satu-satunya penerjemah: lapisan web memanggilnya di pintu masuk `themeOf()`,
+ * `themeOrnaments()`, `themeStyle()`, dan `themeMotion()`, jadi tidak ada jalur render yang
+ * bisa menerima id pensiun tanpa melewatinya. Id yang tidak dikenal sama sekali jatuh ke
+ * tema pertama, bukan melempar — dokumen yang rusak tetap harus bisa dibuka pemiliknya.
+ */
+export function resolveTemplateId(id: string): LiveTemplateId {
+  if (isLiveTemplateId(id)) return id
+  return templateAliases[id as Exclude<TemplateId, LiveTemplateId>] ?? liveTemplateIds[0]
+}
+
 /** `dm-sans` is retained so documents written before the theme system still validate. */
-export const fontChoices = ['cormorant', 'italiana', 'fraunces', 'jost', 'jakarta', 'instrument', 'dm-sans'] as const
+export const fontChoices = ['cormorant', 'italiana', 'fraunces', 'jost', 'jakarta', 'instrument', 'charm', 'great-vibes', 'parisienne', 'pinyon', 'allura', 'dm-sans'] as const
 export type FontChoice = (typeof fontChoices)[number]
 export const selectableFonts: { id: FontChoice; label: string }[] = [
   { id: 'cormorant', label: 'Cormorant Garamond' },
@@ -29,26 +95,44 @@ export const selectableFonts: { id: FontChoice; label: string }[] = [
   { id: 'jost', label: 'Jost' },
   { id: 'jakarta', label: 'Plus Jakarta Sans' },
   { id: 'instrument', label: 'Instrument Serif' },
+  { id: 'charm', label: 'Charm' },
+  // Script kaligrafis. Hanya mengendalikan huruf JUDUL (`tokens.font` → `--iv-display`);
+  // huruf body datang dari `themePresentation.body`, jadi aturan "script tidak pernah untuk
+  // paragraf atau navigasi" di DESIGN.md tidak bisa dilanggar dari sini.
+  { id: 'great-vibes', label: 'Great Vibes' },
+  { id: 'parisienne', label: 'Parisienne' },
+  { id: 'pinyon', label: 'Pinyon Script' },
+  { id: 'allura', label: 'Allura' },
 ]
 
 /**
  * Curated starting point for each template. Couples on the `design` entitlement can
  * still override the three colours; the preset only decides where they start.
  */
-export const templates: { id: TemplateId; name: string; version: number; tagline: string; accent: string; tokens: { background: string; foreground: string; primary: string; font: FontChoice } }[] = [
+export const templates: { id: LiveTemplateId; name: string; version: number; tagline: string; accent: string; tokens: { background: string; foreground: string; primary: string; font: FontChoice } }[] = [
   { id: 'aruna-bloom', name: 'Aruna Bloom', version: 1, tagline: 'Botanical ivory yang hangat dan klasik.', accent: '#7A8B6F', tokens: { background: '#FBF6EE', foreground: '#241A14', primary: '#A93F23', font: 'cormorant' } },
-  { id: 'aruna-lumine', name: 'Aruna Lumine', version: 1, tagline: 'Modern luxe dengan emas sampanye yang tenang.', accent: '#2E3330', tokens: { background: '#F7F5F1', foreground: '#1C1C1A', primary: '#7E6020', font: 'italiana' } },
-  { id: 'aruna-senja', name: 'Aruna Senja', version: 1, tagline: 'Senja Jawa: plum tua, amber, dan pasir.', accent: '#C2803A', tokens: { background: '#FBF3EA', foreground: '#2E1A26', primary: '#7D3350', font: 'fraunces' } },
-  { id: 'aruna-alba', name: 'Aruna Alba', version: 1, tagline: 'Minimalis modern: putih tulang, garis tegas, tanpa hiasan berlebih.', accent: '#9AA3A8', tokens: { background: '#F4F3F1', foreground: '#15161A', primary: '#4A5560', font: 'instrument' } },
-  { id: 'aruna-sogan', name: 'Aruna Sogan', version: 1, tagline: 'Terinspirasi adat Jawa: sogan, kunir, dan kawung.', accent: '#A9833F', tokens: { background: '#F6EEE2', foreground: '#241809', primary: '#7A4A18', font: 'cormorant' } },
-  { id: 'aruna-gonjong', name: 'Aruna Gonjong', version: 1, tagline: 'Terinspirasi adat Minang: marun rumah gadang dan kilau songket.', accent: '#BE9440', tokens: { background: '#FBF1E7', foreground: '#25101A', primary: '#8E2433', font: 'fraunces' } },
-  { id: 'aruna-mendung', name: 'Aruna Mendung', version: 1, tagline: 'Mega mendung Cirebon: awan berundak di atas biru laut.', accent: '#B8842B', tokens: { background: '#F2F6F8', foreground: '#10222E', primary: '#1F4E68', font: 'cormorant' } },
-  { id: 'aruna-kenanga', name: 'Aruna Kenanga', version: 1, tagline: 'Blush kenanga: merah jambu pudar, kelopak pita, dan kupu-kupu.', accent: '#C08A7A', tokens: { background: '#FBF1EF', foreground: '#2A1A1C', primary: '#97364A', font: 'italiana' } },
-  { id: 'aruna-bentar', name: 'Aruna Bentar', version: 1, tagline: 'Terinspirasi adat Bali: candi bentar, poleng, dan batu padas.', accent: '#B08A3C', tokens: { background: '#F5F1E8', foreground: '#1C211E', primary: '#2B6252', font: 'instrument' } },
+  { id: 'aruna-wastra', name: 'Aruna Wastra', version: 1, tagline: 'Etnik modern: motif diabstraksi jadi bidang besar.', accent: '#3E5C57', tokens: { background: '#F3EDE3', foreground: '#20191A', primary: '#7E3B2C', font: 'fraunces' } },
+  { id: 'aruna-hening', name: 'Aruna Hening', version: 1, tagline: 'Editorial minimal: huruf yang jadi ornamennya.', accent: '#9AA3A8', tokens: { background: '#FAFAF8', foreground: '#14150F', primary: '#3A4F48', font: 'instrument' } },
+  { id: 'aruna-pelita', name: 'Aruna Pelita', version: 1, tagline: 'Mewah gelap: emas pada bidang malam.', accent: '#8E6B3A', tokens: { background: '#141719', foreground: '#F1ECE2', primary: '#D9B978', font: 'italiana' } },
+  /*
+   * Paletnya DIUKUR, bukan dipilih dari selera.
+   *
+   * Keempat nilainya lahir dari histogram piksel sembilan referensi pemilik
+   * (`imported/canva-sekar/measurements.json`): kertas krem, tinta cokelat, sogan, dan emas
+   * `#C89F3B` — yang terakhir persis stop tengah gradient palsu referensi F.
+   *
+   * Lalu keempatnya diuji terhadap gerbang yang sudah ada sebelum ditulis ke sini. Tiga
+   * kandidat sebelumnya gagal di tempat yang sama: "warna aksi di atas bidang bertinta"
+   * mendarat di 3,79 · 4,44 · 4,31 terhadap ambang 4,5. Yang lolos adalah primary yang lebih
+   * gelap DAN lebih kelabu — bukan emas yang lebih terang, yang justru memperburuknya.
+   */
+  { id: 'aruna-sekar', name: 'Aruna Sekar', version: 1, tagline: 'Krem sogan: damask, sulur, dan cat air bergradasi.', accent: '#C89F3B', tokens: { background: '#F3EBDE', foreground: '#382C24', primary: '#7A5C44', font: 'cormorant' } },
 ]
 
+/** Preset sebuah id, dengan id pensiun diterjemahkan lebih dulu ke penggantinya. */
 export function templateById(id: string) {
-  return templates.find(template => template.id === id)
+  const live = resolveTemplateId(id)
+  return templates.find(template => template.id === live)
 }
 
 const color = z.string().regex(/^#[0-9a-fA-F]{6}$/)
@@ -66,6 +150,8 @@ export type InvitationDocument = z.infer<typeof invitationDocumentSchema>
 export type InvitationSection = InvitationDocument['sections'][number]
 
 export function createDefaultDocument(partner1 = 'Aruna', partner2 = 'Dewa', templateId: TemplateId = 'aruna-bloom'): InvitationDocument {
+  // Id pensiun ditulis ke dokumen baru sebagai penggantinya, bukan apa adanya: dokumen yang
+  // baru lahir tidak punya alasan membawa id yang sudah tidak punya wajah.
   const template = templateById(templateId) ?? templates[0]!
   return {
     schemaVersion: 1, templateId: template.id, templateVersion: 1,

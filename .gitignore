@@ -1,4 +1,34 @@
-docs/
+# `docs/` ikut git sejak fase 57, tapi hanya teksnya.
+#
+# Sebelum ini seluruh pohonnya diabaikan sejak baris pertama, dan akibatnya ROADMAP, CHANGELOG
+# tiap fitur, dan catatan budaya hanya hidup di satu laptop — pemilik yang berpindah mesin tidak
+# punya cara membaca progresnya. Yang tetap di luar git adalah bahannya, bukan catatannya:
+# diukur, 321 MB isi `docs/` adalah font, potret, video, dan ekspor referensi; yang ikut sekarang
+# ±1,2 MB berupa md, json, dan mjs.
+#
+# SVG referensi ikut ditinggal dengan sengaja: salinan yang benar-benar dipakai produk sudah
+# hidup di `packs/` yang terlacak, jadi melacaknya lagi menaikkan angka itu ke 8,2 MB tanpa
+# menambah satu pun informasi progres.
+docs/**/*.png
+docs/**/*.jpg
+docs/**/*.jpeg
+docs/**/*.webp
+docs/**/*.gif
+docs/**/*.mp4
+docs/**/*.mov
+docs/**/*.pdf
+docs/**/*.zip
+docs/**/*.woff
+docs/**/*.woff2
+docs/**/*.svg
+docs/**/*.html
+docs/**/*.txt
+docs/**/*.css
+docs/features/ornament-builder/sources/
+docs/features/ornament-builder/verification/
+
+# Lembar kontak lokal pack, dibangkitkan `node packs/<pack>/lihat.mjs` saat menggambar.
+packs/*/.lembar-*.png
 .env
 .env.*
 !.env.example
@@ -28,12 +58,16 @@ api.env
 web.env
 worker.env
 
-# Skill agen yang dipasang per-mesin, bukan bagian aplikasi. `aruna-ornament-builder` membawa
-# `scripts/core.test.mjs` — berkas `node:test`, bukan vitest — dan glob bawaan vitest menjaringnya
-# sebagai suite kosong, jadi satu `git add .` sudah cukup membuat `Verify` merah di CI tanpa satu
-# pun baris kode aplikasi berubah. Dua skill lain di `.codex/skills` sengaja tetap terlacak.
-.codex/skills/aruna-ornament-builder/
-.claude/skills/
+# Skill agen kini IKUT git, dan alasan lama untuk mengabaikannya sudah tidak berlaku.
+#
+# Yang tertulis di sini dulu: `aruna-ornament-builder` membawa `scripts/core.test.mjs` — berkas
+# `node:test`, bukan vitest — dan glob bawaan vitest menjaringnya sebagai suite kosong, jadi satu
+# `git add .` cukup membuat `Verify` merah. Sejak `vitest.config.ts` mengecualikan `**/.claude/**`
+# dan `**/.codex/**`, jalur kegagalan itu tertutup di tempat yang benar: di konfigurasi suite,
+# bukan dengan menyembunyikan berkasnya dari remote.
+#
+# Dan menyembunyikannya memang mahal. Skill inilah perkakas yang membangun pack ornamen; tanpa
+# ia ikut, mesin kedua pemilik punya packnya tapi tidak punya cara mengerjakannya lagi.
 
 # Instruksi agen, dan sekarang per-mesin juga: barisnya menunjuk skill di `.codex/skills` yang
 # tidak semuanya terlacak — termasuk `aruna-ornament-builder` tepat di atas. Berkas yang
@@ -43,3 +77,4 @@ worker.env
 # klona baru dan CI tidak lagi membacanya, jadi apa pun yang harus berlaku untuk semua orang
 # — seperti `DESIGN.md` sebagai sumber kebenaran visual — tempatnya bukan lagi di sini.
 AGENTS.md
+.forge/

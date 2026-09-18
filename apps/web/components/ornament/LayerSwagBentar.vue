@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Penutup bentar: pita poleng melengkung di tepi bawah, payung kecil di puncaknya. */
+/** Penutup bentar: pita catur melengkung di tepi bawah, payung kecil di puncaknya. */
 </script>
 
 <template>

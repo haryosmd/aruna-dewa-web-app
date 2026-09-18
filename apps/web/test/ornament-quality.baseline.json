@@ -1,0 +1,480 @@
+{
+  "perGlyph": {
+    "attire-batik": [
+      "kurva"
+    ],
+    "attire-dress": [
+      "isen",
+      "kurva"
+    ],
+    "attire-jas": [
+      "data-draw",
+      "kurva"
+    ],
+    "attire-kebaya": [
+      "kurva"
+    ],
+    "attire-kemeja": [
+      "kurva"
+    ],
+    "eucalyptus": [
+      "kurva"
+    ],
+    "garland-slim": [
+      "kurva"
+    ],
+    "jasmine": [
+      "isen"
+    ],
+    "kayon-bidang-kayon": [
+      "bidang-nilai",
+      "data-draw",
+      "isen"
+    ],
+    "kayon-bidang-rumpun-kayon": [
+      "bidang-nilai",
+      "data-draw",
+      "isen"
+    ],
+    "kayon-bingkai-kayon": [
+      "bobot",
+      "data-draw",
+      "lonjakan",
+      "potong-diri"
+    ],
+    "kayon-bingkai-kayon-kembar": [
+      "bobot",
+      "data-draw",
+      "lonjakan",
+      "potong-diri"
+    ],
+    "kayon-bingkai-kayon-polos": [
+      "data-draw",
+      "lonjakan",
+      "potong-diri"
+    ],
+    "kayon-bingkai-lung": [
+      "bidang-nilai",
+      "data-draw",
+      "isen"
+    ],
+    "kayon-bingkai-medalion": [
+      "data-draw"
+    ],
+    "kayon-bingkai-tumpal": [
+      "data-draw",
+      "isen",
+      "lonjakan"
+    ],
+    "kayon-layer-kayon-tunggal": [
+      "bobot",
+      "lonjakan",
+      "potong-diri"
+    ],
+    "kayon-layer-pita-medalion": [
+      "bobot",
+      "lonjakan"
+    ],
+    "kayon-layer-rumpun-kayon": [
+      "bobot",
+      "lonjakan",
+      "potong-diri"
+    ],
+    "kayon-layer-sulur-mawar": [
+      "bobot"
+    ],
+    "kayon-mawar-mekar": [
+      "bobot"
+    ],
+    "kayon-monogram-kayon": [
+      "bobot",
+      "data-draw",
+      "lonjakan",
+      "potong-diri"
+    ],
+    "kayon-monogram-medalion": [
+      "bobot",
+      "data-draw",
+      "lonjakan"
+    ],
+    "kayon-motif-cecek": [
+      "data-draw"
+    ],
+    "kayon-motif-medalion": [
+      "data-draw",
+      "lonjakan"
+    ],
+    "kayon-motif-patran": [
+      "data-draw",
+      "isen"
+    ],
+    "kayon-motif-tumpal": [
+      "data-draw",
+      "isen"
+    ],
+    "kayon-motif-ukel": [
+      "data-draw",
+      "isen",
+      "lonjakan"
+    ],
+    "kayon-pemisah-cecek": [
+      "isen"
+    ],
+    "kayon-pemisah-kayon": [
+      "isen",
+      "lonjakan",
+      "potong-diri"
+    ],
+    "kayon-pemisah-medalion": [
+      "bobot",
+      "data-draw",
+      "lonjakan"
+    ],
+    "kayon-pemisah-patran": [
+      "data-draw"
+    ],
+    "kayon-pemisah-tumpal": [
+      "isen",
+      "kurva",
+      "lonjakan"
+    ],
+    "kayon-pemisah-ukel": [
+      "isen",
+      "lonjakan"
+    ],
+    "kayon-segel-kayon": [
+      "bobot",
+      "data-draw",
+      "lonjakan",
+      "potong-diri"
+    ],
+    "kayon-segel-medalion": [
+      "bobot",
+      "data-draw"
+    ],
+    "kayon-simbol-cincin": [
+      "data-draw",
+      "isen"
+    ],
+    "kayon-simbol-kayon": [
+      "bidang-nilai",
+      "isen",
+      "lonjakan",
+      "potong-diri"
+    ],
+    "kayon-simbol-mawar": [
+      "data-draw"
+    ],
+    "kayon-sudut-kayon": [
+      "bobot",
+      "lonjakan",
+      "potong-diri"
+    ],
+    "kayon-sudut-mawar": [
+      "bobot"
+    ],
+    "kayon-sudut-medalion": [
+      "data-draw",
+      "lonjakan"
+    ],
+    "kayon-sudut-patran": [
+      "data-draw",
+      "isen"
+    ],
+    "kayon-sudut-ukel": [
+      "isen",
+      "lonjakan"
+    ],
+    "kayon-tangkai-daun": [
+      "isen"
+    ],
+    "layer-bloom-bentar": [
+      "kurva"
+    ],
+    "layer-bloom-botanical": [
+      "data-draw"
+    ],
+    "layer-bloom-deco": [
+      "data-draw",
+      "kurva"
+    ],
+    "layer-bloom-geometris": [
+      "data-draw",
+      "kurva"
+    ],
+    "layer-bloom-kenanga": [
+      "data-draw"
+    ],
+    "layer-bloom-mendung": [
+      "data-draw",
+      "isen"
+    ],
+    "layer-bloom-sogan": [
+      "data-draw"
+    ],
+    "layer-bloom-songket": [
+      "data-draw",
+      "kurva"
+    ],
+    "layer-bloom-tropis": [
+      "data-draw"
+    ],
+    "layer-cascade-bentar": [
+      "kurva"
+    ],
+    "layer-cascade-botanical": [
+      "kurva",
+      "stroke"
+    ],
+    "layer-cascade-deco": [
+      "data-draw",
+      "isen",
+      "kurva"
+    ],
+    "layer-cascade-geometris": [
+      "data-draw",
+      "kurva"
+    ],
+    "layer-cascade-sogan": [
+      "kurva"
+    ],
+    "layer-cascade-songket": [
+      "data-draw",
+      "isen",
+      "kurva"
+    ],
+    "layer-cascade-tropis": [
+      "data-draw",
+      "isen"
+    ],
+    "layer-cluster-bentar": [
+      "data-draw",
+      "kurva"
+    ],
+    "layer-cluster-botanical": [
+      "data-draw",
+      "kurva"
+    ],
+    "layer-cluster-deco": [
+      "data-draw",
+      "isen",
+      "kurva"
+    ],
+    "layer-cluster-geometris": [
+      "data-draw",
+      "isen",
+      "kurva"
+    ],
+    "layer-cluster-kenanga": [
+      "data-draw"
+    ],
+    "layer-cluster-mendung": [
+      "data-draw",
+      "isen"
+    ],
+    "layer-cluster-sogan": [
+      "data-draw"
+    ],
+    "layer-cluster-songket": [
+      "data-draw",
+      "kurva"
+    ],
+    "layer-cluster-tropis": [
+      "data-draw",
+      "isen"
+    ],
+    "layer-crown-bentar": [
+      "data-draw",
+      "kurva"
+    ],
+    "layer-crown-botanical": [
+      "data-draw"
+    ],
+    "layer-crown-deco": [
+      "data-draw",
+      "kurva"
+    ],
+    "layer-crown-geometris": [
+      "data-draw",
+      "isen",
+      "kurva"
+    ],
+    "layer-crown-kenanga": [
+      "data-draw"
+    ],
+    "layer-crown-mendung": [
+      "data-draw",
+      "isen"
+    ],
+    "layer-crown-sogan": [
+      "data-draw",
+      "isen"
+    ],
+    "layer-crown-songket": [
+      "data-draw"
+    ],
+    "layer-crown-tropis": [
+      "data-draw",
+      "isen"
+    ],
+    "layer-swag-bentar": [
+      "data-draw",
+      "kurva"
+    ],
+    "layer-swag-botanical": [
+      "data-draw",
+      "kurva"
+    ],
+    "layer-swag-deco": [
+      "data-draw",
+      "kurva"
+    ],
+    "layer-swag-geometris": [
+      "data-draw",
+      "isen",
+      "kurva"
+    ],
+    "layer-swag-kenanga": [
+      "data-draw"
+    ],
+    "layer-swag-mendung": [
+      "data-draw"
+    ],
+    "layer-swag-sogan": [
+      "data-draw",
+      "kurva"
+    ],
+    "layer-swag-songket": [
+      "data-draw",
+      "kurva"
+    ],
+    "layer-swag-tropis": [
+      "data-draw"
+    ],
+    "melati-janur-kuning": [
+      "bidang-nilai"
+    ],
+    "melati-kembar-mayang": [
+      "bidang-nilai"
+    ],
+    "melati-monogram-lingkar": [
+      "bobot"
+    ],
+    "melati-motif-anyaman": [
+      "data-draw",
+      "kurva"
+    ],
+    "melati-motif-jala": [
+      "bobot"
+    ],
+    "melati-motif-kuncup": [
+      "data-draw"
+    ],
+    "melati-pemisah-janur": [
+      "data-draw",
+      "kurva"
+    ],
+    "melati-pemisah-kantil": [
+      "bobot"
+    ],
+    "melati-pemisah-titik": [
+      "isen",
+      "kurva"
+    ],
+    "melati-pendopo-joglo": [
+      "kurva"
+    ],
+    "melati-ronce": [
+      "kurva"
+    ],
+    "melati-rumpun-kantil": [
+      "bobot"
+    ],
+    "melati-segel-janur": [
+      "data-draw",
+      "kurva"
+    ],
+    "melati-segel-melati": [
+      "data-draw"
+    ],
+    "melati-sudut-anyam": [
+      "data-draw"
+    ],
+    "melati-sudut-ceplok": [
+      "kurva"
+    ],
+    "melati-tangkai-kenanga": [
+      "bobot"
+    ],
+    "melati-tangkai-sedap-malam": [
+      "bobot"
+    ],
+    "monogram-diamond": [
+      "data-draw",
+      "kurva"
+    ],
+    "monogram-ring": [
+      "data-draw",
+      "isen"
+    ],
+    "monogram-shield": [
+      "data-draw",
+      "isen",
+      "kurva"
+    ],
+    "monstera": [
+      "bidang-nilai",
+      "isen"
+    ],
+    "sprig": [
+      "isen"
+    ],
+    "stem-single": [
+      "isen",
+      "kurva"
+    ],
+    "sunda-angklung": [
+      "kurva"
+    ],
+    "sunda-anyaman-bambu": [
+      "data-draw",
+      "kurva",
+      "massa-tertimbun",
+      "potong-diri",
+      "runtuh"
+    ],
+    "venue-ballroom": [
+      "data-draw",
+      "kurva"
+    ],
+    "venue-gadang": [
+      "data-draw"
+    ],
+    "venue-gereja": [
+      "data-draw",
+      "kurva"
+    ],
+    "venue-joglo": [
+      "data-draw",
+      "kurva"
+    ],
+    "venue-limasan": [
+      "data-draw",
+      "isen",
+      "kurva"
+    ],
+    "venue-masjid": [
+      "data-draw"
+    ],
+    "venue-pendopo": [
+      "data-draw",
+      "kurva"
+    ],
+    "venue-taman": [
+      "data-draw",
+      "kurva"
+    ]
+  },
+  "keunikan": [],
+  "kohesi": []
+}

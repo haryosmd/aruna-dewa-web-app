@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Pita poleng yang menjuntai di tepi kiri, kotaknya mengecil makin ke bawah. */
+/** Pita catur yang menjuntai di tepi kiri, kotaknya mengecil makin ke bawah. */
 </script>
 
 <template>

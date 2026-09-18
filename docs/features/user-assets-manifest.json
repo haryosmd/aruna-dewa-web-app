@@ -1,0 +1,79 @@
+[
+  {
+    "feature": "landing-order",
+    "original": "/var/folders/qd/j0px_grn2njdftxq_nqdjjhh0000gp/T/codex-clipboard-e40f9291-cb55-4ee1-aa20-79eb536208ad.png",
+    "saved": "landing-order/sources/assets/01-order-start.png",
+    "sha256": "7fc1d07002573cf71156289b94e1b4cf24584b1b6402996d77cc0903e0754002",
+    "bytes": 1001860
+  },
+  {
+    "feature": "landing-order",
+    "original": "/var/folders/qd/j0px_grn2njdftxq_nqdjjhh0000gp/T/codex-clipboard-19f54ba0-cc97-4171-84f0-cc71545a4587.png",
+    "saved": "landing-order/sources/assets/02-order-details.png",
+    "sha256": "c218dd593a9e34225e087aff0366d657dbe2658974a6e48d0ba190be92f7c708",
+    "bytes": 1198883
+  },
+  {
+    "feature": "landing-order",
+    "original": "/var/folders/qd/j0px_grn2njdftxq_nqdjjhh0000gp/T/codex-clipboard-b46772fd-6e23-4b02-9c63-c35a0475d8c3.png",
+    "saved": "landing-order/sources/assets/03-packages.png",
+    "sha256": "f2dfd7eb80d78e5026990892839e29909dac352857e4fbd1199e85724f362699",
+    "bytes": 1534876
+  },
+  {
+    "feature": "invitation-builder",
+    "original": "/Users/slametharyosamudro/Downloads/WhatsApp Unknown 2026-09-08 at 11.19.26 PM/WhatsApp Image 2026-09-08 at 11.10.50 PM (1).jpeg",
+    "saved": "invitation-builder/sources/assets/04-feature-menu.jpeg",
+    "sha256": "bc876256cf12d58edf4dc2d640728c9d4dccc5ac158103e4062da525aa2843c6",
+    "bytes": 94081
+  },
+  {
+    "feature": "invitation-builder",
+    "original": "/Users/slametharyosamudro/Downloads/WhatsApp Unknown 2026-09-08 at 11.19.26 PM/WhatsApp Image 2026-09-08 at 11.10.50 PM.jpeg",
+    "saved": "invitation-builder/sources/assets/05-dashboard-menu.jpeg",
+    "sha256": "b435f1a4c64ca24c5f11f801b6d17b78858dfc601a739c8fe39655440566ebbc",
+    "bytes": 104529
+  },
+  {
+    "feature": "guests-import",
+    "original": "/Users/slametharyosamudro/Downloads/WhatsApp Image 2026-09-08 at 11.11.17 PM.jpeg",
+    "saved": "guests-import/sources/assets/06-guest-table.jpeg",
+    "sha256": "808e6df11b12b3b9a296810a62e57b78a73655b337d9f7420716be64d135cdbb",
+    "bytes": 169632
+  },
+  {
+    "feature": "invitation-builder",
+    "original": "/var/folders/qd/j0px_grn2njdftxq_nqdjjhh0000gp/T/codex-clipboard-76839117-3e3d-493a-b714-d48e53d51f4d.png",
+    "saved": "invitation-builder/sources/assets/07-template-editor.png",
+    "sha256": "fdc50a75e7253894bbca978877a915cbb2d68432109a849f778b88d283f5c5a0",
+    "bytes": 354344
+  },
+  {
+    "feature": "invitation-builder",
+    "original": "/var/folders/qd/j0px_grn2njdftxq_nqdjjhh0000gp/T/codex-clipboard-e80a3b13-beb8-477e-aeb3-9c7dcbfbee1d.png",
+    "saved": "invitation-builder/sources/assets/08-color-editor.png",
+    "sha256": "8b830c497927cd770b9996a6dfe8a267de6c2c601b886b46ec1814e842eac89e",
+    "bytes": 313980
+  },
+  {
+    "feature": "invitation-builder",
+    "original": "/var/folders/qd/j0px_grn2njdftxq_nqdjjhh0000gp/T/codex-clipboard-285b0c52-16b6-471e-9cdb-aa46d92366e0.png",
+    "saved": "invitation-builder/sources/assets/09-button-color.png",
+    "sha256": "e00ce303548d3bae8cef27854c421555d9931f0c1762c1015acf49472d211f23",
+    "bytes": 246738
+  },
+  {
+    "feature": "invitation-builder",
+    "original": "/var/folders/qd/j0px_grn2njdftxq_nqdjjhh0000gp/T/codex-clipboard-10ed865e-2997-46ab-ba64-b53ce741ac6d.png",
+    "saved": "invitation-builder/sources/assets/10-editor-navigation.png",
+    "sha256": "242da0aa7e103d4065fdcee3cc0e9d0921e68a539272c9371b6d90bcea75b58d",
+    "bytes": 6458
+  },
+  {
+    "feature": "guests-import",
+    "original": "/var/folders/qd/j0px_grn2njdftxq_nqdjjhh0000gp/T/codex-clipboard-c94589f7-faa6-46a2-9a20-ebe829994a33.png",
+    "saved": "guests-import/sources/assets/11-import-modal.png",
+    "sha256": "676070b6d3f9ed351b1ba551a2ed1fe9d5197812ab0950803cb399f4c2d6265d",
+    "bytes": 500571
+  }
+]

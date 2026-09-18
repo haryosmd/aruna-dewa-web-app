@@ -11,6 +11,9 @@ importers:
 
   .:
     devDependencies:
+      '@aruna/contracts':
+        specifier: workspace:*
+        version: link:packages/contracts
       '@aruna/database':
         specifier: workspace:*
         version: link:packages/database

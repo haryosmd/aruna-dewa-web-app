@@ -90,7 +90,7 @@ const stats = heroStats
 
       <div data-hero-frame class="relative mx-auto w-full max-w-md lg:max-w-none">
         <OrnamentSprig data-hero-sprig class="absolute -left-6 top-10 z-10 hidden h-40 w-28 text-sage/70 sm:block" />
-        <OrnamentSprig data-hero-sprig flip class="absolute -right-6 bottom-16 z-10 hidden h-36 w-24 text-primary/45 sm:block" />
+        <OrnamentSprig data-hero-sprig class="absolute -right-6 bottom-16 z-10 hidden h-36 w-24 -scale-x-100 text-primary/45 sm:block" />
 
         <!-- Arch window: the single most legible "wedding" shape there is. -->
         <div class="relative overflow-hidden rounded-t-[999px] rounded-b-xl bg-surface-3 shadow-veil">

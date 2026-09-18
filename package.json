@@ -18,9 +18,15 @@
     "media:check": "tsx --env-file-if-exists=apps/api/.env scripts/media-bucket-check.ts",
     "mail:local": "node scripts/local-mail.mjs",
     "capture:dashboard": "tsx --env-file-if-exists=packages/database/.env scripts/capture-dashboard.ts",
-    "images:optimize": "tsx scripts/optimize-images.ts"
+    "images:optimize": "tsx scripts/optimize-images.ts",
+    "ornament:forge": "node scripts/ornament-forge/forge.mjs",
+    "ornament:pack": "node scripts/ornament-pack/pack.mjs",
+    "ornament:sheet": "tsx scripts/ornament-forge/lihat.ts",
+    "ornament:sheet:serve": "tsx scripts/ornament-forge/lihat.ts --sajikan",
+    "ornament:verify": "node scripts/ornament-forge/verify.mjs"
   },
   "devDependencies": {
+    "@aruna/contracts": "workspace:*",
     "@aruna/database": "workspace:*",
     "@axe-core/playwright": "^4.10.2",
     "@playwright/test": "^1.55.0",

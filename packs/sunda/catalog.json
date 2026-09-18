@@ -1,0 +1,511 @@
+{
+  "schemaVersion": 1,
+  "id": "sunda-taman-pasundan",
+  "name": "Taman Pasundan",
+  "scope": "local-original-pack-not-installed-as-application-theme",
+  "palette": {
+    "background": "#f7f3e9",
+    "foreground": "#263e31",
+    "primary": "#435c41",
+    "accent": "#a38348"
+  },
+  "fonts": {
+    "demo": {
+      "display": "Georgia",
+      "body": "Arial",
+      "source": "system-installed; not bundled competitor fonts"
+    },
+    "recommended": {
+      "display": "Cormorant Garamond",
+      "body": "Plus Jakarta Sans",
+      "source": [
+        "https://github.com/google/fonts/tree/main/ofl/cormorantgaramond",
+        "https://github.com/google/fonts/tree/main/ofl/plusjakartasans"
+      ],
+      "note": "Obtain official font files and license when integrating; demo is fully offline with system fonts."
+    }
+  },
+  "composition": {
+    "cover": [
+      "sunda-julang-ngapak",
+      "sunda-layer-dedaunan",
+      "sunda-rangkaian-bunga"
+    ],
+    "story": [
+      "sunda-sudut-daun",
+      "sunda-divider-sunda"
+    ],
+    "event": [
+      "sunda-angklung",
+      "sunda-anyaman-bambu"
+    ],
+    "frameOption": "sunda-bingkai-sunda"
+  },
+  "assets": [
+    {
+      "id": "sunda-julang-ngapak",
+      "name": "Rumah Julang Ngapak",
+      "category": "venue",
+      "tags": [
+        "sunda",
+        "taman-pasundan",
+        "sage",
+        "ivory",
+        "botanical",
+        "vector"
+      ],
+      "culturalRole": "cultural-architecture",
+      "provenance": {
+        "kind": "original-vector",
+        "method": "Original paths authored for Aruna Dewa; not traced from competitor assets.",
+        "references": [
+          "https://repository.maranatha.edu/597/1/Rumah%20Tradisional%20Sunda.pdf"
+        ],
+        "capturedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": [
+          "#263e31",
+          "#6d8065",
+          "#a38348",
+          "#f7f3e9"
+        ],
+        "rendering": "currentColor-two-tone"
+      },
+      "layers": [
+        "foundation",
+        "walls",
+        "roof",
+        "veranda"
+      ],
+      "anchor": "bottom-center",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 0,
+        "unit": "px",
+        "durationSeconds": 1.1,
+        "easing": "power2.out",
+        "reducedMotion": "static",
+        "rigid": true
+      },
+      "variants": [
+        {
+          "file": "svg/julang-ngapak.svg",
+          "format": "svg",
+          "width": 720,
+          "height": 480,
+          "bytes": 2859,
+          "sha256": "06cea860beae673ad290f4316f86e5f61f0a35048181bad3c41ebf49997a2f01",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sunda-angklung",
+      "name": "Angklung",
+      "category": "symbol",
+      "tags": [
+        "sunda",
+        "taman-pasundan",
+        "sage",
+        "ivory",
+        "botanical",
+        "vector"
+      ],
+      "culturalRole": "cultural-instrument",
+      "provenance": {
+        "kind": "original-vector",
+        "method": "Original paths authored for Aruna Dewa; not traced from competitor assets.",
+        "references": [
+          "https://ich.unesco.org/en/RL/indonesian-angklung-00393"
+        ],
+        "capturedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": [
+          "#263e31",
+          "#6d8065",
+          "#a38348",
+          "#f7f3e9"
+        ],
+        "rendering": "currentColor-two-tone"
+      },
+      "layers": [
+        "frame",
+        "tubes",
+        "bindings"
+      ],
+      "anchor": "bottom-center",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 0,
+        "unit": "px",
+        "durationSeconds": 1.1,
+        "easing": "power2.out",
+        "reducedMotion": "static",
+        "rigid": true
+      },
+      "variants": [
+        {
+          "file": "svg/angklung.svg",
+          "format": "svg",
+          "width": 260,
+          "height": 400,
+          "bytes": 1064,
+          "sha256": "c1e2661bdd40defd8cbf011ab60441d985c9a8ab8b8874366d1d884babf76b21",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sunda-anyaman-bambu",
+      "name": "Anyaman bambu",
+      "category": "motif",
+      "tags": [
+        "sunda",
+        "taman-pasundan",
+        "sage",
+        "ivory",
+        "botanical",
+        "vector"
+      ],
+      "culturalRole": "material-inspired-not-exclusive",
+      "provenance": {
+        "kind": "original-vector",
+        "method": "Original paths authored for Aruna Dewa; not traced from competitor assets.",
+        "references": [
+          "https://repository.maranatha.edu/597/1/Rumah%20Tradisional%20Sunda.pdf"
+        ],
+        "capturedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": [
+          "#263e31",
+          "#6d8065",
+          "#a38348",
+          "#f7f3e9"
+        ],
+        "rendering": "currentColor-two-tone"
+      },
+      "layers": [
+        "weave"
+      ],
+      "anchor": "center",
+      "motion": {
+        "preset": "static",
+        "amplitude": 0,
+        "unit": "px",
+        "durationSeconds": 1.1,
+        "easing": "power2.out",
+        "reducedMotion": "static",
+        "rigid": false
+      },
+      "variants": [
+        {
+          "file": "svg/anyaman-bambu.svg",
+          "format": "svg",
+          "width": 240,
+          "height": 240,
+          "bytes": 3836,
+          "sha256": "9259796bd630121eca6c6f05b9256bf51e06d603493b25f490f9186e9ab1014b",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sunda-bingkai-sunda",
+      "name": "Bingkai taman",
+      "category": "frame",
+      "tags": [
+        "sunda",
+        "taman-pasundan",
+        "sage",
+        "ivory",
+        "botanical",
+        "vector"
+      ],
+      "culturalRole": "original-decorative",
+      "provenance": {
+        "kind": "original-vector",
+        "method": "Original paths authored for Aruna Dewa; not traced from competitor assets.",
+        "references": [],
+        "capturedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": [
+          "#263e31",
+          "#6d8065",
+          "#a38348",
+          "#f7f3e9"
+        ],
+        "rendering": "currentColor-two-tone"
+      },
+      "layers": [
+        "frame",
+        "leaves"
+      ],
+      "anchor": "center",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 0,
+        "unit": "px",
+        "durationSeconds": 1.1,
+        "easing": "power2.out",
+        "reducedMotion": "static",
+        "rigid": false
+      },
+      "variants": [
+        {
+          "file": "svg/bingkai-sunda.svg",
+          "format": "svg",
+          "width": 420,
+          "height": 580,
+          "bytes": 1528,
+          "sha256": "8d7415150a24d9398be6258726c19db1ad7158b382e5523d14f59904e213d0df",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sunda-divider-sunda",
+      "name": "Pucuk dan pertemuan",
+      "category": "divider",
+      "tags": [
+        "sunda",
+        "taman-pasundan",
+        "sage",
+        "ivory",
+        "botanical",
+        "vector"
+      ],
+      "culturalRole": "original-decorative",
+      "provenance": {
+        "kind": "original-vector",
+        "method": "Original paths authored for Aruna Dewa; not traced from competitor assets.",
+        "references": [],
+        "capturedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": [
+          "#263e31",
+          "#6d8065",
+          "#a38348",
+          "#f7f3e9"
+        ],
+        "rendering": "currentColor-two-tone"
+      },
+      "layers": [
+        "stems",
+        "leaves",
+        "center"
+      ],
+      "anchor": "center",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 0,
+        "unit": "px",
+        "durationSeconds": 1.1,
+        "easing": "power2.out",
+        "reducedMotion": "static",
+        "rigid": false
+      },
+      "variants": [
+        {
+          "file": "svg/divider-sunda.svg",
+          "format": "svg",
+          "width": 600,
+          "height": 90,
+          "bytes": 2436,
+          "sha256": "c198272e56e9bb1b707e2bd1e895e75582a9437a90acaa1c223dca7437b32c1e",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sunda-sudut-daun",
+      "name": "Sudut dedaunan",
+      "category": "corner",
+      "tags": [
+        "sunda",
+        "taman-pasundan",
+        "sage",
+        "ivory",
+        "botanical",
+        "vector"
+      ],
+      "culturalRole": "companion-flora",
+      "provenance": {
+        "kind": "original-vector",
+        "method": "Original paths authored for Aruna Dewa; not traced from competitor assets.",
+        "references": [],
+        "capturedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": [
+          "#263e31",
+          "#6d8065",
+          "#a38348",
+          "#f7f3e9"
+        ],
+        "rendering": "currentColor-two-tone"
+      },
+      "layers": [
+        "stem",
+        "leaves"
+      ],
+      "anchor": "bottom-left",
+      "motion": {
+        "preset": "parallax",
+        "amplitude": 8,
+        "unit": "px",
+        "durationSeconds": 1.1,
+        "easing": "power2.out",
+        "reducedMotion": "static",
+        "rigid": false
+      },
+      "variants": [
+        {
+          "file": "svg/sudut-daun.svg",
+          "format": "svg",
+          "width": 300,
+          "height": 300,
+          "bytes": 2245,
+          "sha256": "7a1621333964128bbc5b1c9272763b29ef32b2fd80cd62fc8856acbc64d676ea",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sunda-rangkaian-bunga",
+      "name": "Rangkaian melati",
+      "category": "floral",
+      "tags": [
+        "sunda",
+        "taman-pasundan",
+        "sage",
+        "ivory",
+        "botanical",
+        "watercolor"
+      ],
+      "culturalRole": "companion-flora",
+      "provenance": {
+        "kind": "ai-generated-original",
+        "method": "Built-in image_gen; prompt and selected output recorded in GENERATION.md.",
+        "references": [],
+        "capturedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": [
+          "#263e31",
+          "#6d8065",
+          "#a38348",
+          "#f7f3e9"
+        ],
+        "rendering": "watercolor-cutout"
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "bottom-right",
+      "motion": {
+        "preset": "sway",
+        "amplitude": 1.5,
+        "unit": "deg",
+        "durationSeconds": 5.5,
+        "easing": "sine.inOut",
+        "reducedMotion": "static",
+        "rigid": false
+      },
+      "variants": [
+        {
+          "file": "rangkaian-bunga-final.png",
+          "format": "png",
+          "width": 1536,
+          "height": 1024,
+          "bytes": 1872260,
+          "sha256": "65fe1b6e263b16f245955952e8ff1889ee37780625b8f8dcd2983f7b476de2c4",
+          "alpha": true
+        },
+        {
+          "file": "rangkaian-bunga.webp",
+          "format": "webp",
+          "width": 1200,
+          "height": 800,
+          "bytes": 215520,
+          "sha256": "889f00bfab64c6be215b43ac764560a41992305b06304d0e8d9ecb657dcf6080",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sunda-layer-dedaunan",
+      "name": "Dedaunan taman",
+      "category": "layer",
+      "tags": [
+        "sunda",
+        "taman-pasundan",
+        "sage",
+        "ivory",
+        "botanical",
+        "watercolor"
+      ],
+      "culturalRole": "companion-flora",
+      "provenance": {
+        "kind": "ai-generated-original",
+        "method": "Built-in image_gen; prompt and selected output recorded in GENERATION.md.",
+        "references": [],
+        "capturedAt": "2026-09-17"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": [
+          "#263e31",
+          "#6d8065",
+          "#a38348",
+          "#f7f3e9"
+        ],
+        "rendering": "watercolor-cutout"
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "bottom-right",
+      "motion": {
+        "preset": "sway",
+        "amplitude": 1.5,
+        "unit": "deg",
+        "durationSeconds": 5.5,
+        "easing": "sine.inOut",
+        "reducedMotion": "static",
+        "rigid": false
+      },
+      "variants": [
+        {
+          "file": "layer-dedaunan.png",
+          "format": "png",
+          "width": 1312,
+          "height": 1199,
+          "bytes": 1678909,
+          "sha256": "7fc3a0d0abede73869e9d331661e483b2f5e6afcd2bb5b081ff8dcc876f88918",
+          "alpha": true
+        },
+        {
+          "file": "layer-dedaunan.webp",
+          "format": "webp",
+          "width": 1200,
+          "height": 1097,
+          "bytes": 471328,
+          "sha256": "503db3a9ed1b01654c9f90b60e0b3a48b974181b506cc7985ca31e0e6f851863",
+          "alpha": true
+        }
+      ]
+    }
+  ]
+}

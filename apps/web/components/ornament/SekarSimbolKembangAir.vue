@@ -1,0 +1,16 @@
+<script setup lang="ts">
+/**
+ * Kembang air — dekorasi-original, pack sekar.
+ *
+ * Peran kultural dirujuk `packs/sekar/CULTURE.md`; diperiksa 2026-09-18.
+ *
+ * diimpor oleh scripts/ornament-pack dari `packs/sekar/svg/sekar-simbol-kembang-air.svg`; jangan sunting berkas ini dengan
+ * tangan — ubah SVG sumbernya lalu jalankan `pnpm ornament:pack --tulis`.
+ */
+</script>
+
+<template>
+  <svg viewBox="0 0 140 120" fill="var(--iv-orn-body, currentColor)" aria-hidden="true">
+    <defs><linearGradient id="sekar-simbol-kembang-air-ramp" gradientUnits="userSpaceOnUse" x1="58" y1="24" x2="58" y2="100"><stop offset="0" stop-color="var(--iv-orn-glow, currentColor)" /><stop offset="0.5" stop-color="var(--iv-orn-accent, currentColor)" /><stop offset="1" stop-color="currentColor" /></linearGradient></defs><g id="sekar-simbol-kembang-air-luar" data-layer="floral"><path data-mass="" fill="url(#sekar-simbol-kembang-air-ramp)" d="M58 62C77.6 56.5 78 24.9 64.9 22.6C51.9 20.3 41.4 50.1 58 62ZM58 62C72.6 76.3 100.1 60.8 95.6 48.3C91.1 35.9 60 41.7 58 62ZM58 62C52.9 81.8 80.1 97.9 88.6 87.7C97.2 77.6 76.6 53.6 58 62ZM58 62C38.4 67.5 38 99.1 51.1 101.4C64.1 103.7 74.6 73.9 58 62ZM58 62C43.4 47.7 15.9 63.2 20.4 75.7C24.9 88.1 56 82.3 58 62ZM58 62C63.1 42.2 35.9 26.1 27.4 36.3C18.8 46.4 39.4 70.4 58 62Z" /></g><g id="sekar-simbol-kembang-air-dalam" data-layer="floral" opacity="0.88"><path data-mass="" fill="var(--iv-orn-accent, currentColor)" d="M58 62C72.3 66.2 83 47.5 75.5 41.2C68 34.9 51.4 48.7 58 62ZM58 62C58.5 76.9 79.6 81.3 83.2 72.2C86.9 63.1 68.6 51.6 58 62ZM58 62C44 67 46.3 88.5 56.1 89.1C65.9 89.8 71.1 68.9 58 62ZM58 62C48.9 50.3 29.2 59.1 31.6 68.6C34 78.1 55.5 76.6 58 62ZM58 62C66.4 49.7 51.9 33.7 43.6 38.9C35.3 44.1 43.3 64.1 58 62Z" /></g><g id="sekar-simbol-kembang-air-jantung" data-layer="floral" opacity="0.75"><path data-mass="" fill="var(--iv-orn-deep, currentColor)" d="M58 62C64.3 69.9 73.9 63.6 71.5 57.1C69.2 50.6 57.7 51.9 58 62ZM58 62C48 63.5 48.7 75 55.5 76.2C62.3 77.4 66.9 66.8 58 62ZM58 62C61.7 52.6 51.4 47.4 47 52.7C42.5 58 49.4 67.3 58 62ZM63.2 62C63.2 64.9 60.9 67.2 58 67.2C55.1 67.2 52.8 64.9 52.8 62C52.8 59.1 55.1 56.8 58 56.8C60.9 56.8 63.2 59.1 63.2 62Z" /></g><g id="sekar-simbol-kembang-air-pakis" data-layer="floral" opacity="0.7"><path data-mass="" fill="var(--iv-orn-accent, currentColor)" d="M100.7 88.7C102.8 97.6 111.6 101.3 118 99.8C116.7 93.4 109.7 86.9 100.7 88.7ZM100.7 88.7C98.6 79.8 89.8 76.1 83.4 77.6C84.7 84 91.7 90.5 100.7 88.7ZM108.5 76.5C110.3 83.9 117.5 86.9 122.8 85.7C121.7 80.4 115.9 75.1 108.5 76.5ZM108.5 76.5C106.8 69.2 99.5 66.1 94.2 67.3C95.3 72.6 101.1 78 108.5 76.5ZM116.3 64.3C117.7 70.2 123.5 72.6 127.7 71.6C126.8 67.4 122.2 63.2 116.3 64.3ZM116.3 64.3C115 58.5 109.2 56.1 105 57.1C105.9 61.3 110.5 65.5 116.3 64.3ZM124.2 52.2C125.2 56.5 129.4 58.2 132.5 57.5C131.9 54.4 128.5 51.3 124.2 52.2ZM124.2 52.2C123.2 47.9 118.9 46.1 115.8 46.8C116.5 49.9 119.9 53 124.2 52.2Z" /></g><g id="sekar-simbol-kembang-air-rel" data-layer="floral"><path data-draw="" fill="none" stroke="var(--iv-orn-deep, currentColor)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.55" d="M96 96C99.9 91.9 113.6 80.9 119.6 71.6C125.6 62.3 129.9 45.3 132 40" /></g>
+  </svg>
+</template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Rumpun sudut bentar: tangga undakan dari pojok, dibubuhi kotak poleng di selanya. */
+/** Rumpun sudut bentar: tangga undakan dari pojok, dibubuhi kotak catur di selanya. */
 </script>
 
 <template>

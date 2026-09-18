@@ -1,0 +1,677 @@
+{
+  "schemaVersion": 1,
+  "id": "sekar",
+  "name": "Sekar — krem sogan, damask dan cat air bergradasi",
+  "scope": "original-local-demo",
+  "builtAt": "2026-09-18",
+  "generator": "packs/sekar/buat.mjs + packs/sekar/geometri.mjs",
+  "palette": {
+    "paper": "#F4ECE0",
+    "ink": "#4A3D33",
+    "body": "#847665",
+    "accent": "#C89F3B",
+    "glow": "#E2D0B8",
+    "note": "Diukur dari piksel yang benar-benar dirender, bukan dari atribut fill sumbernya — lihat docs/features/ornament-builder/imported/canva-sekar/measurements.json. Glyph tidak membawa warna sendiri; nilainya datang dari ramp tema saat tayang."
+  },
+  "fonts": {
+    "demo": "tidak ada; pack ini tidak membawa huruf",
+    "note": "Huruf referensi tidak diidentifikasi dan tidak ditiru."
+  },
+  "composition": {
+    "anchorRule": "Rangkaian kiri-kanan mengapit, damask mengikat latar, tumpal menggantung di sudut.",
+    "source": "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+  },
+  "motionRecipe": {
+    "ease": "power1.out untuk reveal berurutan; sine.inOut untuk gestur tunggal",
+    "catatan": "Menyalin resep terukur pack kayon; pack ini tidak mengukur ulang motion."
+  },
+  "textures": [
+    {
+      "id": "sekar-damask",
+      "file": "tekstur/damask.svg",
+      "rapport": 144,
+      "usage": "backdrop.motif — apps/web/public/textures/sekar-damask.svg",
+      "note": "BUKAN entri ornamentBank. DESIGN.md:392: ubin CSS tidak bisa currentColor dan tidak boleh di-DrawSVG. Rujukan warnanya raster/damask-asli.webp, milik pemilik."
+    }
+  ],
+  "assets": [
+    {
+      "id": "sekar-bingkai-gapura",
+      "name": "Gapura sekar",
+      "category": "frame",
+      "tags": [
+        "frame",
+        "gapura",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 300 420",
+      "bytes": 3445,
+      "catatan": "Siluet gapura; band berongga, bukan garis rambut."
+    },
+    {
+      "id": "sekar-bingkai-oval",
+      "name": "Oval sekar",
+      "category": "frame",
+      "tags": [
+        "frame",
+        "gapura",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 300 420",
+      "bytes": 3886,
+      "catatan": "Bingkai stadion dengan patran di dua sudut berlawanan."
+    },
+    {
+      "id": "sekar-bingkai-segi",
+      "name": "Segi bersilang",
+      "category": "frame",
+      "tags": [
+        "frame",
+        "gapura",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 320 320",
+      "bytes": 3983,
+      "catatan": "Dua poligon bersilang; gradasi satu definisi, bukan 774 serpih."
+    },
+    {
+      "id": "sekar-layer-jatuh",
+      "name": "Untaian sekar",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "ladang",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 260 480",
+      "bytes": 8620,
+      "catatan": "Keping ladang; rasio menyalin slot yang sudah tayang."
+    },
+    {
+      "id": "sekar-layer-mahkota",
+      "name": "Mahkota sekar",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "ladang",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 480 200",
+      "bytes": 11257,
+      "catatan": "Keping ladang; rasio menyalin slot yang sudah tayang."
+    },
+    {
+      "id": "sekar-layer-mekar",
+      "name": "Mekar sekar",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "ladang",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 480 260",
+      "bytes": 9177,
+      "catatan": "Keping ladang; rasio menyalin slot yang sudah tayang."
+    },
+    {
+      "id": "sekar-layer-rumpun",
+      "name": "Rumpun sekar",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "ladang",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 320 320",
+      "bytes": 8296,
+      "catatan": "Keping ladang; rasio menyalin slot yang sudah tayang."
+    },
+    {
+      "id": "sekar-layer-untai",
+      "name": "Penutup sekar",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "ladang",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 600 220",
+      "bytes": 8683,
+      "catatan": "Keping ladang; rasio menyalin slot yang sudah tayang."
+    },
+    {
+      "id": "sekar-monogram-karangan",
+      "name": "Karangan sekar",
+      "category": "monogram",
+      "tags": [
+        "monogram",
+        "karangan",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 200 200",
+      "bytes": 4778,
+      "catatan": "Tengahnya kosong; yang mengisi adalah inisial pasangan."
+    },
+    {
+      "id": "sekar-motif-damask",
+      "name": "Pita damask",
+      "category": "motif",
+      "tags": [
+        "motif",
+        "damask",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 360 120",
+      "bytes": 5710,
+      "catatan": "Rapport 120 satuan; bentuk yang sama dengan ubin latar tema."
+    },
+    {
+      "id": "sekar-pemisah-mahkota",
+      "name": "Mahkota berel",
+      "category": "divider",
+      "tags": [
+        "divider",
+        "sulur",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 320 40",
+      "bytes": 3009,
+      "catatan": "Mahkota ukel di antara dua rel; rel ditebalkan agar terbaca."
+    },
+    {
+      "id": "sekar-pemisah-sulur",
+      "name": "Sulur berjalan",
+      "category": "divider",
+      "tags": [
+        "divider",
+        "sulur",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 320 40",
+      "bytes": 2482,
+      "catatan": "Ukel bergantian arah tiap unit."
+    },
+    {
+      "id": "sekar-rangkaian-kanan",
+      "name": "Rangkaian kanan",
+      "category": "floral",
+      "tags": [
+        "floral",
+        "rangkaian",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 140 176",
+      "bytes": 6456,
+      "catatan": "Rumpun cat air digambar ulang; gradasi kelopak mengikuti arah terukur referensi."
+    },
+    {
+      "id": "sekar-rangkaian-kiri",
+      "name": "Rangkaian kiri",
+      "category": "floral",
+      "tags": [
+        "floral",
+        "rangkaian",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 140 176",
+      "bytes": 6421,
+      "catatan": "Rumpun cat air digambar ulang; gradasi kelopak mengikuti arah terukur referensi."
+    },
+    {
+      "id": "sekar-ranting-kanan",
+      "name": "Ranting kanan",
+      "category": "floral",
+      "tags": [
+        "floral",
+        "rangkaian",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 120 168",
+      "bytes": 3410,
+      "catatan": "Separuh karangan daun; belahannya digambar terpisah, bukan dicerminkan."
+    },
+    {
+      "id": "sekar-ranting-kiri",
+      "name": "Ranting kiri",
+      "category": "floral",
+      "tags": [
+        "floral",
+        "rangkaian",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 120 168",
+      "bytes": 3343,
+      "catatan": "Separuh karangan daun; belahannya digambar terpisah, bukan dicerminkan."
+    },
+    {
+      "id": "sekar-segel-rozet",
+      "name": "Rozet sekar",
+      "category": "seal",
+      "tags": [
+        "seal",
+        "medalion",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 120 120",
+      "bytes": 5266,
+      "catatan": "Medalion radial; jantungnya berongga agar tidak jadi gumpalan."
+    },
+    {
+      "id": "sekar-segel-tumpal",
+      "name": "Liontin tumpal",
+      "category": "seal",
+      "tags": [
+        "seal",
+        "medalion",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 120 160",
+      "bytes": 3708,
+      "catatan": "Liontin beranyaman dengan mahkota ukel."
+    },
+    {
+      "id": "sekar-simbol-kembang-air",
+      "name": "Kembang air",
+      "category": "symbol",
+      "tags": [
+        "symbol",
+        "mawar",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 140 120",
+      "bytes": 2949,
+      "catatan": "Gradasi kelopak mengikuti arah terukur referensi: pucat di tepi, pekat di jantung."
+    },
+    {
+      "id": "sekar-sudut-damask",
+      "name": "Sudut damask",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "ukel",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 170 170",
+      "bytes": 3964,
+      "catatan": "Simpul ubin latar yang sama, dipadatkan jadi siku."
+    },
+    {
+      "id": "sekar-sudut-sulur-kanan",
+      "name": "Sudut sulur kanan",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "ukel",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 170 170",
+      "bytes": 3876,
+      "catatan": "Dua ukel besar dan tumpal di ujung luar."
+    },
+    {
+      "id": "sekar-sudut-sulur-kiri",
+      "name": "Sudut sulur kiri",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "ukel",
+        "sekar"
+      ],
+      "culturalRole": "dekorasi-original",
+      "provenance": {
+        "kind": "original",
+        "method": "geometri parametrik, dihitung untuk pack ini",
+        "generator": "buat.mjs + geometri.mjs",
+        "referenceStudy": [
+          "docs/features/ornament-builder/imported/canva-sekar/STUDI.md"
+        ],
+        "tracedFrom": null,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "original-local-demo",
+      "style": {
+        "palette": "ramp empat stop lewat var(--iv-orn-*)",
+        "medium": "vektor kubik bermassa"
+      },
+      "viewBox": "0 0 170 170",
+      "bytes": 4100,
+      "catatan": "Tiga ukel menyusut di sepanjang tulang diagonal."
+    }
+  ]
+}

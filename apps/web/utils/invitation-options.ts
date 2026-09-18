@@ -1,3 +1,4 @@
+import { isVariantOf, variantSlots, type OrnamentOverrides } from './ornament-variants'
 import { ornamentsByCategory, type OrnamentId } from './ornaments'
 
 /**
@@ -42,6 +43,31 @@ export const selectableGalleryMotions: { id: GalleryMotion; label: string; hint:
 
 export function toGalleryMotion(value: unknown): GalleryMotion {
   return (galleryMotions as readonly string[]).includes(String(value)) ? (value as GalleryMotion) : 'tema'
+}
+
+/* ── Varian ornamen ─────────────────────────────────────────────────────────── */
+
+/**
+ * Penukaran ornamen yang dipilih pasangan, disaring terhadap kolam tema yang sedang dipakai.
+ *
+ * **Inilah titik penegakannya.** `section.data` adalah `z.record(z.unknown())` dan zod tidak
+ * memeriksa apa pun di dalamnya, jadi dokumen yang disunting tangan bisa menuliskan glyph apa
+ * saja — termasuk yang ketebalan garisnya tidak cocok, yang merusak kohesi undangan lewat
+ * pintu yang tidak dijaga gerbang mana pun. Yang tidak ditawarkan tema ini dibuang di sini.
+ *
+ * Efek samping yang disengaja: mengganti tema otomatis melepas penukaran yang tidak berlaku
+ * lagi, karena penyaringannya dihitung ulang terhadap tema yang baru. Pasangan tidak pernah
+ * melihat bingkai tema lama menempel di tema barunya.
+ */
+export function toOrnamentOverrides(value: unknown, templateId: string): OrnamentOverrides {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  const masuk = value as Record<string, unknown>
+  const keluar: OrnamentOverrides = {}
+  for (const slot of variantSlots) {
+    const pilihan = masuk[slot]
+    if (isVariantOf(templateId, slot, pilihan)) keluar[slot] = pilihan
+  }
+  return keluar
 }
 
 /* ── Ilustrasi gedung ───────────────────────────────────────────────────────── */

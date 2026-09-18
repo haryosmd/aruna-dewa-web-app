@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ArrowLeft, ArrowRight, Check, CreditCard, Loader2 } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
-import { createDefaultDocument, priceOrder, type TemplateId } from '@aruna/contracts'
+import { createDefaultDocument, priceOrder, type LiveTemplateId } from '@aruna/contracts'
 import type { ApiError } from '@aruna/contracts/api'
 import type { Catalog, InvitationDocument } from '~/types/aruna'
+import { ornamentRamp, rampStyle } from '~/utils/ornament-palette'
 
 definePageMeta({ middleware: 'auth', layout: false })
 
@@ -41,7 +42,7 @@ const form = reactive({
   venue2: '',
   address2: '',
   mapUrl2: '',
-  templateId: 'aruna-bloom' as TemplateId,
+  templateId: 'aruna-bloom' as LiveTemplateId,
   packageId: typeof route.query.package === 'string' ? route.query.package : 'mula',
   addonIds: [] as string[],
   invitationId: '',
@@ -164,7 +165,7 @@ const preview = computed<InvitationDocument>(() => {
   cover.data = {
     ...cover.data,
     title: form.title || `${form.partner1 || 'Aruna'} & ${form.partner2 || 'Dewa'}`,
-    image: themePresentation[form.templateId].cover,
+    image: themeOf(form.templateId).cover,
   }
   const events = document.sections.find(section => section.id === 'events')!
   /*
@@ -340,7 +341,13 @@ id="order-slug"
 
                   <span
                     class="grid aspect-[3/4] place-items-center rounded-md px-3 text-center"
-                    :style="{ background: theme.tokens.background, color: theme.tokens.foreground }"
+                    :style="{
+                      background: theme.tokens.background,
+                      color: theme.tokens.foreground,
+                      // Tanpa ramp, pemisah di pratinjau ini jatuh ke `currentColor` dan tampil
+                      // satu warna — pasangan memilih tema dari kartu yang tidak jujur.
+                      ...rampStyle(ornamentRamp(theme.tokens, theme.accent)),
+                    }"
                   >
                     <span class="grid justify-items-center gap-1.5">
                       <OrnamentDivider class="h-4 w-20 opacity-70" :style="{ color: theme.tokens.primary }" />

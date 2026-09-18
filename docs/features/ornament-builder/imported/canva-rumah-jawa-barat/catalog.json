@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 1,
+  "id": "canva-rumah-jawa-barat",
+  "name": "Impor Canva — Rumah Jawa Barat",
+  "scope": "imported-local-demo",
+  "builtAt": "2026-09-18",
+  "origin": {
+    "template": "Rumah Adat Jawa Barat Infografis Ilustratif",
+    "exportedBy": "pemilik, dari akun Canva Pro",
+    "warning": "Bukan aset original. Aturan AGENTS.md/DESIGN.md tentang aset pihak ketiga tetap berlaku sampai pemilik memutuskan sebaliknya secara tertulis. Lihat PROVENANCE.md."
+  },
+  "palette": {
+    "source": [
+      "#af4c0f",
+      "#3a1b09",
+      "#422424",
+      "#6e2711",
+      "#872a0c",
+      "#943314",
+      "#ab4728",
+      "#b75030",
+      "#d9947d",
+      "#eba892",
+      "#e8b577",
+      "#f5c790",
+      "#341b1b",
+      "#564c4c",
+      "#6c6666",
+      "#7d7474"
+    ],
+    "note": "Warna sumber; glyph SVG memakai currentColor."
+  },
+  "assets": [
+    {
+      "id": "sudut-ukiran-kiri",
+      "name": "Sudut ukiran kiri",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "impor-canva",
+        "canva-rumah-jawa-barat",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/sudut-ukiran.svg",
+        "sourceTemplate": "Rumah Adat Jawa Barat Infografis Ilustratif",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "split": "dipecah dari satu berkas sumber pada undefined = undefined; viewBox dirapatkan ke isinya, koordinat tidak digeser"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1
+        ]
+      },
+      "layers": [
+        "carving"
+      ],
+      "anchor": "sudut",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sudut-ukiran-kiri.svg",
+          "format": "svg",
+          "width": 239,
+          "height": 239,
+          "ratio": 1,
+          "bytes": 242253,
+          "sha256": "18b8d0c468ebe899e1be73791b9b9a2a29a86535b1617770c41f498c866c4b7f",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "sudut-ukiran-kanan",
+      "name": "Sudut ukiran kanan",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "impor-canva",
+        "canva-rumah-jawa-barat",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/sudut-ukiran.svg",
+        "sourceTemplate": "Rumah Adat Jawa Barat Infografis Ilustratif",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "split": "dipecah dari satu berkas sumber pada undefined = undefined; viewBox dirapatkan ke isinya, koordinat tidak digeser"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1
+        ]
+      },
+      "layers": [
+        "carving"
+      ],
+      "anchor": "sudut",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/sudut-ukiran-kanan.svg",
+          "format": "svg",
+          "width": 239,
+          "height": 239,
+          "ratio": 1,
+          "bytes": 250991,
+          "sha256": "11ccd043477473ba53dcaaff24e96f453b7c383e838c19e5e2d843fd5caa4331",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "rumah-julang-ngapak",
+      "name": "Rumah Julang Ngapak",
+      "category": "venue",
+      "tags": [
+        "venue",
+        "impor-canva",
+        "canva-rumah-jawa-barat"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/rumah-julang-ngapak.svg",
+        "sourceTemplate": "Rumah Adat Jawa Barat Infografis Ilustratif",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1,
+          0.875,
+          0.75,
+          0.5,
+          0.375,
+          0.25
+        ]
+      },
+      "layers": [
+        "building"
+      ],
+      "anchor": "seksi-acara",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/rumah-julang-ngapak.svg",
+          "format": "svg",
+          "width": 443,
+          "height": 240,
+          "ratio": 1.847,
+          "bytes": 21087,
+          "sha256": "563475b02100d8b45f82dc4bbb7f1f9cdd5b6d65bb57cbda53581eddf91118c0",
+          "alpha": true
+        }
+      ]
+    }
+  ]
+}

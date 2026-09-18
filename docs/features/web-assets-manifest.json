@@ -1,0 +1,209 @@
+{
+  "source": "https://katsudoto.id/undangan-website",
+  "downloaded": [
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-1/hero-1.png",
+      "file": "landing-order/sources/assets/katsudoto/sect-1-hero-1.png",
+      "alt": "",
+      "bytes": 237,
+      "sha256": "01cf6b2edc5ba8060d6f560387f4c622e3c5cd9ca1c900db0a65949142986ae0"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-3/1.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-3-1.png",
+      "alt": "Gambar 1",
+      "bytes": 60877,
+      "sha256": "e79a518e1eecc39fdab080fcc9fcd65de9d74fc59fcdd8a7151d8d415fd4a947"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-3/2.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-3-2.png",
+      "alt": "Gambar 2",
+      "bytes": 108432,
+      "sha256": "ff13b847c9e3a5223356f9ddba5c5708ab78bf6822f4c110a8babe103eb6250c"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-3/3.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-3-3.png",
+      "alt": "Gambar 3",
+      "bytes": 50998,
+      "sha256": "7324a846e74b99fb8427acd0c690e8efaf3749bf11230ba0f0b7e037a5c4a0ea"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-3/4.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-3-4.png",
+      "alt": "Gambar 4",
+      "bytes": 63622,
+      "sha256": "ee521a38e572e4141bb0625e665d7ae4b60de4860f040c162bd1cc521c7e5395"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-3/5.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-3-5.png",
+      "alt": "Gambar 5",
+      "bytes": 81646,
+      "sha256": "07c9bfb8126412fd2951f96f010adcd48cc582782d25d03bda045001edf6ca2e"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-3/6.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-3-6.png",
+      "alt": "Gambar 6",
+      "bytes": 82833,
+      "sha256": "abf8c921f8f817af8638428cda0df938560dfa8588d869dc45acd9b5f8f93cfc"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-3/7.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-3-7.png",
+      "alt": "Gambar 7",
+      "bytes": 63997,
+      "sha256": "d8062a5c4a07bcf5c7a4a49ea529871097aae751fb3f1f8f3e6474c176f6b11d"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-3/8.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-3-8.png",
+      "alt": "Gambar 8",
+      "bytes": 62376,
+      "sha256": "4954fd7415983de518a247d78cc3180fb901ca232345f2030418d71cc3f30480"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-3/9.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-3-9.png",
+      "alt": "Gambar 9",
+      "bytes": 58566,
+      "sha256": "62b550d64a9363a33b01ef412accd853c813eb82f108cc9f8b07253933244fda"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-3/10.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-3-10.png",
+      "alt": "Gambar 10",
+      "bytes": 59486,
+      "sha256": "e0d8fdfdb1ac26400e60b199bbfe39f94282df6d29a9c34ab9a56159a61c93c6"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-3/11.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-3-11.png",
+      "alt": "Gambar 11",
+      "bytes": 61031,
+      "sha256": "2ff21cf17ff6d20b8c5b2f2a48ad0705102d75ad34613c2266651f501eeeb2db"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-3/12.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-3-12.png",
+      "alt": "Gambar 12",
+      "bytes": 24749,
+      "sha256": "4cad8ae4a836c60fc6d6053a8ecb6ef9820e31a8e84b9f9ac24550627ba99225"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-3/13.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-3-13.png",
+      "alt": "Gambar 13",
+      "bytes": 61574,
+      "sha256": "ddf9588ad1044bc209331a07f3ce9e55fadd2f536bea460a414c7fc2d3c5698a"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-4/01.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-4-01.png",
+      "alt": "Gambar Lengkapi informasi mempelai",
+      "bytes": 42403,
+      "sha256": "f3e2189bdda3cbe2417e9b156c2b27b2d34b365e4c92ca23e963f53868abdf2d"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-4/02.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-4-02.png",
+      "alt": "Gambar Tambahkan detail informasi acara",
+      "bytes": 42271,
+      "sha256": "51d35e16cfb1821248c467d5c7060edcbcd29de49b59924d3cbdf2663ff183c1"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-4/03.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-4-03.png",
+      "alt": "Gambar Atur RSVP tamu",
+      "bytes": 45790,
+      "sha256": "478247f088b1e7bd7fb2c3a622f871d0b112922c31341b2bd66219fe2671fa59"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-4/04.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-4-04.png",
+      "alt": "Gambar Ceritakan tentang perjalanan kalian",
+      "bytes": 163734,
+      "sha256": "0b23c1ae7d34dd59fbc8580947a7f029cacef7792b1483c164ca4a891e144ea8"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-4/05.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-4-05.png",
+      "alt": "Gambar Tambahkan dokumentasi bahagiamu di galeri",
+      "bytes": 97381,
+      "sha256": "a67c2c782307cfd08c4e357bee70c7b31d6fd862817921ce4c1b52fe953f9405"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-4/06.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-4-06.png",
+      "alt": "Gambar Hadiah Pernikahan",
+      "bytes": 74331,
+      "sha256": "d2f2d3cf085bad0a935432382718434ab8cfe4ae8c4922a8da0c02aa7a174a4f"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-4/07.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-4-07.png",
+      "alt": "Gambar Tamu tetap bisa menikmati acaramu walau tidak hadir",
+      "bytes": 19315,
+      "sha256": "436780090d560f5f6add0cbb76d67508a620b75eadcf73d6efff31f321db23fa"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-4/08.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-4-08.png",
+      "alt": "Gambar Abadikan momen dengan filter instagram",
+      "bytes": 44242,
+      "sha256": "fb2b0c60b71b143bca77c8ab7439968e7f751263573927f20990e391b5e6546f"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-5/02/mockup.png",
+      "file": "guests-import/sources/assets/katsudoto/sect-5-02-mockup.png",
+      "alt": "Gambar",
+      "bytes": 221413,
+      "sha256": "3a3e08f10c965986d057c13534953ec4ed7ba89dd33b7f533ea3b48a3ac82c6d"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-7/it-1.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-7-it-1.png",
+      "alt": "RSVP+",
+      "bytes": 69426,
+      "sha256": "bf9066edc7f66c0e36199ee26a5ce29db0c77ab24f7be00b26dfc03c00bad120"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-7/it-3.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-7-it-3.png",
+      "alt": "Custom Loading Undangan",
+      "bytes": 37782,
+      "sha256": "7f32ffee11abeb2a4b7925bb375ee464727e0e8895226238b29595e4f828c615"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-7/it-2.png",
+      "file": "invitation-builder/sources/assets/katsudoto/sect-7-it-2.png",
+      "alt": "Rundown Acara",
+      "bytes": 80318,
+      "sha256": "938f10496a9d73ec1c93ef45b989d1969c2ca5dfb12aef38e15b126d6061b50e"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-9/03.png",
+      "file": "landing-order/sources/assets/katsudoto/sect-9-03.png",
+      "alt": "",
+      "bytes": 7471,
+      "sha256": "d9f5fe5d19955a1228809362cd480961c703a4a341fcd93980e3cdea51175143"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-9/02.png",
+      "file": "landing-order/sources/assets/katsudoto/sect-9-02.png",
+      "alt": "",
+      "bytes": 849,
+      "sha256": "77610ae90c6a2067b543e6bf6bf1ec57122dbc02e05adc2358b97d5b09203e03"
+    },
+    {
+      "url": "https://katsudoto.id/media/assets/pictures/web-invitation/sect-9/it-1.png",
+      "file": "landing-order/sources/assets/katsudoto/sect-9-it-1.png",
+      "alt": "",
+      "bytes": 186020,
+      "sha256": "514e353d623fa559395dd489cc64d261b0b0ecb6c37720020fd566e3c7d46e98"
+    }
+  ],
+  "failed": []
+}

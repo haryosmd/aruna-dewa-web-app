@@ -1,5 +1,11 @@
 <script setup lang="ts">
-/** Undakan candi yang naik dari tepi bawah, diapit dua payung upacara. */
+/**
+ * Undakan candi yang naik dari tepi bawah, diapit dua payung bertingkat.
+ *
+ * Kata "upacara" dilepas 2026-09-18 bersama atribusi payung di `SymbolPayung.vue`: klaim
+ * payung upacara Bali tidak bersumber dan bertentangan dengan satu-satunya sumber di repo,
+ * yang mengaitkan bentuk payung ke janur Jawa dalam kembar mayang.
+ */
 </script>
 
 <template>

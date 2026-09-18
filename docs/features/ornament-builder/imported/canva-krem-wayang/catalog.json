@@ -1,0 +1,469 @@
+{
+  "schemaVersion": 1,
+  "id": "canva-krem-wayang",
+  "name": "Impor Canva — Krem Wayang",
+  "scope": "imported-local-demo",
+  "builtAt": "2026-09-18",
+  "origin": {
+    "template": "Krem Ilustrasi Vintage Rumah Jawa dengan Ornamen Wayang Wallpaper Telepon",
+    "exportedBy": "pemilik, dari akun Canva Pro",
+    "warning": "Bukan aset original. Aturan AGENTS.md/DESIGN.md tentang aset pihak ketiga tetap berlaku sampai pemilik memutuskan sebaliknya secara tertulis. Lihat PROVENANCE.md."
+  },
+  "palette": {
+    "source": [
+      "#f0c8b1",
+      "#ffe7d9",
+      "#ffffff"
+    ],
+    "note": "Warna sumber; glyph SVG memakai currentColor."
+  },
+  "assets": [
+    {
+      "id": "kayon-sulur",
+      "name": "Kayon sulur",
+      "category": "symbol",
+      "tags": [
+        "symbol",
+        "impor-canva",
+        "canva-krem-wayang"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/kayon-sulur.svg",
+        "sourceTemplate": "Krem Ilustrasi Vintage Rumah Jawa dengan Ornamen Wayang Wallpaper Telepon",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1
+        ]
+      },
+      "layers": [
+        "kayon"
+      ],
+      "anchor": "kepala",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/kayon-sulur.svg",
+          "format": "svg",
+          "width": 512,
+          "height": 837,
+          "ratio": 0.612,
+          "bytes": 197673,
+          "sha256": "51bbe1ccf96f3b2368334d6837465109d8f257afe0f6061e29e3b2d5110bf6e5",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "kayon-pohon-kiri",
+      "name": "Kayon pohon kiri",
+      "category": "symbol",
+      "tags": [
+        "symbol",
+        "impor-canva",
+        "canva-krem-wayang"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/kayon-pohon-a.svg",
+        "sourceTemplate": "Krem Ilustrasi Vintage Rumah Jawa dengan Ornamen Wayang Wallpaper Telepon",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1
+        ]
+      },
+      "layers": [
+        "kayon"
+      ],
+      "anchor": "kepala",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/kayon-pohon-kiri.svg",
+          "format": "svg",
+          "width": 560,
+          "height": 768,
+          "ratio": 0.729,
+          "bytes": 208993,
+          "sha256": "f62677d61d046fbdb953be49baff949f9c76767aea81a301b89e5514221d1ef2",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "kayon-pohon-kanan",
+      "name": "Kayon pohon kanan",
+      "category": "symbol",
+      "tags": [
+        "symbol",
+        "impor-canva",
+        "canva-krem-wayang"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva, path disalin tanpa perubahan koordinat",
+        "sourceFile": "source/kayon-pohon-b.svg",
+        "sourceTemplate": "Krem Ilustrasi Vintage Rumah Jawa dengan Ornamen Wayang Wallpaper Telepon",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "monokrom currentColor",
+        "medium": "vektor",
+        "inkFields": [
+          1
+        ]
+      },
+      "layers": [
+        "kayon"
+      ],
+      "anchor": "kepala",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "svg/kayon-pohon-kanan.svg",
+          "format": "svg",
+          "width": 564,
+          "height": 769,
+          "ratio": 0.733,
+          "bytes": 208682,
+          "sha256": "6bd2413c2a7326955349c9582db157b7d19b5844f385cf0962595de550c106ce",
+          "alpha": true
+        }
+      ]
+    },
+    {
+      "id": "lampion-ronce-kiri",
+      "name": "Lampion ronce kiri",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "raster",
+        "impor-canva",
+        "canva-krem-wayang"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/lampion-kiri.svg",
+        "sourceTemplate": "Krem Ilustrasi Vintage Rumah Jawa dengan Ornamen Wayang Wallpaper Telepon",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "cascade",
+      "motion": {
+        "preset": "cascadeIn",
+        "amplitude": 18,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/lampion-ronce-kiri.png",
+          "format": "png",
+          "width": 1596,
+          "height": 3340,
+          "ratio": 0.478,
+          "bytes": 1645667,
+          "sha256": "5180716402337ccc2adc225bf56d871c622723ebd4276e94499cd8459b14004e",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/lampion-ronce-kiri.webp",
+          "format": "webp",
+          "width": 1596,
+          "height": 3340,
+          "ratio": 0.478,
+          "bytes": 420264,
+          "sha256": "0f9a74ed93692cff680dfab0e0ea89c1f4b623837d56fc0e3c6bb23ea94b5217",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    },
+    {
+      "id": "lampion-ronce-kanan",
+      "name": "Lampion ronce kanan",
+      "category": "layer",
+      "tags": [
+        "layer",
+        "raster",
+        "impor-canva",
+        "canva-krem-wayang"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/lampion-kanan.svg",
+        "sourceTemplate": "Krem Ilustrasi Vintage Rumah Jawa dengan Ornamen Wayang Wallpaper Telepon",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "cascade",
+      "motion": {
+        "preset": "cascadeIn",
+        "amplitude": 18,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/lampion-ronce-kanan.png",
+          "format": "png",
+          "width": 1596,
+          "height": 3339,
+          "ratio": 0.478,
+          "bytes": 1632694,
+          "sha256": "8d1929e7255999ac07da5dcaf5225f29b52c8b14460018479312bdb09d834595",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/lampion-ronce-kanan.webp",
+          "format": "webp",
+          "width": 1596,
+          "height": 3339,
+          "ratio": 0.478,
+          "bytes": 413258,
+          "sha256": "fd15be9abf45a9d45bbb7d1ef5ede11a91900fd6508ec7cd129ae8bfbe81d475",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    },
+    {
+      "id": "pita-tekstur",
+      "name": "Pita tekstur kertas",
+      "category": "divider",
+      "tags": [
+        "divider",
+        "raster",
+        "impor-canva",
+        "canva-krem-wayang"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/pita-tekstur.svg",
+        "sourceTemplate": "Krem Ilustrasi Vintage Rumah Jawa dengan Ornamen Wayang Wallpaper Telepon",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "antar-blok",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 12,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/pita-tekstur.png",
+          "format": "png",
+          "width": 1597,
+          "height": 437,
+          "ratio": 3.654,
+          "bytes": 554126,
+          "sha256": "b3382e86a140ee050c2f6d43a3875917ea9cf72d459203fd2d87f31ea95864a0",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/pita-tekstur.webp",
+          "format": "webp",
+          "width": 1597,
+          "height": 437,
+          "ratio": 3.654,
+          "bytes": 74962,
+          "sha256": "e26e86dd1ba4505c72c3b4959923776e4e7a2d68a33b8cbcbeee8d804c69bc77",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    },
+    {
+      "id": "rumah-joglo",
+      "name": "Rumah joglo",
+      "category": "venue",
+      "tags": [
+        "venue",
+        "raster",
+        "impor-canva",
+        "canva-krem-wayang"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/rumah-joglo.svg",
+        "sourceTemplate": "Krem Ilustrasi Vintage Rumah Jawa dengan Ornamen Wayang Wallpaper Telepon",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "seksi-acara",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": true,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/rumah-joglo.png",
+          "format": "png",
+          "width": 1441,
+          "height": 781,
+          "ratio": 1.845,
+          "bytes": 126015,
+          "sha256": "a628c8d7128454cbaf2619d5ce04d7bed4df96c2102da1820feea90d7ff52786",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/rumah-joglo.webp",
+          "format": "webp",
+          "width": 1441,
+          "height": 781,
+          "ratio": 1.845,
+          "bytes": 54804,
+          "sha256": "a183a942d6b4939703ba44b46b006cc43ee4f925fc0954713c17ee8ada8c4e2b",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    }
+  ]
+}

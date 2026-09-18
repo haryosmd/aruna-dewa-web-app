@@ -216,5 +216,7 @@ function anchor(pos: Position, bleed: number): Record<string, string> {
 }
 
 /* Di atas bidang gelap ornamen harus kertas — primary tema mana pun ikut tenggelam di sana. */
-.iv-field[data-dark='true'] .iv-field-piece { color: #fffdf7; }
+/* Mengikuti ramp bidang bertone, bukan kertas yang dipanggang: pada tema gelap bidang
+   bertone justru yang paling terang, dan kertas di atasnya hilang. */
+.iv-field[data-dark='true'] .iv-field-piece { color: var(--iv-orn-dark-body, #fffdf7); }
 </style>

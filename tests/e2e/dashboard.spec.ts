@@ -102,7 +102,7 @@ test('signed-in editor and guest management use persisted data', async ({ page }
 })
 
 /*
- * Axe selama ini hanya menyapu landing, auth, dan keenam tema undangan — tidak satu pun
+ * Axe selama ini hanya menyapu landing, auth, dan tiap tema undangan — tidak satu pun
  * halaman dasbor. Karena itu empat halaman bisa berjalan tanpa `<title>` sama sekali, dan
  * `<dl>` ringkasan memuat `<p>` di dalam pembungkus `dt`/`dd`, tanpa pernah tertangkap.
  *
