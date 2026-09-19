@@ -37,6 +37,22 @@ describe('document and pricing boundaries', () => {
     expect(() => priceOrder('mula',['story','story'])).toThrow()
     expect(() => priceOrder('free',[])).toThrow()
   })
+  it('accepts the closed copy layer and rejects strangers (fase 69)', () => {
+    const base = createDefaultDocument()
+    expect(base.copy).toBeUndefined()
+    expect(invitationDocumentSchema.safeParse({ ...base, copy: { 'gate.open': 'Buka' } }).success).toBe(true)
+    expect(invitationDocumentSchema.safeParse({ ...base, copy: { 'gate.open': 'a'.repeat(41) } }).success).toBe(false)
+    expect(invitationDocumentSchema.safeParse({ ...base, copy: { 'kunci.asing': 'x' } }).success).toBe(false)
+  })
+  it('accepts enumerated per-invitation motion and rejects free values (fase 69)', () => {
+    const base = createDefaultDocument()
+    const dengan = (motion: unknown) => invitationDocumentSchema.safeParse({ ...base, tokens: { ...base.tokens, motion } }).success
+    expect(dengan({ amplop: 'pelan', masuk: 'iris' })).toBe(true)
+    expect(dengan({})).toBe(true)
+    expect(dengan({ amplop: 1.5 })).toBe(false)
+    expect(dengan({ masuk: 'tema' })).toBe(false)
+    expect(dengan({ asing: 'x' })).toBe(false)
+  })
   it('ships a valid preset for every template', () => {
     for (const template of templates) {
       const document = createDefaultDocument('Aruna', 'Dewa', template.id)

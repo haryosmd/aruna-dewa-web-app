@@ -13,6 +13,9 @@ Referensi cepat untuk menjalankan & memverifikasi stack `aruna-dewa` di lokal. L
 | `pnpm --filter @aruna/api dev` | Jalankan API NestJS dalam mode dev (watch mode) di port **3001** |
 | `pnpm --filter @aruna/worker dev` | Jalankan worker (pg-boss queue) — proses background untuk job seperti reconcile pembayaran Midtrans tiap 60 detik |
 | `pnpm --filter @aruna/web dev --host 127.0.0.1 --port 3000` | Jalankan web Nuxt dalam mode dev di port **3000**. `--host 127.0.0.1` wajib supaya origin match dengan `WEB_ORIGIN` API (kalau tidak, kena 403 `OriginGuard`) |
+| `pnpm demo` | **Satu perintah untuk semuanya** (`scripts/demo-local.sh`): Postgres, kotak surat SMTP, migrasi, katalog, akun demo, API, lalu web `dev:demo` — dan membuka `/dashboard`. Layanan yang sudah jalan dipakai ulang, tidak pernah dimatikan; Ctrl+C mematikan yang dinyalakannya sendiri berikut cucunya. Log di `.data/logs/`. Port 3000 wajib bebas. `DEMO_NO_OPEN=1` menahan browser |
+| `pnpm demo:local` | **Sekali**: bikin akun `demo@aruna.local` (kata sandi `arunademo123`, role operator, email terverifikasi) + satu undangan contoh, lewat Prisma. Menolak jalan kalau `DATABASE_URL` bukan loopback. Sudah dipanggil `pnpm demo` |
+| `pnpm --filter @aruna/web dev:demo` | Web dev dengan `NUXT_DEV_DEMO=1`: buka `/dashboard` langsung masuk sebagai akun demo, tanpa form; "Buat undangan" langsung aktif tanpa Midtrans (operator). Hanya `nuxt dev` + host loopback + jalur `/dashboard`, `/order`, `/account`. Di launch.json: `web-demo`. Jangan dipakai untuk suite e2e |
 | `docker compose up -d postgres mailpit` | (Opsi Docker) nyalakan container Postgres + Mailpit di background |
 | `pnpm test` | Unit test (vitest) |
 | `pnpm typecheck` | Cek tipe TypeScript semua package (`turbo typecheck`) |

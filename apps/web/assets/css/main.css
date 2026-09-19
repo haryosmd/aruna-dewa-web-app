@@ -109,6 +109,7 @@
     --z-overlay: 40;
     --z-modal: 50;
     --z-toast: 60;
+    --z-tooltip: 70;
 
     color-scheme: light;
   }

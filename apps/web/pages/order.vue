@@ -4,6 +4,7 @@ import { createDefaultDocument, priceOrder, type LiveTemplateId } from '@aruna/c
 import type { ApiError } from '@aruna/contracts/api'
 import type { Catalog, InvitationDocument } from '~/types/aruna'
 import { ornamentRamp, rampStyle } from '~/utils/ornament-palette'
+import { langkahDariQuery, focusPreview, previewScrolls } from '~/utils/order-preview'
 
 const toast = useToast()
 
@@ -57,8 +58,17 @@ onMounted(() => {
   if (saved) {
     try { Object.assign(form, JSON.parse(saved)) } catch { localStorage.removeItem(storageKey) }
   }
+  /*
+   * Tautan "Buat tema versi Anda sendiri" (fase 69): buka langsung di langkah Tema dengan add-on
+   * Desain tercentang. Langkah 1–2 belum divalidasi di sini — `checkout()` yang mengembalikan
+   * pasangan ke langkah pertama yang belum lengkap, bukan server lewat 400.
+   */
+  step.value = langkahDariQuery(route.query.langkah)
+  dariTautanTema.value = step.value === 3
+  if (route.query.addon === 'design' && !form.addonIds.includes('design')) form.addonIds.push('design')
   loadCatalog()
 })
+const dariTautanTema = ref(false)
 
 watch(form, () => localStorage.setItem(storageKey, JSON.stringify(form)), { deep: true })
 
@@ -118,6 +128,8 @@ function next() {
 }
 
 async function checkout() {
+  // Masuk lewat ?langkah=tema bisa melompati nama dan acara; kembalikan ke langkah yang kosong.
+  for (const target of [1, 2]) { if (!validate(target)) { step.value = target; return } }
   error.value = ''
   pending.value = true
   try {
@@ -159,13 +171,45 @@ async function checkout() {
   }
 }
 
-/** Preview document rebuilt from the live form so the right panel is never stale. */
+/**
+ * Yang tertulis di cover: nama kalian berdua, dan hanya itu.
+ *
+ * `form.title` sengaja TIDAK ikut. API membangun dokumen lewat `createDefaultDocument(partner1,
+ * partner2)`, jadi judul cover undangan yang sungguhan selalu nama pasangan; `title` hanya
+ * menjadi nama undangan di dasbor dan tab. Sebelum ini pratinjau memakai `form.title` sebagai
+ * judul cover, sehingga mengetik nama dasbor terlihat menimpa nama di cover — dua kolom yang
+ * tampak mengatur satu hal, padahal yang satu tidak pernah sampai ke tamu.
+ */
+const previewTitle = computed(() => `${form.partner1 || 'Aruna'} & ${form.partner2 || 'Dewa'}`)
+const previewSlug = computed(() => form.slug || 'aruna-dan-dewa')
+const previewFocus = computed(() => ({ hasDate: Boolean(form.date) }))
+const previewScrollable = computed(() => previewScrolls(step.value, previewFocus.value))
+
+/*
+ * Section yang difokuskan harus muat tanpa menggulung, jadi bingkainya boleh diperkecil
+ * mengikuti tinggi jendela. 300px adalah header + jarak sticky + pil alamat + dua baris
+ * keterangan di bawah kartu. Di langkah terakhir batasnya dilepas: seluruh undangan memang
+ * digulung, dan memperkecilnya sampai muat hanya menghasilkan huruf yang tak terbaca.
+ */
+const { height: windowHeight } = useWindowSize()
+const previewMaxHeight = computed(() => (previewScrollable.value ? undefined : Math.max(360, windowHeight.value - 300)))
+const previewScale = ref(1)
+const previewScalePct = computed(() => Math.round(previewScale.value * 100))
+
+/**
+ * Dokumen pratinjau dibangun ulang dari formulir supaya panel kanan tidak pernah basi.
+ *
+ * Dokumennya lengkap — semua section bawaan diisi — lalu `focusPreview` menyalakan hanya
+ * section yang disentuh langkah aktif. Sebelum fase 65 seluruh undangan digulung di kotak
+ * 34rem: di langkah "nama kalian" yang terlihat foto stok dan eyebrow, sementara namanya
+ * sendiri jatuh di bawah lipatan.
+ */
 const preview = computed<InvitationDocument>(() => {
   const document = createDefaultDocument(form.partner1 || 'Aruna', form.partner2 || 'Dewa', form.templateId)
   const cover = document.sections.find(section => section.id === 'cover')!
   cover.data = {
     ...cover.data,
-    title: form.title || `${form.partner1 || 'Aruna'} & ${form.partner2 || 'Dewa'}`,
+    title: previewTitle.value,
     image: themeOf(form.templateId).cover,
   }
   const events = document.sections.find(section => section.id === 'events')!
@@ -206,7 +250,37 @@ const preview = computed<InvitationDocument>(() => {
   countdown.data = { date: form.date }
   const gallery = document.sections.find(section => section.id === 'gallery')!
   gallery.data = { images: ['/images/couple.webp', '/images/rings.webp'] }
+  document.sections = focusPreview(document.sections, step.value, previewFocus.value)
   return document
+})
+
+/*
+ * Pergantian adegan, bukan gerakan masuk: saat langkah berganti, isi pratinjau berganti dan
+ * bingkainya memudar masuk (`sine.inOut`, resep fase 32). Fungsinya baru terisi setelah modul
+ * motion tiba, dan tidak pernah terisi saat `prefers-reduced-motion` — `useArunaMotion` tidak
+ * menjalankan setup-nya, jadi pratinjau langsung berganti tanpa tween. Tidak ada `opacity: 0`
+ * di CSS (DESIGN.md, aturan 3).
+ */
+const previewRoot = ref<HTMLElement | null>(null)
+let fadePreview: (() => void) | null = null
+useArunaMotion(previewRoot, ({ gsap }) => {
+  fadePreview = () => {
+    gsap.fromTo('[data-order-preview]', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: 'sine.inOut', overwrite: true })
+  }
+})
+watch(step, () => {
+  fadePreview?.()
+  /*
+   * Formulir acara panjang; tombol Lanjut ditekan di bawah, dan judul langkah berikutnya tidak
+   * boleh lahir di luar layar.
+   *
+   * `instant`, bukan `auto`: `html { scroll-behavior: smooth }` di main.css membuat `auto`
+   * berarti halus, dan gulungan halus itu asinkron — di langkah terakhir ia dibatalkan oleh
+   * ScrollTrigger yang baru dipasang renderer (refresh-nya mengembalikan posisi gulung yang
+   * ia ingat), sehingga halaman tetap di dasar. Terukur: `auto` menyisakan 229px, `instant` 0.
+   * Aksesibilitas tidak dikorbankan — lompatan seketika justru yang diminta reduced-motion.
+   */
+  if (import.meta.client) nextTick(() => window.scrollTo({ top: 0, behavior: 'instant' }))
 })
 
 // Sengaja tidak menimpa `noindex` bawaan. Halaman ini ada di balik middleware `auth`, jadi
@@ -262,6 +336,15 @@ useHead({ title: 'Buat undangan — Aruna Dewa' })
         <header class="grid gap-3">
           <p class="eyebrow">{{ STEPS[step - 1]!.eyebrow }}</p>
           <h1 class="m-0 font-display text-h1 font-semibold text-ink">{{ STEPS[step - 1]!.title }}</h1>
+          <!--
+            Di bawah `lg` bingkai pratinjau disembunyikan: kartu setinggi undangan di bawah
+            formulir hanya menggandakan gulungan. Yang perlu dipantau di ponsel cukup satu
+            baris — nama yang akan tampil dan alamatnya.
+          -->
+          <p id="order-preview-summary" class="m-0 text-caption text-ink-muted lg:hidden">
+            Tampil sebagai <strong class="font-semibold text-ink">{{ previewTitle }}</strong>
+            · arunadewa.id/i/{{ previewSlug }}
+          </p>
         </header>
 
         <form class="grid gap-6" @submit.prevent="step === STEPS.length ? checkout() : next()">
@@ -277,8 +360,13 @@ useHead({ title: 'Buat undangan — Aruna Dewa' })
                 </UiField>
               </div>
 
-              <UiField id="order-title" v-slot="{ id }" label="Judul undangan" hint="Kosongkan untuk memakai nama kalian berdua.">
-                <UiInput :id="id" v-model="form.title" placeholder="Aruna & Dewa" />
+              <!--
+                Labelnya menyebut tempatnya, karena itulah satu-satunya efeknya: nama ini tampil di
+                dasbor dan judul tab, tidak pernah di undangan. Placeholder-nya nama yang sedang
+                diketik, supaya "kosongkan" punya wajah.
+              -->
+              <UiField id="order-title" v-slot="{ id }" label="Nama undangan di dasbor" hint="Hanya kalian yang melihatnya, tamu tidak. Kosongkan untuk memakai nama kalian berdua.">
+                <UiInput :id="id" v-model="form.title" :placeholder="previewTitle" />
               </UiField>
 
               <UiField
@@ -329,6 +417,10 @@ id="order-slug"
 
             <!-- Step 3 — theme -------------------------------------------------->
             <template v-else-if="step === 3">
+              <p v-if="dariTautanTema" id="order-tema-catatan" class="notice m-0">
+                Tema di sini adalah titik awal — warna, ornamen, amplop, kata-kata, dan gerak bisa
+                kalian ubah di editor dengan add-on Desain, yang sudah kami centangkan.
+              </p>
               <div class="grid gap-3 sm:grid-cols-3">
                 <label
                   v-for="theme in invitationThemes"
@@ -433,6 +525,8 @@ id="order-slug"
               {{ error }}
             </p>
 
+            <DemoBadge v-if="step === STEPS.length" note="Pembayaran dilewati: undangan langsung aktif." />
+
             <div class="flex items-center justify-between gap-3 pt-1">
               <UiButton v-if="step > 1" id="order-back" type="button" tone="ghost" @click="step--">
                 <ArrowLeft :size="17" aria-hidden="true" />
@@ -455,21 +549,30 @@ id="order-slug"
         </form>
       </div>
 
-      <!-- Live preview: the thing they are actually buying. -->
-      <aside class="lg:sticky lg:top-28 lg:self-start">
+      <!--
+        Pratinjau langsung: barang yang sebenarnya dibeli. Dirender selebar ponsel karena
+        tamu hampir selalu membukanya dari sana, dan hanya section langkah aktif yang tampil
+        (lihat `utils/order-preview.ts`). Kotaknya baru menggulung di langkah terakhir.
+      -->
+      <aside ref="previewRoot" class="hidden lg:sticky lg:top-28 lg:grid lg:self-start" aria-label="Pratinjau undangan">
         <div class="grid gap-3">
           <p class="eyebrow">Pratinjau langsung</p>
-          <div class="overflow-hidden rounded-xl border border-border shadow-float">
-            <div class="flex items-center gap-1.5 border-b border-border bg-surface-2 px-4 py-2.5">
-              <span class="h-2.5 w-2.5 rounded-full bg-border-strong" aria-hidden="true" />
-              <span class="h-2.5 w-2.5 rounded-full bg-border-strong" aria-hidden="true" />
-              <span class="h-2.5 w-2.5 rounded-full bg-border-strong" aria-hidden="true" />
-              <span class="ml-2 truncate text-caption text-ink-subtle">arunadewa.id/i/{{ form.slug || 'aruna-dan-dewa' }}</span>
-            </div>
-            <div class="max-h-[34rem] overflow-y-auto">
-              <InvitationRenderer :document="preview" compact />
+          <div data-order-preview class="mx-auto w-full max-w-[26.5rem] overflow-hidden rounded-[1.25rem] border border-border bg-surface-2 shadow-float">
+            <p class="m-0 flex items-center justify-center px-4 pt-3 pb-2">
+              <span class="max-w-full truncate rounded-full bg-surface px-3.5 py-1.5 text-caption text-ink-subtle ring-1 ring-border">
+                arunadewa.id/i/{{ previewSlug }}
+              </span>
+            </p>
+            <div :class="cn('px-3 pb-3', previewScrollable && 'max-h-[34rem] overflow-y-auto [scrollbar-gutter:stable]')">
+              <InvitationPhoneFrame v-model:scale="previewScale" :width="390" :max-height="previewMaxHeight" class="rounded-xl bg-surface ring-1 ring-border">
+                <InvitationRenderer :document="preview" compact />
+              </InvitationPhoneFrame>
             </div>
           </div>
+          <p class="m-0 text-caption text-ink-subtle">
+            Selebar ponsel, seperti yang dibuka tamu.
+            <span v-if="previewScalePct < 100" class="tabular-nums">Diperkecil {{ previewScalePct }}%.</span>
+          </p>
           <p class="m-0 flex items-center gap-2 text-caption text-ink-subtle">
             <Loader2 v-if="pending" :size="14" class="animate-spin" aria-hidden="true" />
             Draft tersimpan otomatis di perangkat ini.

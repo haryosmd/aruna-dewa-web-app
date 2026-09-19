@@ -31,6 +31,11 @@ export interface OrnamentMetric {
 }
 
 export const ornamentMetrics: Record<string, OrnamentMetric> = {
+  'amplop-flap-bertakik': { garis: [2.5], rel: true, bytes: 1047 },
+  'amplop-flap-lengkung': { garis: [2.5], rel: true, bytes: 1225 },
+  'amplop-flap-runcing': { garis: [2.5], rel: true, bytes: 965 },
+  'amplop-kantong-lengkung': { garis: [2.5], rel: true, bytes: 1135 },
+  'amplop-kantong-lurus': { garis: [2.5], rel: true, bytes: 986 },
   'arch': { garis: [3], rel: true, bytes: 12552 },
   'attire-batik': { garis: [3], rel: true, bytes: 753 },
   'attire-dress': { garis: [3], rel: true, bytes: 660 },
@@ -283,7 +288,8 @@ export const ornamentMetrics: Record<string, OrnamentMetric> = {
   'ref-krem-wayang-pita-tekstur': { garis: [], rel: false, bytes: 554126, tetap: true },
   'ref-krem-wayang-rumah-joglo': { garis: [], rel: false, bytes: 127396, tetap: true },
   'ref-merah-emas-kayon-sudut-merah': { garis: [], rel: false, bytes: 1879828, tetap: true },
-  'ref-putih-cokelat-bingkai-ukir': { garis: [], rel: false, bytes: 392105, tetap: true },
+  'ref-putih-cokelat-bingkai-ukir-kanan': { garis: [], rel: false, bytes: 203364, tetap: true },
+  'ref-putih-cokelat-bingkai-ukir-kiri': { garis: [], rel: false, bytes: 202661, tetap: true },
   'ref-putih-cokelat-cincin-kawin': { garis: [], rel: false, bytes: 192738, tetap: true },
   'ref-putih-cokelat-mahkota-ukir': { garis: [], rel: false, bytes: 839713, tetap: true },
   'ref-putih-cokelat-motif-latar': { garis: [], rel: false, bytes: 41195, tetap: true },

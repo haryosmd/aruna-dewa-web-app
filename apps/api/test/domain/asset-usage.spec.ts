@@ -92,4 +92,13 @@ describe('sapuan aset yatim setelah publish', () => {
   it('tidak menyapu apa pun saat undangan belum pernah terbit dan drafnya memakai asetnya', () => {
     expect(orphanAssetIds([assetId], null, { images: [publicMediaUrl(assetId)] })).toEqual([]);
   });
+
+  it('menemukan URL ornamen unggahan yang bersarang di ornamentOverrides.unggahan (fase 69)', () => {
+    const document = documentWith((doc, url) => {
+      doc.sections[0]!.data.ornamentOverrides = { unggahan: { symbol: { url, width: 200, height: 100 } } };
+    });
+    expect(servesAsset(document, assetId)).toBe(true);
+    expect(referencesAsset(document, assetId)).toBe(true);
+    expect(orphanAssetIds([assetId], document, null)).toEqual([]);
+  });
 });

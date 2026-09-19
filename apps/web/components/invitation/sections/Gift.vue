@@ -6,7 +6,7 @@ import type { Section } from '~/types/aruna'
 const toast = useToast()
 
 const props = defineProps<{ section: Section; seed: number }>()
-const { orn, intensity, compact } = useInvitation()
+const { orn, intensity, compact, t } = useInvitation()
 
 /**
  * Satu-satunya pembaca data hadiah. `normalizeGift` yang menangani dokumen lama berbentuk
@@ -26,14 +26,14 @@ function copyAccount(value: string) {
     id="iv-gift"
     tone="primary"
     :compact="compact"
-    kicker="Tanda kasih"
+    :kicker="t('gift.kicker')"
     :title="gift.title"
     :ornaments="compact ? null : orn"
     :intensity="intensity"
     :seed="props.seed"
   >
     <p data-iv-reveal class="iv-body m-0">
-      {{ gift.note || 'Doa restu Anda sudah lebih dari cukup. Bila ingin berbagi tanda kasih, kami menerimanya dengan senang hati.' }}
+      {{ gift.note || t('gift.fallbackNote') }}
     </p>
 
     <ul v-if="gift.accounts.length" class="iv-gift-grid m-0 w-full p-0 list-none">

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { CalendarPlus, Church, MapPin, PartyPopper } from 'lucide-vue-next'
+import { CalendarPlus, HeartHandshake, MapPin, PartyPopper } from 'lucide-vue-next'
 import type { Section } from '~/types/aruna'
 import { toVenueIllustration } from '~/utils/invitation-options'
 
 const props = defineProps<{ section: Section; seed: number }>()
-const { orn, intensity, compact, coupleNames } = useInvitation()
+const { orn, intensity, compact, coupleNames, t } = useInvitation()
 
 const events = computed(() => rows(props.section, 'events'))
 const venue = computed(() => toVenueIllustration(props.section.data.venueIllustration))
@@ -12,9 +12,11 @@ const venue = computed(() => toVenueIllustration(props.section.data.venueIllustr
 /**
  * Akad dan resepsi punya watak berbeda, dan tamu membacanya berbeda. Ikonnya diturunkan
  * dari nama acara, bukan dari urutannya — pasangan bebas menamai dan menambah acara.
+ * Ikon akad adalah dua tangan bersalaman berhati: "janji" yang sama maknanya di ijab kabul,
+ * pemberkatan, maupun pawiwahan. Dulu `Church`, dan itu salah rumah bagi mayoritas pasangan.
  */
 function icon(name: string) {
-  return /akad|pemberkatan|nikah|misa/i.test(name) ? Church : PartyPopper
+  return /akad|pemberkatan|nikah|misa/i.test(name) ? HeartHandshake : PartyPopper
 }
 
 /** Google Calendar opens reliably on both Android and iOS, unlike a downloaded .ics. */
@@ -38,8 +40,8 @@ function calendarUrl(event: Record<string, unknown>) {
     id="iv-events"
     tone="tint"
     :compact="compact"
-    kicker="Rangkaian acara"
-    title="Akad & Resepsi"
+    :kicker="t('events.kicker')"
+    :title="t('events.title')"
     :ornaments="compact ? null : orn"
     :intensity="intensity"
     :seed="props.seed"
@@ -64,10 +66,11 @@ function calendarUrl(event: Record<string, unknown>) {
         <OrnamentGlyph :glyph="orn.corner" data-iv-ornament class="iv-event-corner iv-event-corner--tl" aria-hidden="true" />
         <OrnamentGlyph :glyph="orn.corner" data-iv-ornament class="iv-event-corner iv-event-corner--br" aria-hidden="true" />
 
-        <p class="iv-display m-0 flex items-center justify-center gap-2.5 text-[1.65rem]">
-          <component :is="icon(String(event.name ?? ''))" :size="22" aria-hidden="true" class="shrink-0 opacity-70" />
-          {{ String(event.name ?? '') }}
-        </p>
+        <!-- Medali ikon di atas judul: penanda jenis acara, bukan bullet di samping nama. -->
+        <span class="iv-event-badge justify-self-center" aria-hidden="true">
+          <component :is="icon(String(event.name ?? ''))" :size="28" />
+        </span>
+        <p class="iv-display m-0 text-center text-[1.65rem]">{{ String(event.name ?? '') }}</p>
         <p class="iv-body m-0 text-[0.9375rem]">
           {{ String(event.date ?? '') }}<template v-if="event.time"> · {{ String(event.time) }}</template>
         </p>
@@ -82,10 +85,10 @@ function calendarUrl(event: Record<string, unknown>) {
             rel="noreferrer"
             class="iv-chip"
           >
-            <MapPin :size="15" aria-hidden="true" /> Buka peta
+            <MapPin :size="15" aria-hidden="true" /> {{ t('events.map') }}
           </a>
           <a :href="calendarUrl(event)" target="_blank" rel="noreferrer" class="iv-chip">
-            <CalendarPlus :size="15" aria-hidden="true" /> Simpan ke kalender
+            <CalendarPlus :size="15" aria-hidden="true" /> {{ t('events.calendar') }}
           </a>
         </div>
       </li>
@@ -110,4 +113,20 @@ function calendarUrl(event: Record<string, unknown>) {
 }
 .iv-event-corner--tl { top: 0.5rem; left: 0.5rem; }
 .iv-event-corner--br { bottom: 0.5rem; right: 0.5rem; transform: rotate(180deg); }
+
+/*
+ * Medali ikon acara. Ikon 28px sendirian akan mengambang di antara dua ornamen sudut; lingkaran
+ * 3,5rem berlatar tint memberinya massa. Stroke lucide dibiarkan 2 — jangan ditipiskan lagi.
+ */
+.iv-event-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin-bottom: 0.25rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--iv-primary) 12%, transparent);
+  color: var(--iv-primary);
+}
 </style>

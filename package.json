@@ -14,6 +14,8 @@
     "db:deploy": "pnpm --filter @aruna/database run deploy",
     "db:seed": "pnpm --filter @aruna/database run seed",
     "db:local": "node scripts/local-postgres.mjs",
+    "demo": "bash scripts/demo-local.sh",
+    "demo:local": "pnpm --filter @aruna/api demo",
     "test:integration": "tsx --env-file-if-exists=packages/database/.env scripts/api-smoke.ts",
     "media:check": "tsx --env-file-if-exists=apps/api/.env scripts/media-bucket-check.ts",
     "mail:local": "node scripts/local-mail.mjs",

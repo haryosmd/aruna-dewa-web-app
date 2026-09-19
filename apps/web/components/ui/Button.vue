@@ -7,11 +7,22 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import type { ClassValue } from 'clsx'
 
 const button = cva(
-  'relative inline-flex select-none items-center justify-center gap-2 rounded-md font-semibold whitespace-nowrap no-underline transition-[transform,background-color,color,border-color,box-shadow] duration-200 ease-[var(--ease-out-quart)] active:translate-y-px disabled:pointer-events-none disabled:opacity-55',
+  /*
+   * Warna hanya bertransisi saat MASUK hover. Meninggalkan hover dan berganti nonaktif ↔ aktif
+   * langsung melompat: tombol di dalam `<fieldset :disabled="!ready">` berganti dari abu nonaktif
+   * ke terakota tepat sesudah hidrasi, dan pudaran 200ms di antara dua pasangan warna berlawanan
+   * kutub melewati titik tengah yang kontrasnya 1,6:1 — axe di e2e menangkapnya di /account.
+   */
+  'relative inline-flex select-none items-center justify-center gap-2 rounded-md font-semibold whitespace-nowrap no-underline transition-[transform,box-shadow] duration-200 ease-[var(--ease-out-quart)] hover:transition-[transform,background-color,color,border-color,box-shadow] active:translate-y-px disabled:pointer-events-none disabled:opacity-55',
   {
     variants: {
       tone: {
-        primary: 'bg-primary text-white shadow-[var(--shadow-lift)] hover:bg-primary-strong hover:shadow-[var(--shadow-glow-primary)]',
+        /*
+         * Nonaktif tanpa `aria-busy` (fase 67): abu netral, bukan terakota 55% — pink pudar itu
+         * terbaca sebagai tombol aktif yang sedang lelah. `loading` memasang `aria-busy`, jadi
+         * "Menyimpan…" tetap terakota dengan spinnernya.
+         */
+        primary: 'bg-primary text-white shadow-[var(--shadow-lift)] hover:bg-primary-strong hover:shadow-[var(--shadow-glow-primary)] disabled:not-aria-busy:bg-surface-3 disabled:not-aria-busy:text-ink-subtle disabled:not-aria-busy:opacity-100 disabled:not-aria-busy:shadow-none',
         ink: 'bg-ink text-ink-inverse hover:bg-ink/90',
         outline: 'border border-ink/25 bg-surface text-ink hover:border-ink hover:bg-surface-2',
         ghost: 'text-ink hover:bg-surface-3',

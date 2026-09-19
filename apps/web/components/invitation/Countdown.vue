@@ -1,5 +1,7 @@
 <script setup lang="ts">
-const props = defineProps<{ date: string }>()
+const props = withDefaults(defineProps<{ date: string; arrived?: string; tba?: string }>(), {
+  arrived: 'Hari bahagia telah tiba.', tba: 'Tanggal akan segera diumumkan.',
+})
 
 const now = ref(0)
 /** Server and browser clocks differ by seconds, so the ticking numbers only start after hydration. */
@@ -35,7 +37,7 @@ const pad = (value: number) => String(value).padStart(2, '0')
 
 <template>
   <div v-if="units" class="grid w-full gap-4">
-    <p v-if="passed" class="iv-display m-0 text-[1.75rem]">Hari bahagia telah tiba.</p>
+    <p v-if="passed" class="iv-display m-0 text-[1.75rem]">{{ arrived }}</p>
 
     <ul v-else class="m-0 grid grid-cols-4 gap-2 p-0 list-none @min-[40rem]:gap-3">
       <li
@@ -54,5 +56,5 @@ const pad = (value: number) => String(value).padStart(2, '0')
     </p>
   </div>
 
-  <p v-else class="iv-display m-0 text-[1.75rem]">Tanggal akan segera diumumkan.</p>
+  <p v-else class="iv-display m-0 text-[1.75rem]">{{ tba }}</p>
 </template>

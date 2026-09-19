@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
-import { RotateCcw, Search, X } from 'lucide-vue-next'
-import type { LayerSlot, OrnamentId } from '~/utils/ornaments'
-import { ornament } from '~/utils/ornaments'
+import { Palette, RotateCcw, Search, Trash2, X } from 'lucide-vue-next'
+import type { MediaUploadResult } from '@aruna/contracts/api'
+import { ornamentAssetLimit } from '@aruna/contracts'
+import type { LayerSlot, OrnamentId, OrnamentRef, UploadedOrnament } from '~/utils/ornaments'
+import { isUnggahan, ornament } from '~/utils/ornaments'
 import { fitOf } from '~/utils/ornament-fit'
 import { cariOrnamen, hitungPack, packLabels, packIds, type PackId, type StudioTab } from '~/utils/ornament-search'
-import { layerSlotLabels, slotLabels, type OrnamentSlotKey } from '~/utils/ornament-slots'
+import { bolehUnggah, layerSlotLabels, slotLabels, tileWidthRasio, type OrnamentSlotKey } from '~/utils/ornament-slots'
 import { ornamentRamp, rampStyle } from '~/utils/ornament-palette'
 
 /**
@@ -36,33 +38,96 @@ const props = defineProps<{
   slotKey?: OrnamentSlotKey
   layer?: LayerSlot
   templateId: string
-  aktif: OrnamentId
+  /** Id bank, atau unggahan pasangan (fase 69) yang sedang terpasang di slot ini. */
+  aktif: OrnamentRef
   bawaan: OrnamentId
   tokens: { background: string, foreground: string, primary: string }
   accent: string
+  /** Untuk mengunggah dan mendaftar ornamen unggahan; kosong = tab Unggahan tidak ditawarkan. */
+  invitationId?: string
 }>()
 
 const emit = defineEmits<{
   'update:open': [boolean]
   pilih: [OrnamentId]
+  pilihUnggahan: [UploadedOrnament]
   kembalikan: []
   batal: []
 }>()
+
+/** Id bank yang aktif, atau null bila slot ini sedang diisi unggahan. Ubin dan navigasi memakainya. */
+const aktifId = computed<OrnamentId | null>(() => (isUnggahan(props.aktif) ? null : props.aktif))
 
 const tab = ref<StudioTab>('disarankan')
 const query = ref('')
 const pack = ref<PackId | 'semua'>('semua')
 
 /** Nilai saat Studio dibuka, untuk Escape/Batal. Satu sesi memilih = satu langkah undo. */
-const semula = ref<OrnamentId>(props.aktif)
+const semula = ref<OrnamentId>(isUnggahan(props.aktif) ? props.bawaan : props.aktif)
 
-watch(() => props.open, terbuka => {
-  if (!terbuka) return
-  semula.value = props.aktif
-  tab.value = 'disarankan'
+
+/*
+ * Tab Unggahan (fase 69): raster transparan milik pasangan. Hanya untuk slot skalar yang boleh
+ * (`uploadableSlots`) dan hanya bila pemanggil memberi `invitationId`. Daftarnya diminta ke API
+ * saat dialog dibuka, bukan saat halaman dimuat — kebanyakan sesi editor tidak pernah membukanya.
+ */
+const tabUnggahan = computed(() => Boolean(props.invitationId) && Boolean(props.slotKey) && !props.layer && bolehUnggah(props.slotKey!))
+const { listMedia } = useInvitations()
+const unggah = useMediaUploads(() => props.invitationId ?? '')
+const daftarUnggahan = ref<MediaUploadResult[]>([])
+const memuatUnggahan = ref(false)
+const galatUnggahan = ref('')
+
+async function muatUnggahan() {
+  if (!props.invitationId) return
+  memuatUnggahan.value = true
+  galatUnggahan.value = ''
+  try { daftarUnggahan.value = await listMedia(props.invitationId, 'ornament') }
+  catch (cause) { galatUnggahan.value = apiErrorMessage(cause) }
+  finally { memuatUnggahan.value = false }
+}
+
+const sisaKuota = computed(() => Math.max(0, ornamentAssetLimit - daftarUnggahan.value.length))
+
+function keUnggahan(item: MediaUploadResult): UploadedOrnament | null {
+  if (!item.width || !item.height) return null
+  return { url: item.publicUrl, width: item.width, height: item.height }
+}
+
+async function kirimUnggahan(files: File[]) {
+  const hasil = await unggah.uploadDetailed(files, 'ornament')
+  if (hasil.length) {
+    daftarUnggahan.value = [...hasil, ...daftarUnggahan.value]
+    // Yang baru diunggah langsung dipasang: pasangan mengunggah karena ingin memakainya.
+    const pertama = keUnggahan(hasil[0]!)
+    if (pertama) emit('pilihUnggahan', pertama)
+  }
+}
+
+async function hapusUnggahan(item: MediaUploadResult) {
+  const terpasang = isUnggahan(props.aktif) && props.aktif.url === item.publicUrl
+  if (terpasang) emit('kembalikan')
+  await unggah.release(item.publicUrl)
+  await muatUnggahan()
+}
+
+const terpasang = (item: MediaUploadResult) => isUnggahan(props.aktif) && props.aktif.url === item.publicUrl
+
+/**
+ * Dipanggil tiap kali dialog terbuka — lewat watcher untuk buka berikutnya, dan lewat
+ * `onMounted` untuk yang pertama: pemanggil memasang komponen ini dengan `v-if` saat `open`
+ * sudah true, jadi watcher biasa tidak pernah melihat transisi tutup→buka yang pertama.
+ */
+function saatDibuka() {
+  semula.value = aktifId.value ?? props.bawaan
+  // Slot yang sedang diisi unggahan dibuka di tab Unggahan — itulah yang sedang dilihat pasangan.
+  tab.value = isUnggahan(props.aktif) && tabUnggahan.value ? 'unggahan' : 'disarankan'
   query.value = ''
   pack.value = 'semua'
-})
+  if (tabUnggahan.value) void muatUnggahan()
+}
+watch(() => props.open, terbuka => { if (terbuka) saatDibuka() })
+onMounted(() => { if (props.open) saatDibuka() })
 
 const keterangan = computed(() => (props.layer ? layerSlotLabels[props.layer] : props.slotKey ? slotLabels[props.slotKey] : null))
 const judul = computed(() => keterangan.value?.label ?? 'Ornamen')
@@ -82,7 +147,7 @@ const totalDisarankan = computed(() => cariOrnamen({
 }).length)
 
 const ramp = computed(() => rampStyle(ornamentRamp(props.tokens, props.accent)))
-const fitAktif = computed(() => fitOf(props.aktif, props.templateId))
+const fitAktif = computed(() => (aktifId.value ? fitOf(aktifId.value, props.templateId) : { ok: true, flags: [], ringkas: '' }))
 
 /**
  * Panah menggerakkan sekaligus memilih — itulah yang dimaksud `radiogroup`.
@@ -94,7 +159,7 @@ const fitAktif = computed(() => fitOf(props.aktif, props.templateId))
  */
 function navigasi(event: KeyboardEvent) {
   const daftar = hasil.value
-  const posisi = daftar.indexOf(props.aktif)
+  const posisi = aktifId.value ? daftar.indexOf(aktifId.value) : -1
   const lompat = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 4, ArrowUp: -4 }[event.key]
   let tujuan = -1
 
@@ -151,6 +216,7 @@ function tutup(simpan: boolean) {
                 v-for="pilihan in [
                   { id: 'disarankan', label: `Disarankan (${totalDisarankan})` },
                   { id: 'semua', label: `Semua (${totalSemua})` },
+                  ...(tabUnggahan ? [{ id: 'unggahan', label: `Unggahan (${daftarUnggahan.length})` }] : []),
                 ]"
                 :id="`studio-tab-${pilihan.id}`"
                 :key="pilihan.id"
@@ -199,7 +265,56 @@ function tutup(simpan: boolean) {
         </div>
 
         <div class="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 @3xl:grid-cols-[minmax(0,1fr)_16rem] sm:p-5">
-          <div>
+          <!-- Tab Unggahan (fase 69): dropzone + ubin raster pasangan, menggantikan grid bank. -->
+          <div v-if="tab === 'unggahan'" class="grid content-start gap-4">
+            <UiDropzone
+              id="studio-unggah"
+              kind="ornament"
+              multiple
+              :pending="unggah.pending.value"
+              :remaining="sisaKuota"
+              label="PNG atau WebP transparan, maksimal 300 KB. Warna tetap — tidak ikut palet tema."
+              @files="kirimUnggahan"
+            />
+            <ul v-if="unggah.failures.value.length" class="notice m-0 grid list-none gap-1 p-3" role="alert">
+              <li v-for="pesan in unggah.failures.value" :key="pesan">{{ pesan }}</li>
+            </ul>
+            <p v-if="galatUnggahan" class="notice m-0" role="alert">{{ galatUnggahan }}</p>
+            <p v-else-if="memuatUnggahan" class="m-0 text-caption text-ink-muted">Memuat unggahan…</p>
+            <p v-else-if="!daftarUnggahan.length" class="m-0 text-caption text-ink-muted">
+              Belum ada ornamen unggahan. Unggah keping berlatar transparan — ia dipasang persis seperti ornamen bank, hanya warnanya tetap.
+            </p>
+            <div v-else class="flex flex-wrap gap-2" role="radiogroup" :aria-label="`Unggahan untuk ${judul.toLowerCase()}`">
+              <div v-for="item in daftarUnggahan" :key="item.id" class="relative">
+                <button
+                  :id="`studio-unggahan-${item.id}`"
+                  type="button"
+                  role="radio"
+                  :aria-checked="terpasang(item)"
+                  :aria-label="`${judul}: ${item.originalName ?? 'unggahan'} — warna tetap, tidak ikut palet kalian`"
+                  :class="cn(
+                    'grid h-20 grid-rows-[minmax(0,1fr)] place-items-center overflow-hidden rounded-md border p-2 transition-[border-color,box-shadow] duration-200',
+                    terpasang(item) ? 'border-primary shadow-lift' : 'border-border hover:border-border-strong',
+                  )"
+                  :style="{ width: tileWidthRasio((item.width ?? 1) / (item.height ?? 1), 64) }"
+                  @click="() => { const u = keUnggahan(item); if (u) emit('pilihUnggahan', u) }"
+                >
+                  <img :src="item.publicUrl" :width="item.width ?? undefined" :height="item.height ?? undefined" alt="" class="min-h-0 max-h-full max-w-full object-contain" loading="lazy" decoding="async">
+                  <Palette :size="13" class="absolute top-1 right-1 text-gold" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  class="absolute -top-2 -left-2 grid h-7 w-7 place-items-center rounded-full border border-border bg-surface text-ink-muted shadow-hairline hover:text-danger"
+                  :aria-label="`Hapus ${item.originalName ?? 'unggahan'}`"
+                  @click="hapusUnggahan(item)"
+                >
+                  <Trash2 :size="13" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div v-else>
             <p class="sr-only" aria-live="polite">{{ hasil.length }} ornamen ditampilkan</p>
             <div
               v-if="hasil.length"
@@ -214,7 +329,7 @@ function tutup(simpan: boolean) {
                 :key="glyph"
                 :glyph="glyph"
                 :template-id="templateId"
-                :dipilih="glyph === aktif"
+                :dipilih="glyph === aktifId"
                 :bawaan="glyph === bawaan"
                 :slot-label="judul"
                 @click="emit('pilih', glyph)"
@@ -235,13 +350,14 @@ function tutup(simpan: boolean) {
           <aside class="grid h-fit content-start gap-3 rounded-md border border-border bg-surface-2 p-4 @3xl:sticky @3xl:top-0">
             <p class="eyebrow">Pilihan sekarang</p>
             <div
-              class="grid min-h-28 place-items-center rounded-md p-3"
+              class="grid h-32 grid-rows-[minmax(0,1fr)] place-items-center overflow-hidden rounded-md p-3"
               :style="{ ...ramp, background: tokens.background }"
             >
-              <OrnamentGlyph :glyph="aktif" ubin class="max-h-24 max-w-full text-[color:var(--iv-orn-body)]" aria-hidden="true" />
+              <OrnamentGlyph :glyph="aktif" ubin class="min-h-0 max-h-full max-w-full object-contain text-[color:var(--iv-orn-body)]" aria-hidden="true" />
             </div>
-            <p class="m-0 text-[0.875rem] font-semibold text-ink">{{ ornament(aktif).name }}</p>
-            <p v-if="aktif === bawaan" class="m-0 text-caption text-ink-subtle">Bawaan tema.</p>
+            <p class="m-0 text-[0.875rem] font-semibold text-ink">{{ aktifId ? ornament(aktifId).name : 'Unggahan kalian' }}</p>
+            <p v-if="!aktifId" class="m-0 text-caption text-ink-subtle">Raster transparan milik kalian. Warnanya tetap, tidak ikut palet.</p>
+            <p v-else-if="aktifId === bawaan" class="m-0 text-caption text-ink-subtle">Bawaan tema.</p>
             <p v-else-if="fitAktif.ok" class="m-0 text-caption text-ink-subtle">Seresep dengan tema kalian.</p>
             <p v-else class="m-0 text-caption text-warning">{{ fitAktif.ringkas }}.</p>
           </aside>

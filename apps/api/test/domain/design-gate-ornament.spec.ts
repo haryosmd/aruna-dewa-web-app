@@ -120,3 +120,15 @@ describe('gerbang tidak menyala sendiri', () => {
     expect(hasDesignChange(dengan, lagi)).toBe(true);
   });
 });
+
+describe('ornamen unggahan (fase 69)', () => {
+  it('menggerbangi pemasangan dan penggantian unggahan, tidak peduli urutan kunci', () => {
+    const lama = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom');
+    const u = { url: 'http://127.0.0.1:3001/v1/public/media/11111111-1111-4111-8111-111111111111', width: 200, height: 100 };
+    const a = dokumen((doc) => { cover(doc).data.ornamentOverrides = { unggahan: { symbol: u } }; });
+    const b = dokumen((doc) => { cover(doc).data.ornamentOverrides = { unggahan: { symbol: { height: 100, width: 200, url: u.url } } }; });
+    expect(hasDesignChange(lama, a)).toBe(true);
+    expect(hasDesignChange(a, b)).toBe(false);
+    expect(hasDesignChange(a, dokumen((doc) => { cover(doc).data.ornamentOverrides = { unggahan: {} }; }))).toBe(true);
+  });
+});

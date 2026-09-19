@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { allowedMediaTypes, formatBytes, galleryPhotoLimit, maxMediaBytes, mediaAccept, mediaKindOf, mediaRules } from '@aruna/contracts';
+import { allowedMediaTypes, formatBytes, galleryPhotoLimit, maxMediaBytes, mediaAccept, mediaKindOf, mediaKinds, mediaRules, ornamentAssetLimit } from '@aruna/contracts';
 
 describe('aturan media', () => {
   it('hanya meloloskan empat jenis yang benar-benar didukung pemutar dan renderer', () => {
@@ -38,5 +38,15 @@ describe('aturan media', () => {
 
   it('menyimpan batas foto sebagai satu angka yang dibagi server dan editor', () => {
     expect(galleryPhotoLimit).toBe(15);
+  });
+
+  it('ornamen (fase 69) adalah jenis ketiga: raster transparan, kecil, dan SVG tetap di luar', () => {
+    expect(mediaKinds.sort()).toEqual(['audio', 'image', 'ornament']);
+    expect([...mediaRules.ornament.mimeTypes]).toEqual(['image/png', 'image/webp']);
+    expect(mediaRules.ornament.maxBytes).toBeLessThan(mediaRules.image.maxBytes);
+    expect(mediaAccept('ornament')).not.toContain('svg');
+    // PNG tetap "image" bagi penebak MIME: jenis ornamen dinyatakan klien lewat `?jenis=`, bukan ditebak.
+    expect(mediaKindOf('image/png')).toBe('image');
+    expect(ornamentAssetLimit).toBeGreaterThan(0);
   });
 });

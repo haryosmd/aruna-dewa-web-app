@@ -3,7 +3,7 @@ import { Check, Minus, Plus, RotateCcw, Send, X } from 'lucide-vue-next'
 import type { Section } from '~/types/aruna'
 
 const props = defineProps<{ section: Section; seed: number }>()
-const { orn, intensity, compact, coupleNames, initials, guest, guestError, hasToken, rsvpPending, submitRsvp } = useInvitation()
+const { orn, intensity, compact, coupleNames, initials, guest, guestError, hasToken, rsvpPending, submitRsvp, t } = useInvitation()
 
 const root = ref<HTMLElement | null>(null)
 
@@ -71,8 +71,8 @@ useArunaMotion(root, ({ gsap, bloomIn }) => {
       id="iv-rsvp"
       tone="tint"
       :compact="compact"
-      kicker="Konfirmasi kehadiran"
-      :title="answered ? 'Terima kasih sudah merespons.' : 'Apakah Anda dapat hadir?'"
+      :kicker="t('rsvp.kicker')"
+      :title="answered ? t('rsvp.thanks') : t('rsvp.title')"
       :ornaments="compact ? null : orn"
       :intensity="intensity"
       :seed="props.seed"
@@ -93,12 +93,12 @@ useArunaMotion(root, ({ gsap, bloomIn }) => {
             <OrnamentGlyph :glyph="orn.seal" :initials="initials" class="iv-ticket-seal" aria-hidden="true" />
           </div>
           <div class="iv-ticket-body">
-            <p class="iv-kicker m-0">{{ finalAttendance === 'yes' ? 'Kehadiran dikonfirmasi' : 'Berhalangan hadir' }}</p>
+            <p class="iv-kicker m-0">{{ finalAttendance === 'yes' ? t('rsvp.confirmed') : t('rsvp.declined') }}</p>
             <p class="iv-display m-0 text-[1.55rem] leading-tight">{{ guestName }}</p>
             <p v-if="finalAttendance === 'yes'" class="iv-body m-0 text-[0.9375rem]">
               {{ finalSeats }} kursi disiapkan
             </p>
-            <p v-else class="iv-body m-0 text-[0.9375rem]">Doa Anda tetap kami terima dengan hangat.</p>
+            <p v-else class="iv-body m-0 text-[0.9375rem]">{{ t('rsvp.prayer') }}</p>
             <p class="iv-body m-0 text-caption opacity-75">Pernikahan {{ coupleNames }}</p>
           </div>
         </div>
@@ -130,8 +130,8 @@ useArunaMotion(root, ({ gsap, bloomIn }) => {
               <OrnamentGlyph v-for="n in 3" :key="n" data-rsvp-petal :glyph="orn.floral" class="iv-rsvp-petal" />
             </span>
             <Check :size="20" aria-hidden="true" />
-            <span class="iv-display text-[1.3rem]">Hadir</span>
-            <span class="iv-body text-caption">Saya akan datang</span>
+            <span class="iv-display text-[1.3rem]">{{ t('rsvp.yes') }}</span>
+            <span class="iv-body text-caption">{{ t('rsvp.yesHint') }}</span>
           </button>
 
           <button
@@ -143,14 +143,14 @@ useArunaMotion(root, ({ gsap, bloomIn }) => {
             @click="choose('no')"
           >
             <X :size="20" aria-hidden="true" />
-            <span class="iv-display text-[1.3rem]">Berhalangan</span>
-            <span class="iv-body text-caption">Saya kirim doa dari jauh</span>
+            <span class="iv-display text-[1.3rem]">{{ t('rsvp.no') }}</span>
+            <span class="iv-body text-caption">{{ t('rsvp.noHint') }}</span>
           </button>
         </fieldset>
 
         <!-- Stepper kursi baru muncul setelah "Hadir" dipilih; sebelum itu tidak ada gunanya. -->
         <div v-if="attendance === 'yes'" class="grid justify-items-center gap-2">
-          <span id="iv-seats-label" class="iv-kicker">Jumlah yang hadir</span>
+          <span id="iv-seats-label" class="iv-kicker">{{ t('rsvp.seats') }}</span>
           <div class="iv-stepper" role="group" aria-labelledby="iv-seats-label">
             <button id="iv-rsvp-seats-minus" type="button" class="iv-page-btn" :disabled="seats <= 1" aria-label="Kurangi jumlah kursi" @click="step(-1)">
               <Minus :size="16" aria-hidden="true" />
@@ -163,7 +163,7 @@ useArunaMotion(root, ({ gsap, bloomIn }) => {
         </div>
 
         <label v-if="attendance" class="grid w-full max-w-md gap-1.5 text-left">
-          <span class="iv-kicker">Pesan untuk pasangan (opsional)</span>
+          <span class="iv-kicker">{{ t('rsvp.message') }}</span>
           <textarea id="iv-rsvp-message" v-model="message" rows="3" maxlength="500" class="iv-control resize-y" />
         </label>
 
@@ -171,7 +171,7 @@ useArunaMotion(root, ({ gsap, bloomIn }) => {
 
         <button id="iv-rsvp-submit" type="button" class="iv-submit" :disabled="!attendance || rsvpPending" @click="send">
           <Send :size="16" aria-hidden="true" />
-          {{ rsvpPending ? 'Menyimpan…' : 'Kirim konfirmasi' }}
+          {{ rsvpPending ? 'Menyimpan…' : t('rsvp.submit') }}
         </button>
       </template>
     </InvitationSection>

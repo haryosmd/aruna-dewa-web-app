@@ -1,6 +1,6 @@
-import { Controller, Delete, Get, Param, Post, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Controller, Delete, Get, Param, Post, Query, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { maxMediaBytes } from '@aruna/contracts';
+import { maxMediaBytes, mediaKinds, type MediaKind } from '@aruna/contracts';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { liveSessionWhere, CurrentUser, JwtAuthGuard, OriginGuard, type AuthenticatedUser } from '../common/auth.js';
 import { MediaService } from './media.service.js';
@@ -14,7 +14,9 @@ import { parseRange } from './media-range.js';
 @Controller('v1/invitations/:invitationId/media') @UseGuards(JwtAuthGuard)
 export class MediaController {
   constructor(private readonly media: MediaService) {}
-  @Post() @UseGuards(OriginGuard) @UseInterceptors(FileInterceptor('file', { limits: { fileSize: maxMediaBytes, files: 1 } })) upload(@CurrentUser() user: AuthenticatedUser, @Param('invitationId') invitationId: string, @UploadedFile() file: Express.Multer.File) { return this.media.upload(user, invitationId, file); }
+  @Post() @UseGuards(OriginGuard) @UseInterceptors(FileInterceptor('file', { limits: { fileSize: maxMediaBytes, files: 1 } })) upload(@CurrentUser() user: AuthenticatedUser, @Param('invitationId') invitationId: string, @UploadedFile() file: Express.Multer.File, @Query('jenis') jenis?: string) { return this.media.upload(user, invitationId, file, jenisMedia(jenis, true)); }
+  /** `?jenis=` wajib di sini: daftar tanpa jenis tidak punya pemakai, dan galeri membaca dokumen, bukan endpoint ini. */
+  @Get() list(@CurrentUser() user: AuthenticatedUser, @Param('invitationId') invitationId: string, @Query('jenis') jenis?: string) { return this.media.list(user, invitationId, jenisMedia(jenis, false)!); }
   @Delete(':assetId') @UseGuards(OriginGuard) remove(@CurrentUser() user: AuthenticatedUser, @Param('invitationId') invitationId: string, @Param('assetId') assetId: string) { return this.media.remove(user, invitationId, assetId); }
 }
 
@@ -79,4 +81,14 @@ function sendMedia(request: Request, response: Response, body: Buffer, contentTy
   response.setHeader('Content-Range', `bytes ${range.start}-${range.end}/${body.length}`);
   response.setHeader('Content-Length', String(slice.length));
   response.status(206).end(slice);
+}
+
+/** Query `jenis` (fase 69): salah satu `mediaKinds`, atau absen bila `opsional`. Nilai lain ditolak, bukan dijatuhkan diam-diam ke `image`. */
+export function jenisMedia(value: string | undefined, opsional: boolean): MediaKind | undefined {
+  if (value === undefined || value === '') {
+    if (opsional) return undefined;
+    throw new BadRequestException(`Sebutkan jenis media: ${mediaKinds.join(', ')}`);
+  }
+  if ((mediaKinds as readonly string[]).includes(value)) return value as MediaKind;
+  throw new BadRequestException(`Jenis media tidak dikenal: ${value}`);
 }

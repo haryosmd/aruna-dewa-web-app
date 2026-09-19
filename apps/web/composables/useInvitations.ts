@@ -1,3 +1,4 @@
+import type { MediaKind } from '@aruna/contracts'
 import type {
   CreateInvitationBody,
   InvitationDetail,
@@ -27,11 +28,13 @@ export function useInvitations() {
   const publish = (id: string) => request<PublishedInvitation>(`/invitations/${id}/publish`, { method: 'POST' })
   /** Aktivasi operator: melunasi tanpa Midtrans, dan tiap pemakaiannya tercatat di audit log. */
   const activate = (id: string) => request<{ activated: boolean }>(`/invitations/${id}/activate`, { method: 'POST' })
-  const uploadMedia = (id: string, file: FormData) => request<MediaUploadResult>(`/invitations/${id}/media`, { method: 'POST', body: file })
+  const uploadMedia = (id: string, file: FormData, kind?: MediaKind) => request<MediaUploadResult>(`/invitations/${id}/media${kind ? `?jenis=${kind}` : ''}`, { method: 'POST', body: file })
+  /** Daftar aset satu jenis (fase 69) — Studio Ornamen menampilkan unggahan sebelumnya. */
+  const listMedia = (id: string, kind: MediaKind) => request<MediaUploadResult[]>(`/invitations/${id}/media?jenis=${kind}`)
   /** Menghapus berkasnya, bukan sekadar melepasnya dari dokumen — tanpa ini kuota foto bocor tiap kali pasangan berganti pikiran. */
   const deleteMedia = (id: string, assetId: string) => request<{ deleted: boolean }>(`/invitations/${id}/media/${assetId}`, { method: 'DELETE' })
 
-  return { list, get, create, saveDraft, publish, activate, uploadMedia, deleteMedia }
+  return { list, get, create, saveDraft, publish, activate, uploadMedia, listMedia, deleteMedia }
 }
 
 /**

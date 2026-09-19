@@ -28,6 +28,19 @@
       "autoPort": false
     },
     {
+      "name": "web-demo",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@aruna/web",
+        "dev:demo",
+        "--port",
+        "3000"
+      ],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
       "name": "web-prod",
       "runtimeExecutable": "node",
       "runtimeArgs": [

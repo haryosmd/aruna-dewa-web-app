@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import type { CopyKey } from '@aruna/contracts'
+import { pilihCopy, resolveCopy } from '~/utils/invitation-copy'
 import type { Component } from 'vue'
 import type { GuestProfile, InvitationDocument, RsvpPayload, Section, Wish } from '~/types/aruna'
-import { toOrnamentOverrides } from '~/utils/invitation-options'
+import { toEntrance, toOrnamentOverrides } from '~/utils/invitation-options'
 import { toIntensity } from '~/utils/ornaments'
 import { playLegacyScore, playScore } from '~/utils/motion-play'
-import { resolveScore, sectionRole } from '~/utils/motion-score'
+import { resolveScore, sectionRole, terapkanMotionDokumen } from '~/utils/motion-score'
+import { toEnvelopeSpeed } from '~/utils/motion-envelope'
 import { themeMotion, themeOrnaments } from '~/utils/theme'
 import { terapkanOverrides } from '~/utils/ornament-slots'
 
@@ -86,7 +89,12 @@ const sectionComponents: Record<string, Component> = {
   closing: SectionClosing,
 }
 
-const score = computed(() => themeMotion(props.document.templateId))
+/*
+ * Partitur tema, ditimpa pilihan dokumen bila ada (fase 69). Tanpa pilihan hasilnya persis
+ * `themeMotion()` — termasuk `undefined` yang membawa tema lama ke `playLegacyScore()`.
+ */
+const score = computed(() => terapkanMotionDokumen(themeMotion(props.document.templateId), toEntrance(props.document.tokens.motion?.masuk)))
+const kecepatanAmplop = computed(() => toEnvelopeSpeed(props.document.tokens.motion?.amplop))
 
 const rendered = computed(() => {
   const entries = visible.value
@@ -116,7 +124,14 @@ const rendered = computed(() => {
   return entries.map((entry, index) => ({ ...entry, segue: segueDiIndeks.get(index) ?? null }))
 })
 
-const coupleSection = computed(() => sectionOf('couple'))
+/*
+ * Dicari di seluruh dokumen, bukan hanya section yang tampil: nama pasangan adalah identitas
+ * undangan, bukan isi satu section. Di undangan terbit keduanya sama (`couple` wajib dan tidak
+ * bisa dimatikan), tapi pratinjau wizard `/order` menyalakan section per langkah, dan tautan
+ * kalender di langkah acara sempat berbunyi "Aruna & Dewa" untuk pasangan yang baru saja
+ * mengetik namanya sendiri.
+ */
+const coupleSection = computed(() => props.document.sections.find(section => section.type === 'couple'))
 const coupleNames = computed(() => {
   const section = coupleSection.value
   if (!section) return 'Aruna & Dewa'
@@ -187,11 +202,15 @@ function onGateOpen() {
  * Konteks bersama, bukan tiga belas daftar prop. Setiap section mengambil potongan yang
  * dibutuhkannya lewat `useInvitation()`.
  */
+const copy = computed(() => resolveCopy(props.document.copy))
+const t = (key: CopyKey) => pilihCopy(copy.value, key)
+
 provideInvitation({
   document: computed(() => props.document),
   orn,
   intensity,
   compact: computed(() => props.compact),
+  t,
   coupleNames,
   initials,
   greeting: computed(() => props.greeting),
@@ -240,6 +259,7 @@ useArunaMotion(root, (api) => {
       :image="coverImage"
       :ornaments="orn"
       :intensity="intensity"
+      :speed="kecepatanAmplop"
       :has-music="Boolean(musicUrl)"
       @open="onGateOpen"
     />

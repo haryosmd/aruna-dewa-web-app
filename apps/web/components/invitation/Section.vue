@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { OrnamentIntensity, OrnamentSet } from '~/utils/ornaments'
+import type { OrnamentIntensity, ResolvedOrnamentSet } from '~/utils/ornaments'
 
 withDefaults(
   defineProps<{
@@ -13,7 +13,7 @@ withDefaults(
      * tengah pada `opacity-[0.18]`; sekarang `OrnamentField` yang memasang 2–6 keping
      * bermassa di jangkar tepi. Null mematikan ladangnya (dipakai pratinjau compact).
      */
-    ornaments?: OrnamentSet | null
+    ornaments?: ResolvedOrnamentSet | null
     intensity?: OrnamentIntensity
     /** Membedakan resep jangkar antar section. Cukup indeks section-nya. */
     seed?: number
@@ -144,13 +144,18 @@ withDefaults(
   letter-spacing: 0;
 }
 
+/*
+ * 0,8 — bukan 0,7. Pada 11px tebal, 0,7 menjatuhkan kicker cover ke 4,20:1 di atas latar tema
+ * (fg tema Aruna Bloom yang hangat, bukan hitam), diukur axe di editor fase 62 begitu panggung
+ * menampilkan cover pada skala 100%. 0,8 memberi ±5,6:1 pada pasangan yang sama.
+ */
 .iv-kicker {
   font-family: var(--iv-body);
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
 .iv-body {

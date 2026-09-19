@@ -25,7 +25,7 @@ export const ambang = {
   /** Perintah kurva (`C/S/Q/T/A`) minimum per ornamen. 41 ornamen lama punya NOL. */
   kurva: 8,
   /** Elemen gambar minimum per kategori — proksi kepadatan isen. */
-  elemen: { motif: 12, frame: 10, divider: 10, corner: 10, symbol: 8, seal: 8, layer: 10, floral: 8, monogram: 6, venue: 8, attire: 6 },
+  elemen: { motif: 12, frame: 10, divider: 10, corner: 10, symbol: 8, seal: 8, layer: 10, floral: 8, monogram: 6, venue: 8, attire: 6, envelopePocket: 2, envelopeFlap: 2 },
   /** Bidang nilai (tingkat opacity berbeda) minimum. */
   bidangNilai: 2,
   /** Ketebalan garis dalam satuan viewBox. DESIGN.md: tidak ada path di bawah 2. */
@@ -129,6 +129,9 @@ export const kategoriUnik = ['frame', 'divider', 'corner', 'motif', 'symbol', 's
 export const rectilinear = {
   'motif-catur': 'Papan catur dua nilai selang-seling; melengkungkannya justru salah.',
   'motif-songket': 'Songket adalah tenun pakan tambahan — polanya lurus karena benangnya lurus.',
+  'amplop-kantong-lurus': 'Kantong amplop adalah lipatan kertas; lipatan yang lurus memang lurus.',
+  'amplop-flap-runcing': 'Flap segitiga: dua lipatan lurus bertemu di ujung.',
+  'amplop-flap-bertakik': 'Gerigi tumpal adalah guntingan lurus; melengkungkannya menghapus takiknya.',
 }
 
 /* ── pembacaan ─────────────────────────────────────────────────────────────── */

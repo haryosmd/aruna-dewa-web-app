@@ -60,6 +60,14 @@ enum MediaProvider {
   S3
 }
 
+/// Jenis aset (fase 69). Dulu diturunkan dari awalan `contentType`; PNG/WebP kini bisa foto
+/// galeri ATAU ornamen, dan kuotanya berbeda, jadi jenisnya harus tersimpan.
+enum MediaKind {
+  IMAGE
+  AUDIO
+  ORNAMENT
+}
+
 enum TokenPurpose {
   VERIFY_EMAIL
   RESET_PASSWORD
@@ -382,6 +390,10 @@ model MediaAsset {
   contentType  String
   bytes        Int
   originalName String
+  kind         MediaKind     @default(IMAGE)
+  /// Piksel asli raster; null untuk audio dan aset lama sebelum fase 69.
+  width        Int?
+  height       Int?
   createdAt    DateTime      @default(now())
   invitation   Invitation    @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 }

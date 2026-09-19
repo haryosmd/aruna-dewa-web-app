@@ -106,7 +106,12 @@ void coverLayouts
           :class="onPhoto ? 'opacity-90' : 'opacity-80'"
           :style="onPhoto ? undefined : { color: 'var(--iv-primary)' }"
         />
-        <p data-iv-lead class="iv-kicker m-0 opacity-90">Undangan pernikahan</p>
+        <!--
+          Tanpa `opacity-90` tambahan: `.iv-kicker` sudah 0,7, dan 0,7 × 0,9 = 0,63 membuat
+          "Undangan pernikahan" 11px tebal jatuh ke 3,66:1 di atas latar tema (axe, fase 62 —
+          ketahuan begitu panggung editor menampilkan cover pada skala 100%).
+        -->
+        <p data-iv-lead class="iv-kicker m-0">{{ invitation.t('cover.kicker') }}</p>
         <component
           :is="compact ? 'h2' : 'h1'"
           data-iv-lead
@@ -117,7 +122,7 @@ void coverLayouts
         </component>
         <p v-if="headlineDate" class="iv-body m-0 text-[0.9375rem] opacity-90">{{ headlineDate }}</p>
         <p v-if="greeting" class="iv-body m-0 mt-6 text-[1.05rem] opacity-95">
-          Kepada Yth. {{ greeting }}
+          {{ invitation.t('gate.greeting') }} {{ greeting }}
         </p>
         <OrnamentGlyph
           :glyph="orn.symbol"

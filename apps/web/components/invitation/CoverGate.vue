@@ -1,7 +1,19 @@
 <script setup lang="ts">
 import { MailOpen, Volume2 } from 'lucide-vue-next'
-import type { OrnamentSet } from '~/utils/ornaments'
+import type { ResolvedOrnamentSet } from '~/utils/ornaments'
 import type { OrnamentIntensity } from '~/utils/ornaments'
+import type { CopyKey, EnvelopeSpeed } from '@aruna/contracts'
+import { envelopeTempo } from '~/utils/motion-envelope'
+import { invitationKey } from '~/composables/useInvitationContext'
+import { copyDefaults } from '~/utils/invitation-copy'
+
+/*
+ * Kata-kata gerbang (fase 69). Gerbang selalu anak `InvitationRenderer`, tapi `inject` diberi
+ * cadangan bawaan supaya ia tetap bisa dirender sendirian — mis. di pratinjau motion — tanpa
+ * melempar seperti `useInvitation()`.
+ */
+const konteks = inject(invitationKey, null)
+const t = (key: CopyKey) => konteks?.t(key) ?? copyDefaults[key]
 
 const props = withDefaults(
   defineProps<{
@@ -11,12 +23,14 @@ const props = withDefaults(
     initials: string
     image?: string
     /** Set ornamen tema, supaya amplopnya ikut berganti wajah saat tema diganti. */
-    ornaments: OrnamentSet
+    ornaments: ResolvedOrnamentSet
     intensity?: OrnamentIntensity
     /** Mengumumkan musiknya sebelum dibuka, bukan mengejutkan tamu sesudahnya. */
     hasMusic?: boolean
+    /** Tempo flap dan surat (fase 69); segel tidak ikut. Lihat `motion-envelope.ts`. */
+    speed?: EnvelopeSpeed
   }>(),
-  { greeting: '', image: '', intensity: 'seimbang', hasMusic: false },
+  { greeting: '', image: '', intensity: 'seimbang', hasMusic: false, speed: 'sedang' },
 )
 
 const emit = defineEmits<{ open: [] }>()
@@ -37,6 +51,8 @@ async function open() {
   opening.value = true
   emit('open')
 
+  // Tabel tempo per tingkat (fase 69); `sedang` = angka fase 68 persis. Segel tetap literal di atas.
+  const tempo = envelopeTempo[props.speed]
   const animated = await timeline.play((gsap) => {
     gsap.timeline({ onComplete: finish })
       /*
@@ -48,11 +64,17 @@ async function open() {
       .to('[data-gate-seal]', { '--seal-sheen': 1, duration: 0.36, ease: 'sine.inOut', yoyo: true, repeat: 1 }, '<0.1')
       .to('[data-gate-seal-half="left"]', { xPercent: -54, rotate: -13, opacity: 0, duration: 0.5, ease: 'power3.in' })
       .to('[data-gate-seal-half="right"]', { xPercent: 54, rotate: 13, opacity: 0, duration: 0.5, ease: 'power3.in' }, '<')
-      .to('[data-gate-flap]', { rotateX: -168, duration: 0.8, ease: 'power3.inOut' }, '-=0.22')
-      .to('[data-gate-card]', { opacity: 1, duration: 0.2 }, '-=0.42')
-      .to('[data-gate-card]', { y: '-64%', scale: 1.04, duration: 0.8, ease: 'power3.out' }, '<')
-      .to('[data-gate-body]', { yPercent: 10, opacity: 0, duration: 0.5, ease: 'power2.in' }, '-=0.34')
-      .to(root.value, { opacity: 0, duration: 0.45, ease: 'power2.inOut' }, '-=0.28')
+      /*
+       * Flap dan surat dilambatkan (fase 68) dan surat baru mulai naik saat flap setengah
+       * terbuka (0,45 detik sesudah flap bergerak): sebelumnya surat menyusul 0,38 detik
+       * kemudian dan selesai dalam 0,8 detik, jadi keduanya terbaca sebagai satu jentakan.
+       * Segel di atas sengaja tidak ikut — bagian itu justru enak karena tegas.
+       */
+      .to('[data-gate-flap]', { rotateX: -168, duration: tempo.flap, ease: 'power3.inOut' }, `${tempo.flapOffset}`)
+      .to('[data-gate-card]', { opacity: 1, duration: tempo.cardFade }, `<${tempo.cardFadeAt}`)
+      .to('[data-gate-card]', { y: '-64%', scale: 1.04, duration: tempo.cardRise, ease: 'power3.out' }, '<')
+      .to('[data-gate-body]', { yPercent: 10, opacity: 0, duration: tempo.body, ease: 'power2.in' }, `${tempo.bodyOffset}`)
+      .to(root.value, { opacity: 0, duration: tempo.root, ease: 'power2.inOut' }, `${tempo.rootOffset}`)
   })
 
   if (!animated) finish()
@@ -96,11 +118,15 @@ function finish() {
           >
             <div class="absolute inset-0" style="background: color-mix(in srgb, var(--iv-primary) 16%, var(--iv-bg))" />
 
-            <!-- Front pocket: two folded side panels meeting in a shallow V. -->
-            <svg viewBox="0 0 300 200" class="absolute inset-0 z-20 h-full w-full" preserveAspectRatio="none" aria-hidden="true">
-              <path d="M0 62 L150 152 L300 62 V200 H0 Z" :style="{ fill: 'color-mix(in srgb, var(--iv-primary) 26%, var(--iv-bg))' }" />
-              <path d="M0 62 L150 152 L300 62" fill="none" stroke="currentColor" stroke-opacity="0.18" stroke-width="1.5" />
-            </svg>
+            <!--
+              Kantong depan — glyph slot `envelopePocket` (fase 69), dulu path inline di sini.
+              Badannya `currentColor` = campuran warna utama; garis tepinya `--amplop-garis`.
+            -->
+            <OrnamentGlyph
+              :glyph="props.ornaments.envelopePocket"
+              class="absolute inset-0 z-20 h-full w-full"
+              :style="{ color: 'color-mix(in srgb, var(--iv-primary) 26%, var(--iv-bg))', '--amplop-garis': 'var(--iv-fg)' }"
+            />
           </div>
 
           <!--
@@ -113,7 +139,7 @@ function finish() {
             style="background: color-mix(in srgb, #ffffff 90%, var(--iv-bg)); box-shadow: 0 12px 30px -14px rgb(0 0 0 / 0.55)"
           >
             <OrnamentGlyph :glyph="props.ornaments.divider" data-iv-ornament class="h-4 w-28 opacity-70" :style="{ color: 'var(--iv-primary)' }" />
-            <p class="iv-kicker m-0">Undangan pernikahan</p>
+            <p class="iv-kicker m-0">{{ t('gate.kicker') }}</p>
             <p class="iv-display iv-script m-0 text-[1.7rem] leading-none">{{ props.couple }}</p>
             <p v-if="props.date" class="iv-body m-0 text-[0.75rem]">{{ props.date }}</p>
           </div>
@@ -123,10 +149,12 @@ function finish() {
             class="absolute inset-x-0 top-0 z-30 origin-top"
             style="height: 58%; transform-style: preserve-3d; backface-visibility: hidden"
           >
-            <svg viewBox="0 0 300 174" class="h-full w-full drop-shadow-sm" preserveAspectRatio="none" aria-hidden="true">
-              <path d="M0 0 H300 L150 174 Z" :style="{ fill: 'color-mix(in srgb, var(--iv-primary) 34%, var(--iv-bg))' }" />
-              <path d="M0 0 H300 L150 174 Z" fill="none" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.5" />
-            </svg>
+            <!-- Flap — glyph slot `envelopeFlap` (fase 69). -->
+            <OrnamentGlyph
+              :glyph="props.ornaments.envelopeFlap"
+              class="h-full w-full drop-shadow-sm"
+              :style="{ color: 'color-mix(in srgb, var(--iv-primary) 34%, var(--iv-bg))', '--amplop-garis': 'var(--iv-fg)' }"
+            />
           </div>
 
           <!--
@@ -148,11 +176,11 @@ function finish() {
         </div>
 
         <div class="grid justify-items-center gap-2 text-center">
-          <p class="iv-kicker m-0">Undangan pernikahan</p>
+          <p class="iv-kicker m-0">{{ t('gate.kicker') }}</p>
           <p v-if="props.greeting" class="iv-body m-0 text-[0.9375rem]">
-            Kepada Yth.<br><span class="iv-display text-[1.35rem]">{{ props.greeting }}</span>
+            {{ t('gate.greeting') }}<br><span class="iv-display text-[1.35rem]">{{ props.greeting }}</span>
           </p>
-          <p v-else class="iv-body m-0 text-[0.9375rem]">Tanpa mengurangi rasa hormat, kami mengundang Anda.</p>
+          <p v-else class="iv-body m-0 text-[0.9375rem]">{{ t('gate.noGuest') }}</p>
         </div>
       </div>
 
@@ -164,7 +192,7 @@ function finish() {
         @click="open"
       >
         <MailOpen :size="18" aria-hidden="true" />
-        Buka Undangan
+        {{ t('gate.open') }}
       </button>
 
       <!--
@@ -173,7 +201,7 @@ function finish() {
       -->
       <p v-if="props.hasMusic" class="iv-body m-0 -mt-4 mx-auto flex max-w-[19rem] items-start justify-center gap-1.5 text-center text-[0.8125rem] opacity-75">
         <Volume2 :size="15" class="mt-0.5 shrink-0" aria-hidden="true" />
-        <span>Undangan ini memakai musik latar — nyalakan suara ponselmu.</span>
+        <span>{{ t('gate.music') }}</span>
       </p>
     </div>
   </div>

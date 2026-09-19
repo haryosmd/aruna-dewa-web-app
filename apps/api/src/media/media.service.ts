@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { allowedMediaTypes, audioAssetLimit, formatBytes, galleryPhotoLimit, mediaKindOf, mediaRules } from '@aruna/contracts';
+import { allowedMediaTypes, audioAssetLimit, formatBytes, galleryPhotoLimit, mediaKindOf, mediaRules, ornamentAssetLimit, type MediaKind } from '@aruna/contracts';
+import { intakeOrnament } from './ornament-intake.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { MembershipService } from '../common/membership.service.js';
 import type { AuthenticatedUser } from '../common/auth.js';
@@ -12,18 +13,37 @@ import { apiOrigin, publicMediaUrl, referencesAsset, servesAsset } from './asset
 export class MediaService {
   private readonly logger = new Logger(MediaService.name);
   constructor(private readonly prisma: PrismaService, private readonly memberships: MembershipService) {}
-  async upload(user: AuthenticatedUser, invitationId: string, file: Express.Multer.File) {
+  /**
+   * `jenis` dinyatakan klien, bukan diturunkan dari MIME: PNG yang sama bisa foto galeri atau
+   * ornamen, dan keduanya punya kuota, batas ukuran, dan pemeriksaan yang berbeda (fase 69).
+   * Tanpa `jenis`, jalannya persis seperti sebelum fase ini.
+   */
+  async upload(user: AuthenticatedUser, invitationId: string, file: Express.Multer.File, jenis?: MediaKind) {
     await this.memberships.requireInvitationRole(user, invitationId, 'EDITOR');
-    if (!file || !allowedMediaTypes.includes(file.mimetype)) throw new BadRequestException('Jenis media harus JPEG, PNG, WebP, atau MP3');
-    const kind = mediaKindOf(file.mimetype)!;
-    const rules = mediaRules[kind];
-    if (file.size <= 0 || file.size > rules.maxBytes) throw new BadRequestException(`Ukuran ${rules.label} maksimal ${formatBytes(rules.maxBytes)}`);
-    if (!hasMatchingSignature(file.buffer, file.mimetype)) throw new BadRequestException('Isi berkas tidak cocok dengan jenis media yang diklaim');
-    // Batasnya dihitung dari aset yang benar-benar tersimpan, bukan dari isi dokumen — itulah
-    // sebabnya menghapus foto wajib ikut menghapus asetnya, kalau tidak kuotanya bocor.
-    const kept = await this.prisma.mediaAsset.count({ where: { invitationId, contentType: { startsWith: kind === 'image' ? 'image/' : 'audio/' } } });
-    if (kind === 'image' && kept >= galleryPhotoLimit) throw new BadRequestException(`Batas foto per undangan adalah ${galleryPhotoLimit}. Hapus foto yang tidak dipakai lebih dulu.`);
-    if (kind === 'audio' && kept >= audioAssetLimit) throw new BadRequestException(`Batas lagu terunggah adalah ${audioAssetLimit}. Hapus lagu lama lebih dulu.`);
+    if (!file) throw new BadRequestException('Berkas tidak ditemukan');
+    let width: number | null = null;
+    let height: number | null = null;
+    let kind: MediaKind;
+    if (jenis === 'ornament') {
+      const intake = intakeOrnament(file.buffer, file.mimetype, file.size);
+      kind = 'ornament';
+      width = intake.width;
+      height = intake.height;
+      const kept = await this.prisma.mediaAsset.count({ where: { invitationId, kind: 'ORNAMENT' } });
+      if (kept >= ornamentAssetLimit) throw new BadRequestException(`Batas ornamen unggahan per undangan adalah ${ornamentAssetLimit}. Hapus yang tidak dipakai lebih dulu.`);
+    } else {
+      if (!allowedMediaTypes.includes(file.mimetype)) throw new BadRequestException('Jenis media harus JPEG, PNG, WebP, atau MP3');
+      kind = mediaKindOf(file.mimetype)!;
+      const rules = mediaRules[kind];
+      if (file.size <= 0 || file.size > rules.maxBytes) throw new BadRequestException(`Ukuran ${rules.label} maksimal ${formatBytes(rules.maxBytes)}`);
+      if (!hasMatchingSignature(file.buffer, file.mimetype)) throw new BadRequestException('Isi berkas tidak cocok dengan jenis media yang diklaim');
+      // Batasnya dihitung dari aset yang benar-benar tersimpan, bukan dari isi dokumen — itulah
+      // sebabnya menghapus foto wajib ikut menghapus asetnya, kalau tidak kuotanya bocor.
+      // Dihitung per `kind`, bukan awalan contentType: ornamen PNG tidak boleh memakan kuota galeri.
+      const kept = await this.prisma.mediaAsset.count({ where: { invitationId, kind: kind === 'image' ? 'IMAGE' : 'AUDIO' } });
+      if (kind === 'image' && kept >= galleryPhotoLimit) throw new BadRequestException(`Batas foto per undangan adalah ${galleryPhotoLimit}. Hapus foto yang tidak dipakai lebih dulu.`);
+      if (kind === 'audio' && kept >= audioAssetLimit) throw new BadRequestException(`Batas lagu terunggah adalah ${audioAssetLimit}. Hapus lagu lama lebih dulu.`);
+    }
     const extension = extensionFor(file.mimetype);
     const key = `${invitationId}/${randomUUID()}${extension}`;
     try { await createMediaStorage().put(key, file.buffer, file.mimetype); }
@@ -33,8 +53,27 @@ export class MediaService {
       this.logger.error(`Media gagal disimpan (${key})`, error instanceof Error ? error.stack : String(error));
       throw new ServiceUnavailableException('Media tidak dapat disimpan saat ini. Coba lagi beberapa saat lagi.');
     }
-    const asset = await this.prisma.mediaAsset.create({ data: { invitationId, provider: (process.env.MEDIA_PROVIDER ?? 'local') === 's3' ? 'S3' : 'LOCAL', key, contentType: file.mimetype, bytes: file.size, originalName: file.originalname } });
-    return { ...asset, draftUrl: `${apiOrigin()}/v1/media/${asset.id}`, publicUrl: publicMediaUrl(asset.id) };
+    const asset = await this.prisma.mediaAsset.create({ data: {
+      invitationId, provider: (process.env.MEDIA_PROVIDER ?? 'local') === 's3' ? 'S3' : 'LOCAL', key,
+      contentType: file.mimetype, bytes: file.size, originalName: file.originalname,
+      kind: kindEnum(kind), width, height,
+    } });
+    return this.keluaran(asset);
+  }
+
+  /** Daftar aset satu undangan per jenis — Studio Ornamen menampilkan unggahan sebelumnya (fase 69). */
+  async list(user: AuthenticatedUser, invitationId: string, jenis: MediaKind) {
+    await this.memberships.requireInvitationRole(user, invitationId);
+    const assets = await this.prisma.mediaAsset.findMany({ where: { invitationId, kind: kindEnum(jenis) }, orderBy: { createdAt: 'desc' } });
+    return assets.map((asset) => this.keluaran(asset));
+  }
+
+  private keluaran(asset: { id: string; contentType: string; kind: 'IMAGE' | 'AUDIO' | 'ORNAMENT'; width: number | null; height: number | null; originalName: string; bytes: number }) {
+    return {
+      id: asset.id, contentType: asset.contentType, kind: asset.kind.toLowerCase() as MediaKind,
+      width: asset.width, height: asset.height, originalName: asset.originalName, bytes: asset.bytes,
+      draftUrl: `${apiOrigin()}/v1/media/${asset.id}`, publicUrl: publicMediaUrl(asset.id),
+    };
   }
 
   /**
@@ -48,7 +87,7 @@ export class MediaService {
     await this.memberships.requireInvitationRole(user, invitationId, 'EDITOR');
     const asset = await this.prisma.mediaAsset.findUnique({ where: { id: assetId }, include: { invitation: { include: { activeRevision: true } } } });
     if (!asset || asset.invitationId !== invitationId) throw new BadRequestException('Media tidak ditemukan');
-    if (referencesAsset(asset.invitation.activeRevision?.document, asset.id)) throw new BadRequestException('Foto ini masih dipakai versi yang sudah diterbitkan. Terbitkan ulang undangan tanpa foto itu lebih dulu.');
+    if (referencesAsset(asset.invitation.activeRevision?.document, asset.id)) throw new BadRequestException('Aset ini masih dipakai versi yang sudah diterbitkan. Terbitkan ulang undangan tanpa aset itu lebih dulu.');
     try { await storageForAsset(asset.provider).delete(asset.key); }
     catch (error) {
       // Baris DB tetap dihapus: berkas yatim di storage jauh lebih murah daripada kuota yang
@@ -84,6 +123,7 @@ export class MediaService {
   }
 }
 
+function kindEnum(kind: MediaKind): 'IMAGE' | 'AUDIO' | 'ORNAMENT' { return kind === 'image' ? 'IMAGE' : kind === 'audio' ? 'AUDIO' : 'ORNAMENT'; }
 function extensionFor(contentType: string): string { return ({ 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'audio/mpeg': '.mp3' } as Record<string, string>)[contentType] ?? ''; }
 function hasMatchingSignature(buffer: Buffer, contentType: string): boolean {
   if (contentType === 'image/jpeg') return buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;

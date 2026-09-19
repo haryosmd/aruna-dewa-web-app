@@ -124,3 +124,27 @@ Teks callout dibiarkan: "Pratinjau ikut berubah saat kalian mengetik" masih bena
 klaim yang paling penting. Pemilih perangkat sekarang terbaca sendiri di potretnya.
 
 `public.spec.ts:235` tetap hijau.
+
+---
+
+## REV-009 — 2026-09-19: pratinjau `/order` per langkah, selebar ponsel (Fase 65)
+
+Panel kanan wizard tidak lagi menggulung seluruh undangan bawaan. Tiap langkah merender hanya
+section yang ia sentuh (`apps/web/utils/order-preview.ts`), selebar 390px lewat
+`InvitationPhoneFrame` yang diperkecil sampai muat di viewport, dan baru di langkah paket seluruh
+undangan tampil dan bisa digulung. Di bawah `lg` panelnya disembunyikan; yang tersisa satu baris
+"Tampil sebagai … · arunadewa.id/i/…" di bawah judul langkah.
+
+Alasannya ada di `docs/ROADMAP.md` (Fase 65). Yang penting untuk landing: potret alur pesanan di
+`verification/` kini menunjukkan nama pasangan di lipatan pertama pratinjau — klaim "pratinjau ikut
+berubah saat kalian mengetik" akhirnya terlihat, bukan dijanjikan. Potret belum diambil ulang.
+
+## REV-010 — 2026-09-19 — Fase 69.5, tombol "Buat tema versi Anda sendiri"
+
+- Header koleksi tema (`landing/Themes.vue`) mendapat tombol outline → `/order?langkah=tema&addon=design`;
+  `Cta.vue` tidak disentuh (sudah memegang dua aksi).
+- `/order` membaca `?langkah=` (`langkahDariQuery()`, nama langkah bukan angka) dan `?addon=design`;
+  catatan di langkah Tema; `checkout()` mengembalikan ke langkah 1–2 yang belum lengkap. Login tetap
+  wajib sebelum `/order` — `?next=` membawa query-nya utuh.
+- E2e: publik memeriksa tautan dan pengalihan; dasbor (masuk) memeriksa langkah Tema terbuka, catatan
+  tampil, dan `addonIds` draft berisi `design`.

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
-import { ornamentBank, type OrnamentEntry, type OrnamentId } from '~/utils/ornaments'
+import { isUnggahan, ornamentBank, type OrnamentEntry, type OrnamentRef } from '~/utils/ornaments'
 
 /**
  * Merender satu ornamen dari bank berdasarkan id-nya.
@@ -31,18 +31,21 @@ import { ornamentBank, type OrnamentEntry, type OrnamentId } from '~/utils/ornam
  */
 const modules = import.meta.glob<{ default: Component }>('./*.vue')
 
-const props = defineProps<{ glyph: OrnamentId | null | undefined; initials?: string; ubin?: boolean }>()
+const props = defineProps<{ glyph: OrnamentRef | null | undefined; initials?: string; ubin?: boolean }>()
 
 /*
  * Aset referensi: SVG berpalet tetap dan raster asli dari koleksi pemilik.
  *
  * `ubin` memilih salinan mana yang dipakai. Pemilih di dasbor meminta ubin 240px karena ia bisa
  * menampilkan 44 aset sekaligus; undangan memakai salinan `web` 960px. **Tidak ada jalur yang
- * merender berkas penuh** — 65 aset itu 24 MB, dan yang terberat 1,8 MB sendirian.
+ * merender berkas penuh** — 66 aset itu 24 MB, dan yang terberat 1,8 MB sendirian.
  *
  * Dimensinya ikut diteruskan supaya `<img>` punya rasio intrinsik dan tata letak tidak melompat.
  */
 const aset = computed(() => {
+  // Unggahan pasangan (fase 69): satu URL untuk ubin dan undangan — berkasnya sudah dibatasi
+  // 300 KB saat masuk, jadi tidak perlu salinan ringan seperti aset referensi.
+  if (isUnggahan(props.glyph)) return { src: props.glyph.url, width: props.glyph.width, height: props.glyph.height }
   const entry = props.glyph ? (ornamentBank[props.glyph] as OrnamentEntry) : null
   if (!entry?.asset) return null
   const src = props.ubin ? (entry.thumb ?? entry.webAsset ?? entry.asset) : (entry.webAsset ?? entry.asset)
@@ -52,7 +55,7 @@ const aset = computed(() => {
 const cache = new Map<string, Component>()
 const resolved = computed(() => {
   if (!props.glyph) return null
-  const file = ornamentBank[props.glyph].component.replace(/^Ornament/, '')
+  const file = isUnggahan(props.glyph) ? 'ReferenceAsset' : ornamentBank[props.glyph].component.replace(/^Ornament/, '')
   const muat = modules[`./${file}.vue`]
   if (!muat) return null
   let comp = cache.get(file)

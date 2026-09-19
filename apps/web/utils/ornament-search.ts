@@ -1,7 +1,7 @@
 import type { LayerSlot, OrnamentId } from './ornaments'
 import { ornament, ornamentBank } from './ornaments'
 import { fitOf } from './ornament-fit'
-import { muatLayer, muatSlot, type OrnamentSlotKey } from './ornament-slots'
+import { muatLayer, muatSlot, ornamenDisembunyikan, type OrnamentSlotKey } from './ornament-slots'
 import { themeOrnaments } from './theme'
 import { variantSlots, variantsFor, type VariantSlot } from './ornament-variants'
 
@@ -43,7 +43,7 @@ export function normalkan(teks: string): string {
   return teks.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/-/g, ' ').trim()
 }
 
-export type StudioTab = 'disarankan' | 'semua'
+export type StudioTab = 'disarankan' | 'semua' | 'unggahan'
 
 export interface StudioQuery {
   /** Slot skalar, atau jangkar ladang saat `layer` terisi. */
@@ -55,9 +55,14 @@ export interface StudioQuery {
   pack?: PackId | 'semua'
 }
 
-/** Semua id bank yang sah untuk slot/jangkar ini, tanpa penyaringan lain. */
+/**
+ * Semua id bank yang sah untuk slot/jangkar ini, tanpa penyaringan lain — kecuali
+ * `ornamenDisembunyikan`, yang bukan penyaringan kecocokan melainkan keputusan kurasi pemilik
+ * (fase 70). Ia dipotong di sini, satu-satunya pintu masuk grid, supaya tab "Semua", hitungan
+ * chip pack, dan tab "Disarankan" tidak pernah berselisih.
+ */
 export function kandidat(q: Pick<StudioQuery, 'slot' | 'layer'>): OrnamentId[] {
-  const ids = Object.keys(ornamentBank) as OrnamentId[]
+  const ids = (Object.keys(ornamentBank) as OrnamentId[]).filter(id => !ornamenDisembunyikan.has(id))
   if (q.layer) return ids.filter(id => muatLayer(q.layer!, id))
   if (q.slot) return ids.filter(id => muatSlot(q.slot!, id))
   return []

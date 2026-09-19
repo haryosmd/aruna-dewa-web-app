@@ -1,18 +1,21 @@
 <script setup lang="ts">
+import { copyDefaults, copyGroupsFor, copyKeysFor, jumlahCopyDiubah, type CopySection } from '~/utils/invitation-copy'
+import type { CopyKey, EntranceStyle, EnvelopeSpeed } from '@aruna/contracts'
 import { canEditDesign as designUnlocked, createDefaultDocument, designFeatureId, galleryPhotoLimit, giftAccountLimit, invitationDocumentSchema, isLiveTemplateId, normalizeGift, selectableBodyFonts, selectableFonts, templateById, type BackdropChoice, type BackdropWeight, type FontChoice, type LiveTemplateId } from '@aruna/contracts'
 import {
   selectableAttire, selectableCoverLayouts, selectableGalleryMotions, selectableVenues,
   toAttire, toCoverLayout, toGalleryMotion, toOrnamentOverrides,
 } from '~/utils/invitation-options'
-import { selectableIntensities, toIntensity, type OrnamentId } from '~/utils/ornaments'
-import { terapkanOverrides, type OrnamentOverrides, type OrnamentSlotKey } from '~/utils/ornament-slots'
+import { type UploadedOrnament, selectableIntensities, toIntensity, type OrnamentId } from '~/utils/ornaments'
+import { bolehUnggah, sectionOrnamentSlots, terapkanOverrides, type OrnamentOverrides, type OrnamentSlotKey } from '~/utils/ornament-slots'
 import { bawaanSlot } from '~/utils/ornament-search'
 import { toBackdrop, toBackdropWeight } from '~/utils/backdrops'
 import { themeOrnaments } from '~/utils/theme'
 import type { LayerSlot } from '~/utils/ornaments'
 import type { Invitation, InvitationDocument } from '~/types/aruna'
 import type { MusicTrack } from '~/utils/music-library'
-import { AlertCircle, ArrowDown, ArrowUp, Check, Eye, Laptop, Lock, Pause, Play, Plus, Redo2, RotateCcw, Save, Send, Smartphone, Tablet, Trash2, Undo2, Wand2 } from 'lucide-vue-next'
+import { AlertCircle, Check, Lock, Pause, Play, Plus, RotateCcw, Trash2, Wand2 } from 'lucide-vue-next'
+import { filterSections, visibleCount } from '~/utils/editor-sections'
 
 const toast = useToast()
 
@@ -33,48 +36,21 @@ const saving = ref(false)
 const publishing = ref(false)
 const error = ref('')
 const conflict = ref(false)
+/*
+ * Ponsel hanya bisa menampilkan satu panel. Tidak dipersistenkan — tiap kunjungan mulai dari
+ * pengaturan, dan tes e2e mengandalkan bawaan itu.
+ */
 const mobilePanel = ref<'settings' | 'preview'>('settings')
 
 /*
- * Pratinjau perangkat.
- *
- * Pertanyaan yang sebenarnya dipegang pasangan saat menyunting bukan "apa yang saya lihat",
- * melainkan "apa yang dilihat tamu saya". Tamu hampir selalu membuka dari ponsel, jadi
- * bawaannya ponsel — bukan lebar rel yang kebetulan tersedia.
- *
- * Lebarnya dirender sungguhan lalu diperkecil, bukan diperkecil lalu dirender: undangannya
- * memakai container query di seluruh badannya (`.iv-root`), jadi render selebar 390px
- * berperilaku persis seperti ponsel selebar 390px. Skalanya tidak pernah melebihi 1 —
- * memperbesar render hanya akan mengaburkan gambar dan berbohong soal ukuran huruf.
+ * Preferensi studio yang bertahan antar kunjungan: perangkat pratinjau, tab inspektor, rail
+ * ciut. Panggung (`DashboardEditorStage`) yang memegang pengukuran skalanya; halaman ini hanya
+ * memegang pilihannya.
  */
-const previewDevices = [
-  { id: 'ponsel', label: 'Ponsel', width: 390, icon: Smartphone },
-  { id: 'tablet', label: 'Tablet', width: 834, icon: Tablet },
-  { id: 'laptop', label: 'Laptop', width: 1280, icon: Laptop },
-] as const
-type PreviewDevice = (typeof previewDevices)[number]['id']
+const prefs = useEditorPrefs()
 
-const previewDevice = ref<PreviewDevice>('ponsel')
-const previewWidth = computed(() => previewDevices.find(d => d.id === previewDevice.value)!.width)
-
-/*
- * Diukur pada viewport yang menggulung, bukan pada rel di luarnya.
- *
- * Selisihnya selebar scrollbar, dan itu cukup: skala yang dihitung dari lebar rel membuat
- * render Tablet dan Laptop persis selebar rel, lalu tergunting belasan piksel di kanan oleh
- * scrollbar-nya sendiri. `scrollbar-gutter: stable` memastikan lebar itu tidak lagi berubah
- * saat isinya cukup pendek untuk tidak menggulung — tanpa itu, tinggi mengubah lebar,
- * lebar mengubah skala, dan skala mengubah tinggi lagi.
- */
-const previewViewport = ref<HTMLElement | null>(null)
-const previewStage = ref<HTMLElement | null>(null)
-const { width: viewportWidth } = useElementSize(previewViewport)
-const { height: stageHeight } = useElementSize(previewStage)
-
-const previewScale = computed(() =>
-  viewportWidth.value ? Math.min(1, viewportWidth.value / previewWidth.value) : 1,
-)
-const previewScalePct = computed(() => Math.round(previewScale.value * 100))
+/* Pencarian di rail. Indeks yang dikirim ke `move()` selalu indeks dokumen — lihat `filterSections`. */
+const sectionQuery = ref('')
 const galleryUrl = ref('')
 const watchReady = ref(false)
 const designAddon = ref<{ name: string; price: number } | null>(null)
@@ -108,6 +84,38 @@ const dirty = computed(() => JSON.stringify(document.value) !== savedSnapshot.va
 const pendingReleases = ref<string[]>([])
 
 const selected = computed(() => document.value.sections.find(section => section.id === selectedId.value) ?? document.value.sections[0])
+
+const sectionEntries = computed(() => filterSections(document.value.sections, sectionQuery.value, sectionLabels))
+const sectionsVisible = computed(() => visibleCount(document.value.sections))
+
+/** Memilih bagian membuka panel pengaturan **dan** tab Bagian — pref `tema` yang tersimpan tidak boleh menyembunyikan form yang baru diminta. */
+function selectSection(id: string) {
+  selectedId.value = id
+  mobilePanel.value = 'settings'
+  prefs.value.inspectorTab = 'bagian'
+  fokuskanPanggung(id)
+}
+
+/*
+ * Bagian yang panggung diminta gulirkan (fase 70). Nonce, bukan id saja: memilih ulang bagian
+ * yang sama harus tetap menggulir. Saat tab ponsel berpindah ke Pratinjau, bagian yang sedang
+ * terpilih dikirim ulang — panggung yang tadi tersembunyi tidak bisa menggulir saat diminta.
+ */
+const fokusPanggung = ref<{ type: string, nonce: number } | null>(null)
+function fokuskanPanggung(id: string) {
+  const type = document.value.sections.find(section => section.id === id)?.type
+  if (!type) return
+  fokusPanggung.value = { type, nonce: (fokusPanggung.value?.nonce ?? 0) + 1 }
+}
+watch(mobilePanel, (panel) => { if (panel === 'preview') fokuskanPanggung(selectedId.value) })
+
+/** Sakelar tampil lewat `checkpoint()`, supaya mematikan galeri bisa di-undo seperti memindahkannya. */
+function toggleSection(id: string, enabled: boolean) {
+  const section = document.value.sections.find(candidate => candidate.id === id)
+  if (!section || section.enabled === enabled) return
+  checkpoint()
+  section.enabled = enabled
+}
 
 const sectionLabels: Record<string, string> = {
   cover: 'Cover pembuka', couple: 'Mempelai', events: 'Acara', countdown: 'Hitung mundur',
@@ -369,18 +377,22 @@ function writeOption(key: string, value: string) {
 /** Aksen tema yang sedang berlaku — pratinjau ornamen diwarnai ramp yang sama dengan undangan. */
 // `accent` hidup di preset kontrak, bukan di `ThemePresentation`; `templateById()` yang
 // menerjemahkan id pensiun, jadi pratinjau tetap berwarna untuk tema yang dipensiunkan.
+const coverSection = computed(() => document.value?.sections.find(section => section.type === 'cover'))
+
 const themeAccent = computed(() => templateById(document.value?.templateId ?? '')?.accent ?? '#7A8B6F')
 
 
 /**
- * Penukaran ornamen yang sedang berlaku.
+ * Penukaran ornamen yang sedang berlaku — selalu dibaca dari **cover**, bukan dari bagian yang
+ * dipilih: sejak fase 71 kartu "Ornamen di bagian ini" tampil di setiap form bagian, dan
+ * nilainya tetap satu untuk seluruh undangan.
  *
  * `ornamentOverrides` bernilai objek, bukan string, jadi ia tidak perlu masuk `enumKeys` —
  * `textFields` sudah menyaring dengan `typeof value === 'string'`. Tapi ia juga karena itu
  * tidak bisa lewat `writeOption()`, yang hanya menerima string.
  */
 const ornamentOverrides = computed(() =>
-  toOrnamentOverrides(selected.value?.data.ornamentOverrides, document.value?.templateId ?? ''))
+  toOrnamentOverrides(coverSection.value?.data.ornamentOverrides, document.value?.templateId ?? ''))
 
 /** Set tema sesudah penukaran, untuk ringkasan panel. */
 const ornamentSet = computed(() => themeOrnaments(document.value?.templateId ?? ''))
@@ -409,7 +421,7 @@ const studioAktif = computed(() => {
 function bukaStudio(target: { slot?: OrnamentSlotKey, layer?: LayerSlot }) {
   if (!canEditDesign.value) return
   checkpoint()
-  studio.value = { ...target, semula: { ...ornamentOverrides.value, layers: { ...ornamentOverrides.value.layers } } }
+  studio.value = { ...target, semula: salinOverrides() }
 }
 
 /** Menulis penukaran ke `cover.data`. Nilai yang sama dengan bawaan tema dibuang oleh sanitizer. */
@@ -424,18 +436,38 @@ function tulisOverrides(berikut: OrnamentOverrides) {
 function pilihOrnamen(glyph: OrnamentId) {
   const target = studio.value
   if (!target) return
-  const berikut: OrnamentOverrides = { ...ornamentOverrides.value, layers: { ...ornamentOverrides.value.layers } }
+  const berikut = salinOverrides()
   if (target.layer) berikut.layers = { ...berikut.layers, [target.layer]: glyph }
-  else berikut[target.slot!] = glyph
+  else {
+    berikut[target.slot!] = glyph
+    // Memilih id bank melepas unggahan di slot yang sama; kalau tidak, unggahan tetap menang.
+    if (berikut.unggahan && bolehUnggah(target.slot!)) delete berikut.unggahan[target.slot!]
+  }
   tulisOverrides(berikut)
 }
+
+/** Memasang ornamen unggahan (fase 69) ke slot yang sedang dibuka Studio. */
+function pilihUnggahan(item: UploadedOrnament) {
+  const target = studio.value
+  if (!target?.slot || !bolehUnggah(target.slot)) return
+  const berikut = salinOverrides()
+  berikut.unggahan = { ...berikut.unggahan, [target.slot]: item }
+  delete berikut[target.slot]
+  tulisOverrides(berikut)
+}
+
+const salinOverrides = (): OrnamentOverrides => ({
+  ...ornamentOverrides.value,
+  layers: { ...ornamentOverrides.value.layers },
+  unggahan: { ...ornamentOverrides.value.unggahan },
+})
 
 function kembalikanSlot() {
   const target = studio.value
   if (!target) return
-  const berikut: OrnamentOverrides = { ...ornamentOverrides.value, layers: { ...ornamentOverrides.value.layers } }
+  const berikut = salinOverrides()
   if (target.layer) delete berikut.layers?.[target.layer]
-  else delete berikut[target.slot!]
+  else { delete berikut[target.slot!]; if (bolehUnggah(target.slot!)) delete berikut.unggahan?.[target.slot!] }
   tulisOverrides(berikut)
 }
 
@@ -466,6 +498,59 @@ function tulisBackdrop(pilihan: BackdropChoice) {
 function tulisBackdropWeight(bobot: BackdropWeight) {
   checkpoint()
   document.value.tokens.backdropWeight = bobot
+}
+
+/* ── Tulisan bagian (fase 69, pindah ke form bagian di fase 71) ─────────────────────────────────────────────────────── */
+
+/**
+ * Nilai kosong atau sama dengan bawaan DIHAPUS, bukan disimpan — alasan yang sama dengan
+ * `tulisBackdrop`: dokumen hanya membawa pendapat yang benar-benar berbeda dari tema, dan
+ * `copy` yang kosong ikut dihapus supaya `designFingerprint` tidak membedakan `{}` dari absen.
+ */
+function tulisCopy(key: CopyKey, value: string) {
+  if (!canEditDesign.value) return
+  checkpoint()
+  const rapi = value.trim()
+  const copy = { ...(document.value.copy ?? {}) }
+  if (!rapi || rapi === copyDefaults[key]) delete copy[key]
+  else copy[key] = rapi
+  if (Object.keys(copy).length) document.value.copy = copy
+  else delete document.value.copy
+}
+
+/* ── Gerak (fase 69) ───────────────────────────────────────────────────────── */
+
+/** `sedang`/`tema` dihapus, bukan disimpan; `motion` kosong ikut dihapus. Alasannya sama dengan `tulisBackdrop`. */
+function tulisMotion(patch: { amplop?: EnvelopeSpeed, masuk?: EntranceStyle | 'tema' }) {
+  if (!canEditDesign.value) return
+  checkpoint()
+  const motion = { ...(document.value.tokens.motion ?? {}) }
+  if ('amplop' in patch) { if (patch.amplop && patch.amplop !== 'sedang') motion.amplop = patch.amplop; else delete motion.amplop }
+  if ('masuk' in patch) { if (patch.masuk && patch.masuk !== 'tema') motion.masuk = patch.masuk; else delete motion.masuk }
+  if (Object.keys(motion).length) document.value.tokens.motion = motion
+  else delete document.value.tokens.motion
+}
+
+function kembalikanCopy() {
+  if (!canEditDesign.value || !document.value.copy) return
+  checkpoint()
+  delete document.value.copy
+}
+
+/**
+ * Reset hanya kunci grup bagian itu (fase 71; cover ikut membawa `gate.*`). Satu checkpoint
+ * untuk seluruh bagian — undo per kolom tidak berguna bagi siapa pun — dan `copy` yang tinggal
+ * kosong dihapus, alasan yang sama dengan `tulisCopy`.
+ */
+function kembalikanCopyBagian(section: CopySection) {
+  if (!canEditDesign.value || !document.value.copy) return
+  const copy = { ...document.value.copy }
+  const kena = copyKeysFor(section).filter(key => key in copy)
+  if (!kena.length) return
+  checkpoint()
+  for (const key of kena) delete copy[key]
+  if (Object.keys(copy).length) document.value.copy = copy
+  else delete document.value.copy
 }
 
 const coverLayout = computed(() => toCoverLayout(selected.value?.data.layout))
@@ -784,186 +869,105 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
 </script>
 
 <template>
-  <DashboardShell v-if="invitation" :invitation-id="invitation.id" :title="invitation.title" width="wide">
-    <header class="flex flex-wrap items-start justify-between gap-4">
-      <div class="grid gap-1.5">
-        <p class="eyebrow">Editor undangan</p>
-        <h1 class="m-0 font-display text-h1 font-semibold text-ink">{{ invitation.title }}</h1>
-        <p class="m-0 text-caption text-ink-subtle">
-          Draft r{{ revision }} · versi publik hanya berubah saat kalian menerbitkan.
-        </p>
-        <!--
-          Tanpa autosave, keadaan "sudah tersimpan atau belum" tidak boleh ditebak-tebak.
-          Karena itu ia tertulis, bukan disiratkan lewat tombol yang aktif atau tidak.
-        -->
-        <p id="editor-save-state" class="m-0 flex items-center gap-1.5 text-caption" :class="dirty ? 'text-primary-strong' : 'text-ink-subtle'">
-          <AlertCircle v-if="dirty" :size="14" aria-hidden="true" />
-          <Check v-else :size="14" aria-hidden="true" />
-          {{ dirty ? 'Ada perubahan yang belum tersimpan' : 'Semua perubahan tersimpan' }}
-        </p>
-      </div>
-
-      <div class="flex flex-wrap items-center gap-2">
-        <UiButton id="editor-view-public" as="NuxtLink" :to="`/i/${invitation.slug}`" target="_blank" tone="outline" size="sm">
-          <Eye :size="16" aria-hidden="true" />
-          Lihat publik
-        </UiButton>
-        <UiButton id="editor-undo" tone="ghost" size="sm" :disabled="!undoStack.length" aria-label="Undo" @click="undo">
-          <Undo2 :size="16" aria-hidden="true" />
-        </UiButton>
-        <UiButton id="editor-redo" tone="ghost" size="sm" :disabled="!redoStack.length" aria-label="Redo" @click="redo">
-          <Redo2 :size="16" aria-hidden="true" />
-        </UiButton>
-        <UiButton id="editor-reset" tone="outline" size="sm" @click="reset">
-          <RotateCcw :size="16" aria-hidden="true" />
-          Reset
-        </UiButton>
-        <UiButton id="editor-save" size="sm" :loading="saving" :disabled="!dirty" @click="() => save()">
-          <Save v-if="!saving" :size="16" aria-hidden="true" />
-          {{ saving ? 'Menyimpan…' : 'Simpan draft' }}
-        </UiButton>
-        <UiButton id="editor-publish" tone="ink" size="sm" :loading="publishing" @click="publish">
-          <Send v-if="!publishing" :size="16" aria-hidden="true" />
-          {{ publishing ? 'Menerbitkan…' : 'Publikasikan' }}
-        </UiButton>
-      </div>
-    </header>
-
-    <p v-if="error" class="notice m-0" role="alert">
-      {{ error }}
-      <button v-if="conflict" id="editor-reload-server" class="button button-secondary ml-2" type="button" @click="load">Muat ulang versi server</button>
-    </p>
-
-    <!-- Mobile can only show one pane at a time. -->
-    <div class="flex gap-1 rounded-full bg-surface-3 p-1 xl:hidden" role="tablist" aria-label="Panel editor">
-      <button
-        v-for="tab in [{ id: 'settings', label: 'Pengaturan' }, { id: 'preview', label: 'Pratinjau' }]"
-        :id="`editor-panel-${tab.id}`"
-        :key="tab.id"
-        type="button"
-        role="tab"
-        :aria-selected="mobilePanel === tab.id"
-        :class="cn(
-          'min-h-11 flex-1 rounded-full text-[0.9375rem] font-semibold transition-colors duration-200',
-          mobilePanel === tab.id ? 'bg-surface text-ink shadow-hairline' : 'text-ink-muted',
-        )"
-        @click="mobilePanel = tab.id as 'settings' | 'preview'"
-      >
-{{ tab.label }}
-</button>
-    </div>
-
+  <DashboardShell v-if="invitation" :invitation-id="invitation.id" :title="invitation.title" width="wide" variant="studio">
     <!--
-      Tiga tingkat, bukan dua.
-
-      Sebelumnya lompatannya langsung dari tata letak ponsel ke tiga kolom di `xl` (1280px),
-      jadi laptop 13" — 1024 sampai 1280 — melihat satu panel bertab padahal ruangnya cukup
-      untuk dua. Jalur tengah memakai `minmax(0, 1fr)` supaya isinya benar-benar boleh
-      menyusut; `1fr` polos punya `min-width: auto` dan akan menolak menyempit di bawah lebar
-      isi terlebarnya.
+      Studio: toolbar di baris pertama, tiga panel di baris kedua. Di `lg` ke atas frame ini
+      setinggi `<main>` (yang setinggi layar) dan tiap panel menggulung sendiri; di bawahnya
+      alur biasa dan halamanlah yang menggulung. `minmax(0,1fr)` pada baris kedua wajib —
+      `1fr` polos punya `min-height: auto` dan menolak menyusut di bawah tinggi isinya, jadi
+      panelnya tidak akan pernah menggulung.
     -->
-    <div
-      class="grid gap-5 lg:grid-cols-[14.5rem_minmax(0,1fr)] lg:gap-x-8 xl:grid-cols-[14.5rem_minmax(0,1fr)_minmax(18rem,20rem)] lg:items-start"
-    >
-      <!-- Section list -->
-      <aside :class="cn('grid content-start gap-2', mobilePanel === 'preview' && 'hidden lg:grid')">
-        <p class="eyebrow">Bagian undangan</p>
-        <p v-if="!canEditDesign" id="design-locked-order" class="m-0 flex items-start gap-1.5 text-caption text-ink-muted">
-          <Lock :size="13" class="mt-0.5 shrink-0" aria-hidden="true" />
-          <span>Urutan bagian mengikuti tema. Lihat panel Tema &amp; warna.</span>
-        </p>
-        <ul class="m-0 grid gap-1 p-0 list-none">
-          <li
-            v-for="(section, index) in document.sections"
-            :key="section.id"
+    <div class="flex min-h-0 flex-col lg:h-full">
+      <DashboardEditorToolbar
+        :title="invitation.title"
+        :slug="invitation.slug"
+        :invitation-id="invitation.id"
+        :revision="revision"
+        :dirty="dirty"
+        :saving="saving"
+        :publishing="publishing"
+        :can-undo="undoStack.length > 0"
+        :can-redo="redoStack.length > 0"
+        :error="error"
+        :conflict="conflict"
+        @undo="undo"
+        @redo="redo"
+        @reset="reset"
+        @save="() => save()"
+        @publish="publish"
+        @reload="load"
+      />
+
+      <!-- Di bawah `xl` hanya satu dari pengaturan/pratinjau yang muat; tab ini yang memilih. -->
+      <div class="border-b border-border bg-surface px-4 py-2 xl:hidden">
+        <div class="flex gap-1 rounded-full bg-surface-3 p-1" role="tablist" aria-label="Panel editor">
+          <button
+            v-for="tab in [{ id: 'settings', label: 'Pengaturan' }, { id: 'preview', label: 'Pratinjau' }]"
+            :id="`editor-panel-${tab.id}`"
+            :key="tab.id"
+            type="button"
+            role="tab"
+            :aria-selected="mobilePanel === tab.id"
             :class="cn(
-              'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-md border px-1.5 transition-colors duration-200',
-              selectedId === section.id ? 'border-primary bg-primary-soft' : 'border-transparent hover:bg-surface-2',
+              'min-h-11 flex-1 rounded-full text-[0.9375rem] font-semibold transition-colors duration-200',
+              mobilePanel === tab.id ? 'bg-surface text-ink shadow-hairline' : 'text-ink-muted',
             )"
+            @click="mobilePanel = tab.id as 'settings' | 'preview'"
           >
-            <!--
-              `minmax(0, 1fr)` untuk label, `auto` untuk kluster kontrol. Dulu barisnya `flex`
-              dan muatnya kebetulan: centang 36px + dua panah 28px + jarak dan padding menyisakan
-              ~94px teks di jalur 240px, dan label yang lebih panjang mendorong panahnya keluar
-              jalur sampai menempel ke kolom sebelah. Dengan grid, kolom label yang menyusut —
-              berapa pun panjang namanya, `truncate` yang menanggungnya.
-            -->
-            <button
-              :id="`editor-section-${section.id}`"
-              type="button"
-              class="flex min-h-11 min-w-0 items-center gap-2 rounded-md px-1.5 text-left text-[0.875rem] font-medium text-ink"
-              @click="selectedId = section.id; mobilePanel = 'settings'"
-            >
-              <span
-                :class="cn('h-2 w-2 shrink-0 rounded-full', section.enabled ? 'bg-sage' : 'bg-border-strong')"
-                aria-hidden="true"
-              />
-              <!--
-                Membungkus, bukan dipotong. `truncate` memotong tiga dari tiga belas nama jadi
-                "Video & live str…" — persis nama bagian yang sedang dicari pasangan. Dua baris
-                pada `leading-snug` masih muat di dalam tinggi baris 44px yang sudah ada, jadi
-                nama utuh tidak menukar apa pun.
-              -->
-              <span class="leading-snug">{{ sectionLabels[section.type] ?? section.type }}</span>
-            </button>
+            {{ tab.label }}
+          </button>
+        </div>
+      </div>
 
-            <!-- Target sentuh tetap 44px tingginya; yang dirapikan lebarnya, bukan jangkauannya. -->
-            <div class="flex items-center">
-              <label class="grid h-11 w-9 shrink-0 cursor-pointer place-items-center">
-                <input :id="`editor-section-toggle-${section.id}`" v-model="section.enabled" type="checkbox" class="h-4 w-4 accent-[var(--color-primary)]">
-                <span class="sr-only">Tampilkan {{ sectionLabels[section.type] ?? section.type }}</span>
-              </label>
-
-              <button
-                :id="`editor-section-up-${section.id}`"
-                type="button"
-                class="grid h-11 w-7 shrink-0 place-items-center rounded-md text-ink-subtle hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
-                :disabled="!canEditDesign || index === 0"
-                :aria-label="`Naikkan ${sectionLabels[section.type] ?? section.type}`"
-                :aria-describedby="canEditDesign ? undefined : 'design-locked-order'"
-                @click="move(index, -1)"
-              >
-                <ArrowUp :size="15" aria-hidden="true" />
-              </button>
-              <button
-                :id="`editor-section-down-${section.id}`"
-                type="button"
-                class="grid h-11 w-7 shrink-0 place-items-center rounded-md text-ink-subtle hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
-                :disabled="!canEditDesign || index === document.sections.length - 1"
-                :aria-label="`Turunkan ${sectionLabels[section.type] ?? section.type}`"
-                :aria-describedby="canEditDesign ? undefined : 'design-locked-order'"
-                @click="move(index, 1)"
-              >
-                <ArrowDown :size="15" aria-hidden="true" />
-              </button>
-            </div>
-          </li>
-        </ul>
-      </aside>
-
-      <!-- Settings -->
       <!--
-        `@container`, bukan breakpoint viewport.
+        Tiga tingkat, bukan dua.
 
-        Lebar panel ini datang dari jalur grid di atas, bukan dari lebar layar. `sm:grid-cols-2`
-        di sini benar pada viewport 1440 sekalipun kolomnya cuma 312px — dan itulah yang dulu
-        terjadi: `input[type=date]` selebar 128px, kartu tema selebar 80px. Setiap varian di
-        dalam sini wajib bertanya pada wadahnya, tidak pernah pada layar.
+        Di bawah `lg` (1024) satu kolom yang bertab. Di `lg` rail selalu tampil di kolom pertama
+        dan kolom kedua diisi panggung **atau** inspektor — hanya satu yang tampil, jadi keduanya
+        jatuh ke kolom yang sama tanpa `col-start`. (Dulu `xl:col-start-3` wajib ada supaya
+        pratinjau tidak menindih panel pengaturan; sekarang urutan DOM rail → panggung →
+        inspektor sudah cukup.) Di `xl` ketiganya berdampingan.
 
-        Ambangnya `@xs` (320px), bukan `@sm` (384px). Diukur, bukan ditaksir: jalur pratinjau
-        mengambil lebar maksimumnya lebih dulu, jadi kolom ini justru lebih sempit di 1280
-        daripada di 1024. Dengan `@sm`, pasangan yang melebarkan jendelanya dari 1024 ke 1280
-        akan melihat kolomnya mundur jadi satu-up. Ambang yang dipilih dari satu lebar saja
-        selalu salah di lebar yang lain.
+        Jalur panggung `minmax(0,1fr)` di **setiap** tingkat, termasuk satu kolom di ponsel:
+        `grid` polos memberi jalur `minmax(auto,1fr)`, dan `auto` berarti panggung menolak
+        menyusut di bawah lebar render terpendeknya. Terukur di 360px: panel jadi 422px (390 +
+        padding), skalanya tetap 1 karena viewport-nya ikut 422, dan halaman meluber 62px.
       -->
-      <section :class="cn('@container grid content-start gap-5', mobilePanel === 'preview' && 'hidden xl:grid')">
-        <template v-if="selected">
-          <div class="grid gap-1">
-            <p class="eyebrow">Pengaturan bagian</p>
-            <!-- `text-h3`: ini judul panel. Judul halaman adalah nama undangan di atas, dan `text-h2` (40px di 1440) membuat keduanya berebut. -->
-            <h2 class="m-0 font-display text-h3 font-semibold text-ink">{{ sectionLabels[selected.type] ?? selected.type }}</h2>
-          </div>
+      <div
+        :class="cn(
+          'grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] lg:grid-cols-[17rem_minmax(0,1fr)] xl:grid-cols-[17rem_minmax(0,1fr)_22rem] 2xl:grid-cols-[17rem_minmax(0,1fr)_24rem]',
+          prefs.railCollapsed && 'lg:grid-cols-[3.5rem_minmax(0,1fr)] xl:grid-cols-[3.5rem_minmax(0,1fr)_22rem] 2xl:grid-cols-[3.5rem_minmax(0,1fr)_24rem]',
+        )"
+      >
+        <DashboardEditorSectionRail
+          v-model:query="sectionQuery"
+          v-model:collapsed="prefs.railCollapsed"
+          :entries="sectionEntries"
+          :selected-id="selectedId"
+          :labels="sectionLabels"
+          :can-edit-design="canEditDesign"
+          :total="document.sections.length"
+          :visible="sectionsVisible"
+          :class="cn(mobilePanel === 'preview' && 'hidden lg:grid')"
+          @select="selectSection"
+          @move="move"
+          @toggle="toggleSection"
+        />
 
+        <DashboardEditorStage
+          v-model:device="prefs.device"
+          :document="document"
+          :focus-section="fokusPanggung"
+          :class="cn(mobilePanel === 'settings' && 'hidden xl:flex')"
+        />
+
+        <DashboardEditorInspector
+          v-if="selected"
+          v-model:tab="prefs.inspectorTab"
+          :heading="sectionLabels[selected.type] ?? selected.type"
+          :class="cn(mobilePanel === 'preview' && 'hidden xl:grid')"
+        >
+        <template #bagian>
           <!--
             Pilihan berbentuk enum. Dipisah dari kolom teks di bawah karena masing-masing
             punya himpunan nilai tertutup; dibiarkan jatuh ke fallback `textFields`,
@@ -1504,7 +1508,41 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
             <p v-if="!textFields.length" class="notice m-0">Bagian ini tidak punya pengaturan teks.</p>
           </div>
 
-          <!-- Theme -->
+          <!--
+            Ornamen di bagian ini (fase 71): hanya slot yang bagian ini render. Cover tidak
+            mendapatnya — ia sudah memegang ringkasan penuh di kartunya sendiri di atas.
+          -->
+          <DashboardOrnamentSlotSummary
+            v-if="selected.type !== 'cover' && sectionOrnamentSlots[selected.type].length"
+            :set="ornamentSet"
+            :overrides="ornamentOverrides"
+            :slots="sectionOrnamentSlots[selected.type]"
+            :tokens="document.tokens"
+            :accent="themeAccent"
+            :terkunci="!canEditDesign"
+            :locked-by="designAddon ? `Add-on ${designAddon.name} (${formatRupiah(designAddon.price)}) membukanya.` : undefined"
+            @buka="bukaStudio"
+          />
+
+          <!--
+            Tulisan bagian ini (fase 71): kicker, judul, tombol, dan pesan sistem yang dibaca
+            tamu di bagian yang sedang dipilih. Satu pemasangan sesudah rantai `v-if`, bukan di
+            dalam tiap cabang — semua bagian yang punya grup mendapatnya, `closing`/`music` tidak.
+            `:key` memaksa remount saat bagian berganti supaya draft tidak membawa nilai bagian lain.
+          -->
+          <DashboardEditorCopyFields
+            v-if="copyGroupsFor(selected.type).length"
+            :key="selected.type"
+            :section="selected.type"
+            :copy="document.copy"
+            :terkunci="!canEditDesign"
+            :locked-by="designAddon ? `Add-on ${designAddon.name} (${formatRupiah(designAddon.price)}) membukanya.` : undefined"
+            @tulis="tulisCopy"
+            @kembalikan="kembalikanCopyBagian(selected.type)"
+          />
+        </template>
+
+        <template #tema>
           <section class="card grid gap-5 p-5">
             <div class="grid gap-1">
               <p class="eyebrow">Tema &amp; warna</p>
@@ -1523,7 +1561,7 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
             >
               <Lock :size="15" class="mt-0.5 shrink-0 text-ink-subtle" aria-hidden="true" />
               <span>
-                Tema, warna, font, dan urutan bagian terkunci pada preset undangan ini.
+                Tema, warna, font, ornamen, tulisan bagian, gerak, dan urutan bagian terkunci pada preset undangan ini.
                 <span v-if="designAddon" class="text-ink">Add-on {{ designAddon.name }} ({{ formatRupiah(designAddon.price) }}) membukanya.</span>
                 <span v-else class="text-ink">Add-on {{ featureLabel(designFeatureId) }} membukanya.</span>
               </span>
@@ -1542,7 +1580,12 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
               </span>
             </p>
 
-            <div class="grid gap-2 @xs:grid-cols-2 @md:grid-cols-3">
+            <!--
+              Diukur ulang di fase 62: isi kartu ini 272px pada inspektor 22rem (1280–1919) dan
+              304px pada 24rem, jadi `@xs` (320px) tidak pernah aktif dan enam tema bertumpuk
+              satu kolom. Dua kolom = 132px per ubin, masih jauh dari 80px yang dulu jadi masalah.
+            -->
+            <div class="grid grid-cols-2 gap-2 @md:grid-cols-3">
               <button
                 v-for="theme in invitationThemes"
                 :id="`editor-theme-${theme.id}`"
@@ -1572,7 +1615,7 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
               </button>
             </div>
 
-            <div class="grid gap-3 @xs:grid-cols-3">
+            <div class="grid grid-cols-3 gap-3">
               <UiField id="editor-color-background" v-slot="{ id }" label="Latar belakang">
                 <input :id="id" v-model="document.tokens.background" class="control disabled:cursor-not-allowed disabled:opacity-60" type="color" :disabled="!canEditDesign" :aria-describedby="canEditDesign ? undefined : 'design-locked'">
               </UiField>
@@ -1677,103 +1720,32 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
               @update:pilihan="tulisBackdrop"
               @update:bobot="tulisBackdropWeight"
             />
-          </section>
-        </template>
-      </section>
 
-      <!-- Preview -->
-      <!--
-        `xl:col-start-3` wajib ada: tanpa itu `lg:col-start-2` ikut berlaku di `xl` dan
-        pratinjau mendarat menindih panel pengaturan.
-      -->
-      <aside
-        :class="cn(
-          'lg:col-start-2 lg:sticky lg:top-8 lg:self-start xl:col-start-3',
-          mobilePanel === 'settings' && 'hidden xl:block',
-        )"
-      >
-        <div class="grid gap-3">
-          <div class="grid gap-2">
-            <p class="eyebrow">Pratinjau draft</p>
+            <DashboardEditorMotionPicker
+              :motion="document.tokens.motion"
+              :terkunci="!canEditDesign"
+              @update:amplop="value => tulisMotion({ amplop: value })"
+              @update:masuk="value => tulisMotion({ masuk: value })"
+            />
 
             <!--
-              Pemilih perangkat, bukan sakelar zoom. Labelnya nama benda yang dipegang tamu,
-              dan lebar sungguhannya ikut ditulis — tanpa angka itu, pratinjau yang diperkecil
-              jadi misteri: pasangan tidak tahu apakah hurufnya memang sekecil itu di ponsel
-              atau hanya kelihatan kecil di sini.
+              Tulisan bagian disunting di form bagiannya sejak fase 71; tab Tema hanya
+              menyimpan jalan keluar globalnya — berguna saat tema diganti dan kalimat yang
+              ditulis untuk tema lama tidak lagi seresep.
             -->
-            <div
-              class="flex gap-1 rounded-full bg-surface-3 p-1"
-              role="group"
-              aria-label="Lebar pratinjau"
-            >
-              <button
-                v-for="device in previewDevices"
-                :id="`editor-preview-${device.id}`"
-                :key="device.id"
-                type="button"
-                :aria-pressed="previewDevice === device.id"
-                :class="cn(
-                  'flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-[0.8125rem] font-semibold transition-colors duration-200',
-                  previewDevice === device.id ? 'bg-surface text-ink shadow-hairline' : 'text-ink-muted hover:text-ink',
-                )"
-                @click="previewDevice = device.id"
-              >
-                <component :is="device.icon" :size="15" aria-hidden="true" />
-                {{ device.label }}
-              </button>
+            <div v-if="jumlahCopyDiubah(document.copy)" class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-surface-2 p-3.5">
+              <span id="editor-copy-ringkasan" class="text-[0.8125rem] text-ink-muted">
+                {{ jumlahCopyDiubah(document.copy) }} tulisan ditulis ulang di form bagian.
+              </span>
+              <UiButton id="editor-copy-kembalikan-semua" tone="quiet" size="sm" :disabled="!canEditDesign" @click="kembalikanCopy">
+                <RotateCcw :size="15" aria-hidden="true" />
+                Kembalikan semua
+              </UiButton>
             </div>
-
-            <p class="m-0 flex items-center justify-between gap-2 text-caption text-ink-subtle">
-              <span>Selebar {{ previewWidth }}px</span>
-              <span v-if="previewScalePct < 100" class="tabular-nums">diperkecil {{ previewScalePct }}%</span>
-            </p>
-          </div>
-
-          <!--
-            Tingginya mengikuti layar, bukan angka tetap. `36rem` dulu berarti panel ini
-            berhenti di 576px bahkan di layar 1000px — pasangan melihat 40% lebih sedikit
-            dari undangan yang justru jadi alasan mereka membuka editor.
-
-            Bayangan di tepi bawah ada karena panel ini memotong isinya di tengah huruf.
-            Scrollbar overlay macOS tidak terlihat sampai disentuh, jadi tanpa isyarat itu
-            potongannya terbaca sebagai render yang rusak, bukan sebagai "masih ada lagi".
-          -->
-          <div class="relative overflow-hidden rounded-xl border border-border shadow-float after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-10 after:bg-gradient-to-t after:from-ink/12 after:to-transparent">
-            <div
-              ref="previewViewport"
-              class="max-h-[36rem] overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] xl:max-h-[calc(100svh-14rem)]"
-            >
-              <!--
-                `transform` tidak mengubah tata letak, jadi pembungkus ini yang memegang ukuran
-                hasil perkecilan. Tanpa itu panel menyisakan ruang kosong setinggi undangan yang
-                belum diperkecil — di Laptop yang diperkecil ke 25%, tiga perempat panelnya jadi
-                kosong. Lebarnya ikut ditulis supaya render yang lebih sempit dari relnya —
-                Ponsel 390px di rel 424px — berdiri di tengah, bukan menempel ke kiri.
-              -->
-              <div
-                :style="{
-                  width: `${Math.round(previewWidth * previewScale)}px`,
-                  height: `${Math.round(stageHeight * previewScale)}px`,
-                  marginInline: 'auto',
-                }"
-              >
-                <div
-                  ref="previewStage"
-                  data-preview-stage
-                  :style="{
-                    width: `${previewWidth}px`,
-                    transform: `scale(${previewScale})`,
-                    transformOrigin: 'top left',
-                  }"
-                >
-                  <InvitationRenderer :document="document" compact />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
+          </section>
+        </template>
+        </DashboardEditorInspector>
+      </div>
     </div>
 
     <!--
@@ -1797,8 +1769,10 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
       :bawaan="studioAktif.bawaan"
       :tokens="document.tokens"
       :accent="themeAccent"
+      :invitation-id="invitation?.id ?? ''"
       @update:open="terbuka => { if (!terbuka) studio = null }"
       @pilih="pilihOrnamen"
+      @pilih-unggahan="pilihUnggahan"
       @kembalikan="kembalikanSlot"
       @batal="batalkanStudio"
     />

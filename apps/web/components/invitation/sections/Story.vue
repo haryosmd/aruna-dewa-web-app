@@ -3,7 +3,7 @@ import type { Section } from '~/types/aruna'
 import { toStorySteps } from '~/utils/invitation-options'
 
 const props = defineProps<{ section: Section; seed: number }>()
-const { orn, intensity, compact, galleryImages, initials } = useInvitation()
+const { orn, intensity, compact, galleryImages, initials, t } = useInvitation()
 
 const root = ref<HTMLElement | null>(null)
 
@@ -125,7 +125,7 @@ useArunaMotion(root, ({ gsap, drawSvg, travelPath }) => {
       id="iv-story"
       tone="ink"
       :compact="compact"
-      kicker="Cerita kami"
+      :kicker="t('story.kicker')"
       :title="text(props.section, 'title', 'Dari satu percakapan')"
       :ornaments="compact ? null : orn"
       :intensity="intensity"
@@ -194,7 +194,7 @@ useArunaMotion(root, ({ gsap, drawSvg, travelPath }) => {
           class="iv-story-finale"
           :initials="initials"
         />
-        <p data-iv-reveal class="iv-body m-0 text-caption opacity-80">…dan sampailah kami di hari ini.</p>
+        <p data-iv-reveal class="iv-body m-0 text-caption opacity-80">{{ t('story.closing') }}</p>
       </template>
     </InvitationSection>
   </div>

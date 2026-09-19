@@ -11,6 +11,7 @@
  * sama persis alih-alih tipe ad-hoc per halaman yang boleh menyimpang diam-diam.
  */
 
+import type { MediaKind } from './index'
 import { z } from 'zod'
 import { invitationDocumentSchema, templateIds, type ImportRow, type InvitationDocument } from './index.js'
 
@@ -356,6 +357,13 @@ export interface MediaUploadResult {
   draftUrl: string
   publicUrl: string
   contentType: string
+  /** `image` | `audio` | `ornament` (fase 69). */
+  kind: MediaKind
+  /** Piksel asli; diisi server untuk raster supaya `<img>` punya dimensi intrinsik. */
+  width?: number | null
+  height?: number | null
+  originalName?: string
+  bytes?: number
 }
 
 export interface SignedInUser {

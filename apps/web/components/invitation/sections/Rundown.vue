@@ -3,7 +3,7 @@ import { Clock3 } from 'lucide-vue-next'
 import type { Section } from '~/types/aruna'
 
 const props = defineProps<{ section: Section; seed: number }>()
-const { orn, intensity, compact } = useInvitation()
+const { orn, intensity, compact, t } = useInvitation()
 const items = computed(() => rows(props.section, 'items'))
 </script>
 
@@ -13,8 +13,8 @@ const items = computed(() => rows(props.section, 'items'))
     id="iv-rundown"
     tone="base"
     :compact="compact"
-    kicker="Susunan acara"
-    title="Rundown"
+    :kicker="t('rundown.kicker')"
+    :title="t('rundown.title')"
     :ornaments="compact ? null : orn"
     :intensity="intensity"
     :seed="props.seed"

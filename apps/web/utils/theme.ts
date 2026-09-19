@@ -127,6 +127,8 @@ export const themePresentation: Record<LiveTemplateId, ThemePresentation> = {
       symbol: 'melati-merpati-sepasang',
       garland: 'garland',
       seal: 'melati-segel-kuncup',
+      envelopePocket: 'amplop-kantong-lurus',
+      envelopeFlap: 'amplop-flap-runcing',
       /*
        * Empat keping dari pack, satu dipinjam. Pack melati tidak punya keping berasio 2,7
        * untuk slot `swag`, dan `layers` memang bukan kategori yang DESIGN.md wajibkan unik
@@ -155,6 +157,8 @@ export const themePresentation: Record<LiveTemplateId, ThemePresentation> = {
       symbol: 'kayon-simbol-kayon',
       garland: 'garland-slim',
       seal: 'kayon-segel-kayon',
+      envelopePocket: 'amplop-kantong-lurus',
+      envelopeFlap: 'amplop-flap-bertakik',
       layers: ['layer-bloom-songket', 'layer-cascade-songket', 'layer-crown-songket', 'layer-cluster-songket', 'layer-swag-songket'],
     },
     /**
@@ -193,6 +197,8 @@ export const themePresentation: Record<LiveTemplateId, ThemePresentation> = {
       symbol: 'melati-janur-kuning',
       garland: 'garland-slim',
       seal: 'melati-segel-janur',
+      envelopePocket: 'amplop-kantong-lengkung',
+      envelopeFlap: 'amplop-flap-lengkung',
       layers: ['layer-bloom-geometris', 'layer-cascade-geometris', 'layer-crown-geometris', 'layer-cluster-geometris', 'layer-swag-geometris'],
     },
     /**
@@ -227,6 +233,8 @@ export const themePresentation: Record<LiveTemplateId, ThemePresentation> = {
       symbol: 'kayon-simbol-mawar',
       garland: 'garland',
       seal: 'pusaka-segel-sulur-bintang',
+      envelopePocket: 'amplop-kantong-lurus',
+      envelopeFlap: 'amplop-flap-runcing',
       layers: ['layer-bloom-deco', 'layer-cascade-deco', 'layer-crown-deco', 'layer-cluster-deco', 'layer-swag-deco'],
     },
     /**
@@ -294,6 +302,8 @@ export const themePresentation: Record<LiveTemplateId, ThemePresentation> = {
       symbol: 'sekar-simbol-kembang-air',
       garland: 'garland',
       seal: 'sekar-segel-rozet',
+      envelopePocket: 'amplop-kantong-lengkung',
+      envelopeFlap: 'amplop-flap-lengkung',
       layers: ['sekar-layer-mekar', 'sekar-layer-jatuh', 'sekar-layer-mahkota', 'sekar-layer-rumpun', 'sekar-layer-untai'],
     },
     /**
@@ -355,6 +365,8 @@ export const ornamenPensiun: Record<string, OrnamentSet> = {
     symbol: 'symbol-fan',
     garland: 'garland-slim',
     seal: 'seal-crest',
+    envelopePocket: 'amplop-kantong-lurus',
+    envelopeFlap: 'amplop-flap-runcing',
     layers: ['layer-bloom-deco', 'layer-cascade-deco', 'layer-crown-deco', 'layer-cluster-deco', 'layer-swag-deco'],
   },
   'aruna-senja': {
@@ -368,6 +380,8 @@ export const ornamenPensiun: Record<string, OrnamentSet> = {
     symbol: 'symbol-crescent',
     garland: 'garland',
     seal: 'seal-tumpal',
+    envelopePocket: 'amplop-kantong-lurus',
+    envelopeFlap: 'amplop-flap-runcing',
     layers: ['layer-bloom-tropis', 'layer-cascade-tropis', 'layer-crown-tropis', 'layer-cluster-tropis', 'layer-swag-tropis'],
   },
   'aruna-alba': {
@@ -381,6 +395,8 @@ export const ornamenPensiun: Record<string, OrnamentSet> = {
     symbol: 'symbol-rings',
     garland: 'garland-slim',
     seal: 'seal-ring',
+    envelopePocket: 'amplop-kantong-lurus',
+    envelopeFlap: 'amplop-flap-runcing',
     layers: ['layer-bloom-geometris', 'layer-cascade-geometris', 'layer-crown-geometris', 'layer-cluster-geometris', 'layer-swag-geometris'],
   },
   'aruna-sogan': {
@@ -394,6 +410,8 @@ export const ornamenPensiun: Record<string, OrnamentSet> = {
     symbol: 'symbol-lotus',
     garland: 'garland',
     seal: 'seal-kayon',
+    envelopePocket: 'amplop-kantong-lurus',
+    envelopeFlap: 'amplop-flap-runcing',
     layers: ['layer-bloom-sogan', 'layer-cascade-sogan', 'layer-crown-sogan', 'layer-cluster-sogan', 'layer-swag-sogan'],
   },
   'aruna-gonjong': {
@@ -407,6 +425,8 @@ export const ornamenPensiun: Record<string, OrnamentSet> = {
     symbol: 'symbol-candle',
     garland: 'garland',
     seal: 'seal-gonjong',
+    envelopePocket: 'amplop-kantong-lurus',
+    envelopeFlap: 'amplop-flap-runcing',
     layers: ['layer-bloom-songket', 'layer-cascade-songket', 'layer-crown-songket', 'layer-cluster-songket', 'layer-swag-songket'],
   },
   'aruna-mendung': {
@@ -420,6 +440,8 @@ export const ornamenPensiun: Record<string, OrnamentSet> = {
     symbol: 'symbol-wadasan',
     garland: 'garland-slim',
     seal: 'seal-mendung',
+    envelopePocket: 'amplop-kantong-lurus',
+    envelopeFlap: 'amplop-flap-runcing',
     layers: ['layer-bloom-mendung', 'layer-cascade-mendung', 'layer-crown-mendung', 'layer-cluster-mendung', 'layer-swag-mendung'],
   },
   'aruna-kenanga': {
@@ -433,6 +455,8 @@ export const ornamenPensiun: Record<string, OrnamentSet> = {
     symbol: 'symbol-kupu',
     garland: 'garland',
     seal: 'seal-kenanga',
+    envelopePocket: 'amplop-kantong-lurus',
+    envelopeFlap: 'amplop-flap-runcing',
     layers: ['layer-bloom-kenanga', 'layer-cascade-kenanga', 'layer-crown-kenanga', 'layer-cluster-kenanga', 'layer-swag-kenanga'],
   },
   'aruna-bentar': {
@@ -446,6 +470,8 @@ export const ornamenPensiun: Record<string, OrnamentSet> = {
     symbol: 'symbol-payung',
     garland: 'garland',
     seal: 'seal-bentar',
+    envelopePocket: 'amplop-kantong-lurus',
+    envelopeFlap: 'amplop-flap-runcing',
     layers: ['layer-bloom-bentar', 'layer-cascade-bentar', 'layer-crown-bentar', 'layer-cluster-bentar', 'layer-swag-bentar'],
   },
 }

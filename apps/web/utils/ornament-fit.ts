@@ -1,3 +1,4 @@
+import { ornament } from './ornaments'
 import type { OrnamentId } from './ornaments'
 import { ambangBerat, ornamentMetrics } from './ornament-metrics'
 import { themeOrnaments } from './theme'
@@ -58,6 +59,13 @@ function sama(a: number[], b: number[]): boolean {
 export function fitOf(glyph: OrnamentId, templateId: string): Fit {
   const m = ornamentMetrics[glyph]
   const flags: FitFlag[] = []
+
+  const kategori = ornament(glyph).category
+  if (kategori === 'envelopePocket' || kategori === 'envelopeFlap') {
+    // Bentuk amplop (fase 69) adalah lipatan kertas, bukan garis ornamen: ketebalan garisnya
+    // tidak pernah dimaksudkan seresep dengan bingkai tema, jadi ia tidak diberi lencana.
+    return { ok: true, flags: [], ringkas: '' }
+  }
 
   if (!m) {
     // Glyph yang ada di bank tapi tidak di tabel berarti tabelnya basi. Jangan mengarang
