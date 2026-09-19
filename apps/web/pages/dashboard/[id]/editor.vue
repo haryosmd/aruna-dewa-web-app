@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { copyDefaults } from '~/utils/invitation-copy'
-import type { CopyKey } from '@aruna/contracts'
+import type { CopyKey, EntranceStyle, EnvelopeSpeed } from '@aruna/contracts'
 import { canEditDesign as designUnlocked, createDefaultDocument, designFeatureId, galleryPhotoLimit, giftAccountLimit, invitationDocumentSchema, isLiveTemplateId, normalizeGift, selectableBodyFonts, selectableFonts, templateById, type BackdropChoice, type BackdropWeight, type FontChoice, type LiveTemplateId } from '@aruna/contracts'
 import {
   selectableAttire, selectableCoverLayouts, selectableGalleryMotions, selectableVenues,
@@ -492,6 +492,19 @@ function tulisCopy(key: CopyKey, value: string) {
   else copy[key] = rapi
   if (Object.keys(copy).length) document.value.copy = copy
   else delete document.value.copy
+}
+
+/* ── Gerak (fase 69) ───────────────────────────────────────────────────────── */
+
+/** `sedang`/`tema` dihapus, bukan disimpan; `motion` kosong ikut dihapus. Alasannya sama dengan `tulisBackdrop`. */
+function tulisMotion(patch: { amplop?: EnvelopeSpeed, masuk?: EntranceStyle | 'tema' }) {
+  if (!canEditDesign.value) return
+  checkpoint()
+  const motion = { ...(document.value.tokens.motion ?? {}) }
+  if ('amplop' in patch) { if (patch.amplop && patch.amplop !== 'sedang') motion.amplop = patch.amplop; else delete motion.amplop }
+  if ('masuk' in patch) { if (patch.masuk && patch.masuk !== 'tema') motion.masuk = patch.masuk; else delete motion.masuk }
+  if (Object.keys(motion).length) document.value.tokens.motion = motion
+  else delete document.value.tokens.motion
 }
 
 function kembalikanCopy() {
@@ -1475,7 +1488,7 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
             >
               <Lock :size="15" class="mt-0.5 shrink-0 text-ink-subtle" aria-hidden="true" />
               <span>
-                Tema, warna, font, dan urutan bagian terkunci pada preset undangan ini.
+                Tema, warna, font, ornamen, kata-kata, gerak, dan urutan bagian terkunci pada preset undangan ini.
                 <span v-if="designAddon" class="text-ink">Add-on {{ designAddon.name }} ({{ formatRupiah(designAddon.price) }}) membukanya.</span>
                 <span v-else class="text-ink">Add-on {{ featureLabel(designFeatureId) }} membukanya.</span>
               </span>
@@ -1633,6 +1646,13 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
               :terkunci="!canEditDesign"
               @update:pilihan="tulisBackdrop"
               @update:bobot="tulisBackdropWeight"
+            />
+
+            <DashboardEditorMotionPicker
+              :motion="document.tokens.motion"
+              :terkunci="!canEditDesign"
+              @update:amplop="value => tulisMotion({ amplop: value })"
+              @update:masuk="value => tulisMotion({ masuk: value })"
             />
 
             <DashboardEditorCopyForm

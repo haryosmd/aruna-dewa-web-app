@@ -1,3 +1,5 @@
+import type { EntranceStyle } from '@aruna/contracts'
+import { entranceStyles } from '@aruna/contracts'
 import { layerSlots, muatLayer, muatSlot, ornamentSlots, type OrnamentOverrides } from './ornament-slots'
 import { isOrnamentId, ornament, ornamentsByCategory, type OrnamentId } from './ornaments'
 import { themeOrnaments } from './theme'
@@ -181,4 +183,17 @@ export function toStorySteps(value: unknown): StoryStep[] {
     })
   }
   return steps
+}
+
+/* ── Gerak per undangan (fase 69) ───────────────────────────────────────────── */
+export const selectableEntrances: { id: EntranceStyle | 'tema'; label: string; hint: string }[] = [
+  { id: 'tema', label: 'Ikut tema', hint: 'Bawaan. Gaya masuk ditentukan partitur tema.' },
+  { id: 'rise', label: 'Naik', hint: 'Unsur naik lembut dari bawah — paling tenang.' },
+  { id: 'sweep', label: 'Sapuan', hint: 'Masuk dari samping seperti disapu.' },
+  { id: 'iris', label: 'Iris', hint: 'Terbuka dari tengah seperti diafragma.' },
+  { id: 'silhouette', label: 'Siluet', hint: 'Bayangan dulu, lalu warnanya menyusul.' },
+]
+
+export function toEntrance(value: unknown): EntranceStyle | undefined {
+  return (entranceStyles as readonly string[]).includes(String(value)) ? (value as EntranceStyle) : undefined
 }

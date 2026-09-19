@@ -189,6 +189,25 @@ export function templateById(id: string) {
 }
 
 /**
+ * Gerak per undangan (fase 69), terenumerasi — bukan angka bebas.
+ *
+ * `amplop` mengatur tempo gerbang amplop; `masuk` menimpa tata bahasa masuk section milik tema.
+ * Keduanya opsional dan **tidak pernah menyimpan nilai "ikut tema"**: editor menghapus kuncinya,
+ * dan `motion` yang kosong ikut dihapus, supaya preset tema tetap identik dengan dokumen baru dan
+ * `designFingerprint` tidak membedakan `{}` dari absen. Angkanya milik web (`motion-envelope.ts`);
+ * `motion-score.ts` tetap milik tema — dokumen hanya memilih dari yang tema sediakan.
+ */
+export const envelopeSpeeds = ['pelan', 'sedang', 'cepat'] as const
+export type EnvelopeSpeed = (typeof envelopeSpeeds)[number]
+export const entranceStyles = ['rise', 'sweep', 'iris', 'silhouette'] as const
+export type EntranceStyle = (typeof entranceStyles)[number]
+export const motionSchema = z.object({
+  amplop: z.enum(envelopeSpeeds).optional(),
+  masuk: z.enum(entranceStyles).optional(),
+}).strict()
+export type InvitationMotion = z.infer<typeof motionSchema>
+
+/**
  * Kata-kata undangan yang boleh ditulis ulang pasangan (fase 69).
  *
  * Daftar kuncinya **tertutup** dan batas panjangnya per jenis, bukan `z.record(z.string())`:
@@ -252,6 +271,8 @@ export const invitationDocumentSchema = z.object({
     bodyFont: z.enum(fontChoices).optional(),
     backdrop: z.enum(backdropChoices).optional(),
     backdropWeight: z.enum(backdropWeights).optional(),
+    /** Fase 69. Di `tokens` supaya otomatis ikut gerbang `design`, seperti tiga key di atasnya. */
+    motion: motionSchema.optional(),
   }).strict(),
   sections: z.array(z.object({
     id: z.string().min(1).max(80), type: z.enum(sectionTypes), enabled: z.boolean(), data: z.record(z.unknown()),

@@ -1074,3 +1074,39 @@ test.describe('kata-kata undangan', () => {
     await saveDraft(page)
   })
 })
+
+/*
+ * Gerak per undangan (fase 69): dua pilihan terenumerasi di tab Tema. Yang diukur di sini adalah
+ * penulisannya — "Sedang"/"Ikut tema" menghapus kuncinya (dokumen kembali identik dengan preset),
+ * pilihan lain tersimpan dan bertahan setelah muat ulang. Temponya sendiri diukur di
+ * `motion-envelope.spec.ts`; gerbang tidak dirender di pratinjau `compact`.
+ */
+test.describe('gerak undangan', () => {
+  test('memilih tempo amplop dan gaya masuk, bertahan setelah muat ulang, kembali ke tema', async ({ page }) => {
+    test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
+    await signIn(page)
+    await page.goto(`/dashboard/${account!.invitationId}/editor`)
+    await hydrated(page)
+    await page.locator('#editor-inspector-tema').click()
+
+    const amplop = page.locator('#editor-motion-amplop')
+    const masuk = page.locator('#editor-motion-masuk')
+    await expect(amplop).toHaveValue('sedang')
+    await expect(masuk).toHaveValue('tema')
+
+    await amplop.selectOption('pelan')
+    await masuk.selectOption('iris')
+    await expect(page.locator('#editor-save-state')).toHaveText('Ada perubahan yang belum tersimpan')
+    await saveDraft(page)
+
+    await page.reload()
+    await hydrated(page)
+    await page.locator('#editor-inspector-tema').click()
+    await expect(page.locator('#editor-motion-amplop')).toHaveValue('pelan')
+    await expect(page.locator('#editor-motion-masuk')).toHaveValue('iris')
+
+    await page.locator('#editor-motion-amplop').selectOption('sedang')
+    await page.locator('#editor-motion-masuk').selectOption('tema')
+    await saveDraft(page)
+  })
+})

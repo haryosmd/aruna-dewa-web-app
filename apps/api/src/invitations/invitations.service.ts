@@ -62,7 +62,7 @@ export class InvitationsService {
     // Aturan yang sama persis dipakai editor untuk mematikan kontrolnya, supaya kontrol
     // yang terlihat hidup tidak pernah berujung pada autosave yang ditolak.
     const designUnlocked = canEditDesign({ isOperator: isOperator(user), features: existing.entitlements.map((item) => item.featureId) });
-    if (!designUnlocked && hasDesignChange(existing.draftDocument, document)) throw new BadRequestException('Perubahan warna, huruf, latar, ornamen, kata-kata, atau urutan section memerlukan add-on desain');
+    if (!designUnlocked && hasDesignChange(existing.draftDocument, document)) throw new BadRequestException('Perubahan warna, huruf, latar, ornamen, kata-kata, gerak, atau urutan section memerlukan add-on desain');
     const update = await this.prisma.invitation.updateMany({ where: { id: invitationId, draftRevision: revision }, data: { draftDocument: toJson(document), draftRevision: { increment: 1 } } });
     if (!update.count) {
       const current = await this.prisma.invitation.findUnique({ where: { id: invitationId }, select: { draftRevision: true, draftDocument: true } });
@@ -145,10 +145,10 @@ function isPrismaUniqueError(error: unknown): boolean { return typeof error === 
  * masih gratis tetap di tempatnya; yang tergerbang hanya suntingan berikutnya.
  */
 export function designFingerprint(document: InvitationDocument): string {
-  const tokens = Object.fromEntries(Object.entries(document.tokens ?? {}).sort(([a], [b]) => (a < b ? -1 : 1)));
   const cover = document.sections?.find((section) => section.type === 'cover');
   return JSON.stringify({
-    tokens,
+    // Disortir sampai ke dalam: `tokens.motion` (fase 69) adalah objek, dan `{}` ≡ absen.
+    tokens: kanonikDalam(document.tokens ?? {}),
     order: document.sections?.map((section) => section.id) ?? [],
     ornaments: kanonik(cover?.data?.ornamentOverrides),
     // Kata-kata (fase 69) ikut digerbangi — keputusan pemilik: seluruh "tema sendiri" masuk
@@ -156,6 +156,20 @@ export function designFingerprint(document: InvitationDocument): string {
     // terbaca sebagai perubahan.
     copy: kanonikCopy(document.copy),
   });
+}
+
+/** Objek biasa disortir rekursif; primitif dibiarkan; objek kosong dibuang supaya `{}` ≡ absen. */
+function kanonikDalam(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const masuk = value as Record<string, unknown>;
+  const keluar: Record<string, unknown> = {};
+  for (const key of Object.keys(masuk).sort()) {
+    const nilai = kanonikDalam(masuk[key]);
+    if (nilai === undefined) continue;
+    if (nilai && typeof nilai === 'object' && !Array.isArray(nilai) && !Object.keys(nilai as object).length) continue;
+    keluar[key] = nilai;
+  }
+  return keluar;
 }
 
 /** Hanya string, kunci tersortir; kosong → `null`. Kunci asing tidak dibuang di sini — schema sudah menolaknya. */

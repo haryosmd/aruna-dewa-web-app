@@ -2,7 +2,8 @@
 import { MailOpen, Volume2 } from 'lucide-vue-next'
 import type { OrnamentSet } from '~/utils/ornaments'
 import type { OrnamentIntensity } from '~/utils/ornaments'
-import type { CopyKey } from '@aruna/contracts'
+import type { CopyKey, EnvelopeSpeed } from '@aruna/contracts'
+import { envelopeTempo } from '~/utils/motion-envelope'
 import { invitationKey } from '~/composables/useInvitationContext'
 import { copyDefaults } from '~/utils/invitation-copy'
 
@@ -26,8 +27,10 @@ const props = withDefaults(
     intensity?: OrnamentIntensity
     /** Mengumumkan musiknya sebelum dibuka, bukan mengejutkan tamu sesudahnya. */
     hasMusic?: boolean
+    /** Tempo flap dan surat (fase 69); segel tidak ikut. Lihat `motion-envelope.ts`. */
+    speed?: EnvelopeSpeed
   }>(),
-  { greeting: '', image: '', intensity: 'seimbang', hasMusic: false },
+  { greeting: '', image: '', intensity: 'seimbang', hasMusic: false, speed: 'sedang' },
 )
 
 const emit = defineEmits<{ open: [] }>()
@@ -48,6 +51,8 @@ async function open() {
   opening.value = true
   emit('open')
 
+  // Tabel tempo per tingkat (fase 69); `sedang` = angka fase 68 persis. Segel tetap literal di atas.
+  const tempo = envelopeTempo[props.speed]
   const animated = await timeline.play((gsap) => {
     gsap.timeline({ onComplete: finish })
       /*
@@ -65,11 +70,11 @@ async function open() {
        * kemudian dan selesai dalam 0,8 detik, jadi keduanya terbaca sebagai satu jentakan.
        * Segel di atas sengaja tidak ikut — bagian itu justru enak karena tegas.
        */
-      .to('[data-gate-flap]', { rotateX: -168, duration: 1.1, ease: 'power3.inOut' }, '-=0.22')
-      .to('[data-gate-card]', { opacity: 1, duration: 0.2 }, '<0.45')
-      .to('[data-gate-card]', { y: '-64%', scale: 1.04, duration: 1.4, ease: 'power3.out' }, '<')
-      .to('[data-gate-body]', { yPercent: 10, opacity: 0, duration: 0.5, ease: 'power2.in' }, '-=0.5')
-      .to(root.value, { opacity: 0, duration: 0.6, ease: 'power2.inOut' }, '-=0.35')
+      .to('[data-gate-flap]', { rotateX: -168, duration: tempo.flap, ease: 'power3.inOut' }, `${tempo.flapOffset}`)
+      .to('[data-gate-card]', { opacity: 1, duration: tempo.cardFade }, `<${tempo.cardFadeAt}`)
+      .to('[data-gate-card]', { y: '-64%', scale: 1.04, duration: tempo.cardRise, ease: 'power3.out' }, '<')
+      .to('[data-gate-body]', { yPercent: 10, opacity: 0, duration: tempo.body, ease: 'power2.in' }, `${tempo.bodyOffset}`)
+      .to(root.value, { opacity: 0, duration: tempo.root, ease: 'power2.inOut' }, `${tempo.rootOffset}`)
   })
 
   if (!animated) finish()

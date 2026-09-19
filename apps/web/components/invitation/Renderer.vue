@@ -3,10 +3,11 @@ import type { CopyKey } from '@aruna/contracts'
 import { pilihCopy, resolveCopy } from '~/utils/invitation-copy'
 import type { Component } from 'vue'
 import type { GuestProfile, InvitationDocument, RsvpPayload, Section, Wish } from '~/types/aruna'
-import { toOrnamentOverrides } from '~/utils/invitation-options'
+import { toEntrance, toOrnamentOverrides } from '~/utils/invitation-options'
 import { toIntensity } from '~/utils/ornaments'
 import { playLegacyScore, playScore } from '~/utils/motion-play'
-import { resolveScore, sectionRole } from '~/utils/motion-score'
+import { resolveScore, sectionRole, terapkanMotionDokumen } from '~/utils/motion-score'
+import { toEnvelopeSpeed } from '~/utils/motion-envelope'
 import { themeMotion, themeOrnaments } from '~/utils/theme'
 import { terapkanOverrides } from '~/utils/ornament-slots'
 
@@ -88,7 +89,12 @@ const sectionComponents: Record<string, Component> = {
   closing: SectionClosing,
 }
 
-const score = computed(() => themeMotion(props.document.templateId))
+/*
+ * Partitur tema, ditimpa pilihan dokumen bila ada (fase 69). Tanpa pilihan hasilnya persis
+ * `themeMotion()` — termasuk `undefined` yang membawa tema lama ke `playLegacyScore()`.
+ */
+const score = computed(() => terapkanMotionDokumen(themeMotion(props.document.templateId), toEntrance(props.document.tokens.motion?.masuk)))
+const kecepatanAmplop = computed(() => toEnvelopeSpeed(props.document.tokens.motion?.amplop))
 
 const rendered = computed(() => {
   const entries = visible.value
@@ -253,6 +259,7 @@ useArunaMotion(root, (api) => {
       :image="coverImage"
       :ornaments="orn"
       :intensity="intensity"
+      :speed="kecepatanAmplop"
       :has-music="Boolean(musicUrl)"
       @open="onGateOpen"
     />
