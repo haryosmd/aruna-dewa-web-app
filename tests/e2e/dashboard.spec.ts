@@ -605,6 +605,35 @@ test('studio editor: rail, inspektor, dan preferensi yang bertahan', async ({ pa
 })
 
 /*
+ * Gulir dokumen yang bocor (fase 71). Ketiga panel studio menggulung sendiri, tapi input berkas
+ * `UiDropzone` (`.sr-only` = `position: absolute`) tidak punya leluhur ber-posisi, jadi kotaknya
+ * mendarat di koordinat dokumen dan `scrollHeight` ikut ke sana — terukur 2168px pada viewport 900.
+ * Diukur di desktop saja: di bawah `lg` halaman memang menggulung.
+ */
+test('studio tidak menarik gulir dokumen', async ({ page }, testInfo) => {
+  test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
+  test.skip(testInfo.project.name !== 'desktop', 'Di bawah lg halaman memang menggulung.')
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await signIn(page)
+  await page.goto(`/dashboard/${account!.invitationId}/editor`)
+  const tidakMenggulung = async () => {
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollHeight - innerHeight)).toBeLessThanOrEqual(0)
+    await page.evaluate(() => window.scrollTo(0, 9999))
+    expect(await page.evaluate(() => scrollY)).toBe(0)
+  }
+  await openSection(page, 'music')
+  await expect(page.locator('#editor-music-upload')).toBeAttached()
+  await tidakMenggulung()
+  await openSection(page, 'cover')
+  await expect(page.locator('#editor-cover-image-drop')).toBeAttached()
+  await tidakMenggulung()
+  await page.locator('#editor-inspector-tema').click()
+  await expect(page.locator('#editor-theme-aruna-bloom')).toBeVisible()
+  await tidakMenggulung()
+  await openSection(page, 'cover')
+})
+
+/*
  * Rail dasbor ciut (fase 67). Diuji di desktop saja: di bawah `lg` rail-nya `display:none` dan
  * dock bawah yang memegang navigasi. Tooltip dicari lewat `[data-tooltip]`, bukan
  * `getByRole('tooltip')` — reka merender salinan tersembunyi ber-role yang sama.

@@ -17,13 +17,18 @@ withDefaults(defineProps<{
    * `lg`, tanpa `max-w` dan padding — **panel di dalamnya yang menggulung, bukan halamannya**.
    * Dipakai editor sejak fase 62; `heading`/`eyebrow` diabaikan karena toolbar studio memegang
    * `<h1>`-nya sendiri.
+   *
+   * Sejak fase 71 akar shell varian studio juga `lg:relative lg:h-svh lg:overflow-hidden`:
+   * elemen `position: absolute` tanpa leluhur ber-posisi (mis. `.sr-only`) memakai viewport
+   * sebagai containing block dan tidak diklip `overflow` milik `<main>`; `relative` di akar
+   * menjadikan akar containing block-nya, sehingga kelas bug itu mati apa pun sumbernya.
    */
   variant?: 'page' | 'studio'
 }>(), { eyebrow: undefined, heading: undefined, width: 'reading', variant: 'page' })
 </script>
 
 <template>
-  <div class="flex min-h-svh flex-col bg-surface lg:flex-row">
+  <div :class="cn('flex min-h-svh flex-col bg-surface lg:flex-row', variant === 'studio' && 'lg:relative lg:h-svh lg:overflow-hidden')">
     <DashboardNav :invitation-id="invitationId" :title="title" />
 
     <!--

@@ -43,6 +43,38 @@ alasannya.
 
 ## Sisa
 
+**Fase 71 — form bagian yang utuh, dan gulir yang bocor lewat `sr-only`.** Ditulis 2026-09-19
+dari tiga catatan pemilik di atas tangkapan layar editor: halaman editor di 1440×900 masih bisa
+digulir sebagai halaman — studio naik, sisanya putih — padahal ketiga panel sudah menggulung
+sendiri; blok "Kata-kata" di tab Tema salah nama dan salah tempat, karena memilih "Cover pembuka"
+di rail semestinya membawa *semua* yang mengubah bagian itu (isi, ornamen, tulisan), bukan
+menyuruh pasangan pindah tab dan mencari grup bernama sama; dan tiap kolomnya harus dinamai
+menurut fungsinya "seperti form", bukan istilah desain ("kicker"). Catatan keempatnya — kanvas
+bergaya Figma — ditulis sebagai fase 72, bukan dikerjakan di sini.
+
+**Yang dibangun:** (1) Gulir bocor. Diukur di browser: `document.scrollHeight` 2168 pada
+viewport 900 padahal `<main>` tepat 900; menyembunyikan semua `.sr-only` mengembalikannya ke 900,
+dan satu-satunya `.sr-only` yang berada di luar viewport adalah input berkas `UiDropzone`
+(`offsetParent = body`, top 2167). `.sr-only` itu `position: absolute`; label Dropzone (`grid`)
+tidak ber-posisi, jadi containing block-nya viewport dan `overflow: hidden` milik `<main>` tidak
+mengklipnya — persis kelas bug `.table-wrap` di `main.css`. Label Dropzone jadi `relative`, dan
+akar `DashboardShell` varian studio dipagari `lg:relative lg:h-svh lg:overflow-hidden` supaya
+elemen absolut tersesat berikutnya mati di pagar, apa pun sumbernya. E2e `studio tidak menarik
+gulir dokumen` mengukur `scrollHeight <= innerHeight` di tab Bagian (musik, cover) dan Tema, lalu
+memastikan `scrollTo(0, 9999)` tetap di 0. (2) `CopyForm.vue` dihapus; `CopyFields.vue`
+merender kolom wording bagian yang terpilih di **tab Bagian**, dikelompokkan menurut fungsi
+("Judul & pengantar", "Tombol", "Pesan setelah menjawab", "Saat kosong"), tanpa judul payung —
+label kolom ditulis ulang per fungsi ("Teks kecil di atas judul", "Tulisan tombol kirim").
+`copyGroups` tidak berubah strukturnya (tesnya bijektif); `copyGroupsFor(section)` memetakan,
+dan `gate` menumpang di cover karena amplop hidup di depan cover dan tidak punya entri rail.
+Tombol "Kembalikan bawaan bagian ini" → `kembalikanCopyBagian(section)` hanya menghapus kunci
+grupnya; tab Tema kembali murni global dan hanya menyisakan satu baris "n kalimat ditulis ulang ·
+Kembalikan semua". (3) `sectionOrnamentSlots` di `ornament-slots.ts` — slot mana yang benar-benar
+dirender tiap section, dibaca dari `components/invitation/` dan dijaga vitest yang membaca
+sumbernya — dan `SlotSummary` menerima `slots` supaya form tiap bagian memuat kartu "Ornamen di
+bagian ini" berisi hanya slot itu; nilainya tetap global (satu keping dipakai beberapa bagian)
+dan kartunya mengatakan itu. Cover tetap memegang ringkasan penuh enam belas slot.
+
 **Fase 70 — rail menggulir panggung, kartu ornamen bersih, bank bingkai dirapikan.** Ditulis
 2026-09-19 dari tiga catatan pemilik di atas tangkapan layar editor dan Studio Ornamen: memilih
 bagian di "Struktur undangan" tidak menggerakkan panggung; kartu ornamen di inspektor memuat tiga
