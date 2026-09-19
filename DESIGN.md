@@ -579,8 +579,9 @@ cover gate (amplop + segel) → pasangan → acara (+kalender, peta) → countdo
 
 Sejak fase 69 "tema" bukan lagi satu paket tertutup. Di balik add-on `design`, pasangan boleh
 mengganti: warna, huruf, ubin latar, kepekatan dan tiap slot ornamen (sebelas, termasuk kantong
-dan flap amplop), **kata-kata sistem** (44 kunci tertutup di `copyKeys` — kicker, judul, label
-tombol, kalimat gerbang; bukan aria dan bukan toast), dan **gerak** (`tokens.motion`: tempo
+dan flap amplop), **tulisan bagian** (44 kunci tertutup di `copyKeys` — kicker, judul, label
+tombol, kalimat gerbang; bukan aria dan bukan toast; sejak fase 71 disunting dari form bagian
+masing-masing dengan label per fungsi, bukan dari tab Tema), dan **gerak** (`tokens.motion`: tempo
 amplop tiga tingkat, gaya masuk empat tata bahasa). Semuanya terenumerasi, bukan angka bebas, dan
 semuanya opsional: absen berarti ikut tema, dan editor menghapus kunci alih-alih menulis "ikut
 tema". Partitur motion tetap milik tema; dokumen hanya memilih dari yang tema sediakan.

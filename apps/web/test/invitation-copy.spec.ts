@@ -1,7 +1,7 @@
-import { copyKeys, copyLimit, copySchema } from '@aruna/contracts'
+import { copyKeys, copyLimit, copySchema, sectionTypes } from '@aruna/contracts'
 import { describe, expect, it } from 'vitest'
 
-import { copyDefaults, copyGroups, jumlahCopyDiubah, pilihCopy, resolveCopy } from '../utils/invitation-copy'
+import { copyClustersFor, copyDefaults, copyGroups, copyGroupsFor, copyKeysFor, jumlahCopyDiubah, jumlahCopyDiubahDi, pilihCopy, resolveCopy } from '../utils/invitation-copy'
 
 /**
  * Lapisan kata-kata (fase 69): kontrak menutup daftar kuncinya, berkas ini menjaga agar tiap kunci
@@ -59,5 +59,39 @@ describe('pilihCopy dan hitungan', () => {
     expect(copySchema.safeParse({ 'gate.open': 'Buka' }).success).toBe(true)
     expect(copySchema.safeParse({ 'gate.open': 'a'.repeat(41) }).success).toBe(false)
     expect(copySchema.safeParse({ asing: 'x' }).success).toBe(false)
+  })
+})
+
+/**
+ * Form bagian (fase 71): tiap grup tampil di tepat satu form bagian — `gate` menumpang di cover —
+ * dan kolom-kolomnya dikelompokkan menurut fungsi tanpa judul payung.
+ */
+describe('copyGroupsFor dan kelompok per fungsi', () => {
+  it('menaruh amplop pembuka di form cover, dan bagian tanpa tulisan sistem tidak dapat apa-apa', () => {
+    expect(copyGroupsFor('cover').map(group => group.section)).toEqual(['gate', 'cover'])
+    expect(copyGroupsFor('rsvp').map(group => group.section)).toEqual(['rsvp'])
+    expect(copyGroupsFor('closing')).toEqual([])
+    expect(copyGroupsFor('music')).toEqual([])
+  })
+
+  it('setiap grup tampil di tepat satu form bagian', () => {
+    const semua = sectionTypes.flatMap(section => copyGroupsFor(section))
+    expect(semua).toEqual(copyGroups)
+  })
+
+  it('kunci per bagian hanya milik bagian itu, dan hitungannya tidak membaca bagian lain', () => {
+    for (const key of copyKeysFor('rsvp')) expect(key.startsWith('rsvp.')).toBe(true)
+    expect(jumlahCopyDiubahDi({ 'rsvp.yes': 'Datang', 'gate.open': 'Buka', 'rsvp.no': 'Berhalangan' }, copyKeysFor('rsvp'))).toBe(1)
+  })
+
+  it('mengelompokkan kolom menurut fungsi, urut kemunculan pertama, tanpa kelompok kosong', () => {
+    const rsvp = copyClustersFor('rsvp')
+    expect(rsvp.map(cluster => cluster.judul)).toEqual(['Judul & pengantar', 'Pilihan jawaban', 'Tombol', 'Pesan setelah menjawab'])
+    expect(rsvp.flatMap(cluster => cluster.fields.map(field => field.key)).sort()).toEqual([...copyKeysFor('rsvp')].sort())
+    for (const section of sectionTypes) for (const cluster of copyClustersFor(section)) expect(cluster.fields.length, cluster.judul).toBeGreaterThan(0)
+  })
+
+  it('tidak memakai istilah desain sebagai label kolom', () => {
+    for (const group of copyGroups) for (const field of group.fields) expect(field.label.toLowerCase(), field.key).not.toMatch(/kicker/)
   })
 })

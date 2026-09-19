@@ -1057,50 +1057,68 @@ test.describe('studio ornamen', () => {
 })
 
 /*
- * Kata-kata (fase 69): kalimat sistem yang dulu ditulis mati kini bisa ditulis ulang dari tab
- * Tema, dan hasilnya terlihat di panggung pratinjau tanpa memuat ulang. Yang diperiksa lewat
- * `rsvp.yes`, bukan `gate.open`: gerbang tidak dirender di pratinjau `compact`, sedangkan kartu
- * RSVP ada di panggung — jadi satu tes mengukur form, dokumen, autosave, dan renderer sekaligus.
+ * Tulisan bagian (fase 69, pindah ke form bagian di fase 71): kalimat sistem yang dulu ditulis
+ * mati kini disunting dari form bagian yang dipilih di rail, dan hasilnya terlihat di panggung
+ * tanpa memuat ulang. Yang diperiksa lewat `rsvp.yes`, bukan `gate.open`: gerbang tidak dirender
+ * di pratinjau `compact`, sedangkan kartu RSVP ada di panggung — jadi satu tes mengukur form,
+ * dokumen, autosave, dan renderer sekaligus. Bagian kedua (Ucapan) memastikan "Kembalikan bawaan
+ * bagian ini" tidak merembet ke bagian lain, dan tab Tema hanya menyisakan jalan keluar globalnya.
  */
-test.describe('kata-kata undangan', () => {
-  test('menulis ulang label RSVP, tampil di pratinjau, bertahan setelah muat ulang', async ({ page }) => {
+test.describe('tulisan bagian', () => {
+  test('menulis ulang pilihan hadir RSVP dari form bagiannya, tampil di pratinjau, bertahan, dan reset per bagian', async ({ page }) => {
     test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
     await signIn(page)
     await page.goto(`/dashboard/${account!.invitationId}/editor`)
     await hydrated(page)
     const berdampingan = () => page.evaluate(() => matchMedia('(min-width: 80rem)').matches)
 
+    // Bersih-bersih dari putaran sebelumnya lewat jalan keluar global di tab Tema.
     await page.locator('#editor-inspector-tema').click()
-    const kembalikan = page.locator('#editor-copy-kembalikan')
-    if (await kembalikan.count()) {
-      await kembalikan.click()
+    const kembalikanSemua = page.locator('#editor-copy-kembalikan-semua')
+    if (await kembalikanSemua.count()) {
+      await kembalikanSemua.click()
       await saveDraft(page)
     }
 
-    const grupRsvp = page.locator('details', { has: page.locator('summary', { hasText: 'RSVP' }) })
-    await grupRsvp.locator('summary').click()
+    await openSection(page, 'rsvp')
+    const blokRsvp = page.locator('#editor-copy-rsvp')
+    await expect(blokRsvp).toBeVisible()
+    await expect(page.locator('#editor-copy-rsvp-diubah')).toHaveCount(0)
     const kolom = page.locator('#editor-copy-rsvp-yes')
     await expect(kolom).toHaveAttribute('placeholder', 'Hadir')
     await kolom.fill('Datang')
     await kolom.press('Tab')
-    await expect(grupRsvp.locator('summary')).toContainText('1 diubah')
+    await expect(page.locator('#editor-copy-rsvp-diubah')).toHaveText(/1 diubah/)
 
     const stage = await openPreview(page)
     await expect(stage.locator('#iv-rsvp')).toContainText('Datang')
     if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
+
+    // Bagian kedua, supaya reset per bagian punya sesuatu untuk tidak disentuh.
+    await openSection(page, 'wishes')
+    const judulUcapan = page.locator('#editor-copy-wishes-title')
+    await judulUcapan.fill('Doa kalian')
+    await judulUcapan.press('Tab')
+    await page.locator('#editor-inspector-tema').click()
+    await expect(page.locator('#editor-copy-ringkasan')).toHaveText(/2 tulisan/)
     await saveDraft(page)
 
     await page.reload()
     await hydrated(page)
-    await page.locator('#editor-inspector-tema').click()
-    await expect(page.locator('#editor-copy-kembalikan')).toBeVisible()
-    const grupLagi = page.locator('details', { has: page.locator('summary', { hasText: 'RSVP' }) })
-    await grupLagi.locator('summary').click()
+    await openSection(page, 'rsvp')
     await expect(page.locator('#editor-copy-rsvp-yes')).toHaveValue('Datang')
 
-    // Kosongkan = kembali ke bawaan, dan dokumen tidak lagi membawa `copy`.
-    await page.locator('#editor-copy-kembalikan').click()
-    await expect(page.locator('#editor-copy-kembalikan')).toHaveCount(0)
+    // Reset per bagian hanya menyentuh RSVP; Ucapan tetap.
+    await page.locator('#editor-copy-kembalikan-rsvp').click()
+    await expect(page.locator('#editor-copy-kembalikan-rsvp')).toHaveCount(0)
+    await expect(page.locator('#editor-copy-rsvp-yes')).toHaveValue('')
+    await openSection(page, 'wishes')
+    await expect(page.locator('#editor-copy-wishes-title')).toHaveValue('Doa kalian')
+
+    // Jalan keluar global: dokumen tidak lagi membawa `copy`.
+    await page.locator('#editor-inspector-tema').click()
+    await page.locator('#editor-copy-kembalikan-semua').click()
+    await expect(page.locator('#editor-copy-kembalikan-semua')).toHaveCount(0)
     await saveDraft(page)
   })
 })

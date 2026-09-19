@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { copyDefaults } from '~/utils/invitation-copy'
+import { copyDefaults, copyGroupsFor, copyKeysFor, jumlahCopyDiubah, type CopySection } from '~/utils/invitation-copy'
 import type { CopyKey, EntranceStyle, EnvelopeSpeed } from '@aruna/contracts'
 import { canEditDesign as designUnlocked, createDefaultDocument, designFeatureId, galleryPhotoLimit, giftAccountLimit, invitationDocumentSchema, isLiveTemplateId, normalizeGift, selectableBodyFonts, selectableFonts, templateById, type BackdropChoice, type BackdropWeight, type FontChoice, type LiveTemplateId } from '@aruna/contracts'
 import {
@@ -14,7 +14,7 @@ import { themeOrnaments } from '~/utils/theme'
 import type { LayerSlot } from '~/utils/ornaments'
 import type { Invitation, InvitationDocument } from '~/types/aruna'
 import type { MusicTrack } from '~/utils/music-library'
-import { AlertCircle, Check, Lock, Pause, Play, Plus, Trash2, Wand2 } from 'lucide-vue-next'
+import { AlertCircle, Check, Lock, Pause, Play, Plus, RotateCcw, Trash2, Wand2 } from 'lucide-vue-next'
 import { filterSections, visibleCount } from '~/utils/editor-sections'
 
 const toast = useToast()
@@ -496,7 +496,7 @@ function tulisBackdropWeight(bobot: BackdropWeight) {
   document.value.tokens.backdropWeight = bobot
 }
 
-/* ── Kata-kata (fase 69) ─────────────────────────────────────────────────────── */
+/* ── Tulisan bagian (fase 69, pindah ke form bagian di fase 71) ─────────────────────────────────────────────────────── */
 
 /**
  * Nilai kosong atau sama dengan bawaan DIHAPUS, bukan disimpan — alasan yang sama dengan
@@ -531,6 +531,22 @@ function kembalikanCopy() {
   if (!canEditDesign.value || !document.value.copy) return
   checkpoint()
   delete document.value.copy
+}
+
+/**
+ * Reset hanya kunci grup bagian itu (fase 71; cover ikut membawa `gate.*`). Satu checkpoint
+ * untuk seluruh bagian — undo per kolom tidak berguna bagi siapa pun — dan `copy` yang tinggal
+ * kosong dihapus, alasan yang sama dengan `tulisCopy`.
+ */
+function kembalikanCopyBagian(section: CopySection) {
+  if (!canEditDesign.value || !document.value.copy) return
+  const copy = { ...document.value.copy }
+  const kena = copyKeysFor(section).filter(key => key in copy)
+  if (!kena.length) return
+  checkpoint()
+  for (const key of kena) delete copy[key]
+  if (Object.keys(copy).length) document.value.copy = copy
+  else delete document.value.copy
 }
 
 const coverLayout = computed(() => toCoverLayout(selected.value?.data.layout))
@@ -1487,6 +1503,23 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
 
             <p v-if="!textFields.length" class="notice m-0">Bagian ini tidak punya pengaturan teks.</p>
           </div>
+
+          <!--
+            Tulisan bagian ini (fase 71): kicker, judul, tombol, dan pesan sistem yang dibaca
+            tamu di bagian yang sedang dipilih. Satu pemasangan sesudah rantai `v-if`, bukan di
+            dalam tiap cabang — semua bagian yang punya grup mendapatnya, `closing`/`music` tidak.
+            `:key` memaksa remount saat bagian berganti supaya draft tidak membawa nilai bagian lain.
+          -->
+          <DashboardEditorCopyFields
+            v-if="copyGroupsFor(selected.type).length"
+            :key="selected.type"
+            :section="selected.type"
+            :copy="document.copy"
+            :terkunci="!canEditDesign"
+            :locked-by="designAddon ? `Add-on ${designAddon.name} (${formatRupiah(designAddon.price)}) membukanya.` : undefined"
+            @tulis="tulisCopy"
+            @kembalikan="kembalikanCopyBagian(selected.type)"
+          />
         </template>
 
         <template #tema>
@@ -1508,7 +1541,7 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
             >
               <Lock :size="15" class="mt-0.5 shrink-0 text-ink-subtle" aria-hidden="true" />
               <span>
-                Tema, warna, font, ornamen, kata-kata, gerak, dan urutan bagian terkunci pada preset undangan ini.
+                Tema, warna, font, ornamen, tulisan bagian, gerak, dan urutan bagian terkunci pada preset undangan ini.
                 <span v-if="designAddon" class="text-ink">Add-on {{ designAddon.name }} ({{ formatRupiah(designAddon.price) }}) membukanya.</span>
                 <span v-else class="text-ink">Add-on {{ featureLabel(designFeatureId) }} membukanya.</span>
               </span>
@@ -1675,12 +1708,20 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
               @update:masuk="value => tulisMotion({ masuk: value })"
             />
 
-            <DashboardEditorCopyForm
-              :copy="document.copy"
-              :terkunci="!canEditDesign"
-              @tulis="tulisCopy"
-              @kembalikan="kembalikanCopy"
-            />
+            <!--
+              Tulisan bagian disunting di form bagiannya sejak fase 71; tab Tema hanya
+              menyimpan jalan keluar globalnya — berguna saat tema diganti dan kalimat yang
+              ditulis untuk tema lama tidak lagi seresep.
+            -->
+            <div v-if="jumlahCopyDiubah(document.copy)" class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-surface-2 p-3.5">
+              <span id="editor-copy-ringkasan" class="text-[0.8125rem] text-ink-muted">
+                {{ jumlahCopyDiubah(document.copy) }} tulisan ditulis ulang di form bagian.
+              </span>
+              <UiButton id="editor-copy-kembalikan-semua" tone="quiet" size="sm" :disabled="!canEditDesign" @click="kembalikanCopy">
+                <RotateCcw :size="15" aria-hidden="true" />
+                Kembalikan semua
+              </UiButton>
+            </div>
           </section>
         </template>
         </DashboardEditorInspector>
