@@ -3,7 +3,7 @@ import type { Section } from '~/types/aruna'
 import { toAttire, toDresscodeColors } from '~/utils/invitation-options'
 
 const props = defineProps<{ section: Section; seed: number }>()
-const { orn, intensity, compact } = useInvitation()
+const { orn, intensity, compact, t } = useInvitation()
 
 const attire = computed(() => toAttire(props.section.data.attire))
 const colors = computed(() => toDresscodeColors(props.section.data.colors))
@@ -15,8 +15,8 @@ const note = computed(() => text(props.section, 'text'))
     id="iv-dresscode"
     tone="tint"
     :compact="compact"
-    kicker="Dresscode"
-    title="Yang kami harapkan dikenakan"
+    :kicker="t('dresscode.kicker')"
+    :title="t('dresscode.title')"
     :ornaments="compact ? null : orn"
     :intensity="intensity"
     :seed="props.seed"
@@ -50,7 +50,7 @@ const note = computed(() => text(props.section, 'text'))
 
     <p v-if="note" data-iv-reveal class="iv-body m-0 max-w-md">{{ note }}</p>
     <p v-else-if="!attire.length && !colors.length" data-iv-reveal class="iv-display m-0 text-[clamp(1.6rem,6cqw,2.4rem)]">
-      Kenakan yang membuat Anda nyaman.
+      {{ t('dresscode.note') }}
     </p>
   </InvitationSection>
 </template>

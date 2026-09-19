@@ -62,7 +62,7 @@ export class InvitationsService {
     // Aturan yang sama persis dipakai editor untuk mematikan kontrolnya, supaya kontrol
     // yang terlihat hidup tidak pernah berujung pada autosave yang ditolak.
     const designUnlocked = canEditDesign({ isOperator: isOperator(user), features: existing.entitlements.map((item) => item.featureId) });
-    if (!designUnlocked && hasDesignChange(existing.draftDocument, document)) throw new BadRequestException('Perubahan warna, huruf, latar, ornamen, atau urutan section memerlukan add-on desain');
+    if (!designUnlocked && hasDesignChange(existing.draftDocument, document)) throw new BadRequestException('Perubahan warna, huruf, latar, ornamen, kata-kata, atau urutan section memerlukan add-on desain');
     const update = await this.prisma.invitation.updateMany({ where: { id: invitationId, draftRevision: revision }, data: { draftDocument: toJson(document), draftRevision: { increment: 1 } } });
     if (!update.count) {
       const current = await this.prisma.invitation.findUnique({ where: { id: invitationId }, select: { draftRevision: true, draftDocument: true } });
@@ -147,7 +147,27 @@ function isPrismaUniqueError(error: unknown): boolean { return typeof error === 
 export function designFingerprint(document: InvitationDocument): string {
   const tokens = Object.fromEntries(Object.entries(document.tokens ?? {}).sort(([a], [b]) => (a < b ? -1 : 1)));
   const cover = document.sections?.find((section) => section.type === 'cover');
-  return JSON.stringify({ tokens, order: document.sections?.map((section) => section.id) ?? [], ornaments: kanonik(cover?.data?.ornamentOverrides) });
+  return JSON.stringify({
+    tokens,
+    order: document.sections?.map((section) => section.id) ?? [],
+    ornaments: kanonik(cover?.data?.ornamentOverrides),
+    // Kata-kata (fase 69) ikut digerbangi — keputusan pemilik: seluruh "tema sendiri" masuk
+    // add-on desain. `{}` dan absen sama-sama `null`, supaya form yang dikosongkan kembali tidak
+    // terbaca sebagai perubahan.
+    copy: kanonikCopy(document.copy),
+  });
+}
+
+/** Hanya string, kunci tersortir; kosong → `null`. Kunci asing tidak dibuang di sini — schema sudah menolaknya. */
+function kanonikCopy(value: unknown): Record<string, string> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const masuk = value as Record<string, unknown>;
+  const keluar: Record<string, string> = {};
+  for (const key of Object.keys(masuk).sort()) {
+    const nilai = masuk[key];
+    if (typeof nilai === 'string') keluar[key] = nilai;
+  }
+  return Object.keys(keluar).length ? keluar : null;
 }
 
 /**

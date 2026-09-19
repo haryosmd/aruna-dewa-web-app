@@ -188,6 +188,49 @@ export function templateById(id: string) {
   return templates.find(template => template.id === live)
 }
 
+/**
+ * Kata-kata undangan yang boleh ditulis ulang pasangan (fase 69).
+ *
+ * Daftar kuncinya **tertutup** dan batas panjangnya per jenis, bukan `z.record(z.string())`:
+ * setiap kunci di sini punya satu tempat render yang pasti, dan renderer hanya membaca kunci yang
+ * ia kenal — kunci asing tidak pernah bisa "muncul" di undangan, jadi tidak ada gunanya
+ * menyimpannya. Nilai bawaan tiap kunci hidup di `apps/web/utils/invitation-copy.ts`, bukan di
+ * sini: kontrak menetapkan apa yang boleh diubah, wajah tema menetapkan bunyinya.
+ *
+ * String konten yang sudah lama bisa disunting lewat `section.data` (deskripsi mempelai, judul
+ * cerita, catatan hadiah, penutup) **tidak** dipindah ke sini. Yang masuk hanya kalimat sistem
+ * yang selama ini ditulis mati di komponen: kicker, judul bagian, label tombol, kalimat gerbang.
+ */
+export const copyKeys = [
+  'gate.kicker', 'gate.greeting', 'gate.noGuest', 'gate.open', 'gate.music',
+  'cover.kicker',
+  'couple.kicker',
+  'events.kicker', 'events.title', 'events.map', 'events.calendar',
+  'countdown.kicker', 'countdown.arrived', 'countdown.tba',
+  'gallery.kicker', 'gallery.title',
+  'story.kicker', 'story.closing',
+  'rundown.kicker', 'rundown.title',
+  'dresscode.kicker', 'dresscode.title', 'dresscode.note',
+  'video.kicker', 'video.open',
+  'gift.kicker', 'gift.fallbackNote',
+  'rsvp.kicker', 'rsvp.title', 'rsvp.thanks', 'rsvp.confirmed', 'rsvp.declined', 'rsvp.prayer',
+  'rsvp.yes', 'rsvp.yesHint', 'rsvp.no', 'rsvp.noHint', 'rsvp.seats', 'rsvp.message', 'rsvp.submit',
+  'wishes.kicker', 'wishes.title', 'wishes.add', 'wishes.submit',
+] as const
+export type CopyKey = (typeof copyKeys)[number]
+
+/** Batas panjang per jenis kunci: label dan tombol 40, judul 80, kalimat 240. */
+export function copyLimit(key: CopyKey): number {
+  if (/\.(kicker|open|map|calendar|yes|no|seats|submit|add|confirmed|declined)$/.test(key)) return 40
+  if (/\.title$/.test(key)) return 80
+  return 240
+}
+
+export const copySchema = z.object(
+  Object.fromEntries(copyKeys.map(key => [key, z.string().max(copyLimit(key))])) as Record<CopyKey, z.ZodString>,
+).partial().strict()
+export type InvitationCopy = z.infer<typeof copySchema>
+
 const color = z.string().regex(/^#[0-9a-fA-F]{6}$/)
 export const invitationDocumentSchema = z.object({
   schemaVersion: z.literal(1), templateId: z.enum(templateIds), templateVersion: z.literal(1),
@@ -213,6 +256,8 @@ export const invitationDocumentSchema = z.object({
   sections: z.array(z.object({
     id: z.string().min(1).max(80), type: z.enum(sectionTypes), enabled: z.boolean(), data: z.record(z.unknown()),
   }).strict()).min(1).max(30),
+  /** Opsional, seperti key `tokens` fase 59: absen berarti ikut kata-kata tema. Lihat `copyKeys`. */
+  copy: copySchema.optional(),
 }).strict().superRefine((document, ctx) => {
   if (new Set(document.sections.map(s => s.id)).size !== document.sections.length) ctx.addIssue({ code: 'custom', path: ['sections'], message: 'ID section harus unik.' })
   if (JSON.stringify(document).length > 200_000) ctx.addIssue({ code: 'custom', message: 'Konten terlalu besar.' })

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { CopyKey } from '@aruna/contracts'
+import { pilihCopy, resolveCopy } from '~/utils/invitation-copy'
 import type { Component } from 'vue'
 import type { GuestProfile, InvitationDocument, RsvpPayload, Section, Wish } from '~/types/aruna'
 import { toOrnamentOverrides } from '~/utils/invitation-options'
@@ -194,11 +196,15 @@ function onGateOpen() {
  * Konteks bersama, bukan tiga belas daftar prop. Setiap section mengambil potongan yang
  * dibutuhkannya lewat `useInvitation()`.
  */
+const copy = computed(() => resolveCopy(props.document.copy))
+const t = (key: CopyKey) => pilihCopy(copy.value, key)
+
 provideInvitation({
   document: computed(() => props.document),
   orn,
   intensity,
   compact: computed(() => props.compact),
+  t,
   coupleNames,
   initials,
   greeting: computed(() => props.greeting),

@@ -4,7 +4,7 @@ import type { Section, Wish } from '~/types/aruna'
 import { sampleWishes } from '~/content/sample-wishes'
 
 const props = defineProps<{ section: Section; seed: number }>()
-const { orn, intensity, compact, wishes, wishPending, guest, hasToken, submitWish } = useInvitation()
+const { orn, intensity, compact, wishes, wishPending, guest, hasToken, submitWish, t } = useInvitation()
 
 const PER_PAGE = 5
 const page = ref(0)
@@ -52,8 +52,8 @@ function react(id: string, emoji: string) {
     id="iv-wishes"
     tone="paper"
     :compact="compact"
-    kicker="Ucapan dan doa"
-    title="Doa baik dari orang tersayang"
+    :kicker="t('wishes.kicker')"
+    :title="t('wishes.title')"
     :ornaments="compact ? null : orn"
     :intensity="intensity"
     :seed="props.seed"
@@ -122,12 +122,12 @@ function react(id: string, emoji: string) {
 
     <form v-if="!compact && guest" class="grid w-full max-w-md gap-3 text-left" @submit.prevent="send">
       <label class="grid gap-1.5">
-        <span class="iv-kicker">Tambahkan ucapan</span>
+        <span class="iv-kicker">{{ t('wishes.add') }}</span>
         <textarea id="iv-wish-message" v-model="message" rows="3" maxlength="500" class="iv-control resize-y" />
       </label>
       <button id="iv-wish-submit" type="submit" class="iv-submit" :disabled="wishPending || !message.trim()">
         <Heart :size="16" aria-hidden="true" />
-        {{ wishPending ? 'Mengirim…' : 'Kirim ucapan' }}
+        {{ wishPending ? 'Mengirim…' : t('wishes.submit') }}
       </button>
     </form>
 

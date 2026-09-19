@@ -1,4 +1,5 @@
 import type { InjectionKey, Ref } from 'vue'
+import type { CopyKey } from '@aruna/contracts'
 import type { GuestProfile, InvitationDocument, RsvpPayload, Section, Wish } from '~/types/aruna'
 import type { OrnamentIntensity, OrnamentSet } from '~/utils/ornaments'
 
@@ -16,6 +17,12 @@ export interface InvitationContext {
   orn: Ref<OrnamentSet>
   intensity: Ref<OrnamentIntensity>
   compact: Ref<boolean>
+  /**
+   * Kata-kata yang berlaku untuk kunci di `copyKeys` (fase 69): milik pasangan bila ia menulis
+   * ulang, bawaan tema bila tidak. Fungsi, bukan objek, supaya section tidak perlu tahu di mana
+   * bawaannya disimpan — dan supaya pemanggilnya tetap reaktif lewat `document`.
+   */
+  t: (key: CopyKey) => string
   coupleNames: Ref<string>
   initials: Ref<string>
   greeting: Ref<string>

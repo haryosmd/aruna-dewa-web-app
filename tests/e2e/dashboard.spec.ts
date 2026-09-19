@@ -1025,3 +1025,52 @@ test.describe('studio ornamen', () => {
     await expect(page.locator('#ornament-ganti-divider')).toHaveAttribute('aria-describedby', 'ornament-locked')
   })
 })
+
+/*
+ * Kata-kata (fase 69): kalimat sistem yang dulu ditulis mati kini bisa ditulis ulang dari tab
+ * Tema, dan hasilnya terlihat di panggung pratinjau tanpa memuat ulang. Yang diperiksa lewat
+ * `rsvp.yes`, bukan `gate.open`: gerbang tidak dirender di pratinjau `compact`, sedangkan kartu
+ * RSVP ada di panggung — jadi satu tes mengukur form, dokumen, autosave, dan renderer sekaligus.
+ */
+test.describe('kata-kata undangan', () => {
+  test('menulis ulang label RSVP, tampil di pratinjau, bertahan setelah muat ulang', async ({ page }) => {
+    test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
+    await signIn(page)
+    await page.goto(`/dashboard/${account!.invitationId}/editor`)
+    await hydrated(page)
+    const berdampingan = () => page.evaluate(() => matchMedia('(min-width: 80rem)').matches)
+
+    await page.locator('#editor-inspector-tema').click()
+    const kembalikan = page.locator('#editor-copy-kembalikan')
+    if (await kembalikan.count()) {
+      await kembalikan.click()
+      await saveDraft(page)
+    }
+
+    const grupRsvp = page.locator('details', { has: page.locator('summary', { hasText: 'RSVP' }) })
+    await grupRsvp.locator('summary').click()
+    const kolom = page.locator('#editor-copy-rsvp-yes')
+    await expect(kolom).toHaveAttribute('placeholder', 'Hadir')
+    await kolom.fill('Datang')
+    await kolom.press('Tab')
+    await expect(grupRsvp.locator('summary')).toContainText('1 diubah')
+
+    const stage = await openPreview(page)
+    await expect(stage.locator('#iv-rsvp')).toContainText('Datang')
+    if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
+    await saveDraft(page)
+
+    await page.reload()
+    await hydrated(page)
+    await page.locator('#editor-inspector-tema').click()
+    await expect(page.locator('#editor-copy-kembalikan')).toBeVisible()
+    const grupLagi = page.locator('details', { has: page.locator('summary', { hasText: 'RSVP' }) })
+    await grupLagi.locator('summary').click()
+    await expect(page.locator('#editor-copy-rsvp-yes')).toHaveValue('Datang')
+
+    // Kosongkan = kembali ke bawaan, dan dokumen tidak lagi membawa `copy`.
+    await page.locator('#editor-copy-kembalikan').click()
+    await expect(page.locator('#editor-copy-kembalikan')).toHaveCount(0)
+    await saveDraft(page)
+  })
+})

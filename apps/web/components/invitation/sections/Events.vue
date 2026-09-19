@@ -4,7 +4,7 @@ import type { Section } from '~/types/aruna'
 import { toVenueIllustration } from '~/utils/invitation-options'
 
 const props = defineProps<{ section: Section; seed: number }>()
-const { orn, intensity, compact, coupleNames } = useInvitation()
+const { orn, intensity, compact, coupleNames, t } = useInvitation()
 
 const events = computed(() => rows(props.section, 'events'))
 const venue = computed(() => toVenueIllustration(props.section.data.venueIllustration))
@@ -40,8 +40,8 @@ function calendarUrl(event: Record<string, unknown>) {
     id="iv-events"
     tone="tint"
     :compact="compact"
-    kicker="Rangkaian acara"
-    title="Akad & Resepsi"
+    :kicker="t('events.kicker')"
+    :title="t('events.title')"
     :ornaments="compact ? null : orn"
     :intensity="intensity"
     :seed="props.seed"
@@ -85,10 +85,10 @@ function calendarUrl(event: Record<string, unknown>) {
             rel="noreferrer"
             class="iv-chip"
           >
-            <MapPin :size="15" aria-hidden="true" /> Buka peta
+            <MapPin :size="15" aria-hidden="true" /> {{ t('events.map') }}
           </a>
           <a :href="calendarUrl(event)" target="_blank" rel="noreferrer" class="iv-chip">
-            <CalendarPlus :size="15" aria-hidden="true" /> Simpan ke kalender
+            <CalendarPlus :size="15" aria-hidden="true" /> {{ t('events.calendar') }}
           </a>
         </div>
       </li>

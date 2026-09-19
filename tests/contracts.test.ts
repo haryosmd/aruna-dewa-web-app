@@ -37,6 +37,13 @@ describe('document and pricing boundaries', () => {
     expect(() => priceOrder('mula',['story','story'])).toThrow()
     expect(() => priceOrder('free',[])).toThrow()
   })
+  it('accepts the closed copy layer and rejects strangers (fase 69)', () => {
+    const base = createDefaultDocument()
+    expect(base.copy).toBeUndefined()
+    expect(invitationDocumentSchema.safeParse({ ...base, copy: { 'gate.open': 'Buka' } }).success).toBe(true)
+    expect(invitationDocumentSchema.safeParse({ ...base, copy: { 'gate.open': 'a'.repeat(41) } }).success).toBe(false)
+    expect(invitationDocumentSchema.safeParse({ ...base, copy: { 'kunci.asing': 'x' } }).success).toBe(false)
+  })
   it('ships a valid preset for every template', () => {
     for (const template of templates) {
       const document = createDefaultDocument('Aruna', 'Dewa', template.id)

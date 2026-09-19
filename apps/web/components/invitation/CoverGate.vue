@@ -2,6 +2,17 @@
 import { MailOpen, Volume2 } from 'lucide-vue-next'
 import type { OrnamentSet } from '~/utils/ornaments'
 import type { OrnamentIntensity } from '~/utils/ornaments'
+import type { CopyKey } from '@aruna/contracts'
+import { invitationKey } from '~/composables/useInvitationContext'
+import { copyDefaults } from '~/utils/invitation-copy'
+
+/*
+ * Kata-kata gerbang (fase 69). Gerbang selalu anak `InvitationRenderer`, tapi `inject` diberi
+ * cadangan bawaan supaya ia tetap bisa dirender sendirian — mis. di pratinjau motion — tanpa
+ * melempar seperti `useInvitation()`.
+ */
+const konteks = inject(invitationKey, null)
+const t = (key: CopyKey) => konteks?.t(key) ?? copyDefaults[key]
 
 const props = withDefaults(
   defineProps<{
@@ -119,7 +130,7 @@ function finish() {
             style="background: color-mix(in srgb, #ffffff 90%, var(--iv-bg)); box-shadow: 0 12px 30px -14px rgb(0 0 0 / 0.55)"
           >
             <OrnamentGlyph :glyph="props.ornaments.divider" data-iv-ornament class="h-4 w-28 opacity-70" :style="{ color: 'var(--iv-primary)' }" />
-            <p class="iv-kicker m-0">Undangan pernikahan</p>
+            <p class="iv-kicker m-0">{{ t('gate.kicker') }}</p>
             <p class="iv-display iv-script m-0 text-[1.7rem] leading-none">{{ props.couple }}</p>
             <p v-if="props.date" class="iv-body m-0 text-[0.75rem]">{{ props.date }}</p>
           </div>
@@ -154,11 +165,11 @@ function finish() {
         </div>
 
         <div class="grid justify-items-center gap-2 text-center">
-          <p class="iv-kicker m-0">Undangan pernikahan</p>
+          <p class="iv-kicker m-0">{{ t('gate.kicker') }}</p>
           <p v-if="props.greeting" class="iv-body m-0 text-[0.9375rem]">
-            Kepada Yth.<br><span class="iv-display text-[1.35rem]">{{ props.greeting }}</span>
+            {{ t('gate.greeting') }}<br><span class="iv-display text-[1.35rem]">{{ props.greeting }}</span>
           </p>
-          <p v-else class="iv-body m-0 text-[0.9375rem]">Tanpa mengurangi rasa hormat, kami mengundang Anda.</p>
+          <p v-else class="iv-body m-0 text-[0.9375rem]">{{ t('gate.noGuest') }}</p>
         </div>
       </div>
 
@@ -170,7 +181,7 @@ function finish() {
         @click="open"
       >
         <MailOpen :size="18" aria-hidden="true" />
-        Buka Undangan
+        {{ t('gate.open') }}
       </button>
 
       <!--
@@ -179,7 +190,7 @@ function finish() {
       -->
       <p v-if="props.hasMusic" class="iv-body m-0 -mt-4 mx-auto flex max-w-[19rem] items-start justify-center gap-1.5 text-center text-[0.8125rem] opacity-75">
         <Volume2 :size="15" class="mt-0.5 shrink-0" aria-hidden="true" />
-        <span>Undangan ini memakai musik latar — nyalakan suara ponselmu.</span>
+        <span>{{ t('gate.music') }}</span>
       </p>
     </div>
   </div>

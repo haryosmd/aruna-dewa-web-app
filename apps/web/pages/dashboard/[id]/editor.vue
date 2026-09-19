@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { copyDefaults } from '~/utils/invitation-copy'
+import type { CopyKey } from '@aruna/contracts'
 import { canEditDesign as designUnlocked, createDefaultDocument, designFeatureId, galleryPhotoLimit, giftAccountLimit, invitationDocumentSchema, isLiveTemplateId, normalizeGift, selectableBodyFonts, selectableFonts, templateById, type BackdropChoice, type BackdropWeight, type FontChoice, type LiveTemplateId } from '@aruna/contracts'
 import {
   selectableAttire, selectableCoverLayouts, selectableGalleryMotions, selectableVenues,
@@ -472,6 +474,30 @@ function tulisBackdrop(pilihan: BackdropChoice) {
 function tulisBackdropWeight(bobot: BackdropWeight) {
   checkpoint()
   document.value.tokens.backdropWeight = bobot
+}
+
+/* ── Kata-kata (fase 69) ─────────────────────────────────────────────────────── */
+
+/**
+ * Nilai kosong atau sama dengan bawaan DIHAPUS, bukan disimpan — alasan yang sama dengan
+ * `tulisBackdrop`: dokumen hanya membawa pendapat yang benar-benar berbeda dari tema, dan
+ * `copy` yang kosong ikut dihapus supaya `designFingerprint` tidak membedakan `{}` dari absen.
+ */
+function tulisCopy(key: CopyKey, value: string) {
+  if (!canEditDesign.value) return
+  checkpoint()
+  const rapi = value.trim()
+  const copy = { ...(document.value.copy ?? {}) }
+  if (!rapi || rapi === copyDefaults[key]) delete copy[key]
+  else copy[key] = rapi
+  if (Object.keys(copy).length) document.value.copy = copy
+  else delete document.value.copy
+}
+
+function kembalikanCopy() {
+  if (!canEditDesign.value || !document.value.copy) return
+  checkpoint()
+  delete document.value.copy
 }
 
 const coverLayout = computed(() => toCoverLayout(selected.value?.data.layout))
@@ -1607,6 +1633,13 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
               :terkunci="!canEditDesign"
               @update:pilihan="tulisBackdrop"
               @update:bobot="tulisBackdropWeight"
+            />
+
+            <DashboardEditorCopyForm
+              :copy="document.copy"
+              :terkunci="!canEditDesign"
+              @tulis="tulisCopy"
+              @kembalikan="kembalikanCopy"
             />
           </section>
         </template>

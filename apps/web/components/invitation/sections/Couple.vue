@@ -2,7 +2,7 @@
 import type { Section } from '~/types/aruna'
 
 const props = defineProps<{ section: Section; seed: number }>()
-const { orn, intensity, compact, coupleNames, galleryImages } = useInvitation()
+const { orn, intensity, compact, coupleNames, galleryImages, t } = useInvitation()
 
 const photo = computed(() => text(props.section, 'image') || galleryImages.value[0] || '')
 
@@ -19,7 +19,7 @@ const entrance = computed(() => ['rise', 'sweep-left', 'sweep-right', 'iris'][Ma
     id="iv-couple"
     tone="paper"
     :compact="compact"
-    kicker="Dengan penuh sukacita"
+    :kicker="t('couple.kicker')"
     :ornaments="compact ? null : orn"
     :intensity="intensity"
     :seed="props.seed"
