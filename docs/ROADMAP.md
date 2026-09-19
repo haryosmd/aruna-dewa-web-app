@@ -43,6 +43,51 @@ alasannya.
 
 ## Sisa
 
+**Fase 72 — kanvas bagian: menambah, mengukur, dan menggerakkan elemen di panggung.** Ditulis
+2026-09-19 dari catatan pemilik yang keempat di atas tangkapan layar editor, **belum
+dikerjakan** — pemilik memilih rencana tertulis dulu. Permintaannya: "agak kurang leluasa" —
+ingin menambah ornamen di kiri/kanan/atas/bawah sebuah bagian, membesar-kecilkan huruf,
+menggeser seperti Figma atau setidaknya klik lalu ada pengaturan ukurannya, mengatur gerak per
+aset, dan saat melayang di atas bagian yang polos melihat area yang mengatakan "di sini bisa
+ditambah sesuatu", termasuk di tengah bagian.
+
+*Jarak dari hari ini.* Ornamen adalah sebelas slot global bernilai satu id (`ornament-slots.ts`),
+posisinya ditulis mati per section (`Couple.vue` menaruh `floral` di atas nama dengan kelas
+Tailwind tetap), dan ladang latar memilih dari empat resep `Placement[]` literal dengan delapan
+jangkar enum (`OrnamentField.vue`). Tidak ada skala huruf per bagian — hanya fluid type scale
+global di `main.css` — dan gerak hanya `tokens.motion { amplop, masuk }` untuk seluruh undangan.
+Tidak ada entitas "elemen" sama sekali; `sections[].data` masih `z.record(z.unknown())` dan
+`designFingerprint` di API hanya membaca `tokens`, `copy`, `ornamentOverrides`, dan `unggahan`.
+
+*Model data yang diusulkan.* `sections[].data.elemen: Elemen[]`, tiap elemen `{ id, jenis:
+'ornamen' | 'teks', sumber: id bank atau unggahan, jangkar: 'atas' | 'bawah' | 'kiri' |
+'kanan' | 'tengah' | 'sudut-kiri-atas' | …, geser: { x, y } dalam persen lebar render 390,
+skala 0.25–3, putar dalam derajat, cermin, opasitas, gerak: { preset dari partitur tema, tunda
+dalam detik } }`. Koordinat relatif lebar 390 supaya konsisten lewat `PhoneFrame` yang
+merender 390 lalu `scale()` — mengukur dalam px layar akan salah di setiap lebar selain yang
+dipakai saat menyunting. Divalidasi zod di contracts (bukan lagi `unknown`), dibatasi
+jumlahnya per bagian (usul: 6) dan tetap di bawah pagar 200 KB dokumen; `designFingerprint`
+membaca `elemen` supaya kanvas ikut terkunci di balik add-on `design`. Skala huruf **per
+bagian**, bukan per elemen: `data.skalaHuruf` 0.8–1.4 yang diterjemahkan `Section.vue` ke
+`--iv-scale` — kontrol per elemen untuk teks akan melanggar aturan DESIGN.md soal script di
+paragraf dan kontras yang sudah diaudit.
+
+*Urutan irisan, dari yang paling kecil dan paling banyak menjawab.* **72.1** area "+" saat
+melayang: `Stage.vue` menggambar lima jangkar tembus (atas, bawah, kiri, kanan, tengah) di atas
+`#iv-<type>` yang sedang disorot, hit-test lewat `getBoundingClientRect` karena panggung
+di-`scale()`; klik membuka Studio dalam mode "tambah ke jangkar", dan ini yang pertama karena
+ia menjawab "bagaimana saya menambah sesuatu di sini" tanpa drag sama sekali. **72.2** klik
+elemen → inspektor menampilkan ukuran, putar, opasitas, cermin, dan gerak sebagai kontrol
+bernomor (slider berpasangan input) — kontrol yang bisa diketik lebih dulu daripada yang harus
+diseret, karena angka bisa diulang, diundo, dan diakses dari keyboard. **72.3** skala huruf per
+bagian dengan pratinjau langsung dan laporan kontras yang sudah ada. **72.4** geser dan ubah
+ukuran langsung di panggung: pointer events di atas `transform: scale`, snap ke jangkar,
+nudge 1px/10px dari keyboard, dan `aria-live` yang membaca posisi — lapisan terakhir, bukan
+pertama, karena tanpa 72.2 elemen yang diseret tidak punya cara lain untuk diperbaiki.
+**Batas yang sengaja:** gerak tetap memilih preset partitur tema (bukan easing bebas), tidak
+ada font per elemen, unggahan tetap raster. Tiap irisan satu fase tersendiri dengan angka
+terukurnya; 72.1 baru dimulai setelah pemilik menyetujui bentuk model datanya.
+
 **Fase 71 — form bagian yang utuh, dan gulir yang bocor lewat `sr-only`.** Ditulis 2026-09-19
 dari tiga catatan pemilik di atas tangkapan layar editor: halaman editor di 1440×900 masih bisa
 digulir sebagai halaman — studio naik, sisanya putih — padahal ketiga panel sudah menggulung
@@ -74,6 +119,21 @@ dirender tiap section, dibaca dari `components/invitation/` dan dijaga vitest ya
 sumbernya — dan `SlotSummary` menerima `slots` supaya form tiap bagian memuat kartu "Ornamen di
 bagian ini" berisi hanya slot itu; nilainya tetap global (satu keping dipakai beberapa bagian)
 dan kartunya mengatakan itu. Cover tetap memegang ringkasan penuh enam belas slot.
+
+**Fase 71 selesai 2026-09-19.** Terukur di 1440×900: `document.scrollHeight` 2168 → 900 dan
+`scrollTo(0, 9999)` tetap di 0 pada tab Bagian (musik, cover) maupun Tema. Form RSVP kini:
+kolom isi → kartu "Ornamen di bagian ini" (Rangkaian, Segel) → tiga belas kolom tulisan dalam
+empat sub-blok ("Judul & pengantar", "Pilihan jawaban", "Tombol", "Pesan setelah menjawab");
+axe 0 pelanggaran pada panel bagian RSVP. Mempelai memuat tiga slot (Rangkaian, Sudut, Pemisah),
+tanpa keping latar dan tanpa kembalikan-semua. Hint per kolom yang terulang tiga belas kali
+diganti satu kalimat di kepala kartu. Vitest 1133 (web 13 spec copy, 35 spec slot termasuk
+penjaga yang membaca sumber section), `lint`, `typecheck` hijau. E2e `dashboard.spec.ts` 72/84 di
+empat project: yang merah adalah `signing in elsewhere` (empat project) dan `device preview`
+safari — keduanya diulang pada worktree commit **sebelum** fase 71 dengan pasangan port sendiri
+dan gagal dengan angka yang sama persis (`login?next=` tanpa `reason`, 5832 < 5923), jadi
+bukan regresi fase ini melainkan keadaan fixture/stack lokal; `background music` safari lulus
+saat diulang. Tab browser yang membuka editor 3000 dengan akun QA yang sama ternyata juga
+mencabut sesi tes — ditutup sebelum pengukuran ulang.
 
 **Fase 70 — rail menggulir panggung, kartu ornamen bersih, bank bingkai dirapikan.** Ditulis
 2026-09-19 dari tiga catatan pemilik di atas tangkapan layar editor dan Studio Ornamen: memilih

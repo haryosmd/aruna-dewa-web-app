@@ -60,6 +60,16 @@ function simpan(key: CopyKey) {
       </span>
     </p>
 
+    <!--
+      Satu kalimat untuk seluruh kartu, bukan hint per kolom: pada RSVP ada tiga belas kolom, dan
+      "Kosongkan untuk kembali ke bawaan" yang diulang tiga belas kali menenggelamkan labelnya.
+      Batas karakter tidak ditulis — `maxlength` yang menjaganya, dan angka itu bukan keputusan
+      yang perlu diambil pasangan sebelum mengetik.
+    -->
+    <p class="m-0 text-caption text-ink-subtle">
+      Tulisan samar di dalam kolom adalah bawaan tema; kosongkan kolom untuk kembali ke sana.
+    </p>
+
     <fieldset
       v-for="(cluster, index) in clusters"
       :key="cluster.judul"
@@ -79,7 +89,6 @@ function simpan(key: CopyKey) {
         :id="idKolom(field.key)"
         :key="field.key"
         :label="field.label"
-        :hint="`Kosongkan untuk kembali ke bawaan tema. Maksimal ${copyLimit(field.key)} karakter.`"
       >
         <template #default="{ id, describedBy }">
           <UiTextarea

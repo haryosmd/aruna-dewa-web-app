@@ -1,5 +1,17 @@
 # Revision history
 
+## 2026-09-19: Fase 71 — form bagian yang utuh, gulir yang bocor
+
+- **Gulir bocor** (71.1): label `UiDropzone` jadi `relative` (input `sr-only`-nya absolut tanpa
+  leluhur ber-posisi → `scrollHeight` 2168 pada viewport 900); akar `DashboardShell` studio
+  `lg:relative lg:h-svh lg:overflow-hidden`. E2e "studio tidak menarik gulir dokumen".
+- **Tulisan bagian** (71.2): `CopyForm` (tab Tema) → `CopyFields` di tab Bagian; label per fungsi,
+  `kelompok` per kolom, `copyGroupsFor`/`copyKeysFor`/`copyClustersFor`, `kembalikanCopyBagian`.
+  Tab Tema hanya ringkasan + "Kembalikan semua". E2e "tulisan bagian" menggantikan "kata-kata undangan".
+- **Ornamen di bagian ini** (71.3): `sectionOrnamentSlots` (dijaga vitest yang membaca
+  `components/invitation/`), `SlotSummary` prop `slots`; `ornamentOverrides` editor dibaca dari cover.
+- **Fase 72** ditulis (kanvas bagian), belum dikerjakan.
+
 ## 2026-09-19: Fase 69 — "Buat tema versi Anda sendiri" (langkah 1–4, 6)
 
 - **Kata-kata** (69.1): `copyKeys` (44) + `copy` opsional; `t()` di renderer; `CopyForm` di tab
