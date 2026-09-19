@@ -133,7 +133,11 @@ safari — keduanya diulang pada worktree commit **sebelum** fase 71 dengan pasa
 dan gagal dengan angka yang sama persis (`login?next=` tanpa `reason`, 5832 < 5923), jadi
 bukan regresi fase ini melainkan keadaan fixture/stack lokal; `background music` safari lulus
 saat diulang. Tab browser yang membuka editor 3000 dengan akun QA yang sama ternyata juga
-mencabut sesi tes — ditutup sebelum pengukuran ulang.
+mencabut sesi tes — ditutup sebelum pengukuran ulang. Di CI PR #6, `verify` hijau tapi e2e desktop merah pada
+`dashboard screens are accessible`: `color-contrast` di halaman editor tanpa node — `useArunaMotion`
+men-tween `opacity` dari 0 dan runner yang lambat membuat axe membaca panggung di tengah tween.
+Scan dasbor kini mengecualikan `[data-preview-stage]` (undangan diaudit di `public.spec.ts` pada
+ukuran aslinya) dan pesan assert-nya menuliskan target node.
 
 **Fase 70 — rail menggulir panggung, kartu ornamen bersih, bank bingkai dirapikan.** Ditulis
 2026-09-19 dari tiga catatan pemilik di atas tangkapan layar editor dan Studio Ornamen: memilih

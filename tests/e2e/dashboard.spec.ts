@@ -155,8 +155,17 @@ test('dashboard screens are accessible and titled', async ({ page }) => {
     await page.goto(path)
     await expect(page.locator('h1')).toBeVisible()
     expect(await page.title(), `${path} needs a title`).not.toBe('')
-    const scan = await new AxeBuilder({ page }).exclude('nuxt-devtools-frame').withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
-    expect(scan.violations.map(v => `${path} ${v.id}`)).toEqual([])
+    /*
+     * Panggung pratinjau dikecualikan, bukan karena undangannya boleh gagal kontras — ia
+     * diaudit di `public.spec.ts` pada ukuran aslinya — melainkan karena `useArunaMotion`
+     * men-tween `opacity` dari 0 dan axe membaca elemen yang sedang di-tween sebagai teks
+     * pudar. Di runner CI yang lambat scan ini jatuh di tengah tween (kena 2026-09-19: merah di
+     * CI desktop saja, bersih di empat putaran lokal); layar yang diukur di sini adalah dasbornya.
+     */
+    const scan = await new AxeBuilder({ page }).exclude('nuxt-devtools-frame').exclude('[data-preview-stage]').withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
+    // Node-nya ikut ditulis: "color-contrast" tanpa target adalah laporan yang tidak bisa diperbaiki
+    // dari log CI — kena 2026-09-19, gagal di CI desktop saja dan bersih di empat putaran lokal.
+    expect(scan.violations.map(v => `${path} ${v.id}: ${v.nodes.map(n => `${n.target.join(' ')} ${JSON.stringify(n.any[0]?.data ?? {})}`).join(' | ')}`)).toEqual([])
   }
 })
 
