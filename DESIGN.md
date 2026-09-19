@@ -145,13 +145,32 @@ Body minimal 16px. Heading pakai `text-balance`, paragraf pakai `text-pretty`. S
 - **Shadow** 5 tingkat: `hairline · lift · float · veil · glow-primary`. Warna bayangan berbasis ink hangat (`rgb(23 17 13 / …)`), bukan hitam netral.
 - **Easing** `--ease-out-expo`, `--ease-out-quart`, `--ease-spring`, `--ease-in-out-soft`.
 - **Durasi** `120 · 200 · 320 · 520 · 840ms`.
-- **Z-index** `base 0 · raised 10 · sticky 20 · dock 30 · overlay 40 · modal 50 · toast 60`.
+- **Z-index** `base 0 · raised 10 · sticky 20 · dock 30 · overlay 40 · modal 50 · toast 60 · tooltip 70`.
+  Tooltip di atas toast: ia menempel pada kontrol yang bisa hidup di dalam modal dan tidak pernah
+  menutupi apa pun yang perlu diklik.
 - **Container** maks 1280px; gutter 20 / 32 / 48px. Ruang section 64px mobile → 112px desktop.
 - **Lebar konten dasbor** dua tingkat, lewat prop `width` di `DashboardShell`. `reading` (1024px)
   untuk layar yang dibaca — ringkasan, tamu, RSVP, pesanan; `wide` (1536px) untuk layar yang
   dikerjakan, sejauh ini cuma editor. Satu angka untuk semuanya selalu salah di salah satu sisi:
   1024px membuat kolom pengaturan editor tinggal 312px, 1536px membuat tabel tamu jadi baris
-  sepanjang layar.
+  sepanjang layar. **Rail navigasi** `16rem`, ciut `3.5rem` (fase 67) lewat `useDashboardPrefs`
+  (`aruna:dashboard:prefs`, `initOnMounted` — bawaan lebar di server, ditukar sesudah mount, dan
+  transisi lebarnya baru dipasang sesudah itu supaya muat halaman tidak diawali animasi ciut).
+  Berlaku di semua halaman dasbor; editor tidak memaksanya. Toggle di baris brand, sejajar toggle
+  rail struktur editor.
+- **Studio** (`variant="studio"` di `DashboardShell`, sejak fase 62) untuk layar yang **dikerjakan
+  di dalam panel**: `<main>` setinggi layar di `lg`, tanpa `max-w`/padding, dan **halaman tidak
+  menggulung — panelnya yang menggulung** (`min-h-0 overflow-y-auto` di tiap panel, baris grid
+  `minmax(0,1fr)`). Jalur editor: rail `17rem` (ciut `3.5rem`) · panggung `minmax(0,1fr)` ·
+  inspektor `22rem` (`2xl` 24rem). Kedua rail — navigasi dasbor dan struktur — ciut dengan pola
+  yang sama (`PanelLeftClose`/`PanelLeftOpen`, `aria-expanded`, 56px, ikon 44×44 ber-`aria-label`
+  **dan** `UiTooltip` di kanan); terukur di 1440 dengan Laptop: panggung 512 → 928px. Setiap
+  tingkat memakai `minmax(0,1fr)`, **termasuk satu kolom
+  di ponsel**: `grid` polos memberi `minmax(auto,1fr)`, dan `auto` membuat panggung menolak
+  menyusut di bawah render terpendeknya — terukur 422px di jendela 360, halaman meluber 62px,
+  skala tetap 1 karena viewport-nya ikut melebar. Pengukur skala pratinjau membaca **viewport yang
+  menggulung** (content-box, jadi padding horizontal ditaruh di viewport itu sendiri), bukan jalur
+  grid di luarnya.
 
 **Panel yang lebarnya datang dari jalur grid memakai container query, bukan breakpoint viewport.**
 
@@ -240,6 +259,13 @@ Aturan:
 `apps/web/components/ui/` — dibangun di atas `reka-ui` (headless, sudah ada), varian dengan `cva` + `tailwind-merge`.
 
 `Button` `Field` `Input` `Textarea` `Select` `Checkbox` `RadioCard` `Card` `Badge` `Dialog` `Accordion` `Carousel` `Tabs` `Stepper` `Skeleton` `Tooltip`.
+
+`Tooltip` (fase 67) membungkus reka `TooltipRoot/Trigger/Content` dengan `as-child` — id pemicu
+milik pemanggil — dan satu `TooltipProvider` di `app.vue`. Prop `disabled` merender slot polos:
+ikon yang labelnya sudah terbaca di sebelahnya tidak butuh tooltip yang mengulangnya. **Setiap
+ikon tanpa teks memakai `UiTooltip`, bukan hanya `aria-label`.** Warna tombol hanya bertransisi
+saat masuk hover: pudaran antara dua pasangan warna berlawanan kutub (abu nonaktif ↔ terakota)
+melewati kontras 1,6:1, dan itu tertangkap axe.
 
 Aturan wajib:
 - Target sentuh minimal **44×44px**.

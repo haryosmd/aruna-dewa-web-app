@@ -17,9 +17,9 @@ const catalog = JSON.parse(readFileSync(`${root}packs/referensi/catalog.json`, '
 const kb = (n: number) => `${Math.round(n / 1024)} KB`
 
 describe('fixed-reference ornament bank', () => {
-  it('registers all 58 reference ornaments and 7 color variants through the shared renderer', () => {
-    expect(catalog.assets).toHaveLength(65)
-    expect(Object.keys(referenceOrnaments)).toHaveLength(65)
+  it('registers all 59 reference ornaments and 7 color variants through the shared renderer', () => {
+    expect(catalog.assets).toHaveLength(66)
+    expect(Object.keys(referenceOrnaments)).toHaveLength(66)
     for (const asset of catalog.assets) {
       expect(isOrnamentId(asset.id)).toBe(true)
       expect(ornamentBank[asset.id]).toEqual(referenceOrnaments[asset.id])

@@ -33,6 +33,25 @@ export const ornamentSlots = [
 export type OrnamentSlotKey = (typeof ornamentSlots)[number]
 
 /**
+ * Glyph yang **tidak ditawarkan** Studio Ornamen, meski tetap sah dipasang.
+ *
+ * Keputusan pemilik 2026-09-19 (fase 70), dari tangkapan layar tab "Semua" slot Bingkai:
+ * sembilan bingkai koleksi inti ini diminta berhenti tayang. Fase 58 sudah pernah
+ * memensiunkan bingkai forge dengan mencabut keanggotaannya dari `themeOrnaments` dan
+ * `themeVariants` — dan fase 59, yang membuka seluruh bank lewat `kandidat()`, diam-diam
+ * membatalkan pensiun itu. Set ini adalah mekanisme yang seharusnya ada sejak saat itu.
+ *
+ * Berkas dan entri banknya **tidak dihapus**: enam di antaranya bawaan tema pensiun di
+ * `ornamenPensiun` (daftar beku yang dipindai `bacaTema()` supaya gerbang keunikan tetap
+ * mengukur 54 slot). `muatSlot()` juga sengaja tidak membacanya — dokumen yang sudah
+ * memilih salah satunya tetap tervalidasi dan terrender; ia hanya tidak ditawarkan lagi.
+ */
+export const ornamenDisembunyikan: ReadonlySet<OrnamentId> = new Set<OrnamentId>([
+  'frame-bentar', 'frame-kenanga', 'frame-mendung', 'frame-gonjong', 'frame-gunungan',
+  'frame-hening', 'frame-line', 'frame-pelita', 'frame-wastra',
+])
+
+/**
  * Kategori bank yang boleh mengisi sebuah slot.
  *
  * Jamak, bukan satu-lawan-satu, dan tiap pelebaran punya alasannya sendiri:

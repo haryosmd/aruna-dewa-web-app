@@ -48,11 +48,17 @@ async function open() {
       .to('[data-gate-seal]', { '--seal-sheen': 1, duration: 0.36, ease: 'sine.inOut', yoyo: true, repeat: 1 }, '<0.1')
       .to('[data-gate-seal-half="left"]', { xPercent: -54, rotate: -13, opacity: 0, duration: 0.5, ease: 'power3.in' })
       .to('[data-gate-seal-half="right"]', { xPercent: 54, rotate: 13, opacity: 0, duration: 0.5, ease: 'power3.in' }, '<')
-      .to('[data-gate-flap]', { rotateX: -168, duration: 0.8, ease: 'power3.inOut' }, '-=0.22')
-      .to('[data-gate-card]', { opacity: 1, duration: 0.2 }, '-=0.42')
-      .to('[data-gate-card]', { y: '-64%', scale: 1.04, duration: 0.8, ease: 'power3.out' }, '<')
-      .to('[data-gate-body]', { yPercent: 10, opacity: 0, duration: 0.5, ease: 'power2.in' }, '-=0.34')
-      .to(root.value, { opacity: 0, duration: 0.45, ease: 'power2.inOut' }, '-=0.28')
+      /*
+       * Flap dan surat dilambatkan (fase 68) dan surat baru mulai naik saat flap setengah
+       * terbuka (0,45 detik sesudah flap bergerak): sebelumnya surat menyusul 0,38 detik
+       * kemudian dan selesai dalam 0,8 detik, jadi keduanya terbaca sebagai satu jentakan.
+       * Segel di atas sengaja tidak ikut — bagian itu justru enak karena tegas.
+       */
+      .to('[data-gate-flap]', { rotateX: -168, duration: 1.1, ease: 'power3.inOut' }, '-=0.22')
+      .to('[data-gate-card]', { opacity: 1, duration: 0.2 }, '<0.45')
+      .to('[data-gate-card]', { y: '-64%', scale: 1.04, duration: 1.4, ease: 'power3.out' }, '<')
+      .to('[data-gate-body]', { yPercent: 10, opacity: 0, duration: 0.5, ease: 'power2.in' }, '-=0.5')
+      .to(root.value, { opacity: 0, duration: 0.6, ease: 'power2.inOut' }, '-=0.35')
   })
 
   if (!animated) finish()

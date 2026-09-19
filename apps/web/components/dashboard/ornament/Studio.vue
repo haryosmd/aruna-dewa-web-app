@@ -235,10 +235,10 @@ function tutup(simpan: boolean) {
           <aside class="grid h-fit content-start gap-3 rounded-md border border-border bg-surface-2 p-4 @3xl:sticky @3xl:top-0">
             <p class="eyebrow">Pilihan sekarang</p>
             <div
-              class="grid min-h-28 place-items-center rounded-md p-3"
+              class="grid h-32 grid-rows-[minmax(0,1fr)] place-items-center overflow-hidden rounded-md p-3"
               :style="{ ...ramp, background: tokens.background }"
             >
-              <OrnamentGlyph :glyph="aktif" ubin class="max-h-24 max-w-full text-[color:var(--iv-orn-body)]" aria-hidden="true" />
+              <OrnamentGlyph :glyph="aktif" ubin class="min-h-0 max-h-full max-w-full object-contain text-[color:var(--iv-orn-body)]" aria-hidden="true" />
             </div>
             <p class="m-0 text-[0.875rem] font-semibold text-ink">{{ ornament(aktif).name }}</p>
             <p v-if="aktif === bawaan" class="m-0 text-caption text-ink-subtle">Bawaan tema.</p>

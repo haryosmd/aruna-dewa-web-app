@@ -124,3 +124,17 @@ Teks callout dibiarkan: "Pratinjau ikut berubah saat kalian mengetik" masih bena
 klaim yang paling penting. Pemilih perangkat sekarang terbaca sendiri di potretnya.
 
 `public.spec.ts:235` tetap hijau.
+
+---
+
+## REV-009 — 2026-09-19: pratinjau `/order` per langkah, selebar ponsel (Fase 65)
+
+Panel kanan wizard tidak lagi menggulung seluruh undangan bawaan. Tiap langkah merender hanya
+section yang ia sentuh (`apps/web/utils/order-preview.ts`), selebar 390px lewat
+`InvitationPhoneFrame` yang diperkecil sampai muat di viewport, dan baru di langkah paket seluruh
+undangan tampil dan bisa digulung. Di bawah `lg` panelnya disembunyikan; yang tersisa satu baris
+"Tampil sebagai … · arunadewa.id/i/…" di bawah judul langkah.
+
+Alasannya ada di `docs/ROADMAP.md` (Fase 65). Yang penting untuk landing: potret alur pesanan di
+`verification/` kini menunjukkan nama pasangan di lipatan pertama pratinjau — klaim "pratinjau ikut
+berubah saat kalian mengetik" akhirnya terlihat, bukan dijanjikan. Potret belum diambil ulang.

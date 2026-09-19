@@ -18,6 +18,13 @@ import { ornament, type OrnamentId } from '~/utils/ornaments'
  * **Ia mengatakan ketidakcocokan dengan kalimat, bukan dengan warna.** Sejak fase 59 pasangan
  * boleh memilih keping yang tidak seresep dengan temanya; yang menggantikan larangan lama adalah
  * keterangan. Lencananya karena itu punya ikon DAN teks di `aria-label`, tidak pernah warna saja.
+ *
+ * **Baris grid-nya `minmax(0,1fr)`, bukan `auto` (fase 70).** Aset referensi adalah `<img>`
+ * ber-atribut `width`/`height`; track `auto` mengambil kontribusi min-content gambar itu (aset
+ * setinggi 3096px pada lebar 64px minta ±124px), melampaui `h-20`, dan `max-h-full` lalu
+ * resolve ke track yang kebesaran — ubinnya meluber ke baris di bawahnya. Vektor tidak kena
+ * karena `<svg>` tidak punya kontribusi setinggi itu, jadi cacatnya baru terlihat pada aset
+ * `lengkung-latar` yang rasionya 0,5.
  */
 const props = defineProps<{
   glyph: OrnamentId
@@ -71,7 +78,7 @@ const label = computed(() => [
     :aria-label="label"
     :tabindex="dipilih ? 0 : -1"
     :class="cn(
-      'group relative grid h-20 shrink-0 place-items-center rounded-md border p-2 transition-[border-color,box-shadow] duration-200',
+      'group relative grid h-20 shrink-0 grid-rows-[minmax(0,1fr)] place-items-center overflow-hidden rounded-md border p-2 transition-[border-color,box-shadow] duration-200',
       dipilih ? 'border-primary shadow-lift' : 'border-border hover:border-border-strong',
     )"
     :style="{ width: tileWidth(glyph, 64) }"
@@ -80,7 +87,7 @@ const label = computed(() => [
       v-if="terlihat"
       :glyph="glyph"
       ubin
-      class="max-h-full max-w-full text-[color:var(--iv-orn-body)]"
+      class="min-h-0 max-h-full max-w-full object-contain text-[color:var(--iv-orn-body)]"
       aria-hidden="true"
     />
     <UiSkeleton v-else class="h-full w-full" :style="{ aspectRatio: String(entri.ratio) }" />

@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "operator": "tsx --env-file-if-exists=.env src/cli/operator.ts"
+    "operator": "tsx --env-file-if-exists=.env src/cli/operator.ts",
+    "demo": "tsx --env-file-if-exists=.env src/cli/demo.ts"
   },
   "dependencies": {
     "@aruna/contracts": "workspace:*",

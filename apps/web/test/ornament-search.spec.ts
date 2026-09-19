@@ -5,8 +5,9 @@ import { fitOf } from '../utils/ornament-fit'
 import {
   bawaanSlot, cariOrnamen, disarankan, hitungPack, kandidat, normalkan, packOf,
 } from '../utils/ornament-search'
-import { muatLayer, muatSlot, ornamentSlots, layerSlots } from '../utils/ornament-slots'
-import { ornament } from '../utils/ornaments'
+import { muatLayer, muatSlot, ornamenDisembunyikan, ornamentSlots, layerSlots } from '../utils/ornament-slots'
+import { ornament, ornamentBank } from '../utils/ornaments'
+import { themeOrnaments } from '../utils/theme'
 import { variantSlots, variantsFor } from '../utils/ornament-variants'
 
 /**
@@ -137,5 +138,35 @@ describe('pencarian dan penyaring pack', () => {
     const hitung = hitungPack({ slot: 'corner' })
     const jml = Object.values(hitung).reduce((a, b) => a + b, 0)
     expect(jml).toBe(kandidat({ slot: 'corner' }).length)
+  })
+})
+
+describe('glyph yang disembunyikan (fase 70)', () => {
+  /*
+   * Pemilik meminta sembilan bingkai berhenti tayang. Yang diukur di sini adalah tiga
+   * sisi kontraknya: mereka tetap ada di bank (bawaan tema pensiun bergantung padanya),
+   * tidak pernah sampai ke grid lewat pintu mana pun, dan tidak ada tema hidup atau kolam
+   * terkurasi yang diam-diam masih menunjuknya — kalau ada, Studio akan menandai bawaan
+   * yang tidak bisa dipilih ulang.
+   */
+  it('tetap terdaftar di bank', () => {
+    for (const id of ornamenDisembunyikan) expect(ornamentBank[id], id).toBeDefined()
+  })
+
+  it('tidak pernah muncul di kandidat, tab Semua, maupun Disarankan', () => {
+    for (const slot of ornamentSlots) {
+      for (const id of kandidat({ slot })) expect(ornamenDisembunyikan.has(id), `${slot}=${id}`).toBe(false)
+      for (const t of liveTemplateIds) {
+        for (const id of cariOrnamen({ slot, templateId: t, tab: 'semua' })) expect(ornamenDisembunyikan.has(id)).toBe(false)
+        for (const id of disarankan({ slot, templateId: t })) expect(ornamenDisembunyikan.has(id)).toBe(false)
+      }
+    }
+  })
+
+  it('bukan bawaan tema hidup mana pun', () => {
+    for (const t of liveTemplateIds) {
+      const set = themeOrnaments(t)
+      for (const slot of ornamentSlots) expect(ornamenDisembunyikan.has(set[slot]), `${t}.${slot}`).toBe(false)
+    }
   })
 })

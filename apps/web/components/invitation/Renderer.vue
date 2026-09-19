@@ -116,7 +116,14 @@ const rendered = computed(() => {
   return entries.map((entry, index) => ({ ...entry, segue: segueDiIndeks.get(index) ?? null }))
 })
 
-const coupleSection = computed(() => sectionOf('couple'))
+/*
+ * Dicari di seluruh dokumen, bukan hanya section yang tampil: nama pasangan adalah identitas
+ * undangan, bukan isi satu section. Di undangan terbit keduanya sama (`couple` wajib dan tidak
+ * bisa dimatikan), tapi pratinjau wizard `/order` menyalakan section per langkah, dan tautan
+ * kalender di langkah acara sempat berbunyi "Aruna & Dewa" untuk pasangan yang baru saja
+ * mengetik namanya sendiri.
+ */
+const coupleSection = computed(() => props.document.sections.find(section => section.type === 'couple'))
 const coupleNames = computed(() => {
   const section = coupleSection.value
   if (!section) return 'Aruna & Dewa'

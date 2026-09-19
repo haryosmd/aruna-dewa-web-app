@@ -26,20 +26,22 @@ pengecualian `motif-latar`, yang memang dua warna datar dan karena itu jadi glyp
 Ini kebalikan dari keputusan di pack `canva-emas-hitam`, dan alasannya juga kebalikannya: di sana
 ornamennya bergaris satu warna, jadi monokrom justru bentuk aslinya.
 
-## Tujuh aset dari lima berkas
+## Delapan aset dari lima berkas
 
 | Aset | Dari | Bentuk | Pemecahan |
 |---|---|---|---|
 | `mahkota-ukir` | `mahkota-ukir.svg` | raster | — |
 | `sudut-ukir-kiri` · `-kanan` | `sudut-ukir.svg` | raster | **dipotong**, celah bersih di x 324–405 |
-| `bingkai-ukir` | `bingkai-ukir.svg` | raster | **tidak dipecah** |
+| `bingkai-ukir-kiri` · `-kanan` | `bingkai-ukir.svg` | raster | **dipotong** di x 405, dua paruh bercermin (sejak 2026-09-19) |
 | `cincin-kawin` | `cincin-bunga.svg` | raster | **dipotong**, celah bersih di y 82–126 |
 | `rangkai-bunga` | `cincin-bunga.svg` | raster | **dipotong**, dari berkas yang sama |
 | `motif-latar` | `motif-latar.svg` | SVG `currentColor` | satu ubin dari tiga salinan |
 
-**`bingkai-ukir` sengaja tidak dipecah** meski sumbernya memang dua grup bercermin: kedua separuhnya
-**menyusun satu bingkai tertutup**. Dipisah, yang didapat dua setengah-bingkai yang tidak berguna
-sendiri-sendiri. Memecah berguna ketika bagiannya berdiri sendiri, bukan ketika ia separuh benda.
+**`bingkai-ukir` semula tidak dipecah** (2026-09-18) dengan alasan kedua separuhnya menyusun satu
+bingkai tertutup. Pemilik membalik keputusan itu 2026-09-19 (fase 70): dipecah kiri–kanan di
+x 405 dan dipasang sebagai keping **sudut**, bukan bingkai — sebagai bingkai utuh ia tidak pernah
+dipilih, sebagai sepasang sudut ia berguna. Kedua paruh bertemu di puncak, jadi potongannya
+lurus tanpa celah alpha; ujung runcing di tengah ikut ke paruh masing-masing.
 
 **`cincin-bunga.svg` dipecah menurut sumbu Y**, bukan X — cincin di atas, rangkaian bunga di bawah,
 dengan celah alpha bersih di y 82–126. Pemecahan kiri–kanan bukan satu-satunya bentuk pemecahan.

@@ -3,17 +3,20 @@ import { Lock, RotateCcw } from 'lucide-vue-next'
 import type { LayerSlot, OrnamentId, OrnamentSet } from '~/utils/ornaments'
 import { ornament } from '~/utils/ornaments'
 import {
-  jumlahDiganti, layerSlotLabels, layerSlots, ornamentSlots, slotLabels, terapkanOverrides, tileWidth,
+  jumlahDiganti, layerSlotLabels, layerSlots, ornamentSlots, slotLabels, terapkanOverrides,
   type OrnamentOverrides, type OrnamentSlotKey,
 } from '~/utils/ornament-slots'
 import { ornamentRamp, rampStyle } from '~/utils/ornament-palette'
+import DashboardOrnamentSlotCard from './SlotCard.vue'
 
 /**
  * Ringkasan ornamen di panel pengaturan editor.
  *
- * Menggantikan empat grid ubin yang dulu dijejalkan ke kolom selebar 528px. Empat belas baris
- * ternyata **lebih ringkas** daripada empat grid: tiap baris satu pratinjau kecil, namanya, dan
- * satu tombol yang membuka Studio pada slot itu. Ruang untuk memilih pindah ke dialognya sendiri.
+ * Menggantikan empat grid ubin yang dulu dijejalkan ke kolom selebar 528px. Sejak fase 70
+ * bentuknya empat belas **ubin berlabel** dalam dua kolom (`SlotCard.vue`): pratinjau, nama
+ * slot, nama glyph, satu tombol yang membuka Studio pada slot itu. Hint dan syarat slot tidak
+ * lagi ditulis di sini — mereka menjelaskan slotnya, bukan pilihannya, dan sudah ada di header
+ * Studio saat slot itu dibuka. Ruang untuk memilih tetap di dialognya sendiri.
  *
  * Kelima jangkar ladang dilipat di balik `<details>`, karena mereka keping latar yang jarang
  * disentuh dan membuka semuanya sekaligus akan mengubur sembilan slot yang justru dilihat tamu
@@ -80,31 +83,17 @@ const barisLayer = computed(() => layerSlots.map(jangkar => {
       </span>
     </p>
 
-    <ul class="m-0 grid list-none gap-1.5 p-0">
+    <ul class="m-0 grid list-none grid-cols-2 gap-2 p-0">
       <li v-for="row in baris" :key="row.kunci">
-        <div class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-border bg-surface p-2">
-          <span class="grid h-11 place-items-center" :style="{ ...ramp, width: tileWidth(row.glyph, 40, 96) }">
-            <OrnamentGlyph :glyph="row.glyph" ubin class="max-h-10 max-w-full text-[color:var(--iv-orn-body)]" aria-hidden="true" />
-          </span>
-          <span class="grid gap-0.5">
-            <span class="text-[0.8125rem] font-medium text-ink">
-              {{ row.label }}
-              <span v-if="!row.bawaan" class="ml-1 rounded-full bg-primary-soft px-1.5 py-0.5 text-caption font-semibold text-primary">Diganti</span>
-            </span>
-            <span class="text-caption text-ink-subtle">{{ ornament(row.glyph).name }} · {{ row.hint }}</span>
-            <span v-if="row.syarat" class="text-caption text-ink-muted">{{ row.syarat }}</span>
-          </span>
-          <UiButton
-            :id="`ornament-ganti-${row.kunci}`"
-            tone="outline"
-            size="sm"
-            :disabled="terkunci"
-            :aria-describedby="terkunci ? 'ornament-locked' : undefined"
-            @click="emit('buka', { slot: row.slot, layer: row.layer })"
-          >
-            Ganti<span class="sr-only"> {{ row.label.toLowerCase() }}</span>
-          </UiButton>
-        </div>
+        <DashboardOrnamentSlotCard
+          :kunci="row.kunci"
+          :label="row.label"
+          :glyph="row.glyph"
+          :bawaan="row.bawaan"
+          :ramp="ramp"
+          :terkunci="terkunci"
+          @buka="emit('buka', { slot: row.slot, layer: row.layer })"
+        />
       </li>
     </ul>
 
@@ -113,30 +102,17 @@ const barisLayer = computed(() => layerSlots.map(jangkar => {
         Keping latar bagian
         <span class="ml-1 text-caption font-normal text-ink-subtle">lima jangkar ladang ornamen</span>
       </summary>
-      <ul class="m-0 grid list-none gap-1.5 p-2 pt-0">
+      <ul class="m-0 grid list-none grid-cols-2 gap-2 p-2 pt-0">
         <li v-for="row in barisLayer" :key="row.kunci">
-          <div class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-border bg-surface-2 p-2">
-            <span class="grid h-11 place-items-center" :style="{ ...ramp, width: tileWidth(row.glyph, 40, 96) }">
-              <OrnamentGlyph :glyph="row.glyph" ubin class="max-h-10 max-w-full text-[color:var(--iv-orn-body)]" aria-hidden="true" />
-            </span>
-            <span class="grid gap-0.5">
-              <span class="text-[0.8125rem] font-medium text-ink">
-                {{ row.label }}
-                <span v-if="!row.bawaan" class="ml-1 rounded-full bg-primary-soft px-1.5 py-0.5 text-caption font-semibold text-primary">Diganti</span>
-              </span>
-              <span class="text-caption text-ink-subtle">{{ ornament(row.glyph).name }} · {{ row.hint }}</span>
-            </span>
-            <UiButton
-              :id="`ornament-ganti-${row.kunci}`"
-              tone="outline"
-              size="sm"
-              :disabled="terkunci"
-              :aria-describedby="terkunci ? 'ornament-locked' : undefined"
-              @click="emit('buka', { slot: row.slot, layer: row.layer })"
-            >
-              Ganti<span class="sr-only"> {{ row.label.toLowerCase() }}</span>
-            </UiButton>
-          </div>
+          <DashboardOrnamentSlotCard
+            :kunci="row.kunci"
+            :label="row.label"
+            :glyph="row.glyph"
+            :bawaan="row.bawaan"
+            :ramp="ramp"
+            :terkunci="terkunci"
+            @buka="emit('buka', { slot: row.slot, layer: row.layer })"
+          />
         </li>
       </ul>
     </details>

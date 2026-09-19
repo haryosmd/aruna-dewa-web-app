@@ -508,6 +508,146 @@ test('editor menahan perpindahan halaman selama ada perubahan belum tersimpan', 
   await expect(page.locator('#editor-save-state')).toHaveText('Semua perubahan tersimpan')
 })
 
+/*
+ * Studio tiga panel (fase 62): rail, inspektor bertab, dan preferensi yang bertahan.
+ *
+ * Empat hal yang masing-masing pernah salah dengan cara yang diam:
+ * - tab Tema yang tersimpan di `localStorage` menyembunyikan form bagian yang baru diklik;
+ * - panah urut di daftar tersaring memindahkan bagian yang salah (indeks daftar ≠ indeks dokumen);
+ * - sakelar tampil tidak lewat `checkpoint()`, jadi mematikan galeri tidak bisa di-undo;
+ * - preferensi yang dibaca sebelum hidrasi membuat `width` panggung berganti di tengah render.
+ */
+test('studio editor: rail, inspektor, dan preferensi yang bertahan', async ({ page }) => {
+  test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
+  await signIn(page)
+  await page.goto(`/dashboard/${account!.invitationId}/editor`)
+  await openSection(page, 'cover')
+  const berdampingan = () => page.evaluate(() => matchMedia('(min-width: 80rem)').matches)
+  const tidakMeluber = async () => expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+
+  // Tab inspektor: Tema menyembunyikan form bagian, Bagian mengembalikannya.
+  await page.locator('#editor-inspector-tema').click()
+  await expect(page.locator('#editor-theme-aruna-bloom')).toBeVisible()
+  await expect(page.locator('#editor-text-title')).toBeHidden()
+  await tidakMeluber()
+
+  // Memilih bagian dari tab Tema membuka tab Bagian lagi — bukan membiarkan formnya tersembunyi.
+  await openSection(page, 'couple')
+  await expect(page.locator('#editor-inspector-bagian')).toHaveAttribute('aria-selected', 'true')
+  await expect(page.locator('#editor-inspector-panel-bagian h2')).toHaveText('Mempelai')
+
+  // Pencarian menyaring rail; panah mati selama tersaring supaya indeksnya tidak berbohong.
+  await page.locator('#editor-section-search').fill('gal')
+  await expect(page.locator('[id^="editor-section-toggle-"]')).toHaveCount(1)
+  await expect(page.locator('#editor-section-toggle-gallery')).toBeVisible()
+  await expect(page.locator('#editor-section-up-gallery')).toBeDisabled()
+  await page.locator('#editor-section-search-clear').click()
+  await expect(page.locator('[id^="editor-section-toggle-"]')).toHaveCount(14)
+
+  // Bagian inti tidak bisa disembunyikan; sisanya bisa, dan bisa di-undo.
+  await expect(page.locator('#editor-section-toggle-cover')).toBeDisabled()
+  const hitung = async () => Number((await page.locator('#editor-section-count').innerText()).match(/^(\d+)/)?.[1])
+  const sebelum = await hitung()
+  const video = page.locator('#editor-section-toggle-video')
+  const semulaHidup = await video.isChecked()
+  await video.setChecked(!semulaHidup)
+  expect(await hitung()).toBe(sebelum + (semulaHidup ? -1 : 1))
+  await expect(page.locator('#editor-save-state')).toHaveText('Ada perubahan yang belum tersimpan')
+  await page.locator('#editor-undo').click()
+  await expect(video).toBeChecked({ checked: semulaHidup })
+  expect(await hitung()).toBe(sebelum)
+  await expect(page.locator('#editor-save-state')).toHaveText('Semua perubahan tersimpan')
+
+  // Rail → panggung (fase 70): memilih bagian menggulir viewport pratinjau sampai bagian itu
+  // berdiri di bawah pemilih perangkat. Di ponsel gulirnya ditahan sampai tab Pratinjau dibuka.
+  const posisiBagian = (type: string) => page.evaluate((t) => {
+    const stage = document.querySelector('[data-preview-stage]')!
+    const viewport = stage.parentElement!.parentElement!
+    const el = document.getElementById(`iv-${t}`)!
+    return { atas: el.getBoundingClientRect().top - viewport.getBoundingClientRect().top, gulir: viewport.scrollTop }
+  }, type)
+  await openSection(page, 'rsvp')
+  if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pratinjau', exact: true }).click()
+  await expect.poll(async () => (await posisiBagian('rsvp')).gulir).toBeGreaterThan(0)
+  await expect.poll(async () => Math.abs((await posisiBagian('rsvp')).atas - 96)).toBeLessThan(24)
+  if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
+  await openSection(page, 'cover')
+
+  // Ponsel: tab Pratinjau menyembunyikan rail dan inspektor; Pengaturan mengembalikannya.
+  if (!(await berdampingan())) {
+    await page.getByRole('tab', { name: 'Pratinjau', exact: true }).click()
+    await expect(page.locator('#editor-section-cover')).toBeHidden()
+    await expect(page.locator('[data-preview-stage]')).toBeVisible()
+    await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
+    await expect(page.locator('#editor-section-cover')).toBeVisible()
+  }
+
+  // Preferensi bertahan setelah muat ulang: perangkat Laptop dan tab Tema.
+  await openPreview(page)
+  await page.getByRole('button', { name: 'Laptop', exact: true }).click()
+  await expect(page.locator('[data-preview-stage]')).toHaveCSS('width', '1280px')
+  if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
+  await page.locator('#editor-inspector-tema').click()
+  await tidakMeluber()
+
+  await page.reload()
+  await hydrated(page)
+  await expect(page.locator('#editor-inspector-tema')).toHaveAttribute('aria-selected', 'true')
+  const stage = await openPreview(page)
+  await expect(stage).toHaveCSS('width', '1280px')
+  await expect(page.getByText('Selebar 1280px', { exact: true })).toBeVisible()
+  await tidakMeluber()
+
+  // Kembalikan bawaannya supaya tes lain di konteks ini tidak mewarisi Laptop + Tema.
+  await page.getByRole('button', { name: 'Ponsel', exact: true }).click()
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('aruna:editor:prefs') ?? '{}'))).toMatchObject({ device: 'ponsel', inspectorTab: 'tema' })
+})
+
+/*
+ * Rail dasbor ciut (fase 67). Diuji di desktop saja: di bawah `lg` rail-nya `display:none` dan
+ * dock bawah yang memegang navigasi. Tooltip dicari lewat `[data-tooltip]`, bukan
+ * `getByRole('tooltip')` — reka merender salinan tersembunyi ber-role yang sama.
+ */
+test('rail dasbor ciut jadi ikon, bertahan setelah muat ulang, dan tetap bisa dinavigasi', async ({ page }, testInfo) => {
+  test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
+  test.skip(testInfo.project.name !== 'desktop', 'Rail samping hanya ada di ≥1024px.')
+  await signIn(page)
+  await page.goto(`/dashboard/${account!.invitationId}/guests`)
+  await hydrated(page)
+  const rail = page.locator('#dash-nav-rail')
+  const toggle = page.locator('#dash-nav-toggle')
+  const tidakMeluber = async () => expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+
+  await expect(rail).toHaveCSS('width', '256px')
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  await toggle.click()
+  await expect(rail).toHaveCSS('width', '56px')
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.locator('#dash-nav-guests')).toBeVisible()
+  await tidakMeluber()
+
+  // Ikon tanpa teks menjelaskan dirinya pada mouse, bukan hanya pada pembaca layar.
+  await page.locator('#dash-nav-guests').hover()
+  await expect(page.locator('[data-tooltip]', { hasText: 'Kelola tamu' })).toBeVisible()
+
+  // Rail ciut tidak boleh menyentuh anggaran nol pelanggaran axe milik tes di atas.
+  const scan = await new AxeBuilder({ page }).exclude('nuxt-devtools-frame').withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
+  expect(scan.violations.map(v => v.id)).toEqual([])
+
+  await page.reload()
+  await hydrated(page)
+  await expect(rail).toHaveCSS('width', '56px')
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('aruna:dashboard:prefs') ?? '{}'))).toMatchObject({ sidebarCollapsed: true })
+
+  await page.locator('#dash-nav-rsvps').click()
+  await expect(page).toHaveURL(/\/rsvps$/)
+  await expect(rail).toHaveCSS('width', '56px')
+
+  // Kembalikan supaya tes lain di konteks ini tidak mewarisi rail ciut.
+  await toggle.click()
+  await expect(rail).toHaveCSS('width', '256px')
+})
+
 test('music section offers a library, and picking a track switches it on', async ({ page }) => {
   test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
   await signIn(page)

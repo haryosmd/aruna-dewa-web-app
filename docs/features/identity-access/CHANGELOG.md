@@ -1,5 +1,51 @@
 # Revision history
 
+## 2026-09-19: Fase 64 — satu perintah, dan kata sandi demo yang bisa diketik
+
+Kata sandi akun demo berganti dari `aruna-demo-local-only` jadi **`arunademo123`** (12 karakter,
+tetap lolos `min(10)` di kontrak). Emailnya tetap `demo@aruna.local`. Dua konstanta yang harus sama
+persis: `apps/api/src/cli/demo.ts` (yang menulis hash) dan `apps/web/utils/demo-login.ts` (yang
+dipakai login SSR). `prisma.user.upsert` menulis ulang `passwordHash` pada `update`, jadi akun lama
+di basis data lokal ikut berganti begitu `pnpm demo:local` dijalankan lagi.
+
+Alasannya bukan kenyamanan yang samar: auto-login SSR memang tidak pernah meminta kata sandi, tapi
+ia dibutuhkan persis saat keadaan sedang tidak enak — jendela privat, browser kedua, atau sesi yang
+baru diusir suite e2e (satu sesi per akun). Kata sandi yang tidak bisa diketik pada saat itu sama
+saja dengan tidak punya kata sandi.
+
+`scripts/demo-local.sh` (`pnpm demo`) menyalakan seluruh tumpukan lokal dalam satu perintah dan
+memanggil `pnpm demo:local` di tengah urutannya — sebelum web menyala, karena `/dashboard` yang
+dibuka saat akunnya belum ada membuat login SSR gagal dan `DemoCooldown` mengunci auto-login 60
+detik. Tidak ada perubahan di API.
+
+## 2026-09-19: Fase 63 — mode demo lokal, tanpa login dan tanpa bayar
+
+`NUXT_DEV_DEMO=1` (`pnpm --filter @aruna/web dev:demo`, atau `web-demo` di `.claude/launch.json`)
+membuat `plugins/auth.server.ts` masuk otomatis sebagai `demo@aruna.local` saat `/dashboard`,
+`/order`, atau `/account` dibuka tanpa cookie sesi — atau dengan cookie yang sudah dicabut, misalnya
+sesudah suite e2e masuk memakai akun yang sama. Loginnya sungguhan: `POST /auth/login` dari SSR
+dengan `Origin` kanonik, `Set-Cookie` diteruskan ke browser, `arunaCookie` diisi supaya `/auth/me`
+di render yang sama sudah memakai sesi baru — persis resep `serverRefresh()`. **API tidak berubah.**
+Pembayaran dilewati oleh aturan lama: akun demo ber-role `OPERATOR`, jadi `checkout()` menjawab
+`paid: true` dan `order.vue` mengantar ke dasbor ("Undangan aktif — semua fitur terbuka.").
+
+Akun demo dibuat `pnpm demo:local` (`apps/api/src/cli/demo.ts`) lewat Prisma + argon2 — bukan
+`/auth/register` (mengirim email, menghapus akun bila SMTP gagal) dan tanpa login (satu sesi per
+akun: login dari skrip mengusir sesi browser). Menolak jalan bila `NODE_ENV=production` atau host
+`DATABASE_URL` bukan loopback. Idempoten; sekali menyeed satu undangan contoh.
+
+Empat gerbang di `utils/demo-login.ts` (8 tes unit): `import.meta.dev`, sakelar env, host loopback,
+jalur yang butuh akun; ditambah hanya permintaan dokumen (`sec-fetch-dest: document`) dan pendingin
+60 detik sesudah gagal, karena rate limit login (10 / 5 menit per IP+email) hanya memaafkan yang
+berhasil. Diukur: tujuh probe (dasbor tanpa cookie → 200 + dua cookie; kunjungan kedua → tanpa
+cookie baru; editor → 200; `/i/*`, `/`, `/login` → tanpa cookie; payload bukan dokumen → `/login`),
+build `.output` dengan `NUXT_DEV_DEMO=1` tetap memantulkan `/dashboard` ke `/login` tanpa cookie,
+dan alur `/order` empat langkah berakhir di dasbor undangan baru tanpa Midtrans.
+
+Satu jebakan yang ketemu saat menulis: `useState()` yang dipanggil **sesudah** `await $fetch` di
+dalam plugin melempar "called outside of a plugin" — tertangkap sebagai "login gagal" padahal cookie
+sudah terlanjur diteruskan. Semua composable kini diambil sebelum `await`.
+
 ## 2026-09-11: execution started
 
 Materialized approved plan; current frontend decisions override earlier React choices.

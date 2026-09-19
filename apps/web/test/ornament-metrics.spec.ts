@@ -85,9 +85,9 @@ describe('lencana browser sepakat dengan gerbang node', () => {
 
   it('tidak pernah menuduh aset referensi soal ketebalan yang tidak pernah diukur', () => {
     // `garis` kosong berarti tidak terukur, bukan tidak cocok. Melaporkan `garis` di sini akan
-    // menempelkan peringatan yang tidak punya dasar pengukuran ke 65 aset sekaligus.
+    // menempelkan peringatan yang tidak punya dasar pengukuran ke 66 aset sekaligus.
     const referensi = Object.entries(ornamentMetrics).filter(([, m]) => m.tetap)
-    expect(referensi).toHaveLength(65)
+    expect(referensi).toHaveLength(66)
     for (const [id] of referensi) {
       const fit = fitOf(id as never, liveTemplateIds[0]!)
       expect(fit.flags, id).toContain('warna')

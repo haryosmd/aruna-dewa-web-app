@@ -38,7 +38,7 @@ const props = defineProps<{ glyph: OrnamentId | null | undefined; initials?: str
  *
  * `ubin` memilih salinan mana yang dipakai. Pemilih di dasbor meminta ubin 240px karena ia bisa
  * menampilkan 44 aset sekaligus; undangan memakai salinan `web` 960px. **Tidak ada jalur yang
- * merender berkas penuh** — 65 aset itu 24 MB, dan yang terberat 1,8 MB sendirian.
+ * merender berkas penuh** — 66 aset itu 24 MB, dan yang terberat 1,8 MB sendirian.
  *
  * Dimensinya ikut diteruskan supaya `<img>` punya rasio intrinsik dan tata letak tidak melompat.
  */

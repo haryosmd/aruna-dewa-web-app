@@ -1,5 +1,102 @@
 # Revision history
 
+## 2026-09-19: Fase 70 — rail menggulir panggung, kartu ornamen bersih, bank bingkai dirapikan
+
+- Memilih bagian di rail "Struktur undangan" menggulir panggung pratinjau ke bagian itu
+  (`Stage.vue` prop `focusSection`, util `stageScrollTop()` di `utils/editor-sections.ts`);
+  offset 96px di bawah pemilih perangkat, `prefers-reduced-motion` → `instant`. Di ponsel,
+  gulir dikirim ulang saat tab Pratinjau dibuka.
+- Ringkasan ornamen inspektor: baris tiga teks → grid dua kolom ubin berlabel
+  (`dashboard/ornament/SlotCard.vue`). Hint dan syarat slot tidak lagi diulang di kartu.
+- `ornamenDisembunyikan` (`ornament-slots.ts`): sembilan bingkai inti berhenti ditawarkan Studio
+  tanpa dihapus dari bank (`frame-bentar`, `-kenanga`, `-mendung`, `-gonjong`, `-gunungan`,
+  `-hening`, `-line`, `-pelita`, `-wastra`). Hanya `kandidat()` yang membacanya.
+- Ubin Studio dan kotak pratinjau memakai `grid-rows-[minmax(0,1fr)]` + `overflow-hidden`;
+  aset referensi tinggi (`lengkung-latar`) tidak lagi meluber dari ubin 80px.
+- `ref-putih-cokelat-bingkai-ukir` dipecah menjadi `bingkai-ukir-kiri`/`-kanan` (kategori
+  `corner`, potong di x 405 satuan viewBox 810); bank referensi 65 → 66 aset.
+- Temuan sambil lalu: klaster tombol toolbar (fase 67) tidak membungkus dan meluberkan halaman
+  ke samping di 360px — e2e `tidakMeluber` merah di project mobile/safari. Kini `flex-wrap`.
+- Gulir rail menunggu viewport bisa menggulir (tinggi `PhoneFrame` masih 0 sesaat setelah tab
+  Pratinjau dibuka) dan merapikan sekali setelah mengendap (font/foto yang tiba belakangan
+  menggeser target 63px di WebKit). E2e rail hijau di desktop, tablet, mobile, safari.
+
+## 2026-09-19: Fase 68 — amplop membuka lebih pelan
+
+`CoverGate.vue`: flap 0,8 → 1,1 s; surat 0,8 → 1,4 s dan mulai saat flap setengah terbuka; pudar
+akhir 0,45 → 0,6 s. Segel tidak diubah. Terukur headless di 375px (Chromium, poll 16ms sejak
+klik): flap bergerak 1,12 s · surat mulai naik 1,57 s · badan memudar 2,56 s · gerbang hilang
+3,20 s. Sebelumnya, dari posisi timeline: total ≈2,6 s dengan surat menyusul flap 0,38 s.
+
+## 2026-09-19: Fase 67 — rail dasbor ciut jadi ikon, Tooltip pertama, toolbar dikelompokkan
+
+**Rail dasbor** (`DashboardNav.vue`) 256 → 56px lewat `#dash-nav-toggle` di baris brand;
+preferensi `aruna:dashboard:prefs` (`useDashboardPrefs`, pola `useEditorPrefs`). Saat ciut: logo
+mark, judul hilang, `DemoBadge compact` jadi chip 44px, tautan jadi ikon 44×44 ber-`aria-label`
+dan `UiTooltip` kanan. Transisi lebar digerbang `useInteractiveReady` supaya muat halaman tidak
+diawali animasi ciut. `DashboardShell` tidak berubah — aside adalah flex sibling.
+
+**`UiTooltip`** baru (`components/ui/Tooltip.vue`) di atas reka-ui, `as-child`, `TooltipProvider`
+tunggal di `app.vue` (delay 300 / skip 250 ms), token `--z-tooltip 70`, kait tes `[data-tooltip]`.
+Dipakai juga oleh rail struktur saat ciut dan oleh kedua toggle.
+
+**Toolbar** tiga klaster: status tersimpan (turun ke barisnya sendiri di bawah 1280 —
+terukur di 1100: status y=12, klaster tombol y=39; di 1280 semuanya sebaris), riwayat
+(`role="group"` "Riwayat": undo · redo · pemisah · Reset), aksi (Lihat publik · Simpan draft ·
+Publikasikan). Teks dan nama tombol yang dibaca e2e tidak berubah.
+
+**`UiButton`** primary nonaktif tanpa `aria-busy` → `bg-surface-3 text-ink-subtle` (terukur
+`rgb(244,239,232)`, opacity 1); saat `loading` tetap terakota + spinner. Transisi warna hanya
+saat masuk hover (lihat DESIGN.md §Komponen — sweep axe /account menangkap pudaran 1,6:1).
+
+**Terukur** (Laptop, `getBoundingClientRect`, rail lebar → kedua rail ciut):
+1440 → rail 256 · struktur 272 · panggung 512 · inspektor 352 ⇒ 56 · 56 · **928** · 352;
+1280 → 256 · 272 · 352 · 352 ⇒ 56 · 56 · **768** · 352. Tidak ada meluber (`scrollWidth` =
+`innerWidth`) di 1440, 1280, 1100, 375. Di 375 rail `display:none`, dock bawah tetap.
+
+**Tes:** vitest `dashboard-prefs.spec.ts` (3); e2e desktop baru "rail dasbor ciut jadi ikon…"
+(lebar 256/56, `aria-expanded`, tooltip "Kelola tamu", axe nol pelanggaran saat ciut, bertahan
+setelah muat ulang, navigasi ke RSVP tetap ciut). `dashboard screens are accessible and titled`
+tetap nol pelanggaran setelah perbaikan transisi tombol.
+
+## 2026-09-19: Fase 62 — editor jadi studio tiga panel
+
+Pratinjau pindah ke tengah dan mendapat jalur paling lebar. `editor.vue` (1.814 → 1.630 baris)
+kini `DashboardShell variant="studio"`: toolbar tipis (`DashboardEditorToolbar`, satu-satunya
+pemegang `<h1>` dan status simpan yang tetap **tertulis**), rail struktur di kiri
+(`DashboardEditorSectionRail`: cari bagian, "N dari 14 tampil", ikon per bagian, label Wajib pada
+cover/mempelai/acara yang sakelarnya dimatikan, panah urut, tombol ciut), panggung
+(`DashboardEditorStage`, pemilih Ponsel/Tablet/Laptop mengambang dan pengukur skala pindah ke
+sini), dan inspektor kanan bertab **Bagian | Tema** (`DashboardEditorInspector`, dua panel
+`v-show` ber-`@container`). Dua blok form besar **tidak dipindahkan**; mereka dirender lewat
+named slot, verbatim, karena memutasi `selected.data` langsung dan memanggil ±60 helper halaman.
+
+Preferensi (perangkat, tab, rail ciut) bertahan di `localStorage` lewat `useEditorPrefs`
+ber-`initOnMounted`. Memilih bagian selalu membuka tab Bagian — pref `tema` yang tersimpan tidak
+boleh menyembunyikan form yang baru diminta. Sakelar tampil kini lewat `checkpoint()` sehingga
+bisa di-undo; sebelumnya `v-model` langsung ke `section.enabled`. Panah urut mati selama daftar
+tersaring, dan indeks yang dikirim ke `move()` selalu indeks dokumen (`utils/editor-sections.ts`,
+8 tes unit).
+
+Jalur terukur (`getBoundingClientRect`, 2026-09-19): 1440 → rail 272 · panggung 560 · inspektor
+352; 1280 → 272 · 400 · 352; 1024 → 272 · 496 (kolom dua diisi panggung *atau* inspektor);
+1920 → 272 · 1008 · 384. Tiga cacat ketahuan saat mengukur, bukan dari kode: grid satu kolom di
+ponsel `minmax(auto,1fr)` membuat panggung 422px di jendela 360 (halaman meluber 62px, skala tetap
+1); inspektor 22rem membuat `@xs` (320px) tidak pernah aktif sehingga enam tema bertumpuk satu
+kolom (ambang disetel ulang: dua kolom tetap, tiga di `@md`); dan label "Wajib" `ink-subtle` di atas
+`primary-soft` hanya 4,35:1 menurut axe (diganti `ink-muted`). Bug `xl:col-start-3` lama lenyap
+dengan sendirinya karena urutan DOM rail → panggung → inspektor.
+
+**Cacat keempat milik undangan, bukan editor.** Begitu panggung menampilkan cover pada skala
+100%, sapuan axe di tes Studio Ornamen (desktop) menemukan kicker "Undangan pernikahan" 11px
+tebal hanya **3,66:1**: `.iv-kicker` 0,7 dikalikan `opacity-90` di `Cover.vue` = 0,63 di atas
+latar Aruna Bloom. Mencabut `opacity-90` saja masih 4,20:1 — fg tema hangat, bukan hitam — jadi
+`.iv-kicker` dinaikkan ke 0,8 (±5,6:1). Ini mengubah seluruh kicker undangan sedikit lebih pekat;
+suite publik (semua tema, tiga viewport) tetap hijau.
+
+Tes e2e baru `studio editor: rail, inspektor, dan preferensi yang bertahan` hijau di keempat
+project. Spesifikasi dan sebelum/sesudah: [Artifact](https://claude.ai/artifact/BrdeiMTnJpTSULnNRC5zMp).
+
 ## 2026-09-18: Fase 61 — tiga e2e merah dibereskan, dan cacat keempat yang baru ketahuan
 
 `GET /v1/invitations/:id/guests` berhenti menjawab 500 karena satu baris tamu. `decryptGuestToken()`
@@ -373,3 +470,14 @@ cabang `v-else` milik keadaan memuat. Markup benar, typecheck hijau, lint bersih
 Verifikasi: 1024 tes unit, e2e Studio hijau di mobile/tablet/desktop termasuk **axe pada dialog
 yang sedang terbuka** (sapuan halaman tidak pernah melihatnya). Diperiksa di 375 dan 1440,
 `scrollWidth <= innerWidth` keduanya.
+
+## 2026-09-19 — Fase 66: ikon acara universal, medali di atas judul
+
+- `sections/Events.vue`: ikon akad `Church` → `HeartHandshake`; resepsi tetap `PartyPopper`.
+  Regex pemilih (`/akad|pemberkatan|nikah|misa/`) tidak berubah.
+- Ikon keluar dari baris judul (22px, `opacity-70`, sejajar teks) menjadi medali bulat
+  `.iv-event-badge` 3,5rem di atas judul: ikon 28px stroke 2, latar
+  `color-mix(var(--iv-primary) 12%)`, warna primary. Tanpa override tone `ink`/`primary`:
+  section acara selalu `tone="tint"`, override itu sempat ditulis lalu dibuang sebagai kode mati.
+- Judul kehilangan `flex`; jadi `text-center` biasa. Tidak ada tes yang menyentuh ikon ini.
+

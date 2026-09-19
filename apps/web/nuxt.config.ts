@@ -87,6 +87,11 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     apiBase: process.env.NUXT_API_BASE ?? 'http://127.0.0.1:3001/v1',
+    // Mode demo lokal (fase 63). Privat, bukan `public`: browser tidak perlu tahu, dan
+    // `plugins/auth.server.ts` hanya menghormatinya di `import.meta.dev` pada host loopback.
+    demoLogin: process.env.NUXT_DEV_DEMO ?? '',
+    demoEmail: process.env.NUXT_DEV_DEMO_EMAIL ?? '',
+    demoPassword: process.env.NUXT_DEV_DEMO_PASSWORD ?? '',
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE ?? 'http://127.0.0.1:3001/v1',
       webBase: process.env.NUXT_PUBLIC_WEB_BASE ?? 'http://127.0.0.1:3000',
