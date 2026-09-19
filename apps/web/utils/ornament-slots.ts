@@ -1,3 +1,4 @@
+import type { sectionTypes } from '@aruna/contracts'
 import type { LayerSlot, OrnamentCategory, OrnamentId, OrnamentSet, ResolvedOrnamentSet, UploadedOrnament } from './ornaments'
 import { layerSlot, ornament } from './ornaments'
 
@@ -34,6 +35,36 @@ export const ornamentSlots = [
   'envelopePocket', 'envelopeFlap',
 ] as const
 export type OrnamentSlotKey = (typeof ornamentSlots)[number]
+
+/**
+ * Slot skalar yang benar-benar **dirender** tiap section (fase 71).
+ *
+ * Nilai ornamen tetap global — satu keping `divider` dipakai amplop, hitung mundur, mempelai,
+ * galeri, dan rundown sekaligus — tapi pasangan yang sedang menyunting "Mempelai" tidak perlu
+ * melihat sebelas slot untuk menemukan tiga yang mengubah bagian itu. Tabel ini yang menentukan
+ * kartu "Ornamen di bagian ini" di form tiap bagian; cover memegang ringkasan penuh dan karena
+ * itu membawa juga slot amplop yang dirender `CoverGate.vue` di depannya.
+ *
+ * Ditulis dari pembacaan `components/invitation/sections/*.vue` dan `CoverGate.vue`, dan
+ * **dijaga vitest yang membaca sumbernya** (`ornament-slots.spec.ts`): section yang mulai atau
+ * berhenti memakai satu slot akan memerahkan tes sampai tabel ini ikut diubah.
+ */
+export const sectionOrnamentSlots: Record<(typeof sectionTypes)[number], readonly OrnamentSlotKey[]> = {
+  cover: ['frame', 'corner', 'garland', 'symbol', 'divider', 'seal', 'envelopePocket', 'envelopeFlap'],
+  couple: ['floral', 'corner', 'divider'],
+  events: ['corner'],
+  countdown: ['divider'],
+  gallery: ['divider'],
+  story: ['floralAlt', 'monogram'],
+  rundown: ['divider', 'symbol'],
+  dresscode: ['floralAlt'],
+  video: ['symbol'],
+  gift: [],
+  rsvp: ['floral', 'seal'],
+  wishes: [],
+  closing: ['garland', 'monogram'],
+  music: [],
+}
 
 /**
  * Glyph yang **tidak ditawarkan** Studio Ornamen, meski tetap sah dipasang.

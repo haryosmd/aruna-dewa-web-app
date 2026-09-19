@@ -1,9 +1,12 @@
-import { liveTemplateIds } from '@aruna/contracts'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+import { liveTemplateIds, sectionTypes } from '@aruna/contracts'
 import { describe, expect, it } from 'vitest'
 
 import { toOrnamentOverrides } from '../utils/invitation-options'
 import {
-  jumlahDiganti, layerSlots, muatLayer, muatSlot, ornamentSlots,
+  jumlahDiganti, layerSlots, muatLayer, muatSlot, ornamentSlots, sectionOrnamentSlots,
   slotCategories, terapkanOverrides, tileWidth,
 } from '../utils/ornament-slots'
 import { layerSlot, ornament, ornamentBank, type OrnamentId } from '../utils/ornaments'
@@ -194,5 +197,38 @@ describe('ornamen unggahan (fase 69)', () => {
     expect(berlaku.symbol).toEqual(u)
     expect(berlaku.layers).toHaveLength(5)
     expect(jumlahDiganti(keluar)).toBe(1)
+  })
+})
+
+/**
+ * Tabel `sectionOrnamentSlots` (fase 71) dibaca dari sumber, bukan dari ingatan: tiap
+ * `orn.<slot>` / `ornaments.<slot>` di komponen section adalah satu slot yang benar-benar
+ * dirender, dan tabel harus sama persis dengan itu — tidak lebih (kartu yang tidak mengubah apa
+ * pun terbaca sebagai aplikasi rusak), tidak kurang (slot yang tidak bisa ditemukan dari bagiannya).
+ */
+describe('sectionOrnamentSlots mengikuti sumber section', () => {
+  const invitation = join(__dirname, '..', 'components', 'invitation')
+  const berkas: Record<(typeof sectionTypes)[number], string[]> = {
+    cover: ['sections/Cover.vue', 'CoverGate.vue'], couple: ['sections/Couple.vue'], events: ['sections/Events.vue'],
+    countdown: ['sections/Countdown.vue'], gallery: ['sections/Gallery.vue'], story: ['sections/Story.vue'],
+    rundown: ['sections/Rundown.vue'], dresscode: ['sections/Dresscode.vue'], video: ['sections/Video.vue'],
+    gift: ['sections/Gift.vue'], rsvp: ['sections/Rsvp.vue'], wishes: ['sections/Wishes.vue'],
+    closing: ['sections/Closing.vue'], music: [],
+  }
+  const pola = new RegExp(`\\born(?:aments)?\\.(${ornamentSlots.join('|')})\\b`, 'g')
+
+  it.each(sectionTypes)('%s', (section) => {
+    const dipakai = new Set<string>()
+    for (const nama of berkas[section]) {
+      for (const cocok of readFileSync(join(invitation, nama), 'utf8').matchAll(pola)) dipakai.add(cocok[1]!)
+    }
+    expect([...sectionOrnamentSlots[section]].sort()).toEqual([...dipakai].sort())
+  })
+
+  it('urutan tabel mengikuti urutan slot resmi dan tidak mengulang', () => {
+    for (const section of sectionTypes) {
+      const daftar = sectionOrnamentSlots[section]
+      expect(new Set(daftar).size, section).toBe(daftar.length)
+    }
   })
 })

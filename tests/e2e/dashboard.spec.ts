@@ -1115,6 +1115,17 @@ test.describe('tulisan bagian', () => {
     await openSection(page, 'wishes')
     await expect(page.locator('#editor-copy-wishes-title')).toHaveValue('Doa kalian')
 
+    // Ornamen di bagian ini (fase 71): Mempelai hanya memuat keping yang ia render, dan Ganti
+    // membuka Studio pada slot itu — nilainya tetap yang global.
+    await openSection(page, 'couple')
+    await expect(page.locator('#ornament-ganti-floral')).toBeVisible()
+    await expect(page.locator('#ornament-ganti-frame')).toHaveCount(0)
+    await expect(page.locator('#ornament-kembalikan-semua')).toHaveCount(0)
+    await page.locator('#ornament-ganti-floral').click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog')).toBeHidden()
+
     // Jalan keluar global: dokumen tidak lagi membawa `copy`.
     await page.locator('#editor-inspector-tema').click()
     await page.locator('#editor-copy-kembalikan-semua').click()

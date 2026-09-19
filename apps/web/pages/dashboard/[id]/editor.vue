@@ -7,7 +7,7 @@ import {
   toAttire, toCoverLayout, toGalleryMotion, toOrnamentOverrides,
 } from '~/utils/invitation-options'
 import { type UploadedOrnament, selectableIntensities, toIntensity, type OrnamentId } from '~/utils/ornaments'
-import { bolehUnggah, terapkanOverrides, type OrnamentOverrides, type OrnamentSlotKey } from '~/utils/ornament-slots'
+import { bolehUnggah, sectionOrnamentSlots, terapkanOverrides, type OrnamentOverrides, type OrnamentSlotKey } from '~/utils/ornament-slots'
 import { bawaanSlot } from '~/utils/ornament-search'
 import { toBackdrop, toBackdropWeight } from '~/utils/backdrops'
 import { themeOrnaments } from '~/utils/theme'
@@ -377,18 +377,22 @@ function writeOption(key: string, value: string) {
 /** Aksen tema yang sedang berlaku — pratinjau ornamen diwarnai ramp yang sama dengan undangan. */
 // `accent` hidup di preset kontrak, bukan di `ThemePresentation`; `templateById()` yang
 // menerjemahkan id pensiun, jadi pratinjau tetap berwarna untuk tema yang dipensiunkan.
+const coverSection = computed(() => document.value?.sections.find(section => section.type === 'cover'))
+
 const themeAccent = computed(() => templateById(document.value?.templateId ?? '')?.accent ?? '#7A8B6F')
 
 
 /**
- * Penukaran ornamen yang sedang berlaku.
+ * Penukaran ornamen yang sedang berlaku — selalu dibaca dari **cover**, bukan dari bagian yang
+ * dipilih: sejak fase 71 kartu "Ornamen di bagian ini" tampil di setiap form bagian, dan
+ * nilainya tetap satu untuk seluruh undangan.
  *
  * `ornamentOverrides` bernilai objek, bukan string, jadi ia tidak perlu masuk `enumKeys` —
  * `textFields` sudah menyaring dengan `typeof value === 'string'`. Tapi ia juga karena itu
  * tidak bisa lewat `writeOption()`, yang hanya menerima string.
  */
 const ornamentOverrides = computed(() =>
-  toOrnamentOverrides(selected.value?.data.ornamentOverrides, document.value?.templateId ?? ''))
+  toOrnamentOverrides(coverSection.value?.data.ornamentOverrides, document.value?.templateId ?? ''))
 
 /** Set tema sesudah penukaran, untuk ringkasan panel. */
 const ornamentSet = computed(() => themeOrnaments(document.value?.templateId ?? ''))
@@ -1503,6 +1507,22 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
 
             <p v-if="!textFields.length" class="notice m-0">Bagian ini tidak punya pengaturan teks.</p>
           </div>
+
+          <!--
+            Ornamen di bagian ini (fase 71): hanya slot yang bagian ini render. Cover tidak
+            mendapatnya — ia sudah memegang ringkasan penuh di kartunya sendiri di atas.
+          -->
+          <DashboardOrnamentSlotSummary
+            v-if="selected.type !== 'cover' && sectionOrnamentSlots[selected.type].length"
+            :set="ornamentSet"
+            :overrides="ornamentOverrides"
+            :slots="sectionOrnamentSlots[selected.type]"
+            :tokens="document.tokens"
+            :accent="themeAccent"
+            :terkunci="!canEditDesign"
+            :locked-by="designAddon ? `Add-on ${designAddon.name} (${formatRupiah(designAddon.price)}) membukanya.` : undefined"
+            @buka="bukaStudio"
+          />
 
           <!--
             Tulisan bagian ini (fase 71): kicker, judul, tombol, dan pesan sistem yang dibaca

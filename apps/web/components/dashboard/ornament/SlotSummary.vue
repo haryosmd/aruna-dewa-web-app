@@ -29,6 +29,13 @@ const props = defineProps<{
   accent: string
   terkunci: boolean
   lockedBy?: string
+  /**
+   * Fase 71: hanya slot yang dirender bagian yang sedang disunting (`sectionOrnamentSlots`).
+   * Bila diberi, kartu ini jadi "Ornamen di bagian ini": tanpa keping latar, tanpa tombol
+   * kembalikan-semua (keduanya milik ringkasan penuh di cover), dan kalimatnya mengatakan
+   * bahwa nilainya tetap berlaku di setiap bagian yang memakai keping yang sama.
+   */
+  slots?: readonly OrnamentSlotKey[]
 }>()
 
 const emit = defineEmits<{
@@ -40,7 +47,8 @@ const berlaku = computed(() => terapkanOverrides(props.set, props.overrides))
 const diganti = computed(() => jumlahDiganti(props.overrides))
 const ramp = computed(() => rampStyle(ornamentRamp(props.tokens, props.accent)))
 
-const baris = computed(() => ornamentSlots.map(slot => ({
+const tersaring = computed(() => props.slots !== undefined)
+const baris = computed(() => (props.slots ?? ornamentSlots).map(slot => ({
   kunci: slot as string,
   slot,
   layer: undefined as LayerSlot | undefined,
@@ -67,10 +75,14 @@ const barisLayer = computed(() => layerSlots.map(jangkar => {
   <div class="grid gap-3 rounded-md border border-border bg-surface-2 p-3.5">
     <div class="grid gap-1">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 class="m-0 text-[0.9375rem] font-semibold text-ink">Ornamen</h3>
-        <span v-if="diganti" class="text-caption text-ink-muted">{{ diganti }} diganti dari bawaan tema</span>
+        <h3 class="m-0 text-[0.9375rem] font-semibold text-ink">{{ tersaring ? 'Ornamen di bagian ini' : 'Ornamen' }}</h3>
+        <span v-if="diganti && !tersaring" class="text-caption text-ink-muted">{{ diganti }} diganti dari bawaan tema</span>
       </div>
-      <p class="m-0 text-caption text-ink-subtle">
+      <p v-if="tersaring" class="m-0 text-caption text-ink-subtle">
+        Keping yang dipakai bagian ini. Satu keping dipakai beberapa bagian sekaligus, jadi
+        mengganti di sini mengubah semuanya; ringkasan lengkapnya ada di Cover pembuka.
+      </p>
+      <p v-else class="m-0 text-caption text-ink-subtle">
         Seluruh bank terbuka. Yang disarankan tampil lebih dulu; yang tidak seresep dengan tema
         tetap bisa dipilih dan diberi tanda.
       </p>
@@ -98,7 +110,7 @@ const barisLayer = computed(() => layerSlots.map(jangkar => {
       </li>
     </ul>
 
-    <details class="rounded-md border border-border bg-surface">
+    <details v-if="!tersaring" class="rounded-md border border-border bg-surface">
       <summary class="cursor-pointer list-none px-3 py-2.5 text-[0.8125rem] font-medium text-ink">
         Keping latar bagian
         <span class="ml-1 text-caption font-normal text-ink-subtle">lima jangkar ladang ornamen</span>
@@ -127,7 +139,7 @@ const barisLayer = computed(() => layerSlots.map(jangkar => {
       lain tidak punya cara kembali selain menukarnya satu per satu.
     -->
     <UiButton
-      v-if="diganti"
+      v-if="diganti && !tersaring"
       id="ornament-kembalikan-semua"
       tone="quiet"
       size="sm"
