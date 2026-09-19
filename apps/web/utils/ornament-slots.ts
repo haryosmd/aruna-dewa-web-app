@@ -15,7 +15,8 @@ import { layerSlot, ornament } from './ornaments'
  */
 
 /**
- * Slot skalar yang bisa ditukar. **Sembilan, bukan sepuluh** — `motif` sengaja tidak ada.
+ * Slot skalar yang bisa ditukar. **Sebelas sejak fase 69** (sembilan + dua bentuk amplop);
+ * `motif` sengaja tidak ada.
  *
  * `OrnamentSet.motif` terdaftar, dijaga gerbang keunikan, dan **tidak pernah dirender di
  * undangan**: diukur pada seluruh `components/invitation/`, satu-satunya pembacanya adalah
@@ -29,6 +30,8 @@ import { layerSlot, ornament } from './ornaments'
  */
 export const ornamentSlots = [
   'frame', 'divider', 'corner', 'floral', 'floralAlt', 'monogram', 'symbol', 'garland', 'seal',
+  // Fase 69: dua bentuk amplop gerbang, dulu path inline di CoverGate.vue.
+  'envelopePocket', 'envelopeFlap',
 ] as const
 export type OrnamentSlotKey = (typeof ornamentSlots)[number]
 
@@ -69,6 +72,8 @@ export const slotCategories: Record<OrnamentSlotKey, readonly OrnamentCategory[]
   symbol: ['symbol'],
   garland: ['floral'],
   seal: ['seal', 'monogram'],
+  envelopePocket: ['envelopePocket'],
+  envelopeFlap: ['envelopeFlap'],
 }
 
 /**
@@ -114,6 +119,8 @@ export const slotLabels: Record<OrnamentSlotKey, SlotLabel> = {
   symbol: { label: 'Simbol', hint: 'Lambang kecil di cover, rundown, dan bagian video.' },
   garland: { label: 'Karangan', hint: 'Untaian melintang di cover dan penutup.' },
   seal: { label: 'Segel', hint: 'Lilin penutup amplop yang terbelah saat dibuka, dan cap pada kartu RSVP.' },
+  envelopePocket: { label: 'Kantong amplop', hint: 'Bagian depan amplop yang menutupi surat sebelum dibuka.' },
+  envelopeFlap: { label: 'Flap amplop', hint: 'Tutup amplop yang terbuka setelah segel terbelah.' },
 }
 
 export const layerSlotLabels: Record<LayerSlot, SlotLabel> = {

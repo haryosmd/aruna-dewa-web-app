@@ -31,6 +31,11 @@ export interface OrnamentMetric {
 }
 
 export const ornamentMetrics: Record<string, OrnamentMetric> = {
+  'amplop-flap-bertakik': { garis: [2.5], rel: true, bytes: 1047 },
+  'amplop-flap-lengkung': { garis: [2.5], rel: true, bytes: 1225 },
+  'amplop-flap-runcing': { garis: [2.5], rel: true, bytes: 965 },
+  'amplop-kantong-lengkung': { garis: [2.5], rel: true, bytes: 1135 },
+  'amplop-kantong-lurus': { garis: [2.5], rel: true, bytes: 986 },
   'arch': { garis: [3], rel: true, bytes: 12552 },
   'attire-batik': { garis: [3], rel: true, bytes: 753 },
   'attire-dress': { garis: [3], rel: true, bytes: 660 },

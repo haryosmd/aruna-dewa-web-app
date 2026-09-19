@@ -113,11 +113,15 @@ function finish() {
           >
             <div class="absolute inset-0" style="background: color-mix(in srgb, var(--iv-primary) 16%, var(--iv-bg))" />
 
-            <!-- Front pocket: two folded side panels meeting in a shallow V. -->
-            <svg viewBox="0 0 300 200" class="absolute inset-0 z-20 h-full w-full" preserveAspectRatio="none" aria-hidden="true">
-              <path d="M0 62 L150 152 L300 62 V200 H0 Z" :style="{ fill: 'color-mix(in srgb, var(--iv-primary) 26%, var(--iv-bg))' }" />
-              <path d="M0 62 L150 152 L300 62" fill="none" stroke="currentColor" stroke-opacity="0.18" stroke-width="1.5" />
-            </svg>
+            <!--
+              Kantong depan — glyph slot `envelopePocket` (fase 69), dulu path inline di sini.
+              Badannya `currentColor` = campuran warna utama; garis tepinya `--amplop-garis`.
+            -->
+            <OrnamentGlyph
+              :glyph="props.ornaments.envelopePocket"
+              class="absolute inset-0 z-20 h-full w-full"
+              :style="{ color: 'color-mix(in srgb, var(--iv-primary) 26%, var(--iv-bg))', '--amplop-garis': 'var(--iv-fg)' }"
+            />
           </div>
 
           <!--
@@ -140,10 +144,12 @@ function finish() {
             class="absolute inset-x-0 top-0 z-30 origin-top"
             style="height: 58%; transform-style: preserve-3d; backface-visibility: hidden"
           >
-            <svg viewBox="0 0 300 174" class="h-full w-full drop-shadow-sm" preserveAspectRatio="none" aria-hidden="true">
-              <path d="M0 0 H300 L150 174 Z" :style="{ fill: 'color-mix(in srgb, var(--iv-primary) 34%, var(--iv-bg))' }" />
-              <path d="M0 0 H300 L150 174 Z" fill="none" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.5" />
-            </svg>
+            <!-- Flap — glyph slot `envelopeFlap` (fase 69). -->
+            <OrnamentGlyph
+              :glyph="props.ornaments.envelopeFlap"
+              class="h-full w-full drop-shadow-sm"
+              :style="{ color: 'color-mix(in srgb, var(--iv-primary) 34%, var(--iv-bg))', '--amplop-garis': 'var(--iv-fg)' }"
+            />
           </div>
 
           <!--

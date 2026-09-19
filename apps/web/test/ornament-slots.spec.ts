@@ -24,6 +24,13 @@ const ids = Object.keys(ornamentBank) as OrnamentId[]
 const pertama = (cocok: (id: OrnamentId) => boolean) => ids.find(cocok)!
 
 describe('kosakata slot', () => {
+  it('sebelas slot skalar sejak fase 69, dan tiap slot amplop punya lebih dari satu bentuk', () => {
+    expect(ornamentSlots).toHaveLength(11)
+    for (const slot of ['envelopePocket', 'envelopeFlap'] as const) {
+      expect(ids.filter(id => muatSlot(slot, id)).length, slot).toBeGreaterThan(1)
+    }
+  })
+
   it('memberi tiap slot skalar daftar kategori yang tidak kosong', () => {
     expect(Object.keys(slotCategories).sort()).toEqual([...ornamentSlots].sort())
     for (const slot of ornamentSlots) expect(slotCategories[slot].length, slot).toBeGreaterThan(0)

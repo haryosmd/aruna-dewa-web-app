@@ -19,6 +19,8 @@ import { referenceOrnaments } from './ornament-reference'
 export type OrnamentCategory =
   | 'frame' | 'divider' | 'corner' | 'floral' | 'monogram' | 'motif' | 'symbol'
   | 'layer' | 'venue' | 'attire' | 'seal'
+  /** Dua bentuk amplop gerbang (fase 69): camelCase karena `bacaBank()` di forge hanya membaca `\w+`. */
+  | 'envelopePocket' | 'envelopeFlap'
 
 /**
  * Jangkar sebuah layer. Bukan posisi CSS-nya — `OrnamentField` yang menerjemahkan slot
@@ -62,6 +64,12 @@ const layer = (component: string, name: string, slot: LayerSlot, ratio: number) 
 
 export const ornamentBank = {
   ...referenceOrnaments,
+  // Amplop gerbang (fase 69) — dulu dua <svg> inline di CoverGate.vue.
+  'amplop-kantong-lurus': { component: 'OrnamentAmplopKantongLurus', name: 'Kantong lurus', category: 'envelopePocket', ratio: 300 / 200 },
+  'amplop-kantong-lengkung': { component: 'OrnamentAmplopKantongLengkung', name: 'Kantong lengkung', category: 'envelopePocket', ratio: 300 / 200 },
+  'amplop-flap-runcing': { component: 'OrnamentAmplopFlapRuncing', name: 'Flap runcing', category: 'envelopeFlap', ratio: 300 / 174 },
+  'amplop-flap-lengkung': { component: 'OrnamentAmplopFlapLengkung', name: 'Flap lengkung', category: 'envelopeFlap', ratio: 300 / 174 },
+  'amplop-flap-bertakik': { component: 'OrnamentAmplopFlapBertakik', name: 'Flap bertakik', category: 'envelopeFlap', ratio: 300 / 174 },
   // Frame
   'arch': { component: 'OrnamentArch', name: 'Gerbang ganda', category: 'frame', ratio: 300 / 420 },
   'frame-oval': { component: 'OrnamentFrameOval', name: 'Oval', category: 'frame', ratio: 300 / 420 },
@@ -435,6 +443,9 @@ export interface OrnamentSet {
   garland: OrnamentId
   /** Penutup amplop di cover gate. */
   seal: OrnamentId
+  /** Kantong depan dan flap amplop gerbang (fase 69). */
+  envelopePocket: OrnamentId
+  envelopeFlap: OrnamentId
   /** Lima layer milik tema, satu per slot. Urutannya tidak penting — `slot` yang dibaca. */
   layers: OrnamentId[]
 }

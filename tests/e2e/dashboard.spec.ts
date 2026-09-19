@@ -911,8 +911,8 @@ test.describe('studio ornamen', () => {
       await saveDraft(page)
     }
 
-    // Ringkasan menggantikan empat grid ubin: sembilan slot skalar + lima jangkar ladang.
-    await expect(page.locator('[id^="ornament-ganti-"]')).toHaveCount(14)
+    // Ringkasan menggantikan empat grid ubin: sebelas slot skalar (fase 69: + dua amplop) + lima jangkar ladang.
+    await expect(page.locator('[id^="ornament-ganti-"]')).toHaveCount(16)
 
     await page.locator('#ornament-ganti-divider').click()
     const dialog = page.getByRole('dialog')
