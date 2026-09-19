@@ -138,3 +138,13 @@ undangan tampil dan bisa digulung. Di bawah `lg` panelnya disembunyikan; yang te
 Alasannya ada di `docs/ROADMAP.md` (Fase 65). Yang penting untuk landing: potret alur pesanan di
 `verification/` kini menunjukkan nama pasangan di lipatan pertama pratinjau — klaim "pratinjau ikut
 berubah saat kalian mengetik" akhirnya terlihat, bukan dijanjikan. Potret belum diambil ulang.
+
+## REV-010 — 2026-09-19 — Fase 69.5, tombol "Buat tema versi Anda sendiri"
+
+- Header koleksi tema (`landing/Themes.vue`) mendapat tombol outline → `/order?langkah=tema&addon=design`;
+  `Cta.vue` tidak disentuh (sudah memegang dua aksi).
+- `/order` membaca `?langkah=` (`langkahDariQuery()`, nama langkah bukan angka) dan `?addon=design`;
+  catatan di langkah Tema; `checkout()` mengembalikan ke langkah 1–2 yang belum lengkap. Login tetap
+  wajib sebelum `/order` — `?next=` membawa query-nya utuh.
+- E2e: publik memeriksa tautan dan pengalihan; dasbor (masuk) memeriksa langkah Tema terbuka, catatan
+  tampil, dan `addonIds` draft berisi `design`.

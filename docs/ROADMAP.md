@@ -78,30 +78,57 @@ lalu dirapikan sekali setelah mengendap.
 
 **Fase 69 — "Buat tema versi Anda sendiri".** Ditulis 2026-09-19 dari permintaan pemilik saat
 menyetujui fase 67: "semua wording, semua aset, bingkai, motion bisa diganti", tombol di landing,
-dan aset amplop yang "dipotong" ikut bisa diganti. **Belum dikerjakan** — ditulis supaya cakupannya
-jujur sebelum ada yang menyentuh kode, karena ia menyentuh skema dokumen, jalur unggah, dan harga.
+dan aset amplop yang "dipotong" ikut bisa diganti. Dua keputusan pemilik (sesi yang sama):
+unggahan **raster transparan saja — SVG ditunda** ke fase lain; **bukan tingkat harga baru** —
+seluruhnya di balik add-on `design` yang sudah ada.
 
-Yang sudah ada hari ini: warna bebas, huruf judul/isi terenumerasi, ubin latar, kepekatan ornamen,
-ornamen per slot dari bank 220 glyph (termasuk **segel** — bentuk yang dibelah dua lewat
-`clip-path` di `CoverGate`, jadi "aset yang dipotong" sebenarnya sudah bisa diganti lewat Studio
-Ornamen), komposisi cover, dan motion galeri. Yang belum: kata-kata, dua bentuk amplop, motion
-per undangan, dan ornamen unggahan.
+Yang sudah ada sebelum fase ini: warna bebas, huruf judul/isi terenumerasi, ubin latar, kepekatan
+ornamen, ornamen per slot dari bank (termasuk segel — yang "dipotong" itu), komposisi cover, motion
+galeri. Yang dibangun, berurutan, tiap langkah satu commit:
 
-**Yang akan dibangun, berurutan:** (1) lapisan `copy` di `invitationDocumentSchema` dengan daftar
-kunci tertutup dan batas panjang — sekitar 40 string tamu-facing masih ditulis mati di
-`sections/*.vue` dan `CoverGate.vue` (RSVP 14, Ucapan 7, gerbang 4: "Kepada Yth.", "Tanpa
-mengurangi rasa hormat…", "Buka Undangan"); helper `t(key, fallback)` di renderer dan form
-"Kata-kata" di tab Tema. (2) Kantong dan flap amplop (`CoverGate.vue`) — satu-satunya bentuk
-gerbang yang masih path inline — diangkat ke bank sebagai slot `envelope-pocket` dan
-`envelope-flap` di `ornament-slots.ts`, mengikuti pola slot `seal`. (3) Motion per undangan lewat
-`tokens.motion` terenumerasi (kecepatan amplop pelan/sedang/cepat, gaya masuk section), bukan
-angka bebas; `motion-score.ts` tetap milik tema. (4) Ornamen unggahan: `mediaRules.image`
-melarang SVG dengan sengaja (XSS) dan `Glyph.vue` hanya menyelesaikan komponen build-time —
-**butuh keputusan pemilik**: SVG dengan sanitasi server (svgo + allowlist) atau raster
-transparan saja. (5) Tombol "Buat tema versi Anda sendiri" di header `landing/Themes.vue`, bukan
-di `Cta.vue` yang sudah memegang dua aksi; menuju `/order` dengan tab Tema terbuka — baru
-bermakna setelah (1)–(3). (6) Semua ini masuk `designFingerprint` → entitlement `design`;
-**butuh keputusan pemilik** apakah tema sendiri jadi tingkat harga baru.
+(1) **Kata-kata.** `copyKeys` tertutup di contracts (44 kunci; batas 40/80/240 per jenis) dan
+`copy` opsional di dokumen. Bawaan di `utils/invitation-copy.ts` = teks lama persis, `t(key)` di
+konteks renderer; `CoverGate` dan tiga belas section membaca lewatnya. Form "Kata-kata" di tab Tema
+(`CopyForm`, `<details>` per bagian, placeholder = bawaan, tulis saat `change`); kosong/sama
+dengan bawaan dihapus dari dokumen. String konten lama (`text(section, key)`) tidak dipindah;
+aria, toast, dan state "Menyimpan…" tetap tetap.
+(2) **Amplop.** Kantong dan flap — dua `<svg>` inline terakhir di `CoverGate` — jadi lima glyph
+`amplop-*` berkategori `envelopePocket`/`envelopeFlap` (camelCase: `bacaBank()` forge hanya
+membaca `\w+`), slot ke-10 dan ke-11, bawaan di 5 tema hidup dan 8 set pensiun. `fitOf()` tidak
+memberi lencana garis pada lipatan kertas; forge dapat ambang elemen untuk dua kategori itu dan
+tiga deklarasi rectilinear beralasan. Gerbang `data-draw` tetap dipenuhi (garis tepi), aman
+karena selektor motion hanya menyentuh `[data-iv-ornament] [data-draw]`.
+(3) **Gerak per undangan.** `tokens.motion { amplop: pelan|sedang|cepat, masuk: rise|sweep|iris|
+silhouette }`, opsional, "ikut tema" = kunci dihapus. `motion-envelope.ts`: `sedang` adalah fase 68
+persis, segel tetap literal (fase 68 menolak `timeScale` global). `terapkanMotionDokumen()`
+menimpa `entrance` partitur tema; tema lama (Bloom) mendapat partitur minimal hanya bila pasangan
+memilih. `MotionPicker` di tab Tema, dua `<select>`.
+(4) **Ornamen unggahan (raster).** `mediaRules.ornament` (PNG/WebP, 300 KB), `MediaAsset.kind`
++ `width`/`height` (migrasi + backfill), `?jenis=ornament` dinyatakan klien karena PNG yang sama
+bisa foto atau ornamen. `ornament-intake.ts` membaca IHDR/VP8X/VP8L tanpa `sharp`: dimensi dan
+kanal alpha wajib — ornamen tanpa alpha ditolak dengan kalimat. Disimpan di
+`ornamentOverrides.unggahan[slot] = { url, width, height }` dengan **URL publik penuh** karena
+`asset-usage.ts` memutuskan apa yang disajikan tamu dengan mencari URL itu; `OrnamentSet` tema
+tetap id-only, renderer menerima `ResolvedOrnamentSet`. Sembilan slot skalar boleh; amplop (harus
+melar dan diwarnai) dan `layers` (aturan berat) tidak. Tab "Unggahan" di Studio: dropzone, ubin,
+hapus; `Glyph.vue` merender unggahan lewat `ReferenceAsset`.
+(5) **Tombol landing** di header `Themes.vue` → `/order?langkah=tema&addon=design`;
+`langkahDariQuery()` membuka wizard di langkah Tema, add-on Desain tercentang, `checkout()`
+mengembalikan ke langkah 1–2 yang kosong.
+(6) **Gerbang.** `designFingerprint` menyortir `tokens` sampai ke dalam, membaca `copy` dan
+`unggahan`; `{}` ≡ absen di ketiganya. Pesan 400 dan `#design-locked` menyebut kata-kata dan gerak.
+
+**Belum:** unggahan SVG (butuh sanitasi server — ditunda pemilik), "tema sendiri" sebagai
+tingkat harga (pemilik memutuskan tidak). Verifikasi tiap langkah ada di CHANGELOG
+invitation-builder dan landing-order.
+
+**Fase 69 selesai 2026-09-19.** Vitest web 788 → 815, API + contracts 280, forge verify bersih,
+`lint`/`typecheck` hijau. E2e dasbor desktop 19/20 — satu merah `signing in elsewhere ends the
+older session` (sesi/auth, tidak tersentuh fase ini); yang baru: kata-kata, gerak, ornamen
+unggahan (PNG RGBA dirakit di tes), tautan tema sendiri, semuanya hijau desktop + mobile. Catatan
+verifikasi: API owner di 3001 (`nest --watch --exec tsx`) tidak memuat ulang skema contracts yang
+berubah, jadi autosave di web 3000 ditolak 400 sampai API itu dimulai ulang; e2e dijalankan pada
+pasangan sendiri (API dari `dist`, web 3010).
 
 **Fase 68 — amplop membuka lebih pelan.** Ditulis 2026-09-19; pemilik: "motion surat keluarnya
 agak lamaan sedikit, sekarang terlalu cepat". Timeline di `CoverGate.vue` total ≈2,3 detik, dan

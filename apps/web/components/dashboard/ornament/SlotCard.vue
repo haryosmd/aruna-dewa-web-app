@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { OrnamentId } from '~/utils/ornaments'
-import { ornament } from '~/utils/ornaments'
+import type { OrnamentRef } from '~/utils/ornaments'
+import { isUnggahan, ornament } from '~/utils/ornaments'
 
 /**
  * Satu ubin slot di ringkasan ornamen inspektor (fase 70).
@@ -18,7 +18,7 @@ import { ornament } from '~/utils/ornaments'
 defineProps<{
   kunci: string
   label: string
-  glyph: OrnamentId
+  glyph: OrnamentRef
   bawaan: boolean
   ramp: Record<string, string>
   terkunci: boolean
@@ -40,7 +40,7 @@ const emit = defineEmits<{ buka: [] }>()
         {{ label }}
         <span v-if="!bawaan" class="rounded-full bg-primary-soft px-1.5 py-0.5 text-caption font-semibold text-primary">Diganti</span>
       </span>
-      <span class="truncate text-caption text-ink-subtle">{{ ornament(glyph).name }}</span>
+      <span class="truncate text-caption text-ink-subtle">{{ isUnggahan(glyph) ? 'Unggahan kalian' : ornament(glyph).name }}</span>
     </span>
     <UiButton
       :id="`ornament-ganti-${kunci}`"

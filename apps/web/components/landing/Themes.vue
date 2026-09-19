@@ -48,6 +48,18 @@ useArunaMotion(root, ({ revealText, revealUp, bloomIn, cascadeIn }) => {
           Setiap tema membawa ornamennya sendiri — bingkai, pemisah, sudut, motif, sampai segel
           amplopnya. Bukan tiga warna yang ditukar, melainkan wajah yang benar-benar berbeda.
         </p>
+        <!--
+          Fase 69. Di header koleksi, bukan di `Cta.vue` yang sudah memegang dua aksi: tombol ini
+          menjawab pertanyaan yang muncul persis saat melihat tema — "kalau tidak ada yang pas?".
+          Menuju langkah Tema di /order dengan add-on Desain sudah tercentang.
+        -->
+        <div data-themes-intro class="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <UiButton id="landing-themes-custom" as="NuxtLink" to="/order?langkah=tema&addon=design" tone="outline">
+            Buat tema versi Anda sendiri
+            <ArrowUpRight :size="16" aria-hidden="true" />
+          </UiButton>
+          <span class="text-caption text-ink-muted">Warna, huruf, ornamen, amplop, kata-kata, dan gerak — dengan add-on Desain.</span>
+        </div>
       </header>
 
       <UiCarousel label="Tema undangan" align="start" control-id="landing-themes">

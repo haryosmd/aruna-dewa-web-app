@@ -200,7 +200,23 @@ function kanonik(value: unknown): Record<string, unknown> | null {
     // `layers` diperiksa LEBIH DULU, bukan sesudah cabang string. Diperiksa belakangan, sebuah
     // `layers: 'apa saja'` lolos sebagai string biasa dan menyalakan gerbang dari sampah.
     if (key === 'layers') { const bersarang = kanonik(nilai); if (bersarang) keluar[key] = bersarang; }
+    // `unggahan` (fase 69): per slot sebuah objek { url, width, height }; hanya tiga kunci itu yang dibaca.
+    else if (key === 'unggahan') { const bersarang = kanonikUnggahan(nilai); if (bersarang) keluar[key] = bersarang; }
     else if (typeof nilai === 'string') keluar[key] = nilai;
+  }
+  return Object.keys(keluar).length ? keluar : null;
+}
+
+function kanonikUnggahan(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const masuk = value as Record<string, unknown>;
+  const keluar: Record<string, unknown> = {};
+  for (const key of Object.keys(masuk).sort()) {
+    const item = masuk[key];
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+    const { url, width, height } = item as Record<string, unknown>;
+    if (typeof url !== 'string') continue;
+    keluar[key] = { url, width: typeof width === 'number' ? width : null, height: typeof height === 'number' ? height : null };
   }
   return Object.keys(keluar).length ? keluar : null;
 }

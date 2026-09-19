@@ -1,7 +1,7 @@
 import type { InjectionKey, Ref } from 'vue'
 import type { CopyKey } from '@aruna/contracts'
 import type { GuestProfile, InvitationDocument, RsvpPayload, Section, Wish } from '~/types/aruna'
-import type { OrnamentIntensity, OrnamentSet } from '~/utils/ornaments'
+import type { OrnamentIntensity, ResolvedOrnamentSet } from '~/utils/ornaments'
 
 /**
  * Konteks bersama seluruh section undangan.
@@ -14,7 +14,7 @@ import type { OrnamentIntensity, OrnamentSet } from '~/utils/ornaments'
  */
 export interface InvitationContext {
   document: Ref<InvitationDocument>
-  orn: Ref<OrnamentSet>
+  orn: Ref<ResolvedOrnamentSet>
   intensity: Ref<OrnamentIntensity>
   compact: Ref<boolean>
   /**

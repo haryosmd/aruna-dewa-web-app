@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { OrnamentIntensity, OrnamentSet } from '~/utils/ornaments'
+import type { OrnamentIntensity, ResolvedOrnamentSet } from '~/utils/ornaments'
 
 withDefaults(
   defineProps<{
@@ -13,7 +13,7 @@ withDefaults(
      * tengah pada `opacity-[0.18]`; sekarang `OrnamentField` yang memasang 2–6 keping
      * bermassa di jangkar tepi. Null mematikan ladangnya (dipakai pratinjau compact).
      */
-    ornaments?: OrnamentSet | null
+    ornaments?: ResolvedOrnamentSet | null
     intensity?: OrnamentIntensity
     /** Membedakan resep jangkar antar section. Cukup indeks section-nya. */
     seed?: number

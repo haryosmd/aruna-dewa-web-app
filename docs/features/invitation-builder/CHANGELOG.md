@@ -1,5 +1,23 @@
 # Revision history
 
+## 2026-09-19: Fase 69 — "Buat tema versi Anda sendiri" (langkah 1–4, 6)
+
+- **Kata-kata** (69.1): `copyKeys` (44) + `copy` opsional; `t()` di renderer; `CopyForm` di tab
+  Tema. Vitest web 796 → 810, API+contracts 268; e2e "kata-kata undangan" desktop + mobile.
+- **Amplop** (69.2): lima glyph `amplop-*`, slot `envelopePocket`/`envelopeFlap`, CoverGate
+  merender keduanya lewat `OrnamentGlyph`. Forge verify bersih; ringkasan ornamen 14 → 16 slot.
+- **Gerak** (69.3): `tokens.motion`, `motion-envelope.ts` (sedang = fase 68 persis), `MotionPicker`.
+  E2e "gerak undangan" (pilih pelan+iris, bertahan, kembali ke tema).
+- **Ornamen unggahan raster** (69.4): `mediaRules.ornament`, Prisma `MediaAsset.kind/width/height`
+  (migrasi `20260919000000_media_kind_dimensions`), `ornament-intake.ts` (probe PNG/WebP, alpha
+  wajib), `GET/POST …/media?jenis=`, `ornamentOverrides.unggahan`, tab Unggahan di Studio. E2e
+  "ornamen unggahan": PNG RGBA dirakit di tes, terpasang di Simbol, "Unggahan kalian" + "Diganti",
+  dihapus lagi. SVG **ditunda** (keputusan pemilik).
+- **Gerbang** (69.6): fingerprint membaca `copy`, `tokens.motion`, `unggahan`; tiga spec
+  `design-gate-*` baru/diperluas.
+- Temuan sambil jalan: dialog Studio dipasang `v-if` dengan `open` sudah true, jadi watcher
+  `open` tidak pernah melihat pembukaan pertama — `onMounted` ikut memanggil `saatDibuka()`.
+
 ## 2026-09-19: Fase 70 — rail menggulir panggung, kartu ornamen bersih, bank bingkai dirapikan
 
 - Memilih bagian di rail "Struktur undangan" menggulir panggung pratinjau ke bagian itu

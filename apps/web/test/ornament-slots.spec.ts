@@ -169,3 +169,30 @@ describe('tileWidth', () => {
     }
   })
 })
+
+describe('ornamen unggahan (fase 69)', () => {
+  const url = 'http://127.0.0.1:3001/v1/public/media/11111111-1111-4111-8111-111111111111'
+  const u = { url, width: 200, height: 100 }
+
+  it('diterima di slot yang boleh, ditolak di amplop dan layers', () => {
+    const keluar = toOrnamentOverrides({ unggahan: { symbol: u, envelopeFlap: u }, layers: { bloom: u } }, tema)
+    expect(keluar.unggahan).toEqual({ symbol: u })
+    expect(keluar.layers).toBeUndefined()
+  })
+
+  it('menolak URL asing dan dimensi yang bukan bilangan bulat', () => {
+    expect(toOrnamentOverrides({ unggahan: { symbol: { url: 'https://cdn.lain/x.png', width: 200, height: 100 } } }, tema).unggahan).toBeUndefined()
+    expect(toOrnamentOverrides({ unggahan: { symbol: { url, width: 1.5, height: 100 } } }, tema).unggahan).toBeUndefined()
+    expect(toOrnamentOverrides({ unggahan: { symbol: { url, width: 9000, height: 100 } } }, tema).unggahan).toBeUndefined()
+  })
+
+  it('menang atas id bank di slot yang sama, dan id bank itu dibuang', () => {
+    const idLain = pertama(id => muatSlot('symbol', id) && id !== themeOrnaments(tema).symbol)
+    const keluar = toOrnamentOverrides({ symbol: idLain, unggahan: { symbol: u } }, tema)
+    expect(keluar.symbol).toBeUndefined()
+    const berlaku = terapkanOverrides(themeOrnaments(tema), keluar)
+    expect(berlaku.symbol).toEqual(u)
+    expect(berlaku.layers).toHaveLength(5)
+    expect(jumlahDiganti(keluar)).toBe(1)
+  })
+})

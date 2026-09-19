@@ -1,3 +1,4 @@
+import { deflateSync } from 'node:zlib'
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { readFileSync, existsSync } from 'node:fs'
@@ -1109,4 +1110,91 @@ test.describe('gerak undangan', () => {
     await page.locator('#editor-motion-masuk').selectOption('tema')
     await saveDraft(page)
   })
+})
+
+/*
+ * Ornamen unggahan (fase 69): raster transparan pasangan masuk lewat tab Unggahan di Studio,
+ * terpasang ke slot, tampil di ringkasan sebagai "Unggahan kalian", dan bisa dihapus lagi.
+ * PNG-nya dirakit di dalam tes (RGBA 24×24, IDAT deflate sungguhan) supaya browser benar-benar
+ * bisa merendernya — bukan fixture dari disk yang bisa hilang.
+ */
+function pngTransparan(size = 24): Buffer {
+  const crcTable = Array.from({ length: 256 }, (_, n) => {
+    let c = n
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
+    return c >>> 0
+  })
+  const crc = (buf: Buffer) => { let c = 0xffffffff; for (const b of buf) c = crcTable[(c ^ b) & 0xff]! ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0 }
+  const chunk = (type: string, data: Buffer) => {
+    const len = Buffer.alloc(4); len.writeUInt32BE(data.length)
+    const body = Buffer.concat([Buffer.from(type, 'ascii'), data])
+    const sum = Buffer.alloc(4); sum.writeUInt32BE(crc(body))
+    return Buffer.concat([len, body, sum])
+  }
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(size, 0); ihdr.writeUInt32BE(size, 4); ihdr[8] = 8; ihdr[9] = 6
+  const raw = Buffer.alloc(size * (1 + size * 4))
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const o = y * (1 + size * 4) + 1 + x * 4
+    const dalam = Math.hypot(x - size / 2 + 0.5, y - size / 2 + 0.5) < size / 2 - 1
+    raw[o] = 0x9a; raw[o + 1] = 0x4b; raw[o + 2] = 0x2f; raw[o + 3] = dalam ? 255 : 0
+  }
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0)),
+  ])
+}
+
+test.describe('ornamen unggahan', () => {
+  test('mengunggah PNG transparan ke slot Simbol, memasangnya, lalu menghapusnya', async ({ page }) => {
+    test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
+    await signIn(page)
+    await page.goto(`/dashboard/${account!.invitationId}/editor`)
+    await openSection(page, 'cover')
+
+    await page.locator('#ornament-ganti-symbol').click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await page.locator('#studio-tab-unggahan').click()
+    await expect(page.locator('#studio-unggah')).toBeVisible()
+
+    await page.locator('input#studio-unggah, #studio-unggah input[type="file"]').setInputFiles({ name: 'lingkaran.png', mimeType: 'image/png', buffer: pngTransparan() })
+    const ubin = dialog.locator('[id^="studio-unggahan-"]')
+    await expect(ubin.first()).toBeVisible()
+    await expect(ubin.first()).toHaveAttribute('aria-checked', 'true')
+    await expect(dialog).toContainText('Unggahan kalian')
+
+    await dialog.getByRole('button', { name: 'Pakai ornamen ini' }).click()
+    const kartu = page.locator('#ornament-ganti-symbol').locator('xpath=ancestor::div[1]')
+    await expect(kartu).toContainText('Unggahan kalian')
+    await expect(kartu).toContainText('Diganti')
+    await saveDraft(page)
+
+    // Bersihkan: hapus unggahannya. Tombol hapus melepas slot lebih dulu supaya dokumen tidak menunjuk aset yang hilang.
+    await page.locator('#ornament-ganti-symbol').click()
+    await page.locator('#studio-tab-unggahan').click()
+    // Semua `lingkaran.png` dihapus, bukan cuma satu: putaran tes yang gagal di tengah meninggalkan sisa.
+    const hapus = dialog.getByRole('button', { name: /^Hapus lingkaran\.png/ })
+    await expect(hapus.first()).toBeVisible()
+    while (await hapus.count()) {
+      const sebelum = await hapus.count()
+      await hapus.first().click()
+      await expect(hapus).toHaveCount(sebelum - 1)
+    }
+    await dialog.getByRole('button', { name: 'Pakai ornamen ini' }).click()
+    await expect(kartu).not.toContainText('Unggahan kalian')
+    await saveDraft(page)
+  })
+})
+
+/* Fase 69.5: tautan dari landing membuka wizard langsung di langkah Tema dengan add-on Desain tercentang. */
+test('tautan tema sendiri membuka /order di langkah Tema dengan add-on Desain', async ({ page }) => {
+  test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
+  await signIn(page)
+  await page.evaluate(() => localStorage.removeItem('aruna-order-draft'))
+  await page.goto('/order?langkah=tema&addon=design')
+  await hydrated(page)
+  await expect(page.locator('#order-tema-catatan')).toBeVisible()
+  await expect(page.locator('input[name="tema"]').first()).toBeAttached()
+  await expect.poll(async () => (await page.evaluate(() => JSON.parse(localStorage.getItem('aruna-order-draft') ?? '{}'))).addonIds).toContain('design')
+  await page.evaluate(() => localStorage.removeItem('aruna-order-draft'))
 })

@@ -45,7 +45,8 @@ const baris = computed(() => ornamentSlots.map(slot => ({
   slot,
   layer: undefined as LayerSlot | undefined,
   glyph: berlaku.value[slot],
-  bawaan: !props.overrides[slot],
+  // Unggahan (fase 69) juga penukaran — kartu harus menandainya "Diganti".
+  bawaan: !props.overrides[slot] && !(props.overrides.unggahan && slot in props.overrides.unggahan),
   ...slotLabels[slot],
 })))
 

@@ -4,7 +4,7 @@ import { createDefaultDocument, priceOrder, type LiveTemplateId } from '@aruna/c
 import type { ApiError } from '@aruna/contracts/api'
 import type { Catalog, InvitationDocument } from '~/types/aruna'
 import { ornamentRamp, rampStyle } from '~/utils/ornament-palette'
-import { focusPreview, previewScrolls } from '~/utils/order-preview'
+import { langkahDariQuery, focusPreview, previewScrolls } from '~/utils/order-preview'
 
 const toast = useToast()
 
@@ -58,8 +58,17 @@ onMounted(() => {
   if (saved) {
     try { Object.assign(form, JSON.parse(saved)) } catch { localStorage.removeItem(storageKey) }
   }
+  /*
+   * Tautan "Buat tema versi Anda sendiri" (fase 69): buka langsung di langkah Tema dengan add-on
+   * Desain tercentang. Langkah 1–2 belum divalidasi di sini — `checkout()` yang mengembalikan
+   * pasangan ke langkah pertama yang belum lengkap, bukan server lewat 400.
+   */
+  step.value = langkahDariQuery(route.query.langkah)
+  dariTautanTema.value = step.value === 3
+  if (route.query.addon === 'design' && !form.addonIds.includes('design')) form.addonIds.push('design')
   loadCatalog()
 })
+const dariTautanTema = ref(false)
 
 watch(form, () => localStorage.setItem(storageKey, JSON.stringify(form)), { deep: true })
 
@@ -119,6 +128,8 @@ function next() {
 }
 
 async function checkout() {
+  // Masuk lewat ?langkah=tema bisa melompati nama dan acara; kembalikan ke langkah yang kosong.
+  for (const target of [1, 2]) { if (!validate(target)) { step.value = target; return } }
   error.value = ''
   pending.value = true
   try {
@@ -406,6 +417,10 @@ id="order-slug"
 
             <!-- Step 3 — theme -------------------------------------------------->
             <template v-else-if="step === 3">
+              <p v-if="dariTautanTema" id="order-tema-catatan" class="notice m-0">
+                Tema di sini adalah titik awal — warna, ornamen, amplop, kata-kata, dan gerak bisa
+                kalian ubah di editor dengan add-on Desain, yang sudah kami centangkan.
+              </p>
               <div class="grid gap-3 sm:grid-cols-3">
                 <label
                   v-for="theme in invitationThemes"

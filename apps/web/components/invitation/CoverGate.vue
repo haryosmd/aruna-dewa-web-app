@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { MailOpen, Volume2 } from 'lucide-vue-next'
-import type { OrnamentSet } from '~/utils/ornaments'
+import type { ResolvedOrnamentSet } from '~/utils/ornaments'
 import type { OrnamentIntensity } from '~/utils/ornaments'
 import type { CopyKey, EnvelopeSpeed } from '@aruna/contracts'
 import { envelopeTempo } from '~/utils/motion-envelope'
@@ -23,7 +23,7 @@ const props = withDefaults(
     initials: string
     image?: string
     /** Set ornamen tema, supaya amplopnya ikut berganti wajah saat tema diganti. */
-    ornaments: OrnamentSet
+    ornaments: ResolvedOrnamentSet
     intensity?: OrnamentIntensity
     /** Mengumumkan musiknya sebelum dibuka, bukan mengejutkan tamu sesudahnya. */
     hasMusic?: boolean

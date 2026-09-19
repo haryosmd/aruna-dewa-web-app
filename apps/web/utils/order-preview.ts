@@ -46,3 +46,13 @@ export function focusPreview<T extends { id: string; enabled: boolean }>(
   if (!ids) return sections.slice()
   return sections.map(section => ({ ...section, enabled: ids.has(section.id) }))
 }
+
+/**
+ * Langkah wizard dari `?langkah=` (fase 69): nama langkah, bukan angka, supaya tautan dari
+ * landing tetap bermakna kalau urutan langkahnya berubah. Nilai asing atau array → langkah 1.
+ */
+export const langkahWizard = ['pasangan', 'acara', 'tema', 'paket'] as const
+export function langkahDariQuery(value: unknown): number {
+  const posisi = typeof value === 'string' ? (langkahWizard as readonly string[]).indexOf(value) : -1
+  return posisi === -1 ? 1 : posisi + 1
+}

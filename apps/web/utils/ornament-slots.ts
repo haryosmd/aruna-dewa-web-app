@@ -1,4 +1,4 @@
-import type { LayerSlot, OrnamentCategory, OrnamentId, OrnamentSet } from './ornaments'
+import type { LayerSlot, OrnamentCategory, OrnamentId, OrnamentSet, ResolvedOrnamentSet, UploadedOrnament } from './ornaments'
 import { layerSlot, ornament } from './ornaments'
 
 /**
@@ -84,7 +84,20 @@ export const slotCategories: Record<OrnamentSlotKey, readonly OrnamentCategory[]
  */
 export interface OrnamentOverrides extends Partial<Record<OrnamentSlotKey, OrnamentId>> {
   layers?: Partial<Record<LayerSlot, OrnamentId>>
+  /** Ornamen unggahan per slot (fase 69). Bila ada, ia menang atas id bank di slot yang sama. */
+  unggahan?: Partial<Record<UploadableSlot, UploadedOrnament>>
 }
+
+/**
+ * Slot yang menerima unggahan: sembilan slot skalar lama. Bukan dua slot amplop — mereka
+ * harus melar (`preserveAspectRatio="none"`) dan mewarnai diri dari palet, dua hal yang raster
+ * tidak bisa. Bukan pula `layers`, dengan alasan berat yang sama dengan aset referensi.
+ */
+export const uploadableSlots = [
+  'frame', 'divider', 'corner', 'floral', 'floralAlt', 'monogram', 'symbol', 'garland', 'seal',
+] as const
+export type UploadableSlot = (typeof uploadableSlots)[number]
+export const bolehUnggah = (slot: OrnamentSlotKey): slot is UploadableSlot => (uploadableSlots as readonly string[]).includes(slot)
 
 /** Urutan dan nama kelima jangkar ladang ornamen, untuk rel slot di Studio. */
 export const layerSlots = ['bloom', 'cascade', 'crown', 'cluster', 'swag'] as const
@@ -150,7 +163,12 @@ export function muatLayer(slot: LayerSlot, glyph: OrnamentId): boolean {
  * pasangan tidak bisa memilih bentuk yang tidak bisa ia bedakan.
  */
 export function tileWidth(glyph: OrnamentId, tinggi = 56, batas = 168): string {
-  return `${Math.round(Math.min(batas, Math.max(64, tinggi * ornament(glyph).ratio)))}px`
+  return tileWidthRasio(ornament(glyph).ratio, tinggi, batas)
+}
+
+/** Versi yang menerima rasio langsung — untuk unggahan, yang rasionya dari `width/height`. */
+export function tileWidthRasio(ratio: number, tinggi = 56, batas = 168): string {
+  return `${Math.round(Math.min(batas, Math.max(64, tinggi * (ratio || 1))))}px`
 }
 
 /**
@@ -162,8 +180,8 @@ export function tileWidth(glyph: OrnamentId, tinggi = 56, batas = 168): string {
  * yang dijaga `theme-identity.spec.ts` (lima layer, satu per jangkar) tidak bisa dilanggar
  * lewat pemilih.
  */
-export function terapkanOverrides(set: OrnamentSet, overrides: OrnamentOverrides): OrnamentSet {
-  const { layers: tukarLayer, ...skalar } = overrides
+export function terapkanOverrides(set: OrnamentSet, overrides: OrnamentOverrides): ResolvedOrnamentSet {
+  const { layers: tukarLayer, unggahan, ...skalar } = overrides
   const layers = tukarLayer
     ? set.layers.map(glyph => {
       const jangkar = layerSlot(glyph)
@@ -172,11 +190,12 @@ export function terapkanOverrides(set: OrnamentSet, overrides: OrnamentOverrides
     })
     : set.layers
 
-  return { ...set, ...skalar, layers }
+  // Unggahan disebar TERAKHIR: ia menang atas id bank di slot yang sama (fase 69).
+  return { ...set, ...skalar, ...(unggahan ?? {}), layers }
 }
 
 /** Berapa slot yang sedang menyimpang dari bawaan tema. Dipakai penanda "n diganti". */
 export function jumlahDiganti(overrides: OrnamentOverrides): number {
-  const { layers, ...skalar } = overrides
-  return Object.keys(skalar).length + Object.keys(layers ?? {}).length
+  const { layers, unggahan, ...skalar } = overrides
+  return Object.keys(skalar).length + Object.keys(layers ?? {}).length + Object.keys(unggahan ?? {}).length
 }

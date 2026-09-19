@@ -574,6 +574,17 @@ cover gate (amplop + segel) → pasangan → acara (+kalender, peta) → countdo
 
 ---
 
+
+### Yang boleh diubah pasangan (fase 69)
+
+Sejak fase 69 "tema" bukan lagi satu paket tertutup. Di balik add-on `design`, pasangan boleh
+mengganti: warna, huruf, ubin latar, kepekatan dan tiap slot ornamen (sebelas, termasuk kantong
+dan flap amplop), **kata-kata sistem** (44 kunci tertutup di `copyKeys` — kicker, judul, label
+tombol, kalimat gerbang; bukan aria dan bukan toast), dan **gerak** (`tokens.motion`: tempo
+amplop tiga tingkat, gaya masuk empat tata bahasa). Semuanya terenumerasi, bukan angka bebas, dan
+semuanya opsional: absen berarti ikut tema, dan editor menghapus kunci alih-alih menulis "ikut
+tema". Partitur motion tetap milik tema; dokumen hanya memilih dari yang tema sediakan.
+
 ## Aset
 
 - **Ornamen**: komponen SVG di `apps/web/components/ornament/`, terdaftar di `apps/web/utils/ornaments.ts`.
@@ -689,6 +700,17 @@ cover gate (amplop + segel) → pasangan → acara (+kalender, peta) → countdo
 - **Aset kompetitor di `docs/` adalah riset, bukan aset produksi.** Tidak pernah masuk `apps/web/public`.
 
 ---
+
+
+### Ornamen unggahan (fase 69)
+
+Pengecualian yang dinyatakan terhadap "tanpa PNG": pasangan boleh mengunggah **raster transparan**
+(PNG/WebP ber-alpha, ≤300 KB, 16–4096 px) sebagai ornamen untuk sembilan slot skalar — bukan
+amplop (harus melar dan diwarnai palet), bukan `layers` (aturan berat). Ia selalu dirender sebagai
+`<img>` lewat `ReferenceAsset`, tidak pernah inline; warnanya tetap dan Studio menandainya begitu.
+SVG unggahan belum: jalur sanitasinya ditunda. Disimpan sebagai URL publik penuh di
+`ornamentOverrides.unggahan[slot]` karena `asset-usage.ts` memutuskan penyajian dengan mencari
+URL itu.
 
 ## Gaya kode
 

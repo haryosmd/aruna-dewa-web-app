@@ -1,7 +1,7 @@
 import { createDefaultDocument } from '@aruna/contracts'
 import { describe, expect, it } from 'vitest'
 
-import { focusPreview, previewScrolls, previewSectionIds } from '../utils/order-preview'
+import { langkahDariQuery, focusPreview, previewScrolls, previewSectionIds } from '../utils/order-preview'
 
 const enabledIds = (sections: { id: string; enabled: boolean }[]) =>
   sections.filter(section => section.enabled).map(section => section.id)
@@ -46,5 +46,18 @@ describe('focusPreview', () => {
     const focused = focusPreview(sections, 4, { hasDate: false })
     expect(enabledIds(focused)).toEqual(enabledIds(sections))
     expect(focused.find(section => section.id === 'story')?.enabled).toBe(false)
+  })
+})
+
+describe('langkahDariQuery (fase 69)', () => {
+  it('memetakan nama langkah ke nomornya', () => {
+    expect(langkahDariQuery('pasangan')).toBe(1)
+    expect(langkahDariQuery('tema')).toBe(3)
+    expect(langkahDariQuery('paket')).toBe(4)
+  })
+  it('nilai asing, angka, dan array jatuh ke langkah pertama', () => {
+    expect(langkahDariQuery('3')).toBe(1)
+    expect(langkahDariQuery(undefined)).toBe(1)
+    expect(langkahDariQuery(['tema'])).toBe(1)
   })
 })

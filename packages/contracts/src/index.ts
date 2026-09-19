@@ -339,9 +339,24 @@ export const mediaRules = {
     maxBytes: 10 * 1024 * 1024,
     label: 'MP3',
   },
+  /**
+   * Ornamen unggahan (fase 69): raster transparan saja. SVG **sengaja belum** — pemilik menunda
+   * jalur sanitasinya ke fase lain. Batasnya kecil karena tiap keping dipasang berulang di
+   * banyak section dan dikirim ke setiap tamu; foto galeri boleh 10 MB karena ia satu kali.
+   */
+  ornament: {
+    mimeTypes: ['image/png', 'image/webp'],
+    extensions: ['.png', '.webp'],
+    maxBytes: 300 * 1024,
+    label: 'PNG atau WebP transparan',
+  },
 } as const
 
 export type MediaKind = keyof typeof mediaRules
+export const mediaKinds = Object.keys(mediaRules) as MediaKind[]
+
+/** Ornamen unggahan per undangan. Pagar, bukan fitur — sama seperti `audioAssetLimit`. */
+export const ornamentAssetLimit = 12
 
 /** Batas foto galeri. Paket menjanjikan 15/30/60, tapi `Invitation` belum menyimpan paketnya — sampai itu ada, satu angka untuk semua, ditulis sekali. */
 export const galleryPhotoLimit = 15

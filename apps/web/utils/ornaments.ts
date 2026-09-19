@@ -431,6 +431,32 @@ export function toIntensity(value: unknown): OrnamentIntensity {
 }
 
 /** Satu set lengkap yang dipakai sebuah tema di seluruh section undangan. */
+/**
+ * Ornamen unggahan pasangan (fase 69): raster transparan yang hidup di storage media, bukan di
+ * bank. Disimpan dengan **URL publik penuh**, bukan id aset — `asset-usage.ts` di API memutuskan
+ * apa yang boleh disajikan ke tamu dengan mencari URL itu di dokumen. Dimensinya ikut supaya
+ * `<img>` punya rasio intrinsik (aturan CLS `ReferenceAsset.vue`).
+ */
+export interface UploadedOrnament {
+  url: string
+  width: number
+  height: number
+}
+
+/** Apa yang bisa mengisi satu slot skalar setelah penukaran: id bank, atau unggahan. */
+export type OrnamentRef = OrnamentId | UploadedOrnament
+
+export function isUnggahan(value: unknown): value is UploadedOrnament {
+  return Boolean(value) && typeof value === 'object' && typeof (value as UploadedOrnament).url === 'string'
+}
+
+/**
+ * Set yang sampai ke renderer: slot skalar boleh berisi unggahan, `layers` tetap id bank
+ * (aturan berat yang sama dengan aset referensi). `OrnamentSet` milik tema tidak berubah —
+ * tema tidak pernah menunjuk unggahan siapa pun.
+ */
+export type ResolvedOrnamentSet = { [K in keyof OrnamentSet]: K extends 'layers' ? OrnamentId[] : OrnamentRef }
+
 export interface OrnamentSet {
   frame: OrnamentId
   divider: OrnamentId

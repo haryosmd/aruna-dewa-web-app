@@ -43,7 +43,7 @@ export function normalkan(teks: string): string {
   return teks.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/-/g, ' ').trim()
 }
 
-export type StudioTab = 'disarankan' | 'semua'
+export type StudioTab = 'disarankan' | 'semua' | 'unggahan'
 
 export interface StudioQuery {
   /** Slot skalar, atau jangkar ladang saat `layer` terisi. */

@@ -415,3 +415,17 @@ test('reduced motion keeps content and demo usable', async ({ page }) => {
   await page.getByRole('button', { name: 'Buka demo', exact: true }).click()
   await expect(page.getByText('Kepada Yth. Anne-Marie & Budi', { exact: true })).toBeVisible()
 })
+
+/*
+ * Fase 69: tombol "Buat tema versi Anda sendiri" di koleksi tema membawa ke /order langsung di
+ * langkah Tema dengan add-on Desain tercentang — bukan ke awal wizard.
+ */
+test('tombol tema sendiri membuka /order di langkah Tema dengan add-on Desain', async ({ page }) => {
+  await page.goto('/')
+  const tombol = page.locator('#landing-themes-custom')
+  await tombol.scrollIntoViewIfNeeded()
+  await expect(tombol).toHaveAttribute('href', '/order?langkah=tema&addon=design')
+  await tombol.click()
+  // Login tetap wajib sebelum /order; yang dijaga di sini: query-nya selamat sampai `?next=`.
+  await expect(page).toHaveURL(/langkah=tema/)
+})

@@ -6,8 +6,8 @@ import {
   selectableAttire, selectableCoverLayouts, selectableGalleryMotions, selectableVenues,
   toAttire, toCoverLayout, toGalleryMotion, toOrnamentOverrides,
 } from '~/utils/invitation-options'
-import { selectableIntensities, toIntensity, type OrnamentId } from '~/utils/ornaments'
-import { terapkanOverrides, type OrnamentOverrides, type OrnamentSlotKey } from '~/utils/ornament-slots'
+import { type UploadedOrnament, selectableIntensities, toIntensity, type OrnamentId } from '~/utils/ornaments'
+import { bolehUnggah, terapkanOverrides, type OrnamentOverrides, type OrnamentSlotKey } from '~/utils/ornament-slots'
 import { bawaanSlot } from '~/utils/ornament-search'
 import { toBackdrop, toBackdropWeight } from '~/utils/backdrops'
 import { themeOrnaments } from '~/utils/theme'
@@ -417,7 +417,7 @@ const studioAktif = computed(() => {
 function bukaStudio(target: { slot?: OrnamentSlotKey, layer?: LayerSlot }) {
   if (!canEditDesign.value) return
   checkpoint()
-  studio.value = { ...target, semula: { ...ornamentOverrides.value, layers: { ...ornamentOverrides.value.layers } } }
+  studio.value = { ...target, semula: salinOverrides() }
 }
 
 /** Menulis penukaran ke `cover.data`. Nilai yang sama dengan bawaan tema dibuang oleh sanitizer. */
@@ -432,18 +432,38 @@ function tulisOverrides(berikut: OrnamentOverrides) {
 function pilihOrnamen(glyph: OrnamentId) {
   const target = studio.value
   if (!target) return
-  const berikut: OrnamentOverrides = { ...ornamentOverrides.value, layers: { ...ornamentOverrides.value.layers } }
+  const berikut = salinOverrides()
   if (target.layer) berikut.layers = { ...berikut.layers, [target.layer]: glyph }
-  else berikut[target.slot!] = glyph
+  else {
+    berikut[target.slot!] = glyph
+    // Memilih id bank melepas unggahan di slot yang sama; kalau tidak, unggahan tetap menang.
+    if (berikut.unggahan && bolehUnggah(target.slot!)) delete berikut.unggahan[target.slot!]
+  }
   tulisOverrides(berikut)
 }
+
+/** Memasang ornamen unggahan (fase 69) ke slot yang sedang dibuka Studio. */
+function pilihUnggahan(item: UploadedOrnament) {
+  const target = studio.value
+  if (!target?.slot || !bolehUnggah(target.slot)) return
+  const berikut = salinOverrides()
+  berikut.unggahan = { ...berikut.unggahan, [target.slot]: item }
+  delete berikut[target.slot]
+  tulisOverrides(berikut)
+}
+
+const salinOverrides = (): OrnamentOverrides => ({
+  ...ornamentOverrides.value,
+  layers: { ...ornamentOverrides.value.layers },
+  unggahan: { ...ornamentOverrides.value.unggahan },
+})
 
 function kembalikanSlot() {
   const target = studio.value
   if (!target) return
-  const berikut: OrnamentOverrides = { ...ornamentOverrides.value, layers: { ...ornamentOverrides.value.layers } }
+  const berikut = salinOverrides()
   if (target.layer) delete berikut.layers?.[target.layer]
-  else delete berikut[target.slot!]
+  else { delete berikut[target.slot!]; if (bolehUnggah(target.slot!)) delete berikut.unggahan?.[target.slot!] }
   tulisOverrides(berikut)
 }
 
@@ -1688,8 +1708,10 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
       :bawaan="studioAktif.bawaan"
       :tokens="document.tokens"
       :accent="themeAccent"
+      :invitation-id="invitation?.id ?? ''"
       @update:open="terbuka => { if (!terbuka) studio = null }"
       @pilih="pilihOrnamen"
+      @pilih-unggahan="pilihUnggahan"
       @kembalikan="kembalikanSlot"
       @batal="batalkanStudio"
     />
