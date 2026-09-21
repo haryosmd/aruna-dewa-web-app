@@ -43,6 +43,23 @@ alasannya.
 
 ## Sisa
 
+**Fase 73 — mengunci fase 72.** Ditulis 2026-09-21 sesudah pemeriksaan ulang fase 72. Dua cacat
+yang ditemukan saat verifikasi 2026-09-20 memang benar diperbaiki, tapi di belakangnya ada tiga
+cacat yang memblokir pelanggan sungguhan dan tidak tersentuh tes mana pun: (1) pasangan tanpa
+add-on `design` yang draftnya masih v1 **tidak bisa menyimpan apa pun selamanya** — editor
+memigrasi dokumennya di klien, lalu gerbang desain membandingkan sidik jari v1 terhadap v2 yang
+urutan bagiannya memang berganti semua; (2) `gift` lahir menyala di dokumen bawaan padahal bukan
+fitur paket Mula, jadi **setiap undangan baru di paket termurah gagal terbit**; (3)
+`migrateLegacyDocument` membuang `enabled` milik empat bagian, membawa musik yang sengaja
+dimatikan, dan bisa menulis ISO 24 karakter ke kolom berbatas 20 sehingga dokumen hasil migrasi
+gagal validasi. Ditambah dua penjaga yang belum ada: riwayat undo masih terkubur di dalam SFC
+`editor.vue` dan satu-satunya buktinya sebuah e2e yang `test.skip` sendiri tanpa akun QA, dan
+aturan "undangan nol breakpoint viewport" (DESIGN.md) dipatuhi 100 % tanpa satu pun tes yang
+mencegahnya merayap kembali. Daftar centang lengkap, beserta utang P2 dan daftar yang resmi
+ditunda, ada di `docs/features/invitation-builder/FASE-72-SISA.md` — **itu berkas penjejaknya,
+bukan berkas ini.** Fase 72 sendiri belum masuk satu commit pun saat fase 73 ditulis; enam commit
+irisannya juga didaftar di sana.
+
 **Fase 72 — template utama "Elegance" dan editor ala Undangan Studio.** Ditulis 2026-09-19,
 dikerjakan 2026-09-20. Pemilik membedah undang.site (editor "Undangan Studio" dan undangan
 terbitnya) lalu memutuskan: struktur undangan **mengikuti format bawaannya persis** — dua belas
