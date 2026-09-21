@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { headlessSectionTypes, legacySectionTypes, v2SectionTypes } from '@aruna/contracts'
+import { headlessSectionTypes, structureIds, structures } from '@aruna/contracts'
 import { describe, expect, it } from 'vitest'
 
 /*
@@ -33,29 +33,46 @@ function kunciPeta(nama: string): string[] {
   return [...badan.matchAll(/^\s*'?([a-z-]+)'?\s*:/gm)].map(cocok => cocok[1]!)
 }
 
-const peta = {
+/*
+ * Sejak fase 74.10 keduanya dibaca dari REGISTRY, bukan dari daftar tipe langsung: `Renderer`
+ * memilih keluarganya dari `structure.family`, jadi yang harus cocok adalah bagian milik
+ * strukturnya — bukan "semua tipe v2" yang kebetulan hari ini sama.
+ */
+const peta: Record<string, string[]> = {
   elegance: kunciPeta('eleganceComponents'),
   warisan: kunciPeta('legacyComponents'),
 }
-const seharusnya = {
-  elegance: v2SectionTypes.filter(type => !headlessSectionTypes.has(type)),
-  warisan: legacySectionTypes.filter(type => !headlessSectionTypes.has(type)),
-}
+const seharusnya = Object.fromEntries(structureIds.map(id => {
+  const struktur = structures[id]
+  return [struktur.family, struktur.sectionTypes.filter(type => !struktur.headless.has(type))]
+})) as Record<string, readonly string[]>
 
 describe('kelengkapan peta komponen renderer', () => {
   it('parsernya benar-benar menemukan sesuatu — kalau tidak, seluruh berkas ini hijau palsu', () => {
-    expect(peta.elegance.length).toBeGreaterThanOrEqual(11)
-    expect(peta.warisan.length).toBeGreaterThanOrEqual(11)
+    expect(peta.elegance!.length).toBeGreaterThanOrEqual(11)
+    expect(peta.warisan!.length).toBeGreaterThanOrEqual(11)
+  })
+
+  it('tiap keluarga yang dipakai registry punya petanya di Renderer', () => {
+    const keluarga = [...new Set(structureIds.map(id => structures[id].family))].sort()
+    expect(Object.keys(peta).sort()).toEqual(keluarga)
   })
 
   it.each(['elegance', 'warisan'] as const)('%s: tiap tipe non-headless punya komponennya', keluarga => {
-    const hilang = seharusnya[keluarga].filter(type => !peta[keluarga].includes(type))
+    const hilang = seharusnya[keluarga]!.filter(type => !peta[keluarga]!.includes(type))
     expect(hilang, `tipe tanpa komponen akan dibuang diam-diam oleh Renderer: ${hilang.join(', ')}`).toEqual([])
   })
 
   it.each(['elegance', 'warisan'] as const)('%s: tidak ada entri yatim di peta', keluarga => {
-    const yatim = peta[keluarga].filter(type => !(seharusnya[keluarga] as readonly string[]).includes(type))
+    const yatim = peta[keluarga]!.filter(type => !seharusnya[keluarga]!.includes(type))
     expect(yatim, `entri yang tipenya sudah tidak ada: ${yatim.join(', ')}`).toEqual([])
+  })
+
+  it('Renderer memilih keluarganya dari struktur, bukan dari schemaVersion', () => {
+    // Kalau baris ini kembali ke `schemaVersion`, template struktural kedua akan merender
+    // dengan komponen yang salah tanpa satu pun tes lain berbunyi.
+    expect(tanpaKomentar).toContain('componentFamilies[structure.value.family]')
+    expect(tanpaKomentar).toContain('structureById(documentStructureId(props.document))')
   })
 
   it('pengecualiannya dibaca dari kontrak, dan isinya memang dua itu', () => {

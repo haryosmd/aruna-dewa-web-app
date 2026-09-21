@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { CopyKey, LegacySectionType, V2SectionType } from '@aruna/contracts'
+import type { CopyKey, LegacySectionType, StructureFamily, V2SectionType } from '@aruna/contracts'
+import { documentStructureId, structureById } from '@aruna/contracts'
 import { pilihCopy, resolveCopy } from '~/utils/invitation-copy'
 import type { Component } from 'vue'
 import type { GuestProfile, InvitationDocument, RendererMode, RsvpPayload, Section, Wish, WishPayload } from '~/types/aruna'
@@ -84,8 +85,25 @@ const mode = computed<RendererMode>(() => props.mode ?? (props.compact ? 'compac
 /** Bukan `compact` — nama itu milik prop lama; ini nilai yang sudah digabung dengan `mode`. */
 const ringkas = computed(() => mode.value === 'compact')
 const stage = computed(() => mode.value === 'stage')
-/** Struktur Elegance (fase 72) atau struktur lama. Semua percabangan v1/v2 di berkas ini bermuara ke sini. */
-const v2 = computed(() => props.document.schemaVersion === 2)
+/**
+ * Struktur dokumen ini, dan dari sanalah keluarga komponennya dipilih (fase 74.10).
+ *
+ * Sebelumnya peta komponen dipilih dari `schemaVersion`, yang berarti "versi skema" dan "wajah
+ * undangan" adalah satu hal — dan itulah yang membuat template kedua tidak bisa dinyatakan.
+ * Sekarang `schemaVersion` kembali berarti bentuk data saja, dan strukturnya yang memutuskan
+ * siapa merender apa. Dokumen lama tanpa `structureId` diturunkan dari `schemaVersion`, jadi
+ * hasilnya sama persis dengan sebelum fase ini.
+ */
+const structure = computed(() => structureById(documentStructureId(props.document)))
+
+/**
+ * Tetap bernama `v2` karena delapan cabang lain di berkas ini membacanya, dan mengubah
+ * semuanya dalam satu irisan akan menyembunyikan perubahan yang sebenarnya di balik diff besar.
+ * Artinya kini "keluarga komponen Elegance", bukan "schemaVersion 2" — dan untuk seluruh dokumen
+ * yang ada hari ini keduanya bernilai sama. Yang benar-benar fakta struktur (`gateType`, nama
+ * kolom galeri, versi Dock) naik ke registry di irisan berikutnya.
+ */
+const v2 = computed(() => structure.value.family === 'elegance')
 
 const style = computed(() => themeStyle(props.document))
 const visible = computed(() => props.document.sections.filter(section => section.enabled))
@@ -143,7 +161,11 @@ const eleganceComponents: Record<Exclude<V2SectionType, 'opening-envelope'>, Com
   dresscode: SectionDresscode,
   video: SectionVideo,
 }
-const sectionComponents = computed<Record<string, Component | undefined>>(() => (v2.value ? eleganceComponents : legacyComponents))
+const componentFamilies: Record<StructureFamily, Record<string, Component>> = {
+  elegance: eleganceComponents,
+  warisan: legacyComponents,
+}
+const sectionComponents = computed<Record<string, Component | undefined>>(() => componentFamilies[structure.value.family])
 
 /*
  * Partitur tema, ditimpa pilihan dokumen bila ada (fase 69). Tanpa pilihan hasilnya persis
