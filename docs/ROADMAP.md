@@ -93,7 +93,9 @@ kedua yang menyembunyikan cacatnya. Hasil bedah referensi akhirnya punya folder 
 
 **Fase 74 selesai 2026-09-22.** Terukur: `pnpm test` 1241 → **1323 hijau**, typecheck dan lint
 bersih, `pnpm test:integration` **49 hijau** dan fixture QA tertulis untuk pertama kalinya sejak
-fase 72, `playwright --project=desktop` **51/51**. Tiga penjaga baru dibuktikan bisa merah lalu
+fase 72, `playwright --project=desktop` **51/51**, dan seluruh suite di empat project **197 lulus · 1
+merah · 6 dilewati** — angka yang sama persis dengan pengukuran sebelum bagian A dikerjakan,
+jadi pemisahan dua sumbu tidak membawa satu pun regresi e2e. Tiga penjaga baru dibuktikan bisa merah lalu
 dikembalikan: mencabut satu `bersihkan()` di `tulis()`, menghapus `quote` dari peta komponen
 (merah di tes DAN di compiler), dan menulis `structureId` mentah di sidik jari — yang terakhir
 menjatuhkan tiga tes yang justru bernama "draft pra-fase-74 tidak boleh terkunci". Pemisahan dua

@@ -185,7 +185,9 @@ struktur, bukan dari `schemaVersion` · `74.11` `restructureDocument` + sidik ja
 gerbang desain · `74.12` `/order` dan editor.
 
 Terukur: `pnpm test` **1323 hijau** (dari 1241), typecheck dan lint bersih, `test:integration`
-49 hijau.
+49 hijau, dan seluruh suite e2e di empat project **197 lulus · 1 merah · 6 dilewati**. Angka itu
+identik dengan pengukuran sebelum bagian A dikerjakan — pemisahan dua sumbu tidak membawa satu
+pun regresi e2e. Satu-satunya yang merah adalah utang lama di §6d.
 
 **Yang dijawab untuk pertanyaan "pastikan ada template yg baru":** "Wedding Elegance" kini record
 template yang membawa dua belas bagiannya sendiri (daftar, urutan, wajib, lahir-menyala, keluarga
