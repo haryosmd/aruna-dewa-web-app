@@ -103,20 +103,40 @@ try {
   const privatePreview = await fetch(media.publicUrl, { headers: { cookie: [...owner.cookies].map(([k, v]) => `${k}=${v}`).join('; ') } })
   check(privatePreview.ok && privatePreview.headers.get('cache-control')?.includes('no-store'), 'unpublished media preview is never publicly cached')
   check([400, 403, 404].includes((await fetch(media.publicUrl)).status), 'unpublished media inaccessible without session')
-  check((await owner.call(`/public/${slug}/rsvp`, 'POST', { token, attendance: 'yes', count: 3 })).status >= 400, 'RSVP quota enforced')
-  check((await owner.call(`/public/${slug}/rsvp`, 'POST', { token, attendance: 'yes', count: 2, message: 'Selamat untuk kalian.' })).status < 300, 'personal RSVP accepted within quota')
-  check((await owner.call(`/public/${slug}/rsvp`, 'POST', { token: 'invalid', attendance: 'yes', count: 1 })).status >= 400, 'invalid guest token cannot RSVP')
   /*
-   * Ucapan punya endpointnya sendiri. Web sempat menembak `/rsvp`, yang membuat setiap
-   * ucapan menimpa konfirmasi kehadiran tamu dan tidak pernah membuat baris Wish.
+   * `/rsvp` DAN dokumen v2 (fase 74.6).
+   *
+   * Undangan yang dibuat skrip ini lahir dari `createDefaultDocument`, yang sejak fase 72
+   * menghasilkan dokumen Elegance — dan Elegance tidak punya bagian `rsvp`. `public.service.ts`
+   * karena itu menjawab 400 untuk SETIAP undangan v2, dengan sengaja: kehadiran naik lewat
+   * `/wishes`, dan renderer v2 tidak pernah memanggil `/rsvp`.
+   *
+   * Sampai di sini berkas ini masih menguji jalur v1, dan hasilnya dua asersi yang berbohong ke
+   * arah berlawanan: "RSVP quota enforced" LULUS karena semuanya 400, bukan karena kuotanya
+   * ditegakkan, dan "personal RSVP accepted within quota" GAGAL sehingga skrip berhenti sebelum
+   * menulis `.data/qa-account.json` — yang berarti seluruh suite e2e dasbor `test.skip` sendiri
+   * dan lulus tanpa pernah berjalan. Itulah sebabnya e2e "belum terverifikasi" sejak fase 72.
+   *
+   * Jadi yang diuji sekarang adalah kontrak v2-nya: penolakannya disengaja, dan kehadiran punya
+   * jalur lain. Kuota RSVP v1 tetap hidup untuk revisi terbit lama dan dijaga spec domain API,
+   * bukan di sini — skrip ini tidak bisa menerbitkan dokumen v1 tanpa berpura-pura jadi pasangan
+   * yang belum pernah membuka editornya.
    */
-  const rsvpBeforeWish = await prisma.rSVP.findFirst({ where: { guestId: guestA.data.id } })
-  const wish = await owner.call(`/public/${slug}/wishes`, 'POST', { token, message: 'Bahagia selalu untuk kalian berdua.' })
+  const rsvpV2 = await owner.call(`/public/${slug}/rsvp`, 'POST', { token, attendance: 'yes', count: 2 })
+  check(rsvpV2.status === 400 && String(rsvpV2.data.message).includes('RSVP tidak tersedia'), 'v2 invitations reject /rsvp on purpose')
+  check((await owner.call(`/public/${slug}/wishes`, 'POST', { token: 'invalid', attendance: 'hadir', message: 'halo' })).status >= 400, 'invalid guest token cannot record attendance')
+  /*
+   * Ucapan punya endpointnya sendiri, dan sejak fase 72 ia juga yang membawa kehadiran.
+   * Web sempat menembak `/rsvp`, yang membuat setiap ucapan menimpa konfirmasi kehadiran tamu
+   * dan tidak pernah membuat baris Wish.
+   */
+  const wish = await owner.call(`/public/${slug}/wishes`, 'POST', { token, attendance: 'hadir', message: 'Bahagia selalu untuk kalian berdua.' })
   check(wish.status < 300 && typeof wish.data.id === 'string', 'wish accepted through its own endpoint')
   check(wish.data.approved === false && wish.data.authorName === guestA.data.displayName, 'wish returns the pending row so its author can see it')
   check((await prisma.wish.count({ where: { guestId: guestA.data.id } })) === 1, 'wish row persisted')
+  check(wish.data.attendance === 'hadir', 'attendance rides along with the wish on v2')
   const rsvpAfterWish = await prisma.rSVP.findFirst({ where: { guestId: guestA.data.id } })
-  check(rsvpAfterWish?.count === rsvpBeforeWish?.count && rsvpAfterWish?.message === rsvpBeforeWish?.message, 'posting a wish never touches the guest RSVP')
+  check(rsvpAfterWish?.attendance === 'YES', 'attendance chosen in the wish form updates the guest RSVP row')
   check(!((await owner.call(`/public/${slug}/wishes`)).data as { id: string }[]).some(item => item.id === wish.data.id), 'unapproved wish stays out of the public wall')
   check((await owner.call(`/public/${slug}/wishes`, 'POST', { token: 'invalid', message: 'halo' })).status >= 400, 'invalid guest token cannot post a wish')
   const preview = await owner.call(`/invitations/${id}/imports/preview`, 'POST', { text: 'Nama\tTelepon\nÉlodie\t0812345\nAnne-Marie & Budi\t0819999', format: 'tsv' })
