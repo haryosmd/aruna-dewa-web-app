@@ -10,6 +10,13 @@ import { selectableAttire, toAttire } from '~/utils/invitation-options'
  *
  * Tiap tombol tambah/hapus menulis SALINAN array lewat `tulis`, supaya halaman memanggil
  * `checkpoint()` sekali per tindakan; suntingan di dalam baris ditulis saat `change`.
+ *
+ * Salinan di sini **dangkal dengan sengaja**, dan itu aman hanya karena satu hal: `rows()`
+ * membaca `props.section.data`, yang reaktif, jadi `[...rows('steps'), {…}]` membawa seluruh
+ * baris lama sebagai proxy Vue. Yang membersihkannya adalah `tulis()` di `editor.vue` —
+ * gerbang tunggal yang dilewati semua form — lewat `bersihkan()`. Kalau suatu saat ada
+ * komponen yang menulis ke dokumen TANPA melewati `tulis()`, ia wajib memanggil `bersihkan()`
+ * sendiri; `document-history.spec.ts` menjelaskan kenapa.
  */
 const props = defineProps<{ section: InvitationSection; invitationId: string }>()
 const emit = defineEmits<{ tulis: [key: string, value: unknown]; release: [url: string] }>()

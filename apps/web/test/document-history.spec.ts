@@ -1,8 +1,10 @@
+import { readFileSync } from 'node:fs'
+
 import { createDefaultDocument, type InvitationDocument } from '@aruna/contracts'
 import { describe, expect, it } from 'vitest'
 import { isProxy, reactive, ref, toRaw } from 'vue'
 
-import { salinDokumen, useDocumentHistory } from '../composables/useDocumentHistory'
+import { bersihkan, salinDokumen, useDocumentHistory } from '../composables/useDocumentHistory'
 import { pindahkan } from '../utils/editor-sections'
 
 /*
@@ -130,5 +132,131 @@ describe('tumpukan undo/redo', () => {
     reset()
     expect(canUndo.value).toBe(false)
     expect(canRedo.value).toBe(false)
+  })
+})
+
+/*
+ * Penjaga fase 74.1: dokumen tidak boleh pernah MEMEGANG proxy sejak awal.
+ *
+ * Perbaikan 2026-09-20 menutup gejalanya di riwayat; enam situs yang menanamnya tetap hidup,
+ * dan narasi "reorder + ExtrasForm + terapkanPalet" ternyata kurang dua. Yang diuji di bawah
+ * adalah BENTUK tiap penulisan itu, bukan komponennya — `editor.vue` dan `ExtrasForm.vue`
+ * adalah SFC, dan suite akar tidak punya plugin Vue maupun alias `~/` untuk mengimpornya
+ * (alasan yang sama yang membuat gerbang breakpoint membaca teks sumber).
+ *
+ * Kalau satu `bersihkan()` dicabut di `editor.vue`, blok ini yang berbunyi.
+ */
+function jejakProxy(nilai: unknown, jalur = '$'): string[] {
+  if (nilai === null || typeof nilai !== 'object') return []
+  const temuan = isProxy(nilai) ? [jalur] : []
+  const anak = Array.isArray(nilai)
+    ? nilai.flatMap((item, index) => jejakProxy(item, `${jalur}[${index}]`))
+    : Object.entries(nilai as Record<string, unknown>).flatMap(([key, item]) => jejakProxy(item, `${jalur}.${key}`))
+  return [...temuan, ...anak]
+}
+
+describe('dokumen bebas proxy di setiap bentuk penulisan', () => {
+  /** Dokumen yang reaktif seperti di editor: `document = ref(createDefaultDocument())`. */
+  const hidup = () => ref(dokumen())
+
+  it('jejakProxy benar-benar menemukan proxy — kalau tidak, seluruh blok ini hijau palsu', () => {
+    expect(jejakProxy({ a: reactive({ b: 1 }) })).toEqual(['$.a'])
+    expect(jejakProxy(reactive([{ x: 1 }]))).toEqual(['$', '$[0]'])
+    expect(jejakProxy({ a: 1, b: 'dua', c: null, d: [1, 2] })).toEqual([])
+  })
+
+  it('ExtrasForm: tambah baris membawa baris lama sebagai proxy tanpa bersihkan', () => {
+    const doc = hidup()
+    const story = doc.value.sections.find(section => section.type === 'story')!
+    story.data.steps = [{ id: 'a', title: 'Bertemu', text: '', image: '', side: 'kiri' }]
+    // Bentuk persis `tambahLangkah()`: `[...rows('steps'), {…}]` dibaca dari data yang reaktif.
+    const rows = story.data.steps as Record<string, unknown>[]
+    const mentah = [...rows, { id: 'b', title: '', text: '', image: '', side: 'kanan' }]
+    expect(jejakProxy(mentah)).toEqual(['$[0]'])
+
+    story.data.steps = bersihkan(mentah)
+    expect(jejakProxy(toRaw(doc.value))).toEqual([])
+  })
+
+  it('ExtrasForm: hapus baris lewat slice() juga menanam proxy tanpa bersihkan', () => {
+    const doc = hidup()
+    const rundown = doc.value.sections.find(section => section.type === 'rundown')!
+    rundown.data.items = [{ id: 'a', time: '08.00' }, { id: 'b', time: '11.00' }]
+    const rows = rundown.data.items as Record<string, unknown>[]
+    const mentah = rows.slice()
+    mentah.splice(0, 1)
+    expect(jejakProxy(mentah)).toEqual(['$[0]'])
+
+    rundown.data.items = bersihkan(mentah)
+    expect(jejakProxy(toRaw(doc.value))).toEqual([])
+  })
+
+  it('tulisGaya: textStyles berisi OBJEK, jadi sebaran dangkal membawanya sebagai proxy', () => {
+    const doc = hidup()
+    const hero = doc.value.sections.find(section => section.type === 'hero')!
+    hero.data.textStyles = { title: { size: 40 } }
+    const styles = { ...(hero.data.textStyles as Record<string, unknown>) }
+    expect(jejakProxy(styles)).toEqual(['$.title'])
+
+    hero.data.textStyles = bersihkan(styles)
+    expect(jejakProxy(toRaw(doc.value))).toEqual([])
+  })
+
+  it('terapkanPalet: tokens.motion adalah objek dan ikut by-reference', () => {
+    const doc = hidup()
+    doc.value.tokens.motion = { amplop: 'pelan' }
+    const tokens = { ...doc.value.tokens, primary: '#7A5C44' }
+    expect(jejakProxy(tokens)).toEqual(['$.motion'])
+
+    doc.value.tokens = bersihkan(tokens)
+    expect(jejakProxy(toRaw(doc.value))).toEqual([])
+    expect(doc.value.tokens.motion).toEqual({ amplop: 'pelan' })
+  })
+
+  it('bersihkan melepas primitif apa adanya — `undefined` tidak boleh melempar', () => {
+    expect(bersihkan(undefined)).toBeUndefined()
+    expect(bersihkan(null)).toBeNull()
+    expect(bersihkan('')).toBe('')
+    expect(bersihkan(false)).toBe(false)
+    expect(bersihkan(0)).toBe(0)
+  })
+
+  it('dokumen yang bersih bisa di-structuredClone TANPA toRaw — sabuk kedua tidak lagi menanggung', () => {
+    const doc = hidup()
+    const hero = doc.value.sections.find(section => section.type === 'hero')!
+    hero.data.textStyles = bersihkan({ title: { size: 40 } })
+    doc.value.tokens = bersihkan({ ...doc.value.tokens, motion: { amplop: 'pelan' } })
+    expect(() => structuredClone(toRaw(doc.value))).not.toThrow()
+  })
+})
+
+/*
+ * Blok di atas menguji BENTUKNYA; blok ini mengikat BERKASNYA.
+ *
+ * Tanpa yang ini, mencabut satu `bersihkan()` di `editor.vue` tidak membuat satu tes pun merah —
+ * spec di atas memanggil `bersihkan` sendiri, jadi ia akan tetap hijau sambil editornya bocor.
+ * Membaca teks sumber adalah satu-satunya cara: SFC tidak bisa diimpor suite akar (tanpa plugin
+ * Vue, tanpa alias `~/`), pola yang sama dengan `invitation-breakpoints.spec.ts` dan
+ * `ornament-slots.spec.ts`.
+ */
+describe('titik tulis di editor benar-benar memanggil bersihkan', () => {
+  const sumber = readFileSync(new URL('../pages/dashboard/[id]/editor.vue', import.meta.url), 'utf8')
+  const tanpaKomentar = sumber.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+
+  it.each([
+    ['tulis()', 'section.data[key] = bersihkan(value)'],
+    ['tulisGaya() — salinan textStyles', 'const styles = bersihkan({ ...((section.data.textStyles'],
+    ['tulisGaya() — gaya yang masuk', 'styles[key] = bersihkan(style)'],
+    ['terapkanPalet()', 'document.value.tokens = bersihkan({ ...document.value.tokens, ...palette.tokens })'],
+    ['repairPaletteColors()', 'document.value.tokens = bersihkan({ ...document.value.tokens, ...repairPalette('],
+    ['applyTemplate()', 'document.value.tokens = bersihkan({ ...document.value.tokens, ...preset.tokens })'],
+  ])('%s', (_nama, potongan) => {
+    expect(tanpaKomentar).toContain(potongan)
+  })
+
+  it('tidak ada penulisan tokens yang melewatkan bersihkan', () => {
+    const penulis = tanpaKomentar.match(/document\.value\.tokens = [^\n]+/g) ?? []
+    expect(penulis.length).toBeGreaterThanOrEqual(3)
+    for (const baris of penulis) expect(baris, baris).toContain('bersihkan(')
   })
 })

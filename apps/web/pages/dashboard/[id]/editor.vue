@@ -148,9 +148,13 @@ function move(index: number, direction: -1 | 1) {
  *
  * `document.value.sections.slice()` menghasilkan larik berisi PROXY tiap bagian, dan menugaskannya
  * kembali menanam proxy itu di dalam dokumen mentah — dulu itu cukup untuk membuat `undo()`
- * melempar dan riwayat habis tanpa mengembalikan apa pun. `toRaw` di sini sabuk kedua, bukan yang
- * pertama: yang benar-benar menutup kelas bug itu adalah `salinDokumen` di `useDocumentHistory`,
- * karena editor menanam proxy juga lewat `ExtrasForm` dan `terapkanPalet`. Keduanya dipertahankan.
+ * melempar dan riwayat habis tanpa mengembalikan apa pun.
+ *
+ * Reorder BUKAN satu-satunya penanam, dan itu yang membuat perbaikan 2026-09-20 terbaca lebih
+ * lengkap dari yang sebenarnya. Enam situs menanam proxy sampai fase 74.1: keempat penulis larik
+ * di `ExtrasForm`, `tulisGaya()` yang menyalin dangkal `textStyles` berisi objek, dan ketiga
+ * penulis `tokens` yang membawa `tokens.motion` by-reference. Semuanya kini lewat `bersihkan()`,
+ * dan `salinDokumen` di `useDocumentHistory` tinggal jaring terakhir.
  */
 function reorder(from: number, to: number) {
   if (!canEditDesign.value) return
@@ -161,18 +165,27 @@ function reorder(from: number, to: number) {
 }
 
 /* ── Tulisan bagian ─────────────────────────────────────────────────────────── */
+/**
+ * Gerbang tunggal yang dilewati setiap form bagian, termasuk `ExtrasForm`.
+ *
+ * `bersihkan()` bukan kehati-hatian berlebih: `ExtrasForm` menyusun larik barunya dari
+ * `props.section.data[key]`, jadi `[...rows('steps'), {…}]` membawa SELURUH baris lama sebagai
+ * proxy Vue. Dibersihkan di sini sekali, keempat penulis di sana ikut tertutup.
+ */
 function tulis(key: string, value: unknown) {
   const section = selected.value
   if (!section) return
   checkpoint()
-  section.data[key] = value
+  section.data[key] = bersihkan(value)
 }
 function tulisGaya(key: string, style: TextStyle | null) {
   const section = selected.value
   if (!section || !canEditDesign.value) return
   checkpoint()
-  const styles = { ...((section.data.textStyles as Record<string, TextStyle> | undefined) ?? {}) }
-  if (style) styles[key] = style
+  // Salinan dangkal: tiap nilai `textStyles` adalah OBJEK, jadi tanpa `bersihkan` gaya yang
+  // sudah ada masuk kembali ke dokumen sebagai proxy.
+  const styles = bersihkan({ ...((section.data.textStyles as Record<string, TextStyle> | undefined) ?? {}) })
+  if (style) styles[key] = bersihkan(style)
   else delete styles[key]
   if (Object.keys(styles).length) section.data.textStyles = styles
   else delete section.data.textStyles
@@ -213,7 +226,9 @@ function tulisLayout(layout: LayoutFocus) {
 function terapkanPalet(palette: ThemePalette) {
   if (!canEditDesign.value) return
   checkpoint()
-  document.value.tokens = { ...document.value.tokens, ...palette.tokens }
+  // `tokens.motion` (fase 69) adalah objek: sebaran dangkal membawanya by-reference, jadi
+  // proxy-nya ditanam kembali ke dokumen mentah. Sama untuk dua penulis `tokens` di bawah.
+  document.value.tokens = bersihkan({ ...document.value.tokens, ...palette.tokens })
 }
 function tulisWarna(key: 'background' | 'foreground' | 'primary', value: string) {
   if (!canEditDesign.value) return
@@ -224,7 +239,7 @@ const paletteIssues = computed(() => checkPalette(document.value.tokens).filter(
 function repairPaletteColors() {
   if (!canEditDesign.value) return
   checkpoint()
-  document.value.tokens = { ...document.value.tokens, ...repairPalette(document.value.tokens) }
+  document.value.tokens = bersihkan({ ...document.value.tokens, ...repairPalette(document.value.tokens) })
   if (paletteIssues.value.length) toast.warning('Warna sudah didekatkan sebisanya. Latar yang sangat gelap masih menyisakan pasangan yang kurang terbaca.')
   else toast.success('Warna disetel ke versi terdekat yang terbaca.')
 }
@@ -234,7 +249,7 @@ function applyTemplate(id: LiveTemplateId) {
   if (!preset) return
   checkpoint()
   document.value.templateId = id
-  document.value.tokens = { ...document.value.tokens, ...preset.tokens }
+  document.value.tokens = bersihkan({ ...document.value.tokens, ...preset.tokens })
 }
 function tulisFont(key: 'font' | 'bodyFont', value: FontChoice | '') {
   if (!canEditDesign.value) return
