@@ -63,6 +63,7 @@ describe('struktur bagian Elegance (fase 72)', () => {
     gift.data = { title: 'Hadiah', note: 'Catatan', address: '', accounts: [{ id: 'a', bankId: 'bca', bankLabel: 'BCA', number: '123', holder: 'Dea', owner: 'cpw' }, { id: 'b', bankId: 'bri', bankLabel: 'BRI', number: '456', holder: 'Haryo', owner: 'cpp' }] }
     lama.copy = { 'gate.open': 'Buka Amplop' }
     const music = lama.sections.find(s => s.type === 'music')!
+    music.enabled = true
     music.data = { url: '/uploads/lagu.mp3', title: 'Lagu' }
     const baru = migrateLegacyDocument(lama)
     expect(baru.schemaVersion).toBe(2)
@@ -102,5 +103,108 @@ describe('struktur bagian Elegance (fase 72)', () => {
   it('memecah tanggal untuk kolom teks referensi', () => {
     expect(dateParts('2026-10-03')).toMatchObject({ day: 'Sabtu', date: '03', monthYear: 'Oktober 2026', dotted: '03 · 10 · 2026' })
     expect(dateParts('')).toMatchObject({ day: '', dotted: '' })
+  })
+})
+
+/*
+ * Kesetiaan migrasi v1→v2 (fase 73.3).
+ *
+ * Migrator pernah hanya membawa `enabled` milik hadiah dan empat bagian ekstra, jadi bagian yang
+ * sengaja dimatikan pasangan menyala lagi — dan mereka menemukannya dari undangan yang sudah
+ * beredar. Tiga tes di bawah sengaja menagih KEHILANGAN, supaya ia tetap keputusan dan berbunyi
+ * kalau suatu saat ditambal diam-diam.
+ */
+describe('kesetiaan migrasi v1→v2', () => {
+  const cari = (doc: ReturnType<typeof createLegacyDocument>, type: string) => doc.sections.find(s => s.type === type)!
+  const hasil = (ubah: (doc: ReturnType<typeof createLegacyDocument>) => void = () => {}) => {
+    const doc = createLegacyDocument('Dea', 'Haryo')
+    ubah(doc)
+    return migrateLegacyDocument(doc)
+  }
+  const bagian = (doc: ReturnType<typeof migrateLegacyDocument>, type: string) => doc.sections.find(s => s.type === type)!
+  const acara = (items: Record<string, unknown>[]) => (doc: ReturnType<typeof createLegacyDocument>) => { cari(doc, 'events').data = { ...cari(doc, 'events').data, events: items } }
+
+  it('membawa `enabled` bagian yang dimatikan pasangan', () => {
+    const baru = hasil(doc => { for (const type of ['countdown', 'gallery', 'events', 'rsvp', 'wishes']) cari(doc, type).enabled = false })
+    expect(bagian(baru, 'countdown').enabled).toBe(false)
+    expect(bagian(baru, 'gallery').enabled).toBe(false)
+    expect(bagian(baru, 'map').enabled).toBe(false)
+    expect(bagian(baru, 'wishes').enabled).toBe(false)
+    // `event` wajib di v2: ia tidak punya sakelar di rail sama sekali.
+    expect(bagian(baru, 'event').enabled).toBe(true)
+  })
+
+  it('penutup yang dimatikan di v1 menyala lagi — satu-satunya bagian yang berpindah ke wajib', () => {
+    expect(bagian(hasil(doc => { cari(doc, 'closing').enabled = false }), 'closing').enabled).toBe(true)
+    expect(isRequiredSection('closing')).toBe(true)
+  })
+
+  it('melebur rsvp dan wishes: cukup salah satunya menyala', () => {
+    const kehadiran = (rsvp: boolean, wishes: boolean) => bagian(hasil(doc => { cari(doc, 'rsvp').enabled = rsvp; cari(doc, 'wishes').enabled = wishes }), 'wishes').enabled
+    expect(kehadiran(true, false)).toBe(true)
+    expect(kehadiran(false, true)).toBe(true)
+    expect(kehadiran(false, false)).toBe(false)
+    // Dokumen lama yang tidak punya kedua bagian itu sama sekali ikut bawaan v2.
+    const tanpa = migrateLegacyDocument({ ...createLegacyDocument('Dea', 'Haryo'), sections: createLegacyDocument('Dea', 'Haryo').sections.filter(s => s.type !== 'rsvp' && s.type !== 'wishes') })
+    expect(tanpa.sections.find(s => s.type === 'wishes')!.enabled).toBe(true)
+  })
+
+  it('musik yang sengaja dibisukan tidak ikut berbunyi sesudah migrasi', () => {
+    const mati = hasil(doc => { cari(doc, 'music').data = { url: '/uploads/lagu.mp3' } })
+    expect(mati.settings).toBeUndefined()
+    const nyala = hasil(doc => { cari(doc, 'music').enabled = true; cari(doc, 'music').data = { url: '/uploads/lagu.mp3' } })
+    expect(nyala.settings).toEqual({ musicUrl: '/uploads/lagu.mp3' })
+  })
+
+  it('membaca tanggal dari acara pertama, lalu hitung mundur sebagai cadangan', () => {
+    const dari = (ubah: (doc: ReturnType<typeof createLegacyDocument>) => void) => bagian(hasil(ubah), 'event').data
+    const lewatAcara = dari(acara([{ id: 'a', name: 'Akad', date: '2026-10-03', time: '09:00' }]))
+    expect(lewatAcara).toMatchObject({ day: 'Sabtu', date: '03', monthYear: 'Oktober 2026' })
+    const lewatHitungMundur = dari(doc => { cari(doc, 'countdown').data = { date: '2026-10-03' } })
+    expect(lewatHitungMundur).toMatchObject({ day: 'Sabtu', date: '03', monthYear: 'Oktober 2026' })
+  })
+
+  it('tidak pernah menulis ISO ke kolom "Hari" yang berbatas 20 karakter', () => {
+    const baru = hasil(acara([{ id: 'a', name: 'Akad', date: '2026-10-03T09:00:00.000Z', time: '09:00' }]))
+    expect(bagian(baru, 'event').data.day as string).not.toMatch(/\d{4}-\d{2}-\d{2}/)
+    expect(invitationDocumentSchema.safeParse(baru).success).toBe(true)
+  })
+
+  it('membawa acara ketiga ke Unduh Mantu, dan mengakui kehilangan acara keempat', () => {
+    const empat = [
+      { id: '1', name: 'Akad', date: '2026-10-03', time: '09:00', venue: 'Masjid Agung', address: 'Jl. Masjid 1' },
+      { id: '2', name: 'Resepsi', date: '2026-10-03', time: '11:00', venue: 'Pendopo Aruna', address: 'Jl. Pendopo 2' },
+      { id: '3', name: 'Ngunduh Mantu', date: '2026-10-10', time: '10:00', venue: 'Kediaman mempelai pria', address: 'Jl. Melati 12', mapUrl: 'https://maps.example/x' },
+      { id: '4', name: 'Siraman', date: '2026-10-02', time: '15:00', venue: 'Kediaman mempelai wanita', address: 'Jl. Kenanga 7' },
+    ]
+    const baru = hasil(acara(empat))
+    const unduh = bagian(baru, 'unduh-mantu')
+    expect(unduh.enabled).toBe(true)
+    expect(unduh.data).toMatchObject({ title: 'Ngunduh Mantu', mapUrl: 'https://maps.example/x' })
+    expect(unduh.data.address as string).toContain('Jl. Melati 12')
+    // Kehilangan yang dipilih: Elegance tidak punya rumah untuk acara keempat.
+    expect(JSON.stringify(baru)).not.toContain('Siraman')
+    expect(invitationDocumentSchema.safeParse(baru).success).toBe(true)
+  })
+
+  it('membawa alamat resepsi yang berbeda ke bagian Lokasi, tanpa menggandakan yang sama', () => {
+    const beda = hasil(acara([
+      { id: '1', name: 'Akad', venue: 'Masjid Agung', address: 'Jl. Masjid 1' },
+      { id: '2', name: 'Resepsi', venue: 'Pendopo Aruna', address: 'Jl. Pendopo 2' },
+    ]))
+    const subtitle = bagian(beda, 'map').data.subtitle as string
+    expect(subtitle).toContain('Pendopo Aruna')
+    expect(subtitle.length).toBeLessThanOrEqual(400)
+    const sama = hasil(acara([{ id: '1', name: 'Akad', venue: 'Masjid Agung', address: 'Jl. Masjid 1' }]))
+    const satu = bagian(sama, 'map').data.subtitle as string
+    expect(satu.split('Masjid Agung').length - 1).toBe(1)
+    expect(invitationDocumentSchema.safeParse(beda).success).toBe(true)
+  })
+
+  it('tidak memutasi dokumen lama', () => {
+    const lama = createLegacyDocument('Dea', 'Haryo')
+    const semula = JSON.stringify(lama)
+    migrateLegacyDocument(lama)
+    expect(JSON.stringify(lama)).toBe(semula)
   })
 })

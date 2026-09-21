@@ -32,6 +32,13 @@ export class PublicService {
     return { opened: exists > 0 };
   }
 
+  /*
+   * Jalur v1 saja. Dokumen Elegance (v2) tidak punya bagian `rsvp` — kehadiran naik lewat
+   * `POST /public/:slug/wishes`, dan batas RSVP yang dibaca di bawah adalah salah satu kehilangan
+   * yang diakui `migrateLegacyDocument`. Jadi undangan v2 selalu dijawab 400 di sini, dan itu
+   * benar: renderer v2 tidak pernah memanggilnya. Revisi terbit v1 yang lama tetap terlayani
+   * sampai pasangannya menerbitkan ulang.
+   */
   async rsvp(slug: string, input: PublicRsvpBody) {
     const invitation = await this.publishedInvitation(slug);
     const document = publicDocument(invitation.activeRevision!.document as never);

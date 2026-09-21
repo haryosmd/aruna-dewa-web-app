@@ -497,6 +497,10 @@ const str = (v: unknown, fallback = '') => (typeof v === 'string' && v.trim() ? 
  * Menerjemahkan dokumen v1 (cover/couple/events/…) ke struktur Elegance. Murni dan idempoten:
  * dokumen yang sudah v2 dikembalikan apa adanya. Yang tidak punya padanan (mis. `rsvp`)
  * dilebur ke bagian v2 terdekat (`wishes` membawa pilihan kehadiran).
+ *
+ * Tiga kehilangan yang dipilih, bukan kecelakaan, dan masing-masing dipin sebuah tes:
+ * `rsvp.data.deadline` (v2 tidak punya batas RSVP di dokumen), acara keempat dan seterusnya, dan
+ * `closing` yang dimatikan di v1 (di v2 ia bagian wajib).
  */
 export function migrateLegacyDocument<T extends AnyDoc>(document: T): T {
   if (document.schemaVersion === 2) return document
@@ -516,7 +520,10 @@ export function migrateLegacyDocument<T extends AnyDoc>(document: T): T {
 
   const partner1 = str(couple.partner1, 'Aruna')
   const partner2 = str(couple.partner2, 'Dewa')
-  const tanggalIso = str(countdown.date)
+  // Tanggal acara datang dari `events[0].date` lebih dulu; `countdown.date` hanya cadangan.
+  // Sebelumnya hanya hitung mundur yang dibaca, jadi undangan yang mengisi tanggal di form acara —
+  // tempat yang wajar — mendarat di "Hari / 00 / Bulan Tahun".
+  const tanggalIso = str(akad.date, str(countdown.date))
   const baru = createEleganceSections({ partner1, partner2, date: tanggalIso || undefined, venue: str(akad.venue), address: str(akad.address), mapUrl: str(akad.mapUrl) })
   const at = (type: string) => baru.find(section => section.type === type)!
 
@@ -533,7 +540,33 @@ export function migrateLegacyDocument<T extends AnyDoc>(document: T): T {
   if (events.length) {
     Object.assign(at('event').data, {
       akadTitle: str(akad.name, 'Akad Nikah'), akadTime: str(akad.time, ''), receptionTitle: str(resepsi.name, 'Resepsi'), receptionTime: str(resepsi.time, ''),
-      day: str(at('event').data.day as string, str(akad.date)),
+    })
+  }
+  /*
+   * Resepsi di gedung lain ikut ke `map`: v2 hanya punya satu bagian lokasi, dan alamat kedua yang
+   * lenyap tanpa jejak jauh lebih mahal daripada satu paragraf yang agak panjang.
+   */
+  const alamatDari = (acara: Record<string, unknown>) => [str(acara.venue), str(acara.address)].filter(Boolean).join('\n')
+  const alamatResepsi = alamatDari(resepsi)
+  if (resepsi !== akad && alamatResepsi && alamatResepsi !== alamatDari(akad)) {
+    at('map').data.subtitle = `${at('map').data.subtitle as string}\n\n${str(resepsi.name, 'Resepsi')}\n${alamatResepsi}`.slice(0, 400)
+  }
+  /*
+   * Acara ketiga mendarat di `unduh-mantu`: satu-satunya bagian Elegance yang memang berbentuk
+   * "acara tambahan dengan tanggal, alamat, dan peta sendiri". Fiturnya `events`, jadi menyalakannya
+   * tidak pernah membuat undangan paket Mula gagal terbit. Acara keempat dan seterusnya adalah
+   * kehilangan yang dipilih — menambah bagian baru urusan fase sesudah ini, dan menyimpannya sebagai
+   * kunci yang tidak dirender siapa pun lebih buruk daripada kehilangan yang tercatat.
+   */
+  const ketiga = events[2]
+  if (ketiga) {
+    at('unduh-mantu').enabled = true
+    Object.assign(at('unduh-mantu').data, {
+      kicker: 'Acara tambahan',
+      title: str(ketiga.name, 'Acara ketiga').slice(0, 120),
+      subtitle: [str(ketiga.date), str(ketiga.time)].filter(Boolean).join(' · ').slice(0, 120),
+      address: alamatDari(ketiga).slice(0, 400),
+      mapUrl: str(ketiga.mapUrl),
     })
   }
   Object.assign(at('gallery').data, { imageUrls: Array.isArray(gallery.images) ? gallery.images : [] })
@@ -545,6 +578,23 @@ export function migrateLegacyDocument<T extends AnyDoc>(document: T): T {
     hasSecondAccount: Boolean(a2), bank2: str(a2?.bankLabel), account2: str(a2?.number), holder2: str(a2?.holder),
   })
   at('gift').enabled = lama.get('gift')?.enabled ?? false
+  /*
+   * `enabled` v1 → v2. Tanpa ini bagian yang sengaja dimatikan pasangan menyala lagi diam-diam,
+   * dan mereka menemukannya dari undangan yang sudah beredar.
+   *
+   * Bagian WAJIB v2 (`opening-envelope`, `hero`, `couple`, `event`, `closing`) tidak punya sakelar
+   * di rail, jadi selalu menyala: `closing` yang dimatikan di v1 akan kembali, dan itu satu-satunya
+   * bagian yang berpindah dari opsional ke wajib. `quote` tidak punya padanan v1 dan ikut menyala
+   * sebagai bagian dari wajah Elegance — satu klik untuk mematikannya.
+   */
+  const nyala = (type: string, bawaan: boolean) => lama.get(type)?.enabled ?? bawaan
+  at('countdown').enabled = nyala('countdown', true)
+  at('gallery').enabled = nyala('gallery', true)
+  at('map').enabled = nyala('events', true)
+  // `rsvp` dan `wishes` v1 melebur jadi satu bagian v2; cukup salah satunya menyala. Yang dihitung
+  // hanya yang benar-benar ada di dokumen lama — dokumen tanpa keduanya ikut bawaan.
+  const kehadiran = ['rsvp', 'wishes'].map(type => lama.get(type)).filter(Boolean)
+  at('wishes').enabled = kehadiran.length ? kehadiran.some(section => section!.enabled) : true
   Object.assign(at('closing').data, { copy: str(closing.text, at('closing').data.copy as string) })
   for (const type of ['story', 'rundown', 'dresscode', 'video'] as const) {
     const old = lama.get(type)
@@ -553,7 +603,9 @@ export function migrateLegacyDocument<T extends AnyDoc>(document: T): T {
     Object.assign(at(type).data, old.data)
   }
   const settings: InvitationSettings = {}
-  if (str(music.url)) { settings.musicUrl = str(music.url); settings.musicTitle = str(music.title) || undefined }
+  // `enabled` ikut dibaca: di v1 renderer hanya memutar musik bila bagiannya menyala, jadi sebuah URL
+  // yang tertinggal di draft yang sengaja dibisukan akan mulai berbunyi sesudah migrasi.
+  if (lama.get('music')?.enabled && str(music.url)) { settings.musicUrl = str(music.url); settings.musicTitle = str(music.title) || undefined }
   const { copy: _copy, ...rest } = document
   return { ...rest, schemaVersion: 2, sections: baru, ...(Object.keys(settings).length ? { settings } : {}) } as T
 }
