@@ -9,6 +9,10 @@ belakang judulnya. Yang belum tercentang adalah yang tersisa — jangan menganda
 
 Status: `[ ]` belum · `[~]` sedang dikerjakan · `[x]` selesai · `[-]` diputuskan tidak dikerjakan
 
+**2026-09-22:** sisa berkas ini dikerjakan sebagai **fase 74** (`docs/ROADMAP.md`), bersama
+pemisahan `templateId` jadi dua sumbu (`structureId` + `themeId`). Nomor commit `74.x` ditulis
+di belakang tiap butir yang ditutup.
+
 ---
 
 ## 0. Keadaan saat berkas ini ditulis
@@ -40,15 +44,27 @@ Status: `[ ]` belum · `[~]` sedang dikerjakan · `[x]` selesai · `[-]` diputus
 Tabel label kolom di `FASE-72.md:141-154` cocok hampir baris per baris dengan `sectionFields`.
 Tidak ada berkas data mentah — seluruh hasil bedah hidup sebagai prosa di `FASE-72.md`.
 
-- [ ] Galeri: urutan `viewLabel` dan `subtitle` tertukar dari tabel referensi — samakan.
+- [-] ~~Galeri: urutan `viewLabel` dan `subtitle` tertukar~~ — **butir ini keliru**, dicoret
+  2026-09-22 (fase `74.0`) sesudah halaman terbit referensi dibaca ulang: "LIHAT FOTO" muncul
+  empat kali, satu per ubin (`viewLabel`, dirender `Gallery.vue:125`), dan "Two cultures, one
+  beautiful story." muncul sekali di bawah grid (`subtitle`, dirender `elegance/Gallery.vue:33`).
+  Kodenya benar. Buktinya di `referensi/undang-site/SECTIONS.md`.
 - [-] Mempelai dipecah `brideOrder` + `brideParents` (referensi satu textarea) — dipertahankan.
 - [-] Galeri `limit: 15` (referensi "Maks 4") — dipertahankan, batas paket kita 15 foto.
 - [-] `shareCard` / `tokens.layout` / `background` (rencana menulisnya dalam bahasa Indonesia) —
   dipertahankan, konsisten dengan kontrak lain.
 - [-] Migrasi v1→v2 di editor, bukan di server — keputusan sudah direkam `ROADMAP.md:64`.
-- [ ] `docs/features/invitation-builder/referensi/undang-site/` dijanjikan `FASE-72.md:2` tapi tak
-  pernah dibuat; 11 tangkapan layar pemilik belum masuk repo. Ingat biner di `docs/` tidak ikut
-  git — pakai pola manifest checksum yang sudah ada (`sources/INDEX.md`).
+- [x] **`referensi/undang-site/` dibuat** `74.0` — `INDEX.md`, `SECTIONS.md` (dua belas bagian
+  dengan teks terbitnya, dibandingkan baris per baris dengan `createEleganceSections()`),
+  `RENDER.md` (referensi melebur 12 bagian jadi enam `<section>`; kita 1:1, dan kenapa),
+  `ASSETS.md`. Seluruhnya **teks** — `.gitignore:12-26` menjaga biner `docs/` di luar git, jadi
+  11 tangkapan layar pemilik tetap di arsip lokalnya dan `INDEX.md` menyebutkannya seperti pola
+  `sources/INDEX.md`.
+- [ ] Selisih nyata yang menggantikan butir galeri yang dicoret di atas: urutan kolom galeri di
+  `FASE-72.md:120` (`title, eyebrow, subtitle, viewLabel`) tidak konsisten dengan `:310`
+  (`Label section, Judul, Label preview foto, Caption`) yang menyebut dirinya "persis, urut".
+  Kode mengikuti `:310`, jadi `:120` yang dibetulkan. Angka "Maks 4" sudah dicatat sebaris di
+  atas dan tetap dipertahankan.
 
 ## 3. P0 — memblokir pelanggan sungguhan
 

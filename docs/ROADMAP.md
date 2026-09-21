@@ -43,6 +43,54 @@ alasannya.
 
 ## Sisa
 
+**Fase 74 — template jadi struktural, dan sisa fase 73 ditutup.** Ditulis 2026-09-22. Dua
+bagian, dan bagian keduanya yang jadi judul.
+
+*Sisa fase 73 (74.1–74.6).* Enam butir yang belum tercentang di
+`docs/features/invitation-builder/FASE-72-SISA.md`, ditambah dua koreksi. Koreksi pertama:
+penanam proxy Vue ke dalam dokumen bukan dua situs melainkan **enam** — `ExtrasForm` menulis
+`[...rows(key), {…}]` yang membawa seluruh baris lama sebagai proxy, `tulisGaya()` menyalin
+dangkal `textStyles` yang isinya objek, dan ketiga penulis `tokens` membawa `tokens.motion`
+by-reference. `salinDokumen()` yang memakai JSON tetap ada, tapi turun pangkat dari "satu-satunya
+yang menahan bug" jadi jaring terakhir; yang memperbaikinya adalah `bersihkan()` di titik tulis.
+Koreksi kedua: galeri `viewLabel`/`subtitle` **tidak** tertukar — halaman terbit referensi
+menaruh "LIHAT FOTO" di tiap ubin dan satu caption di bawah grid, persis seperti kode, jadi yang
+dibetulkan dokumennya. Sisanya: tinggi pratinjau yang masih `100svh` di empat tempat dan karena
+itu membaca jendela editor (`PhoneFrame` tidak pernah menghitung tinggi layar dan tidak
+menerbitkan satu pun CSS var; `DeviceBezel` sudah punya prop `screenHeight` yang **yatim**),
+`steps`/`items`/`colors`/`attire` yang disunting `ExtrasForm` tapi tidak ada di `sectionFields`
+sehingga lolos `.passthrough()` tanpa batas, penjaga kelengkapan renderer (`Renderer.vue:152`
+membuang bagian tanpa komponen diam-diam), sistem `copy` yang tinggal permukaan formnya yatim,
+dan pangkas foto di Pustaka Saya yang dijanjikan `FASE-72.md:488`.
+
+*Dua sumbu (74.7–74.11).* Hari ini `templateId` mengompres dua hal: struktur dan warna.
+Akibatnya "template baru" **tidak bisa dinyatakan** — sebuah record template tidak punya tempat
+untuk menyebut bagiannya, dan `Renderer` memilih keluarga komponennya dari `schemaVersion`.
+Payload undang.site yang dibedah fase 72 justru memakai dua sumbu (`templateCode` + `themeId`),
+dan seluruh salinan di produk kita sudah menyebut `templateId` sebagai "tema". Jadi: dua kunci
+opsional baru di akar dokumen — `themeId` (absen = ikut `templateId`) dan `structureId` (absen =
+diturunkan dari `schemaVersion`) — **tanpa** menaikkan `schemaVersion` ke 3, karena tipe
+bagiannya tidak berubah dan versi ketiga akan menuntut jendela pembebasan kedua di
+`hasDesignChange` yang persis mekanisme cacat 73.1. Registry `packages/contracts/src/structures.ts`
+memegang `elegance` (dua belas bagian + empat ekstra) dan `warisan` (v1, pensiun), masing-masing
+membawa daftar bagian, bagian wajib, bagian yang lahir menyala, daftar `headless`, dan keluarga
+komponennya. v1 berhenti jadi pengecualian dan menjadi template struktural yang pensiun — gerakan
+yang sama dengan `liveTemplateIds` untuk tema pensiun. Yang **tetap global** karena berkunci pada
+tipe bagian, bukan template: `sectionFields`, `sectionMeta`, `sectionOrnamentSlots`, `sectionRole`,
+dan terutama **`sectionFeature`** — `publish()` menggerbanginya, dan entri per-struktur akan
+membuka jalan menyelundupkan bagian berbayar ke paket Mula. Pindah struktur mengganti semua id
+bagian, jadi ia dijaga dengan cara 73.1: `restructureDocument()` yang murni dipakai sebagai
+**pembanding** sidik jari, bukan gerbangnya yang dilewati. Sidik jari membaca nilai **teresolusi**
+— menulis `document.structureId` mentah akan mengunci seluruh pelanggan tanpa add-on `design`
+pada simpan pertama, cacat 73.1 kata per kata.
+
+Pemilih struktur di `/order` dirender `v-if="liveStructureIds.length > 1"` dan karena itu
+**belum terlihat**: struktur kedua sengaja tidak dikirim di fase yang sama, supaya nilai
+pemisahannya dibuktikan gerbang tes dan oleh `warisan` yang bolak-balik utuh, bukan oleh kulit
+kedua yang menyembunyikan cacatnya. Hasil bedah referensi akhirnya punya folder yang dijanjikan
+`FASE-72.md:2`: `docs/features/invitation-builder/referensi/undang-site/`, sebagai teks karena
+`.gitignore` menjaga biner `docs/` di luar git.
+
 **Fase 73 — mengunci fase 72.** Ditulis 2026-09-21 sesudah pemeriksaan ulang fase 72. Dua cacat
 yang ditemukan saat verifikasi 2026-09-20 memang benar diperbaiki, tapi di belakangnya ada tiga
 cacat yang memblokir pelanggan sungguhan dan tidak tersentuh tes mana pun: (1) pasangan tanpa
