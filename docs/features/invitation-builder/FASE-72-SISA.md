@@ -172,14 +172,26 @@ menyusul. `pnpm test && pnpm typecheck` hijau di HEAD.
 
 ## 6c. Yang sudah dikerjakan 2026-09-22 (fase 74)
 
-`74.0` referensi undang.site jadi teks + koreksi butir galeri · `74.1` proxy berhenti ditanam di
-enam situs · `74.2` tinggi pratinjau lepas dari jendela editor · `74.3` batas struktur berulang
-bagian ekstra · `74.4` penjaga kelengkapan renderer · `74.5` `copy` yatim dibuang + lima label
-istilah desain · `74.6` pangkas foto tanpa dependensi baru · `74.7` `test:integration` diperbaiki
-sehingga e2e akhirnya berjalan.
+**Bagian B — sisa fase 73.** `74.0` referensi undang.site jadi teks + koreksi butir galeri ·
+`74.1` proxy berhenti ditanam di enam situs · `74.2` tinggi pratinjau lepas dari jendela editor ·
+`74.3` batas struktur berulang bagian ekstra · `74.4` penjaga kelengkapan renderer · `74.5` `copy`
+yatim dibuang + lima label istilah desain · `74.6` pangkas foto tanpa dependensi baru ·
+`74.7` `test:integration` diperbaiki sehingga e2e akhirnya berjalan.
 
-Terukur: `pnpm test` **1279 hijau** (dari 1241), typecheck dan lint bersih, `test:integration`
-49 hijau, `playwright --project=desktop` 51/51.
+**Bagian A — template jadi struktural.** `74.8` registry `structures.ts`; v1 berhenti jadi
+pengecualian dan jadi struktur `warisan` yang pensiun · `74.9` `themeId` + `structureId` opsional
+di akar dokumen, tanpa `schemaVersion: 3` · `74.10` renderer memilih keluarga komponen dari
+struktur, bukan dari `schemaVersion` · `74.11` `restructureDocument` + sidik jari dua sumbu +
+gerbang desain · `74.12` `/order` dan editor.
+
+Terukur: `pnpm test` **1323 hijau** (dari 1241), typecheck dan lint bersih, `test:integration`
+49 hijau.
+
+**Yang dijawab untuk pertanyaan "pastikan ada template yg baru":** "Wedding Elegance" kini record
+template yang membawa dua belas bagiannya sendiri (daftar, urutan, wajib, lahir-menyala, keluarga
+komponen), bukan struktur yang tertanam di skema. Pemilihnya di `/order` dan editor sudah ada
+tapi dirender `v-if` terhadap jumlah struktur hidup, jadi **belum tampil** selama baru ada satu.
+Keduanya dibuktikan muncul dan bekerja dengan menyetel `warisan` hidup sementara (`74.12`).
 
 ## 6b. Yang sudah dikerjakan 2026-09-21
 

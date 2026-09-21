@@ -91,6 +91,19 @@ kedua yang menyembunyikan cacatnya. Hasil bedah referensi akhirnya punya folder 
 `FASE-72.md:2`: `docs/features/invitation-builder/referensi/undang-site/`, sebagai teks karena
 `.gitignore` menjaga biner `docs/` di luar git.
 
+**Fase 74 selesai 2026-09-22.** Terukur: `pnpm test` 1241 → **1323 hijau**, typecheck dan lint
+bersih, `pnpm test:integration` **49 hijau** dan fixture QA tertulis untuk pertama kalinya sejak
+fase 72, `playwright --project=desktop` **51/51**. Tiga penjaga baru dibuktikan bisa merah lalu
+dikembalikan: mencabut satu `bersihkan()` di `tulis()`, menghapus `quote` dari peta komponen
+(merah di tes DAN di compiler), dan menulis `structureId` mentah di sidik jari — yang terakhir
+menjatuhkan tiga tes yang justru bernama "draft pra-fase-74 tidak boleh terkunci". Pemisahan dua
+sumbu dibuktikan dua arah di stack demo dengan menyetel `warisan` hidup sementara: pemilih
+struktur muncul di `/order`, tombol pindah muncul di editor, dialognya menyebut enam bagian yang
+hilang, dan sesudah dikonfirmasi rail maupun panggung berpindah ke keluarga komponen v1.
+Satu e2e tetap merah — `[mobile] signed-in editor and guest management`, 364 vs 360 — dan
+**dibuktikan bukan regresi fase ini** dengan menjalankannya pada `d3a4ffb`; penelusurannya
+berhenti di `grid-template-columns: 343.781px` pada halaman Generator dan dicatat di penjejak.
+
 **Fase 73 — mengunci fase 72.** Ditulis 2026-09-21 sesudah pemeriksaan ulang fase 72. Dua cacat
 yang ditemukan saat verifikasi 2026-09-20 memang benar diperbaiki, tapi di belakangnya ada tiga
 cacat yang memblokir pelanggan sungguhan dan tidak tersentuh tes mana pun: (1) pasangan tanpa

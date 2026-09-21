@@ -1,5 +1,5 @@
 {
-  "date": "2026-09-21T18:43:35.540Z",
+  "date": "2026-09-21T19:13:52.368Z",
   "database": "PostgreSQL 18.4 on x86_64-apple-darwin24.6.0, compiled by Apple clang version 17.0.0 (clang-1700.6.3.2), 64-bit",
   "checks": [
     "owner registration writes real database and local email",
