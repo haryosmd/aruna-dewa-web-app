@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { canEditDesign, createDefaultDocument, isLiveTemplateId, type InvitationDocument } from '@aruna/contracts';
-import type { CreateInvitationBody } from '@aruna/contracts/api';
+import { canEditDesign, createDefaultDocument, isLiveTemplateId, sectionFeature, type InvitationDocument } from '@aruna/contracts';
+import { shareSettingsSchema, type CreateInvitationBody, type ShareSettings } from '@aruna/contracts/api';
 import { PrismaService } from '../database/prisma.service.js';
 import { Prisma } from '@aruna/database';
 import { MembershipService } from '../common/membership.service.js';
@@ -28,14 +28,10 @@ export class InvitationsService {
     // tidak boleh lahir langsung memakai tema yang sudah pensiun dari pemilih.
     const templateId = input.templateId?.trim() || 'aruna-bloom';
     if (!isLiveTemplateId(templateId)) throw new BadRequestException('Template tidak tersedia');
-    const document = createDefaultDocument(input.partner1.trim(), input.partner2.trim(), templateId);
-    const eventSection = document.sections.find((section) => section.type === 'events');
-    const date = input.date?.trim() ?? '';
-    if (eventSection && Array.isArray(eventSection.data.events)) {
-      eventSection.data.events = eventSection.data.events.map((event) => ({ ...event, date, venue: input.venue?.trim() || 'Lokasi akan diumumkan', address: input.address?.trim() || '' }));
-    }
-    const countdown = document.sections.find((section) => section.type === 'countdown');
-    if (countdown) countdown.data.date = date;
+    // Dokumen v2 (fase 72): tanggal, lokasi, dan alamat dari form pemesanan mendarat langsung di
+    // kata-kata bagian `event`/`map`/`countdown` lewat pembangun bawaannya — tidak ada lagi
+    // `events.events[]` yang perlu ditulis ulang di sini.
+    const document = createDefaultDocument(input.partner1.trim(), input.partner2.trim(), templateId, { date: input.date?.trim() || undefined, venue: input.venue?.trim() || undefined, address: input.address?.trim() || undefined });
     try {
       return await this.prisma.$transaction(async (tx) => {
         const invitation = await tx.invitation.create({ data: { slug, title: input.title.trim(), partner1: input.partner1.trim(), partner2: input.partner2.trim(), eventDate: input.date ? new Date(input.date) : null, venue: input.venue?.trim(), address: input.address?.trim(), draftDocument: toJson(document), createdById: user.sub } });
@@ -51,7 +47,17 @@ export class InvitationsService {
   async get(user: AuthenticatedUser, invitationId: string) {
     await this.memberships.requireInvitationRole(user, invitationId);
     const invitation = await this.prisma.invitation.findUniqueOrThrow({ where: { id: invitationId }, include: { entitlements: { where: { revokedAt: null, OR: [{ activeUntil: null }, { activeUntil: { gt: new Date() } }] }, include: { feature: true } } } });
-    return { id: invitation.id, slug: invitation.slug, title: invitation.title, status: invitation.status, document: invitation.draftDocument, revision: invitation.draftRevision, features: invitation.entitlements.map((item) => item.featureId), activeUntil: invitation.entitlements.reduce<Date | null>((latest, item) => !latest || (item.activeUntil && item.activeUntil > latest) ? item.activeUntil : latest, null), publishedAt: invitation.publishedAt };
+    // Draft v1 dikirim apa adanya — editor yang memigrasinya di klien (fase 72), supaya server
+    // tidak pernah menulis ulang dokumen yang belum disentuh pasangan.
+    return { id: invitation.id, slug: invitation.slug, title: invitation.title, status: invitation.status, document: invitation.draftDocument, revision: invitation.draftRevision, features: invitation.entitlements.map((item) => item.featureId), activeUntil: invitation.entitlements.reduce<Date | null>((latest, item) => !latest || (item.activeUntil && item.activeUntil > latest) ? item.activeUntil : latest, null), publishedAt: invitation.publishedAt, shareSettings: readShareSettings(invitation.shareSettings) };
+  }
+
+  /** Template WhatsApp (fase 72.6). Di luar dokumen dan revisinya: menyunting pesan tidak boleh membuat draft "belum terbit". */
+  async updateShareSettings(user: AuthenticatedUser, invitationId: string, input: ShareSettings) {
+    await this.memberships.requireInvitationRole(user, invitationId, 'EDITOR');
+    const updated = await this.prisma.invitation.updateMany({ where: { id: invitationId }, data: { shareSettings: toJson(input) } });
+    if (!updated.count) throw new NotFoundException('Undangan tidak ditemukan');
+    return input;
   }
 
   /** `document` dan `revision` sudah lolos `saveDraftBodySchema` di batas controller. */
@@ -81,9 +87,11 @@ export class InvitationsService {
         if (active?.revision === invitation.draftRevision) return { slug: invitation.slug, publishedAt: invitation.publishedAt };
       }
       const document = validatePublishableDocument(invitation.draftDocument);
-      const enabledTypes = document.sections.filter((section) => section.enabled).map((section) => section.type);
+      // Lewat `sectionFeature`, bukan `type` mentah: bagian v2 (`hero`, `event`, `map`, …) menumpang
+      // fitur lama di katalog, jadi entitlement di basis data tidak perlu tahu tipe baru.
+      const enabledFeatures = document.sections.filter((section) => section.enabled).map((section) => sectionFeature[section.type] ?? section.type);
       const granted = new Set(invitation.entitlements.map((item) => item.featureId));
-      if (!isOperator(user) && enabledTypes.some((feature) => !granted.has(feature))) throw new BadRequestException('Paket aktif belum mencakup seluruh section yang diaktifkan');
+      if (!isOperator(user) && enabledFeatures.some((feature) => !granted.has(feature))) throw new BadRequestException('Paket aktif belum mencakup seluruh section yang diaktifkan');
       const snapshot = await tx.publishedRevision.create({ data: { invitationId, revision: invitation.draftRevision, document: toJson(document) } });
       const publishedAt = new Date();
       await tx.invitation.update({ where: { id: invitationId }, data: { activeRevisionId: snapshot.id, status: 'PUBLISHED', publishedAt } });
@@ -122,6 +130,12 @@ export class InvitationsService {
   }
 }
 
+/** JSON mentah Prisma yang tidak lolos skema dibaca sebagai "belum diatur", bukan 500 di halaman Generator. */
+function readShareSettings(value: unknown): ShareSettings | null {
+  const parsed = shareSettingsSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
 function isPrismaUniqueError(error: unknown): boolean { return typeof error === 'object' && error !== null && 'code' in error && (error as { code?: string }).code === 'P2002'; }
 
 /**
@@ -145,17 +159,46 @@ function isPrismaUniqueError(error: unknown): boolean { return typeof error === 
  * masih gratis tetap di tempatnya; yang tergerbang hanya suntingan berikutnya.
  */
 export function designFingerprint(document: InvitationDocument): string {
-  const cover = document.sections?.find((section) => section.type === 'cover');
+  // Fase 72: pada dokumen v2 `ornamentOverrides` tinggal di `opening-envelope` (migrator memindahkannya
+  // dari `cover`); dokumen v1 tetap dibaca dari `cover` supaya revisi lama tidak berubah sidik jarinya.
+  const gerbang = document.sections?.find((section) => section.type === (document.schemaVersion === 2 ? 'opening-envelope' : 'cover'));
   return JSON.stringify({
     // Disortir sampai ke dalam: `tokens.motion` (fase 69) adalah objek, dan `{}` ≡ absen.
+    // `tokens.layout` (fase 72) ikut di sini tanpa cabang baru.
     tokens: kanonikDalam(document.tokens ?? {}),
     order: document.sections?.map((section) => section.id) ?? [],
-    ornaments: kanonik(cover?.data?.ornamentOverrides),
+    ornaments: kanonik(gerbang?.data?.ornamentOverrides),
     // Kata-kata (fase 69) ikut digerbangi — keputusan pemilik: seluruh "tema sendiri" masuk
     // add-on desain. `{}` dan absen sama-sama `null`, supaya form yang dikosongkan kembali tidak
     // terbaca sebagai perubahan.
     copy: kanonikCopy(document.copy),
+    // Fase 72.4–72.5: gaya teks per kolom, latar, dan gerak masuk tiap bagian adalah desain.
+    // Kata-kata di `data` (judul, nama, tanggal) **sengaja tidak** ikut — itu isi, bukan desain —
+    // begitu pula `settings` (musik) dan `shareCard` (kartu bagikan) yang tinggal di luar sini.
+    // Hanya v2: `gallery.data.motion` sudah ada di dokumen v1 (gerak galeri) dan tidak pernah
+    // digerbangi — membacanya di sini akan mengubah sidik jari revisi lama tanpa ada yang menyentuhnya.
+    sections: document.schemaVersion === 2 ? kanonikBagian(document.sections) : [],
   });
+}
+
+/**
+ * Proyeksi desain per bagian: `{ id, textStyles, background, motion }`. Objek kosong ≡ absen,
+ * dan bagian tanpa satu pun dari ketiganya dibuang, supaya dokumen v1 (yang tidak punya kunci
+ * ini) menghasilkan `[]` — sama seperti sebelum fase 72 — dan sidik jari revisi lamanya tetap.
+ */
+function kanonikBagian(sections: InvitationDocument['sections'] | undefined): unknown[] {
+  const keluar: unknown[] = [];
+  for (const section of sections ?? []) {
+    const data = (section.data ?? {}) as Record<string, unknown>;
+    const entry: Record<string, unknown> = {};
+    const textStyles = kanonikDalam(data.textStyles);
+    if (textStyles && typeof textStyles === 'object' && Object.keys(textStyles as object).length) entry.textStyles = textStyles;
+    const background = kanonikDalam(data.background);
+    if (background && typeof background === 'object' && Object.keys(background as object).length) entry.background = background;
+    if (typeof data.motion === 'string' && data.motion) entry.motion = data.motion;
+    if (Object.keys(entry).length) keluar.push({ id: section.id, ...entry });
+  }
+  return keluar;
 }
 
 /** Objek biasa disortir rekursif; primitif dibiarkan; objek kosong dibuang supaya `{}` ≡ absen. */

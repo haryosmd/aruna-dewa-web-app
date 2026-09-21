@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createDefaultDocument, type InvitationDocument } from '@aruna/contracts';
+import { createLegacyDocument, type InvitationDocument } from '@aruna/contracts';
 
 import { hasDesignChange } from '../../src/invitations/invitations.service';
 
@@ -9,8 +9,9 @@ import { hasDesignChange } from '../../src/invitations/invitations.service';
  * `design-gate-ornament.spec.ts`: perubahan sungguhan menyala, dan bentuk-bentuk "tidak ada
  * perubahan" (absen, `{}`, urutan kunci) tidak pernah menyala sendiri.
  */
-const lama = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom');
-const dengan = (copy: InvitationDocument['copy']): InvitationDocument => ({ ...createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom'), copy });
+// `copy` hanya ada di dokumen v1; v2 menaruh kata-kata di `data` tiap bagian dan tidak menggerbanginya.
+const lama = createLegacyDocument('Aruna', 'Dewa', 'aruna-bloom');
+const dengan = (copy: InvitationDocument['copy']): InvitationDocument => ({ ...createLegacyDocument('Aruna', 'Dewa', 'aruna-bloom'), copy });
 
 describe('gerbang kata-kata', () => {
   it('menggerbangi kalimat yang ditulis ulang', () => {

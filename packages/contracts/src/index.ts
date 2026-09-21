@@ -14,7 +14,9 @@ export function buildGuestUrl(base: string, slug: string, displayName: string, t
   return url.toString()
 }
 
-export const sectionTypes = ['cover', 'couple', 'events', 'countdown', 'gallery', 'story', 'rundown', 'dresscode', 'video', 'gift', 'rsvp', 'wishes', 'closing', 'music'] as const
+export * from './sections'
+import { sectionTypes, createEleganceSections, isV2SectionType, sectionDataSchema, invitationSettingsSchema, shareCardSchema, layoutFocuses, type DefaultDocumentInput } from './sections'
+export { sectionTypes }
 
 /**
  * Setiap id yang pernah sah di dalam sebuah dokumen, termasuk yang temanya sudah pensiun.
@@ -85,9 +87,8 @@ export function resolveTemplateId(id: string): LiveTemplateId {
   return templateAliases[id as Exclude<TemplateId, LiveTemplateId>] ?? liveTemplateIds[0]
 }
 
-/** `dm-sans` is retained so documents written before the theme system still validate. */
-export const fontChoices = ['cormorant', 'italiana', 'fraunces', 'jost', 'jakarta', 'instrument', 'charm', 'great-vibes', 'parisienne', 'pinyon', 'allura', 'dm-sans'] as const
-export type FontChoice = (typeof fontChoices)[number]
+export { fontChoices, type FontChoice } from './fonts'
+import { fontChoices, type FontChoice } from './fonts'
 export const selectableFonts: { id: FontChoice; label: string }[] = [
   { id: 'cormorant', label: 'Cormorant Garamond' },
   { id: 'fraunces', label: 'Fraunces' },
@@ -252,7 +253,8 @@ export type InvitationCopy = z.infer<typeof copySchema>
 
 const color = z.string().regex(/^#[0-9a-fA-F]{6}$/)
 export const invitationDocumentSchema = z.object({
-  schemaVersion: z.literal(1), templateId: z.enum(templateIds), templateVersion: z.literal(1),
+  /** 1 = struktur lama (cover/events/rsvp…), 2 = struktur Elegance (fase 72). Lihat `sections.ts`. */
+  schemaVersion: z.union([z.literal(1), z.literal(2)]), templateId: z.enum(templateIds), templateVersion: z.literal(1),
   /*
    * Ketiga key baru fase 59 **opsional dengan sengaja**, dan itu menyelesaikan tiga hal sekaligus.
    *
@@ -273,20 +275,47 @@ export const invitationDocumentSchema = z.object({
     backdropWeight: z.enum(backdropWeights).optional(),
     /** Fase 69. Di `tokens` supaya otomatis ikut gerbang `design`, seperti tiga key di atasnya. */
     motion: motionSchema.optional(),
+    /** Fase 72: fokus tata letak di layar lebar — `kartu` 480px di tengah atau `penuh`. Absen = ikut tema. */
+    layout: z.enum(layoutFocuses).optional(),
   }).strict(),
   sections: z.array(z.object({
     id: z.string().min(1).max(80), type: z.enum(sectionTypes), enabled: z.boolean(), data: z.record(z.unknown()),
   }).strict()).min(1).max(30),
   /** Opsional, seperti key `tokens` fase 59: absen berarti ikut kata-kata tema. Lihat `copyKeys`. */
   copy: copySchema.optional(),
+  /** Fase 72: musik undangan (dulu section `music`). */
+  settings: invitationSettingsSchema.optional(),
+  /** Fase 72.7: gaya kartu bagikan (og:image / WhatsApp). */
+  shareCard: shareCardSchema.optional(),
 }).strict().superRefine((document, ctx) => {
+  if (document.schemaVersion === 2) {
+    document.sections.forEach((section, index) => {
+      if (!isV2SectionType(section.type)) { ctx.addIssue({ code: 'custom', path: ['sections', index, 'type'], message: `Tipe bagian ${section.type} tidak dikenal pada dokumen v2.` }); return }
+      const hasil = sectionDataSchema(section.type).safeParse(section.data)
+      if (!hasil.success) for (const issue of hasil.error.issues) ctx.addIssue({ ...issue, path: ['sections', index, 'data', ...issue.path] })
+    })
+  }
   if (new Set(document.sections.map(s => s.id)).size !== document.sections.length) ctx.addIssue({ code: 'custom', path: ['sections'], message: 'ID section harus unik.' })
   if (JSON.stringify(document).length > 200_000) ctx.addIssue({ code: 'custom', message: 'Konten terlalu besar.' })
 })
 export type InvitationDocument = z.infer<typeof invitationDocumentSchema>
 export type InvitationSection = InvitationDocument['sections'][number]
 
-export function createDefaultDocument(partner1 = 'Aruna', partner2 = 'Dewa', templateId: TemplateId = 'aruna-bloom'): InvitationDocument {
+/**
+ * Dokumen baru = struktur Elegance (fase 72). Template `templateId` hanya menentukan palet,
+ * ornamen, dan partitur gerak; struktur bagian dan kata-katanya sama untuk semua tema.
+ */
+export function createDefaultDocument(partner1 = 'Aruna', partner2 = 'Dewa', templateId: TemplateId = 'aruna-bloom', input: Partial<DefaultDocumentInput> = {}): InvitationDocument {
+  const template = templateById(templateId) ?? templates[0]!
+  return {
+    schemaVersion: 2, templateId: template.id, templateVersion: 1,
+    tokens: { ...template.tokens },
+    sections: createEleganceSections({ partner1, partner2, ...input }),
+  }
+}
+
+/** Dokumen v1 — hanya untuk fixture tes dan migrasi. Undangan baru memakai `createDefaultDocument()`. */
+export function createLegacyDocument(partner1 = 'Aruna', partner2 = 'Dewa', templateId: TemplateId = 'aruna-bloom'): InvitationDocument {
   // Id pensiun ditulis ke dokumen baru sebagai penggantinya, bukan apa adanya: dokumen yang
   // baru lahir tidak punya alasan membawa id yang sudah tidak punya wajah.
   const template = templateById(templateId) ?? templates[0]!

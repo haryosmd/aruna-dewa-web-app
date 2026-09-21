@@ -38,3 +38,17 @@ export type Invitation = import('@aruna/contracts/api').InvitationSummary & Part
 
 /** Bentuk yang dikirim `Renderer.vue` ke atas saat tamu menekan kirim; bukan bentuk API. */
 export type RsvpPayload = { attendance: 'yes' | 'no'; count: number; message: string }
+
+/**
+ * Form ucapan Elegance (fase 72): nama, kehadiran, dan pesan dalam satu kiriman. Ejaan
+ * kehadirannya milik undangan (`hadir`), bukan enum RSVP — API yang menerjemahkannya.
+ */
+export type { WishAttendance } from '@aruna/contracts/api'
+export type WishPayload = { name: string; attendance: import('@aruna/contracts/api').WishAttendance | ''; message: string }
+
+/**
+ * Cara renderer dipasang. `live` = halaman tamu; `compact` = pratinjau tanpa gerbang, pemutar,
+ * dan dock; `stage` = panggung editor — gerbang, pemutar, dan dock ikut dirender tapi
+ * terkurung di dalam `.iv-root` (bukan `fixed`), dan gerbang tidak mengunci `document.body`.
+ */
+export type RendererMode = 'live' | 'stage' | 'compact'

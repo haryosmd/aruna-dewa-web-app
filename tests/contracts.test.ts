@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeDisplayName, buildGuestUrl, invitationDocumentSchema, createDefaultDocument, priceOrder, parseGuestText, safeSpreadsheetCell, templates, templateIds, liveTemplateIds, templateAliases, resolveTemplateId, templateById, normalizeGift, giftAccountLimit } from '../packages/contracts/src/index'
+import { normalizeDisplayName, buildGuestUrl, invitationDocumentSchema, createDefaultDocument, createLegacyDocument, priceOrder, parseGuestText, safeSpreadsheetCell, templates, templateIds, liveTemplateIds, templateAliases, resolveTemplateId, templateById, normalizeGift, giftAccountLimit } from '../packages/contracts/src/index'
 
 describe('guest identity and links', () => {
   it.each(['Yosi Susanti', 'dr. Yosi Susanti, Sp.OG', 'Drs. Ahmad Hidayat, M.Pd.', 'Anne-Marie & Budi', 'A+B', "O’Connor / % # ?", '山田 太郎'])('preserves %s', name => {
@@ -25,7 +25,10 @@ describe('document and pricing boundaries', () => {
   it('rejects duplicate section IDs and unsupported versions', () => {
     const d=createDefaultDocument();d.sections.push(d.sections[0]!)
     expect(invitationDocumentSchema.safeParse(d).success).toBe(false)
-    expect(invitationDocumentSchema.safeParse({...createDefaultDocument(),schemaVersion:2}).success).toBe(false)
+    expect(invitationDocumentSchema.safeParse({...createDefaultDocument(),schemaVersion:3}).success).toBe(false)
+    // v1 dengan tipe bagian lama tetap sah; v2 hanya menerima tipe Elegance.
+    expect(invitationDocumentSchema.safeParse(createLegacyDocument()).success).toBe(true)
+    expect(invitationDocumentSchema.safeParse({...createLegacyDocument(),schemaVersion:2}).success).toBe(false)
   })
   it('calculates server catalog price and prevents double charging included features', () => {
     expect(priceOrder('mula',['story']).total).toBe(304000)

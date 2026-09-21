@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createDefaultDocument, type InvitationDocument } from '@aruna/contracts';
+import { createLegacyDocument, type InvitationDocument } from '@aruna/contracts';
 
 import { designFingerprint, hasDesignChange } from '../../src/invitations/invitations.service';
 
@@ -14,8 +14,10 @@ import { designFingerprint, hasDesignChange } from '../../src/invitations/invita
  * pernah ia buat — gejalanya tidak bisa dijelaskan ke pelanggan, dan itu yang lebih merusak.
  */
 
+// Dokumen v1: `ornamentOverrides` di `cover`. Padanan v2-nya (`opening-envelope`) dijaga di
+// `design-gate-v2.spec.ts`; yang di sini memastikan revisi lama tidak berubah sidik jarinya.
 function dokumen(ubah: (doc: InvitationDocument) => void): InvitationDocument {
-  const doc = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom');
+  const doc = createLegacyDocument('Aruna', 'Dewa', 'aruna-bloom');
   ubah(doc);
   return doc;
 }
@@ -25,19 +27,19 @@ const cover = (doc: InvitationDocument) => doc.sections.find((section) => sectio
 describe('yang digerbangi', () => {
   it('menggerbangi penukaran ornamen', () => {
     // Keputusan pemilik pada fase 59: pemilih ornamen adalah fitur desain, sekelas warna.
-    const lama = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom');
+    const lama = createLegacyDocument('Aruna', 'Dewa', 'aruna-bloom');
     const baru = dokumen((doc) => { cover(doc).data.ornamentOverrides = { divider: 'divider-leaf' }; });
     expect(hasDesignChange(lama, baru)).toBe(true);
   });
 
   it('menggerbangi penukaran keping ladang', () => {
-    const lama = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom');
+    const lama = createLegacyDocument('Aruna', 'Dewa', 'aruna-bloom');
     const baru = dokumen((doc) => { cover(doc).data.ornamentOverrides = { layers: { bloom: 'layer-botanical-bloom' } }; });
     expect(hasDesignChange(lama, baru)).toBe(true);
   });
 
   it('menggerbangi huruf body dan latar', () => {
-    const lama = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom');
+    const lama = createLegacyDocument('Aruna', 'Dewa', 'aruna-bloom');
     expect(hasDesignChange(lama, dokumen((doc) => { doc.tokens.bodyFont = 'jost'; }))).toBe(true);
     expect(hasDesignChange(lama, dokumen((doc) => { doc.tokens.backdrop = 'kawung'; }))).toBe(true);
     expect(hasDesignChange(lama, dokumen((doc) => { doc.tokens.backdropWeight = 'tegas'; }))).toBe(true);
@@ -51,13 +53,13 @@ describe('yang tetap gratis', () => {
      * Ia sudah gratis sejak dibuat, hidup di `section.data` justru karena itu, dan fase 59 tidak
      * mengubah harganya — yang berubah hanya `ornamentOverrides` di sebelahnya.
      */
-    const lama = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom');
+    const lama = createLegacyDocument('Aruna', 'Dewa', 'aruna-bloom');
     const baru = dokumen((doc) => { cover(doc).data.ornamentIntensity = 'pekat'; });
     expect(hasDesignChange(lama, baru)).toBe(false);
   });
 
   it('tidak menggerbangi isi cover yang lain', () => {
-    const lama = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom');
+    const lama = createLegacyDocument('Aruna', 'Dewa', 'aruna-bloom');
     const baru = dokumen((doc) => {
       cover(doc).data.title = 'Nama Baru';
       cover(doc).data.image = '/media/foto.webp';
@@ -77,7 +79,7 @@ describe('gerbang tidak menyala sendiri', () => {
      * kadang ada dan kadang tidak, urutan itu berhenti stabil — dan pasangan tanpa add-on mulai
      * ditolak menyimpan perubahan yang tidak pernah ia buat.
      */
-    const lama = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom');
+    const lama = createLegacyDocument('Aruna', 'Dewa', 'aruna-bloom');
     const t = lama.tokens;
     const diacak = dokumen((doc) => {
       doc.tokens = { font: t.font, primary: t.primary, foreground: t.foreground, background: t.background };
@@ -87,7 +89,7 @@ describe('gerbang tidak menyala sendiri', () => {
   });
 
   it('memperlakukan key opsional yang absen sama dengan yang bernilai undefined', () => {
-    const lama = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom');
+    const lama = createLegacyDocument('Aruna', 'Dewa', 'aruna-bloom');
     const baru = dokumen((doc) => { doc.tokens = { ...doc.tokens, bodyFont: undefined }; });
     expect(hasDesignChange(lama, baru)).toBe(false);
   });
@@ -101,7 +103,7 @@ describe('gerbang tidak menyala sendiri', () => {
   });
 
   it('mengabaikan sampah non-string di dalam `ornamentOverrides`', () => {
-    const lama = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom');
+    const lama = createLegacyDocument('Aruna', 'Dewa', 'aruna-bloom');
     const baru = dokumen((doc) => { cover(doc).data.ornamentOverrides = { divider: 7, seal: null, layers: 'bukan objek' }; });
     expect(hasDesignChange(lama, baru)).toBe(false);
   });
@@ -123,7 +125,7 @@ describe('gerbang tidak menyala sendiri', () => {
 
 describe('ornamen unggahan (fase 69)', () => {
   it('menggerbangi pemasangan dan penggantian unggahan, tidak peduli urutan kunci', () => {
-    const lama = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom');
+    const lama = createLegacyDocument('Aruna', 'Dewa', 'aruna-bloom');
     const u = { url: 'http://127.0.0.1:3001/v1/public/media/11111111-1111-4111-8111-111111111111', width: 200, height: 100 };
     const a = dokumen((doc) => { cover(doc).data.ornamentOverrides = { unggahan: { symbol: u } }; });
     const b = dokumen((doc) => { cover(doc).data.ornamentOverrides = { unggahan: { symbol: { height: 100, width: 200, url: u.url } } }; });

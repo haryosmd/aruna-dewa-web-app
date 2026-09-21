@@ -1,10 +1,36 @@
 import { BadRequestException } from '@nestjs/common';
 import { bankIds, giftAccountLimit, invitationDocumentSchema, type InvitationDocument } from '@aruna/contracts';
 
+type Section = InvitationDocument['sections'][number];
+
 export function validatePublishableDocument(input: unknown): InvitationDocument {
   const parsed = invitationDocumentSchema.safeParse(input);
   if (!parsed.success) throw new BadRequestException({ code: 'INVALID_DOCUMENT', message: 'Dokumen undangan tidak valid', fieldErrors: parsed.error.flatten() });
   const document = parsed.data;
+  if (document.schemaVersion === 2) assertPublishableV2(document);
+  else assertPublishableV1(document);
+  assertSafeUrls(document);
+  return document;
+}
+
+/**
+ * Syarat terbit dokumen Elegance (fase 72). Yang diwajibkan hanya yang tanpa dia undangan tidak
+ * bisa dibaca tamu: amplop dengan nama pasangan, nama kedua mempelai, dan tanggal acara. Kolom
+ * lain boleh kosong — kata-kata bawaannya sudah cukup, dan pasangan menyempurnakannya kapan saja.
+ */
+function assertPublishableV2(document: InvitationDocument): void {
+  const sections = new Map(document.sections.map((section) => [section.type, section]));
+  const envelope = sections.get('opening-envelope');
+  const couple = sections.get('couple');
+  const event = sections.get('event');
+  if (!envelope?.enabled || !isNonEmptyString(envelope.data.title)) throw new BadRequestException('Amplop pembuka dan nama mempelai wajib diisi sebelum publish');
+  if (!couple?.enabled || !isNonEmptyString(couple.data.brideName) || !isNonEmptyString(couple.data.groomName)) throw new BadRequestException('Nama kedua mempelai wajib diisi sebelum publish');
+  if (!event?.enabled || !isNonEmptyString(event.data.day) || !isNonEmptyString(event.data.date) || !isNonEmptyString(event.data.monthYear)) throw new BadRequestException('Hari, tanggal, serta bulan dan tahun acara wajib diisi sebelum publish');
+  if (!isNonEmptyString(event.data.akadTitle) || !isNonEmptyString(event.data.akadTime)) throw new BadRequestException('Nama dan waktu acara akad wajib diisi sebelum publish');
+  assertGiftAccountsV2(sections.get('gift'));
+}
+
+function assertPublishableV1(document: InvitationDocument): void {
   const sections = new Map(document.sections.map((section) => [section.type, section]));
   const cover = sections.get('cover');
   const couple = sections.get('couple');
@@ -16,13 +42,16 @@ export function validatePublishableDocument(input: unknown): InvitationDocument 
     if (!isRecord(event) || !isNonEmptyString(event.name) || !isNonEmptyString(event.date) || !isNonEmptyString(event.time) || !isNonEmptyString(event.venue)) throw new BadRequestException('Setiap acara harus memiliki nama, tanggal, waktu, dan lokasi');
   }
   assertGiftAccounts(sections.get('gift'));
-  assertSafeUrls(document);
-  return document;
 }
 
+/**
+ * Dokumen v2 hanya menyaring bagian yang dimatikan. Tidak ada lagi `events[].public` —
+ * acara tambahan yang tidak untuk semua tamu memakai bagian `unduh-mantu` yang bisa dimatikan.
+ */
 export function publicDocument(document: InvitationDocument): InvitationDocument {
   const copy = structuredClone(document);
   copy.sections = copy.sections.filter((section) => section.enabled);
+  if (copy.schemaVersion === 2) return copy;
   const events = copy.sections.find((section) => section.type === 'events');
   if (events && Array.isArray(events.data.events)) {
     events.data.events = events.data.events.filter((event) => !isRecord(event) || event.public !== false);
@@ -30,12 +59,23 @@ export function publicDocument(document: InvitationDocument): InvitationDocument
   return copy;
 }
 
+/** Rekening v2 datar: `account1` wajib bila hadiah menyala, `account2` bila rekening kedua dinyalakan. */
+function assertGiftAccountsV2(gift: Section | undefined): void {
+  if (!gift?.enabled) return;
+  const first = typeof gift.data.account1 === 'string' ? gift.data.account1.trim() : '';
+  if (!first || first.length > 34) throw new BadRequestException('Nomor rekening pertama wajib diisi, maksimal 34 karakter');
+  if (gift.data.hasSecondAccount === true) {
+    const second = typeof gift.data.account2 === 'string' ? gift.data.account2.trim() : '';
+    if (!second || second.length > 34) throw new BadRequestException('Nomor rekening kedua wajib diisi, maksimal 34 karakter');
+  }
+}
+
 /**
  * Hanya berlaku untuk bentuk baru. Dokumen lama menyimpan satu rekening datar dan tidak
  * punya `accounts` sama sekali, jadi cabang ini dilewati dan revisi yang sudah terbit
  * tetap lolos publish tanpa migrasi.
  */
-function assertGiftAccounts(gift: { enabled: boolean; data: Record<string, unknown> } | undefined): void {
+function assertGiftAccounts(gift: Section | undefined): void {
   if (!gift?.enabled || !Array.isArray(gift.data.accounts)) return;
   if (gift.data.accounts.length > giftAccountLimit) throw new BadRequestException(`Maksimal ${giftAccountLimit} rekening hadiah`);
   for (const account of gift.data.accounts) {
@@ -46,6 +86,12 @@ function assertGiftAccounts(gift: { enabled: boolean; data: Record<string, unkno
   }
 }
 
+/**
+ * Menyapu seluruh dokumen, berapa pun dalamnya. Pola kuncinya menangkap kedua struktur:
+ * `image`/`images` (v1) dan `imageUrl`/`imageUrls`/`mapUrl`/`calendarUrl`/`backgroundImageUrl`
+ * (v2), termasuk yang bersarang di `background.imageUrl`, `settings.musicUrl`, dan
+ * `shareCard.imageUrl` — karena rekursinya turun ke setiap objek, bukan hanya `sections`.
+ */
 function assertSafeUrls(value: unknown, key = ''): void {
   if (typeof value === 'string' && /(url|urls|image|images)$/iu.test(key)) {
     if (value && !isSafeUrl(value)) throw new BadRequestException(`URL tidak aman pada ${key}`);
