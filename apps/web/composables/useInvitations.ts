@@ -7,6 +7,7 @@ import type {
   PublishedInvitation,
   SaveDraftBody,
   SavedDraft,
+  ShareSettings,
 } from '@aruna/contracts/api'
 
 /**
@@ -33,8 +34,10 @@ export function useInvitations() {
   const listMedia = (id: string, kind: MediaKind) => request<MediaUploadResult[]>(`/invitations/${id}/media?jenis=${kind}`)
   /** Menghapus berkasnya, bukan sekadar melepasnya dari dokumen — tanpa ini kuota foto bocor tiap kali pasangan berganti pikiran. */
   const deleteMedia = (id: string, assetId: string) => request<{ deleted: boolean }>(`/invitations/${id}/media/${assetId}`, { method: 'DELETE' })
+  /** Template WhatsApp halaman Generator (fase 72.6) — di luar dokumen, jadi tidak menyentuh revisi draft. */
+  const updateShareSettings = (id: string, body: ShareSettings) => request<ShareSettings>(`/invitations/${id}/share-settings`, { method: 'PATCH', body })
 
-  return { list, get, create, saveDraft, publish, activate, uploadMedia, listMedia, deleteMedia }
+  return { list, get, create, saveDraft, publish, activate, uploadMedia, listMedia, deleteMedia, updateShareSettings }
 }
 
 /**

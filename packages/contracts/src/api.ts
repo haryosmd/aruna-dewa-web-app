@@ -98,6 +98,8 @@ const guestFields = {
   displayName: z.string().trim().min(1).max(200).refine(value => !/[\p{Cc}\p{Zl}\p{Zp}]/u.test(value), 'Nama harus satu baris, tanpa karakter kontrol.'),
   phone: z.string().trim().max(40).optional(),
   group: z.string().trim().max(80).optional(),
+  /** Fase 72.6: kategori tamu di halaman Generator ("Keluarga", "Teman CPP"). Sinonim `group` — API menyimpan keduanya ke satu kolom, `category` menang bila keduanya dikirim. */
+  category: z.string().trim().max(80).optional(),
   quota: z.number().int().min(1).max(20).optional(),
 }
 
@@ -106,6 +108,35 @@ export type CreateGuestBody = z.infer<typeof createGuestBodySchema>
 
 export const updateGuestBodySchema = z.object({ ...guestFields, revision })
 export type UpdateGuestBody = z.infer<typeof updateGuestBodySchema>
+
+/** Filter daftar tamu di halaman Generator: status kirim WhatsApp dan kategori. */
+export const guestListQuerySchema = z.object({
+  q: z.string().trim().max(200).optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  pageSize: z.coerce.number().int().min(1).max(100).optional(),
+  status: z.enum(['semua', 'belum', 'terkirim']).optional(),
+  category: z.string().trim().max(80).optional(),
+})
+export type GuestListQuery = z.infer<typeof guestListQuerySchema>
+
+// — Berbagi (fase 72.6) ——————————————————————————————————————————————————————
+
+/** Lima gaya bahasa template WhatsApp di halaman Generator, urut seperti kartunya. */
+export const sharePresets = ['formal', 'islami', 'nonmuslim', 'santai', 'bilingual'] as const
+export type SharePreset = (typeof sharePresets)[number]
+
+/**
+ * `templates` hanya menyimpan gaya yang **pernah disunting**; gaya yang absen dirakit ulang dari
+ * dokumen oleh web setiap kali dibuka, jadi perubahan tanggal acara otomatis ikut ke pesan yang
+ * belum pernah disentuh pasangan.
+ */
+export const shareSettingsSchema = z.object({
+  preset: z.enum(sharePresets),
+  templates: z.object(Object.fromEntries(sharePresets.map(preset => [preset, z.string().max(4000).optional()])) as Record<SharePreset, z.ZodOptional<z.ZodString>>).strict(),
+}).strict()
+export type ShareSettings = z.infer<typeof shareSettingsSchema>
+export const updateShareSettingsBodySchema = shareSettingsSchema
+export type UpdateShareSettingsBody = ShareSettings
 
 /** Sepadan dengan batas 10 MB pada unggahan berkas; teks tempel tidak boleh jadi jalan pintas. */
 export const MAX_IMPORT_TEXT_LENGTH = 10 * 1024 * 1024
@@ -170,8 +201,23 @@ export const publicRsvpBodySchema = z.object({
 })
 export type PublicRsvpBody = z.infer<typeof publicRsvpBodySchema>
 
+/**
+ * Pilihan kehadiran di form ucapan v2 (fase 72). Ejaannya milik undangan — `hadir`, bukan `yes` —
+ * karena inilah yang ditulis pasangan di label formnya; API yang menerjemahkannya ke enum RSVP.
+ */
+export const wishAttendances = ['hadir', 'belum-pasti', 'berhalangan'] as const
+export type WishAttendance = (typeof wishAttendances)[number]
+
+/**
+ * Ucapan v2 menggabungkan buku tamu dan kehadiran, dan formnya terbuka untuk tamu tanpa
+ * tautan personal (seperti referensi): `token` opsional, dan tanpa token `name` wajib —
+ * dijaga di service, bukan di skema, supaya pesannya menyebut kolomnya. Tamu bertoken tetap
+ * tercatat lewat `guestId` seperti sebelumnya.
+ */
 export const publicWishBodySchema = z.object({
-  token: opaqueToken,
+  token: opaqueToken.optional(),
+  name: z.string().trim().max(80).optional(),
+  attendance: z.enum(wishAttendances).optional(),
   message: z.string().trim().min(1).max(1000),
 })
 export type PublicWishBody = z.infer<typeof publicWishBodySchema>
@@ -198,6 +244,8 @@ export interface InvitationDetail extends InvitationSummary {
   features: string[]
   activeUntil?: string | null
   publishedAt?: string | null
+  /** Fase 72.6: template WhatsApp; null sampai pasangan menyunting satu gaya. */
+  shareSettings?: ShareSettings | null
 }
 
 export interface SavedDraft {
@@ -235,8 +283,12 @@ export interface Guest {
   revision: number
   phone?: string
   group?: string
+  /** Sama dengan `group`; ejaan halaman Generator. */
+  category?: string
   quota: number
   rsvp?: GuestRsvp | null
+  /** ISO; ada setelah "Kirim WA" ditekan untuk tamu ini. */
+  sentAt?: string | null
 }
 
 export interface GuestPage {
@@ -244,6 +296,10 @@ export interface GuestPage {
   total: number
   page: number
   pageSize: number
+  /** Jumlah tamu yang sudah dikirimi WhatsApp, dihitung di seluruh undangan (bukan halaman ini saja). */
+  sent: number
+  /** Kategori yang dipakai tamu undangan ini, untuk dropdown filter. */
+  categories: string[]
 }
 
 export interface ImportPreviewResult {
@@ -327,6 +383,8 @@ export interface Wish {
   createdAt?: string
   /** Baris optimistik milik penulisnya sendiri; belum terlihat tamu lain. */
   approved?: boolean
+  /** Kehadiran yang dipilih di form ucapan v2 (fase 72); ucapan lama tidak punya. */
+  attendance?: WishAttendance | string | null
 }
 
 export interface PublicInvitation {

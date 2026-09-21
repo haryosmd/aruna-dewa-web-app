@@ -1,6 +1,7 @@
 import type {
   CreateGuestBody,
   Guest,
+  GuestListQuery,
   GuestPage,
   ImportCommitResult,
   ImportPreviewResult,
@@ -8,12 +9,16 @@ import type {
   UpdateGuestBody,
 } from '@aruna/contracts/api'
 
-/** Daftar tamu, penyuntingan, dan ketiga jalur impor. */
+/** Daftar tamu, penyuntingan, penanda kirim WhatsApp, dan ketiga jalur impor. */
 export function useGuests() {
   const { request } = useApi()
 
-  const list = (invitationId: string, query: { q?: string; page?: number } = {}) =>
-    request<GuestPage>(`/invitations/${invitationId}/guests`, { query: { q: query.q || undefined, page: query.page } })
+  const list = (invitationId: string, query: GuestListQuery = {}) =>
+    request<GuestPage>(`/invitations/${invitationId}/guests`, { query: { q: query.q || undefined, page: query.page, pageSize: query.pageSize, status: query.status && query.status !== 'semua' ? query.status : undefined, category: query.category || undefined } })
+
+  /** Fase 72.6: dipanggil tepat saat "Kirim WA" membuka tab wa.me; idempoten di API. */
+  const markSent = (invitationId: string, guestId: string) =>
+    request<Guest & { justMarked: boolean }>(`/invitations/${invitationId}/guests/${guestId}/sent`, { method: 'POST' })
 
   const create = (invitationId: string, body: CreateGuestBody) =>
     request<Guest>(`/invitations/${invitationId}/guests`, { method: 'POST', body })
@@ -34,5 +39,5 @@ export function useGuests() {
   const commitImport = (invitationId: string, jobId: string, idempotencyKey: string) =>
     request<ImportCommitResult>(`/invitations/${invitationId}/imports/${jobId}/commit`, { method: 'POST', body: { idempotencyKey } })
 
-  return { list, create, update, remove, previewText, previewFile, commitImport }
+  return { list, create, update, remove, markSent, previewText, previewFile, commitImport }
 }

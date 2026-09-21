@@ -38,14 +38,9 @@ try {
   let seeded = '';
   if (owned === 0) {
     const slug = `demo-aruna-dewa-${Math.random().toString(36).slice(2, 6)}`;
-    const document = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom');
     const date = '2027-06-12';
-    const events = document.sections.find((section) => section.type === 'events');
-    if (events && Array.isArray(events.data.events)) {
-      events.data.events = (events.data.events as Record<string, unknown>[]).map((event) => ({ ...event, date, venue: 'Pendopo Aruna', address: 'Yogyakarta' }));
-    }
-    const countdown = document.sections.find((section) => section.type === 'countdown');
-    if (countdown) countdown.data.date = date;
+    // Dokumen v2 (fase 72): tanggal dan lokasi masuk lewat pembangun bawaannya, sama seperti `create()`.
+    const document = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom', { date, venue: 'Pendopo Aruna', address: 'Yogyakarta' });
     const invitation = await prisma.$transaction(async (tx) => {
       const created = await tx.invitation.create({ data: { slug, title: 'Demo Aruna & Dewa', partner1: 'Aruna', partner2: 'Dewa', eventDate: new Date(date), venue: 'Pendopo Aruna', address: 'Yogyakarta', draftDocument: JSON.parse(JSON.stringify(document)), createdById: user.id } });
       await tx.invitationMember.create({ data: { invitationId: created.id, userId: user.id, role: 'OWNER' } });

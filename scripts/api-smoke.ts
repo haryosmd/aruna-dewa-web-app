@@ -68,6 +68,8 @@ try {
   check((await owner.call('/auth/me')).data.user.role === 'r_7c91', 'operator role represented by configured internal code')
   check((await owner.call(`/invitations/${id}/activate`, 'POST')).status < 300, 'operator activation without payment')
   const draft = (await owner.call(`/invitations/${id}`)).data
+  // Dokumen v2 lahir dengan bagian hadiah menyala tapi rekening kosong; publish menuntut nomornya.
+  draft.document.sections.find((section: { type: string }) => section.type === 'gift').data.account1 = '1234567890'
   const saved = await owner.call(`/invitations/${id}/draft`, 'PUT', { document: draft.document, revision: draft.revision })
   check(saved.status < 300, 'draft save')
   check((await owner.call(`/invitations/${id}/draft`, 'PUT', { document: draft.document, revision: draft.revision })).status === 409, 'stale draft revision rejected')
@@ -76,7 +78,8 @@ try {
   check((await owner.call(`/invitations/${id}/publish`, 'POST')).status < 300, 'repeat publish idempotent')
   const publicBefore = (await owner.call(`/public/${slug}`)).data
   const document = structuredClone(saved.data.document)
-  document.sections.find((section: { type: string }) => section.type === 'cover').data.title = 'Unpublished change'
+  // Dokumen v2 (fase 72): judul amplop pembuka, bukan `cover`.
+  document.sections.find((section: { type: string }) => section.type === 'opening-envelope').data.title = 'Unpublished change'
   await owner.call(`/invitations/${id}/draft`, 'PUT', { document, revision: saved.data.revision })
   check(JSON.stringify((await owner.call(`/public/${slug}`)).data.document) === JSON.stringify(publicBefore.document), 'editing draft preserves published snapshot')
   const guestA = await owner.call(`/invitations/${id}/guests`, 'POST', { displayName: 'dr. Yosi Susanti, Sp.OG', quota: 2 })

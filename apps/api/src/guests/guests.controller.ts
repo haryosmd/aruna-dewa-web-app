@@ -8,7 +8,8 @@ import { GuestsService } from './guests.service.js';
 @UseGuards(JwtAuthGuard)
 export class GuestsController {
   constructor(private readonly guests: GuestsService) {}
-  @Get('guests') list(@CurrentUser() user: AuthenticatedUser, @Param('invitationId') invitationId: string, @Query() query: { q?: string; page?: number; pageSize?: number }) { return this.guests.list(user, invitationId, query); }
+  @Get('guests') list(@CurrentUser() user: AuthenticatedUser, @Param('invitationId') invitationId: string, @Query() query: Record<string, unknown>) { return this.guests.list(user, invitationId, query); }
+  @Post('guests/:guestId/sent') @UseGuards(OriginGuard) markSent(@CurrentUser() user: AuthenticatedUser, @Param('invitationId') invitationId: string, @Param('guestId') guestId: string) { return this.guests.markSent(user, invitationId, guestId); }
   @Post('guests') @UseGuards(OriginGuard) create(@CurrentUser() user: AuthenticatedUser, @Param('invitationId') invitationId: string, @Body(zodBody(createGuestBodySchema)) body: CreateGuestBody) { return this.guests.create(user, invitationId, body); }
   @Put('guests/:guestId') @UseGuards(OriginGuard) update(@CurrentUser() user: AuthenticatedUser, @Param('invitationId') invitationId: string, @Param('guestId') guestId: string, @Body(zodBody(updateGuestBodySchema)) body: UpdateGuestBody) { return this.guests.update(user, invitationId, guestId, body); }
   @Delete('guests/:guestId') @HttpCode(204) @UseGuards(OriginGuard) remove(@CurrentUser() user: AuthenticatedUser, @Param('invitationId') invitationId: string, @Param('guestId') guestId: string) { return this.guests.remove(user, invitationId, guestId); }
