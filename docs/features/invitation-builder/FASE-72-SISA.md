@@ -122,20 +122,31 @@ Tidak ada berkas data mentah — seluruh hasil bedah hidup sebagai prosa di `FAS
 
 ## 5. P2 — utang yang dicatat
 
-- [ ] Tinggi pratinjau berbohong: `100svh`/`92svh`/`82svh` di `elegance/Hero.vue:28`,
-  `sections/Cover.vue:34`, `CoverGate.vue:357`, `Gallery.vue:145` membaca jendela editor, bukan
-  bezel. Butuh tinggi bingkai lewat CSS var dari `PhoneFrame`; `@container` saja tidak cukup.
-- [ ] Sistem `copy` yatim: `copyGroups`/`copyGroupsFor`/`copyKeysFor` di `utils/invitation-copy.ts`
-  tidak punya konsumen selain spec-nya sendiri (13 tes). `copySchema` + `kanonikCopy` **wajib tetap**
-  (dokumen v1 masih sah dan sidik jarinya membacanya).
-- [ ] Validasi bagian ekstra: `sectionFields` tidak memuat `steps`/`items`/`attire`/`colors` yang
-  justru disunting `ExtrasForm`; `sectionDataSchema()` `.passthrough()` melepasnya tanpa batas.
-- [ ] Penjaga kelengkapan renderer: `Renderer.vue:145` membuang tipe tanpa komponen **diam-diam**.
+- [x] **Tinggi pratinjau** SELESAI `74.2`. Akarnya bukan pembacanya melainkan `PhoneFrame` yang
+  tidak pernah MENGHITUNG tinggi layar dan tidak menerbitkan satu pun CSS var — sementara
+  `DeviceBezel` sudah punya prop `screenHeight` yang tidak pernah dioper siapa pun. Kini
+  `previewDevices` menyimpan tinggi viewport perangkat (844/915/800) dan `--iv-layar-h`
+  diterbitkan ke dalam undangan. `Gallery.vue:145` sengaja TIDAK ikut: lightbox-nya di-portal ke
+  `body`, jadi viewport memang pembandingnya.
+- [x] **Sistem `copy` yatim** SELESAI `74.5`. Permukaan form dibuang; `copyDefaults`,
+  `resolveCopy`, `pilihCopy` tetap (dipakai `Renderer.vue` dan `CoverGate.vue` untuk render v1).
+  Bonus yang tidak terduga: penjaga "label bukan istilah desain" yang ikut terbuang dipindahkan
+  ke `sectionFields`, dan langsung menangkap LIMA pelanggaran yang sudah tiga fase lolos
+  ("Kicker" x2, "Nama di lightbox", "Placeholder nama/ucapan").
+- [x] **Validasi bagian ekstra** SELESAI `74.3`. `sectionExtraSchemas` membatasi panjang dan
+  jumlah tanpa memaksa keempatnya jadi `FieldMeta`; `.passthrough()` tetap untuk
+  `ornamentOverrides`. `storySides` pindah ke kontrak supaya renderer dan skema tidak berselisih.
+- [x] **Penjaga kelengkapan renderer** SELESAI `74.4`. Dua lapis: tipe peta diketatkan jadi
+  `Record<Exclude<…>, Component>` (compiler menuntut entrinya) dan `renderer-coverage.spec.ts`
+  menjaga arah sebaliknya. Pengecualiannya dibaca dari `headlessSectionTypes` di kontrak.
 - [ ] Share-card tidak pernah benar-benar dirender di tes (satori+resvg tak pernah dipanggil; e2e
   hanya memeriksa `href`).
 - [x] DESIGN.md menyebut `.iv-frame` sebagai lapisan pengukur di luar `.iv-root` (`73.5`).
-- [ ] **Ditunda resmi** (ditulis apa adanya, bukan dilupakan): pangkas foto di Pustaka
-  (`FASE-72.md:488` meminta `vue-advanced-cropper`), impor Google Sheets (`ImportDialog.vue:111`),
+- [x] **Pangkas foto** SELESAI `74.6` — **tanpa** `vue-advanced-cropper`. Mesinnya sudah ada di
+  `utils/image-normalize.ts`; pustaka luar akan memperkenalkan cara kedua untuk salah pada dua
+  jebakan yang sudah dibayar di sana (EXIF potret, PNG saat diminta WebP). Dicatat di
+  `docs/DEPENDENCIES.md`.
+- [ ] **Ditunda resmi** (ditulis apa adanya, bukan dilupakan): impor Google Sheets (`ImportDialog.vue:111`),
   undang kolaborator (`Toolbar.vue:86`), riwayat versi (`editor.vue:466`), dan `WishCard.vue:13`
   yang masih menangani dua ejaan kehadiran.
 
@@ -159,6 +170,17 @@ masih merender v1 sementara `types/aruna.ts` sudah v2) dan 72.1–72.2 unit-mera
 menyusul) tidak bisa dihindari tanpa satu commit raksasa. Sebutkan di pesan commit berkas mana yang
 menyusul. `pnpm test && pnpm typecheck` hijau di HEAD.
 
+## 6c. Yang sudah dikerjakan 2026-09-22 (fase 74)
+
+`74.0` referensi undang.site jadi teks + koreksi butir galeri · `74.1` proxy berhenti ditanam di
+enam situs · `74.2` tinggi pratinjau lepas dari jendela editor · `74.3` batas struktur berulang
+bagian ekstra · `74.4` penjaga kelengkapan renderer · `74.5` `copy` yatim dibuang + lima label
+istilah desain · `74.6` pangkas foto tanpa dependensi baru · `74.7` `test:integration` diperbaiki
+sehingga e2e akhirnya berjalan.
+
+Terukur: `pnpm test` **1279 hijau** (dari 1241), typecheck dan lint bersih, `test:integration`
+49 hijau, `playwright --project=desktop` 51/51.
+
 ## 6b. Yang sudah dikerjakan 2026-09-21
 
 `73.1` gerbang migrasi · `73.2` hadiah lahir mati + invarian paket · `73.3` kesetiaan migrator ·
@@ -172,6 +194,15 @@ Keduanya dikembalikan. `/i/demo` dirender lewat `web-demo` dan bagian Hadiah tet
 **Belum diverifikasi: e2e.** `pnpm test:integration` + `pnpm test:e2e` menuntut Postgres, Redis,
 dan API hidup; di laptop ini port 3001 mati dan Docker tidak menjawab. Itu sisa verifikasi paling
 penting — tanpanya 21 tes dasbor lolos tanpa pernah berjalan.
+
+> **Koreksi 2026-09-22 (fase 74.7).** Paragraf di atas keliru dan dibiarkan berdiri supaya
+> salahnya terbaca. Docker tidak pernah dibutuhkan: `pnpm demo` menyalakan Postgres tertanam,
+> SMTP, API, dan web tanpa Docker. Yang benar-benar memblokir adalah **`pnpm test:integration`
+> yang rusak sejak fase 72** — skripnya masih menguji `/rsvp`, yang menolak setiap dokumen v2
+> dengan sengaja, jadi ia berhenti sebelum menulis `.data/qa-account.json`. Tanpa fixture itu,
+> 21 tes dasbor `test.skip` sendiri di mesin MANA PUN, termasuk CI. Sesudah diperbaiki: 49
+> pemeriksaan integrasi hijau, e2e desktop 51/51 hijau dengan dashboard yang benar-benar
+> berjalan.
 
 ## 7. Verifikasi
 
