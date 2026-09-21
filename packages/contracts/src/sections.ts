@@ -53,7 +53,13 @@ export type SectionType = (typeof sectionTypes)[number]
  */
 export const headlessSectionTypes: ReadonlySet<SectionType> = new Set<SectionType>(['music', 'opening-envelope'])
 
-/** Bagian yang tidak bisa disembunyikan di undangan v2. */
+/**
+ * Bagian yang tidak bisa disembunyikan di undangan v2.
+ *
+ * Sejak fase 74.8 daftar ini hidup di `structures.ts` per struktur, dan yang di sini adalah
+ * pembacaan struktur `elegance` — satu-satunya yang bisa dipilih hari ini. Dipertahankan sebagai
+ * ekspor supaya pemanggil yang tidak peduli struktur tidak perlu berubah.
+ */
 export const requiredSectionTypes: ReadonlySet<SectionType> = new Set<SectionType>(['opening-envelope', 'hero', 'couple', 'event', 'closing'])
 export const isRequiredSection = (type: SectionType) => requiredSectionTypes.has(type)
 

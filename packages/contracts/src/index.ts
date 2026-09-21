@@ -15,6 +15,8 @@ export function buildGuestUrl(base: string, slug: string, displayName: string, t
 }
 
 export * from './sections'
+export * from './structures'
+import { createLegacySections } from './structures'
 import { sectionTypes, createEleganceSections, isV2SectionType, sectionDataSchema, invitationSettingsSchema, shareCardSchema, layoutFocuses, type DefaultDocumentInput } from './sections'
 export { sectionTypes }
 
@@ -322,22 +324,9 @@ export function createLegacyDocument(partner1 = 'Aruna', partner2 = 'Dewa', temp
   return {
     schemaVersion: 1, templateId: template.id, templateVersion: 1,
     tokens: { ...template.tokens },
-    sections: [
-      { id: 'cover', type: 'cover', enabled: true, data: { title: `${partner1} & ${partner2}`, subtitle: 'The wedding of', image: '/images/couple.webp', layout: 'arch-potret', ornamentIntensity: 'seimbang' } },
-      { id: 'couple', type: 'couple', enabled: true, data: { partner1, partner2, description: 'Dengan penuh kebahagiaan, kami mengundang Anda merayakan hari pernikahan kami.' } },
-      { id: 'events', type: 'events', enabled: true, data: { events: [{ id: 'ceremony', name: 'Akad nikah', date: '', time: '09:00', venue: 'Lokasi akan diumumkan', address: '', mapUrl: '', public: true }, { id: 'reception', name: 'Resepsi', date: '', time: '11:00', venue: 'Lokasi akan diumumkan', address: '', mapUrl: '', public: true }], venueIllustration: '' } },
-      { id: 'countdown', type: 'countdown', enabled: true, data: { date: '' } },
-      { id: 'gallery', type: 'gallery', enabled: true, data: { images: [], motion: 'tema' } },
-      { id: 'story', type: 'story', enabled: false, data: { title: 'Awal sebuah cerita', text: '', steps: [] as unknown[] } },
-      { id: 'rundown', type: 'rundown', enabled: false, data: { items: [] } },
-      { id: 'dresscode', type: 'dresscode', enabled: false, data: { text: '', attire: [] as string[], colors: [] as unknown[] } },
-      { id: 'video', type: 'video', enabled: false, data: { url: '', title: 'Saksikan kebahagiaan kami' } },
-      { id: 'gift', type: 'gift', enabled: false, data: { title: 'Hadiah untuk kami', note: '', accounts: [] as GiftAccount[], address: '' } },
-      { id: 'rsvp', type: 'rsvp', enabled: true, data: { deadline: '' } },
-      { id: 'wishes', type: 'wishes', enabled: true, data: {} },
-      { id: 'closing', type: 'closing', enabled: true, data: { text: 'Terima kasih telah menjadi bagian dari cerita kami.' } },
-      { id: 'music', type: 'music', enabled: false, data: { url: '' } },
-    ],
+    // Bagiannya hidup di `structures.ts` sebagai `warisan.build` sejak fase 74.8 — satu sumber,
+    // supaya struktur v1 punya pembangun seperti struktur lain dan tidak bisa berselisih.
+    sections: createLegacySections({ partner1, partner2 }),
   }
 }
 
