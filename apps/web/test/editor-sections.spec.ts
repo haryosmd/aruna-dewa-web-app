@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   filterSections, normalize, sectionDomId, sectionLabels, sectionRequirement, stageScrollOffset, stageScrollTop, visibleCount,
+  pindahkan,
 } from '../utils/editor-sections'
 
 const labels = sectionLabels
@@ -86,5 +87,23 @@ describe('rail → panggung (fase 70)', () => {
     const a = stageScrollTop({ top: 0, scrollTop: 0 }, { top: 500 })
     const b = stageScrollTop({ top: 50, scrollTop: 0 }, { top: 550 })
     expect(a).toBe(b)
+  })
+})
+
+describe('pindahkan', () => {
+  const daftar = ['a', 'b', 'c', 'd']
+
+  it('menggeser satu langkah tanpa menyentuh larik asal', () => {
+    expect(pindahkan(daftar, 2, 1)).toEqual(['a', 'c', 'b', 'd'])
+    expect(daftar).toEqual(['a', 'b', 'c', 'd'])
+  })
+
+  it('menolak yang tidak menggeser apa pun', () => {
+    // `null`, bukan salinan: pemanggilnya memakai ini untuk memutuskan apakah perlu `checkpoint()`.
+    expect(pindahkan(daftar, 1, 1)).toBeNull()
+    expect(pindahkan(daftar, 0, -1)).toBeNull()
+    expect(pindahkan(daftar, 3, 4)).toBeNull()
+    expect(pindahkan(daftar, -1, 0)).toBeNull()
+    expect(pindahkan([], 0, 0)).toBeNull()
   })
 })

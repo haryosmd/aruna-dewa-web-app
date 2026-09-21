@@ -14,7 +14,7 @@ import { bolehUnggah, sectionOrnamentSlots, terapkanOverrides, type OrnamentOver
 import { bawaanSlot } from '~/utils/ornament-search'
 import { invitationThemes, themeOrnaments } from '~/utils/theme'
 import type { ThemePalette } from '~/utils/theme-palettes'
-import { filterSections, sectionLabels, visibleCount } from '~/utils/editor-sections'
+import { filterSections, pindahkan, sectionLabels, visibleCount } from '~/utils/editor-sections'
 import { releasableUrls, stillQueued } from '~/utils/asset-release'
 import { mediaAssetIdFromUrl } from '~/utils/media-file'
 import { checkPalette, repairPalette } from '~/utils/contrast'
@@ -54,8 +54,7 @@ const mobilePanel = ref<'settings' | 'preview'>('settings')
 const prefs = useEditorPrefs()
 const sectionQuery = ref('')
 const designAddon = ref<{ name: string; price: number } | null>(null)
-const undoStack = ref<InvitationDocument[]>([])
-const redoStack = ref<InvitationDocument[]>([])
+const { canUndo, canRedo, checkpoint, undo, redo, reset: resetRiwayat } = useDocumentHistory(document)
 
 /*
  * Autosave dicabut di fase 18: simpan hanya berangkat lewat tombol, dan keadaannya dibaca dari
@@ -105,8 +104,7 @@ async function load() {
     revision.value = result.revision ?? 0
     selectedId.value = document.value.sections[0]?.id ?? 'opening-envelope'
     conflict.value = false
-    undoStack.value = []
-    redoStack.value = []
+    resetRiwayat()
     await loadDesignAddon()
     // Cuplikan dari dokumen SERVER: draft v1 yang baru dimigrasi jujur terbaca "belum tersimpan".
     savedSnapshot.value = JSON.stringify(asli)
@@ -120,28 +118,6 @@ async function load() {
 await load()
 
 useHead({ title: () => `${invitation.value?.title ?? 'Editor undangan'} — Aruna Dewa` })
-
-/* ── Riwayat ────────────────────────────────────────────────────────────────── */
-/** Salinan dalam yang tahan proxy: `structuredClone` menolaknya, JSON tidak. Lihat `reorder()`. */
-const salin = (doc: InvitationDocument): InvitationDocument => JSON.parse(JSON.stringify(toRaw(doc))) as InvitationDocument
-
-function checkpoint() {
-  undoStack.value.push(salin(document.value))
-  if (undoStack.value.length > 30) undoStack.value.shift()
-  redoStack.value = []
-}
-function undo() {
-  const previous = undoStack.value.pop()
-  if (!previous) return
-  redoStack.value.push(salin(document.value))
-  document.value = previous
-}
-function redo() {
-  const next = redoStack.value.pop()
-  if (!next) return
-  undoStack.value.push(salin(document.value))
-  document.value = next
-}
 
 /* ── Rail ───────────────────────────────────────────────────────────────────── */
 const fokusPanggung = ref<{ type: string, nonce: number } | null>(null)
@@ -171,19 +147,17 @@ function move(index: number, direction: -1 | 1) {
  * Urutan baru disusun dari **`toRaw`**, bukan dari `document.value.sections` langsung.
  *
  * `document.value.sections.slice()` menghasilkan larik berisi PROXY tiap bagian, dan menugaskannya
- * kembali menanam proxy itu di dalam dokumen mentah. `structuredClone` menolak proxy
- * (`DataCloneError`), jadi `undo()` berikutnya melempar tepat sesudah `pop()` — tumpukan habis,
- * redo kosong, dan dokumen tidak pernah kembali. Terukur di editor: satu ↑ pada pegangan lalu
- * Undo tidak mengubah apa pun sama sekali.
+ * kembali menanam proxy itu di dalam dokumen mentah — dulu itu cukup untuk membuat `undo()`
+ * melempar dan riwayat habis tanpa mengembalikan apa pun. `toRaw` di sini sabuk kedua, bukan yang
+ * pertama: yang benar-benar menutup kelas bug itu adalah `salinDokumen` di `useDocumentHistory`,
+ * karena editor menanam proxy juga lewat `ExtrasForm` dan `terapkanPalet`. Keduanya dipertahankan.
  */
 function reorder(from: number, to: number) {
   if (!canEditDesign.value) return
-  if (to < 0 || to >= document.value.sections.length || from === to) return
+  const urutan = pindahkan(toRaw(document.value).sections, from, to)
+  if (!urutan) return
   checkpoint()
-  const copy = toRaw(document.value).sections.slice()
-  const [item] = copy.splice(from, 1)
-  copy.splice(to, 0, toRaw(item!))
-  document.value.sections = copy
+  document.value.sections = urutan.map(section => toRaw(section))
 }
 
 /* ── Tulisan bagian ─────────────────────────────────────────────────────────── */
@@ -594,8 +568,8 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
           v-if="selected"
           v-model:tab="prefs.inspectorTab"
           v-model:collapsed="prefs.inspectorCollapsed"
-          :can-undo="undoStack.length > 0"
-          :can-redo="redoStack.length > 0"
+          :can-undo="canUndo"
+          :can-redo="canRedo"
           :dirty="dirty"
           :saving="saving"
           :class="cn(mobilePanel === 'preview' && 'hidden xl:grid')"

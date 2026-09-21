@@ -99,3 +99,18 @@ export function stageScrollTop(
 ): number {
   return Math.max(0, Math.round(viewport.scrollTop + target.top - viewport.top - offset))
 }
+
+/**
+ * Urutan baru sebagai larik BARU berisi elemen apa adanya; `null` berarti tidak ada yang bergeser.
+ *
+ * Penjaga batas dan `from === to` tinggal di sini supaya pemanggilnya tinggal memeriksa
+ * entitlement — dan supaya urutan yang paling mudah salah (indeks daftar tersaring ≠ indeks
+ * dokumen) punya tes yang berjalan tanpa merender halaman.
+ */
+export function pindahkan<T>(list: readonly T[], from: number, to: number): T[] | null {
+  if (from < 0 || from >= list.length || to < 0 || to >= list.length || from === to) return null
+  const salinan = list.slice()
+  const [item] = salinan.splice(from, 1)
+  salinan.splice(to, 0, item!)
+  return salinan
+}
