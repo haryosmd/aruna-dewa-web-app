@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ArrowLeft, ArrowRight, Check, CreditCard, Loader2 } from 'lucide-vue-next'
-import { createDefaultDocument, priceOrder, type LiveTemplateId } from '@aruna/contracts'
+import { createDefaultDocument, liveStructureIds, priceOrder, structures, type LiveTemplateId, type StructureId } from '@aruna/contracts'
 import type { ApiError } from '@aruna/contracts/api'
 import type { Catalog, InvitationDocument } from '~/types/aruna'
 import { ornamentRamp, rampStyle } from '~/utils/ornament-palette'
@@ -45,6 +45,13 @@ const form = reactive({
   address2: '',
   mapUrl2: '',
   templateId: 'aruna-bloom' as LiveTemplateId,
+  /*
+   * Struktur undangan (fase 74.11). Plumbingnya lengkap; PEMILIHNYA belum tampil karena baru
+   * ada satu struktur hidup — kartu pilihan yang cuma berisi satu kartu adalah wizard yang
+   * lebih buruk daripada tanpa pemilih, dan itu pola yang sudah dipakai `liveTemplateIds`.
+   * Barisnya muncul sendiri begitu struktur kedua lahir; tidak ada yang perlu diingat.
+   */
+  structureId: 'elegance' as StructureId,
   packageId: typeof route.query.package === 'string' ? route.query.package : 'mula',
   addonIds: [] as string[],
   invitationId: '',
@@ -106,7 +113,7 @@ function validate(target: number) {
  * Kolom yang ditolak server dibawa kembali ke tahap tempat ia diisi. Tanpa ini pesannya
  * hanya muncul sebagai banner di tahap paket, jauh dari kolom yang harus diperbaiki.
  */
-const stepOfField: Record<string, number> = { partner1: 1, partner2: 1, title: 1, slug: 1, date: 2, venue: 2, address: 2, templateId: 3, packageId: 4, addonIds: 4 }
+const stepOfField: Record<string, number> = { partner1: 1, partner2: 1, title: 1, slug: 1, date: 2, venue: 2, address: 2, templateId: 3, structureId: 3, packageId: 4, addonIds: 4 }
 
 function applyServerFieldErrors(cause: unknown) {
   const reported = (cause as Partial<ApiError> | undefined)?.fieldErrors
@@ -143,6 +150,7 @@ async function checkout() {
         venue: form.venue || undefined,
         address: form.address || undefined,
         templateId: form.templateId,
+        structureId: form.structureId,
       })
       form.invitationId = invitation.id
     }
@@ -216,7 +224,7 @@ const preview = computed<InvitationDocument>(() => {
     : { venue: form.venue2, address: form.address2, mapUrl: form.mapUrl2 }
   const document = createDefaultDocument(form.partner1 || 'Aruna', form.partner2 || 'Dewa', form.templateId, {
     date: form.date || undefined, venue: form.venue, address: form.address, mapUrl: form.mapUrl,
-  })
+  }, form.structureId)
   const at = (id: string) => document.sections.find(section => section.id === id)!
   at('opening-envelope').data = { ...at('opening-envelope').data, title: previewTitle.value }
   at('hero').data = { ...at('hero').data, title: previewTitle.value, imageUrl: themeOf(form.templateId).cover }
@@ -402,6 +410,32 @@ id="order-slug"
                 Tema di sini adalah titik awal — warna, ornamen, amplop, kata-kata, dan gerak bisa
                 kalian ubah di editor dengan add-on Desain, yang sudah kami centangkan.
               </p>
+              <!--
+                Pemilih STRUKTUR (fase 74.11), di atas pemilih tema karena ia keputusan yang
+                lebih besar: struktur menentukan bagian apa saja yang ada, tema hanya warnanya.
+
+                `v-if` sengaja: selama baru ada satu struktur hidup, barisnya tidak tampil sama
+                sekali. Ia muncul sendiri begitu struktur kedua didaftarkan — tidak ada yang
+                perlu diingat untuk menyalakannya.
+              -->
+              <fieldset v-if="liveStructureIds.length > 1" class="m-0 grid gap-2 border-0 p-0">
+                <legend class="mb-1 p-0 text-caption font-semibold uppercase tracking-[0.08em] text-ink-muted">Tampilan undangan</legend>
+                <div class="grid gap-2 sm:grid-cols-2">
+                  <label
+                    v-for="id in liveStructureIds"
+                    :key="id"
+                    :class="cn(
+                      'grid cursor-pointer gap-1 rounded-lg border p-3 transition-colors duration-200',
+                      form.structureId === id ? 'border-primary shadow-lift' : 'border-border hover:border-border-strong',
+                    )"
+                  >
+                    <input :id="`order-struktur-${id}`" v-model="form.structureId" type="radio" name="struktur" :value="id" class="peer sr-only">
+                    <span class="font-semibold text-ink">{{ structures[id].name }}</span>
+                    <span class="text-caption text-ink-muted">{{ structures[id].tagline }}</span>
+                  </label>
+                </div>
+              </fieldset>
+
               <div class="grid gap-3 sm:grid-cols-3">
                 <label
                   v-for="theme in invitationThemes"

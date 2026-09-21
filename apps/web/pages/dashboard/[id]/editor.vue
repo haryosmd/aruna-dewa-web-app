@@ -6,7 +6,7 @@ import type {
 } from '@aruna/contracts'
 import {
   canEditDesign as designUnlocked, createDefaultDocument, designFeatureId, documentStructureId, documentThemeId,
-  invitationDocumentSchema, isLiveTemplateId,
+  invitationDocumentSchema, isLiveTemplateId, liveStructureIds, restructureDocument, sectionMeta, structures, type StructureId,
   isV2SectionType, migrateLegacyDocument, templateById,
 } from '@aruna/contracts'
 import { toOrnamentOverrides } from '~/utils/invitation-options'
@@ -427,6 +427,41 @@ async function dialogTerbit() {
   if (jawaban === 'buka') window.open(publicUrl.value, '_blank', 'noopener')
 }
 
+/**
+ * Pindah struktur undangan (fase 74.11).
+ *
+ * BUKAN klik di grid tema, dengan sengaja: ia mengganti seluruh dokumen, bukan paletnya. Jadi
+ * tempatnya di sebelah `reset()`, dengan dialog yang MENYEBUTKAN apa yang terbawa dan apa yang
+ * hilang — pasangan yang menekan ini berhak tahu bahwa bagian yang tidak ada di struktur tujuan
+ * tidak akan kembali.
+ *
+ * Digerbangi `canEditDesign`: ia superset dari menggeser urutan, yang sudah digerbangi.
+ */
+/** Struktur hidup selain yang sedang dipakai. Kosong hari ini, dan kontrolnya ikut tidak tampil. */
+const strukturLain = computed(() => liveStructureIds.filter(id => id !== documentStructureId(document.value)))
+
+async function pindahStruktur(tujuan: StructureId) {
+  if (!canEditDesign.value) return
+  const sekarang = documentStructureId(document.value)
+  if (sekarang === tujuan) return
+  const hilang = [...new Set(document.value.sections.map(section => section.type))]
+    .filter(type => !structures[tujuan].sectionTypes.includes(type))
+    .map(type => sectionMeta[type as keyof typeof sectionMeta]?.label ?? type)
+  const jawaban = await confirm({
+    title: `Pindah ke ${structures[tujuan].name}?`,
+    description: hilang.length
+      ? `Isi yang sudah kalian tulis dibawa menurut jenis bagiannya, dan warna serta ornamen tetap. Yang tidak ada di tampilan ini akan hilang: ${hilang.join(', ')}.`
+      : 'Isi yang sudah kalian tulis dibawa menurut jenis bagiannya; warna, ornamen, dan musik tetap.',
+    tone: 'danger',
+    actions: [{ id: 'batal', label: 'Batal', tone: 'outline' }, { id: 'pindah', label: 'Ya, pindah', tone: 'ink' }],
+    dismissId: 'batal',
+  })
+  if (jawaban !== 'pindah') return
+  checkpoint()
+  document.value = bersihkan(restructureDocument(toRaw(document.value), tujuan))
+  toast.message('Tampilan diganti. Simpan untuk menerapkannya.')
+}
+
 async function reset() {
   const jawaban = await confirm({
     title: 'Kembalikan ke preset awal?',
@@ -628,6 +663,28 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
               <RotateCcw :size="15" aria-hidden="true" />
               Kembalikan ke preset tema
             </UiButton>
+
+            <!--
+              Pindah struktur (fase 74.11). `v-if` sama seperti di `/order`: selama baru ada satu
+              struktur hidup, kontrolnya tidak tampil sama sekali dan muncul sendiri begitu
+              struktur kedua didaftarkan. Ia di sini, bukan di grid Tema, karena ia mengganti
+              seluruh dokumen — bukan warnanya.
+            -->
+            <div v-if="strukturLain.length && canEditDesign" class="grid gap-1.5 justify-self-start">
+              <p class="m-0 text-caption text-ink-muted">Ganti tampilan undangan — isi yang sudah ditulis dibawa menurut jenis bagiannya.</p>
+              <div class="flex flex-wrap gap-1.5">
+                <UiButton
+                  v-for="id in strukturLain"
+                  :id="`editor-struktur-${id}`"
+                  :key="id"
+                  tone="quiet"
+                  size="sm"
+                  @click="pindahStruktur(id)"
+                >
+                  {{ structures[id].name }}
+                </UiButton>
+              </div>
+            </div>
           </template>
 
           <template #global>
