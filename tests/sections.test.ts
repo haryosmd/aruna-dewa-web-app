@@ -217,6 +217,48 @@ describe('kesetiaan migrasi v1→v2', () => {
  * ini akibatnya keempatnya lolos `.passthrough()` tanpa batas apa pun, dan satu-satunya plafon
  * adalah 200 KB seluruh dokumen. Migrator pun menyalinnya bulat-bulat.
  */
+/*
+ * Penjaga yang pindah rumah di fase 74.5.
+ *
+ * Keputusan pemilik fase 71: label kolom ditulis menurut FUNGSINYA di mata pasangan, bukan
+ * istilah desain. Penjaganya dulu hidup di `apps/web/test/invitation-copy.spec.ts` dan membaca
+ * `copyGroups` — tabel sistem copy lama. Fase 72 memindahkan label form ke `sectionFields` dan
+ * fase 74.5 membuang tabel lamanya, jadi penjaga itu akan ikut mati tanpa penerus.
+ *
+ * Dan ia memang sudah tidak menjaga apa pun: dua kolom `kicker` di `sectionFields` menulis
+ * "Kicker" apa adanya selama tiga fase, tepat di bawah komentar yang melarangnya, karena
+ * penjaganya tidak pernah membaca tabel ini.
+ */
+describe('label kolom ditulis menurut fungsinya (fase 71, dijaga sejak 74.5)', () => {
+  const jargon = [/kicker/, /eyebrow/, /\bcta\b/, /lightbox/, /overlay/, /placeholder/]
+
+  it('tidak ada label yang memakai istilah desain', () => {
+    const pelanggar: string[] = []
+    for (const [type, fields] of Object.entries(sectionFields)) {
+      for (const field of fields) {
+        if (jargon.some(pola => pola.test(field.label.toLowerCase()))) pelanggar.push(`${type}.${field.key}: "${field.label}"`)
+      }
+    }
+    expect(pelanggar, 'label ini memakai istilah desain, bukan fungsi kolomnya').toEqual([])
+  })
+
+  it('tiap kolom punya label yang tidak kosong', () => {
+    for (const [type, fields] of Object.entries(sectionFields)) {
+      for (const field of fields) expect(field.label.trim(), `${type}.${field.key}`).toBeTruthy()
+    }
+  })
+
+  /*
+   * `bismillah` berlabel "Bismillah", dan itu BENAR — kata itu justru nama yang dikenal
+   * pasangan, bukan istilah desain. Aturannya "jangan pakai istilah DESAIN", bukan "label
+   * harus berbeda dari key": penjaga yang melarang keduanya sama akan menuntut label yang
+   * lebih buruk daripada yang ada.
+   */
+  it('label yang kebetulan sama dengan key-nya tidak dianggap pelanggaran', () => {
+    expect(sectionFields.couple.find(field => field.key === 'bismillah')?.label).toBe('Bismillah')
+  })
+})
+
 describe('batas struktur berulang bagian ekstra (fase 74.3)', () => {
   const dataSah = (type: 'story' | 'rundown' | 'dresscode', extra: Record<string, unknown>) =>
     sectionDataSchema(type).safeParse(extra)

@@ -133,11 +133,17 @@ const foto = (key: string, label = 'Foto komponen'): FieldMeta => ({ key, label,
  * Kolom tiap bagian, **urut seperti form referensi**. Label ditulis menurut fungsi kolomnya di
  * mata pasangan (keputusan fase 71), dan nama key mengikuti format data referensi supaya
  * dokumen yang diekspor/diimpor antar alat tetap terbaca.
+ *
+ * "Menurut fungsinya" berarti **bukan istilah desain**: "Teks kecil di atas nama", bukan
+ * "Kicker" — pasangan tidak tahu apa itu kicker. Aturan itu dulu dijaga di sisi sistem copy
+ * lama yang membaca `copyGroups`; lima label di sini sempat lolos memakai "Kicker",
+ * "lightbox", dan "Placeholder" karena penjaganya tidak pernah membaca tabel ini. Sejak fase
+ * 74.5 penjaganya ada di `tests/sections.test.ts`, di mana labelnya hidup.
  */
 export const sectionFields: Record<V2SectionType, FieldMeta[]> = {
   'opening-envelope': [
     teks('eyebrow', 'Label pembuka'),
-    teks('kicker', 'Kicker'),
+    teks('kicker', 'Teks kecil di atas nama'),
     teks('title', 'Nama mempelai'),
     teks('date', 'Tanggal'),
     teks('guestLabel', 'Label nama tamu'),
@@ -149,7 +155,7 @@ export const sectionFields: Record<V2SectionType, FieldMeta[]> = {
   ],
   'hero': [
     teks('monogram', 'Monogram atas', 12),
-    teks('kicker', 'Kicker'),
+    teks('kicker', 'Teks kecil di atas nama'),
     teks('title', 'Nama mempelai'),
     teks('subtitle', 'Tanggal'),
     teks('guestLabel', 'Label nama tamu'),
@@ -220,7 +226,7 @@ export const sectionFields: Record<V2SectionType, FieldMeta[]> = {
     teks('title', 'Judul'),
     teks('viewLabel', 'Label preview foto', 40),
     teks('subtitle', 'Caption'),
-    teks('lightboxTitle', 'Nama di lightbox'),
+    teks('lightboxTitle', 'Judul saat foto dibuka besar'),
     { key: 'imageUrls', label: 'Foto komponen', kind: 'foto[]', limit: 15 },
   ],
   'gift': [
@@ -243,13 +249,13 @@ export const sectionFields: Record<V2SectionType, FieldMeta[]> = {
     teks('formTitle', 'Judul form'),
     teks('subtitle', 'Deskripsi form', 240),
     teks('nameLabel', 'Label nama', 40),
-    teks('namePlaceholder', 'Placeholder nama', 60),
+    teks('namePlaceholder', 'Contoh isian kolom nama', 60),
     teks('attendanceLabel', 'Label kehadiran', 40),
     teks('presentLabel', 'Pilihan hadir', 40),
     teks('unsureLabel', 'Pilihan belum pasti', 40),
     teks('absentLabel', 'Pilihan berhalangan', 40),
     teks('messageLabel', 'Label ucapan', 40),
-    teks('messagePlaceholder', 'Placeholder ucapan', 120),
+    teks('messagePlaceholder', 'Contoh isian kolom ucapan', 120),
     teks('submitLabel', 'Teks tombol kirim', 40),
     teks('savingLabel', 'Teks saat menyimpan', 40),
     teks('successLabel', 'Pesan berhasil', 80),
