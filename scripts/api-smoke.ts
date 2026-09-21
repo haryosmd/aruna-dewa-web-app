@@ -68,8 +68,11 @@ try {
   check((await owner.call('/auth/me')).data.user.role === 'r_7c91', 'operator role represented by configured internal code')
   check((await owner.call(`/invitations/${id}/activate`, 'POST')).status < 300, 'operator activation without payment')
   const draft = (await owner.call(`/invitations/${id}`)).data
-  // Dokumen v2 lahir dengan bagian hadiah menyala tapi rekening kosong; publish menuntut nomornya.
-  draft.document.sections.find((section: { type: string }) => section.type === 'gift').data.account1 = '1234567890'
+  // Hadiah lahir mati (fase 73.2); fixture QA menyalakannya supaya cabang rekening ikut teruji,
+  // dan publish menuntut nomornya begitu bagiannya menyala.
+  const giftQa = draft.document.sections.find((section: { type: string }) => section.type === 'gift')
+  giftQa.enabled = true
+  giftQa.data.account1 = '1234567890'
   const saved = await owner.call(`/invitations/${id}/draft`, 'PUT', { document: draft.document, revision: draft.revision })
   check(saved.status < 300, 'draft save')
   check((await owner.call(`/invitations/${id}/draft`, 'PUT', { document: draft.document, revision: draft.revision })).status === 409, 'stale draft revision rejected')

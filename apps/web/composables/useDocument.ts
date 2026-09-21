@@ -40,6 +40,8 @@ function buildDemo(): InvitationDocument {
   })
   isi('quote', { imageUrl: '/images/rings.webp' })
   isi('gallery', { imageUrls: ['/images/couple.webp', '/images/rings.webp', '/images/venue.webp', '/images/hero.webp'] })
+  // Hadiah lahir mati sejak fase 73.2 (fitur Mekar ke atas); demo menyalakan yang opsional.
+  at('gift').enabled = true
   isi('gift', {
     bank1: 'Bank BCA', account1: '8720 114 556', holder1: 'a.n. Dewa Anandika',
     hasSecondAccount: true, bank2: 'Bank Mandiri', account2: '1370 0099 8877', holder2: 'a.n. Aruna Prameswari',

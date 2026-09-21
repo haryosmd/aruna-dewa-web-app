@@ -31,7 +31,11 @@ describe('cover wajib menyala saat publish (v1)', () => {
 describe('syarat terbit dokumen v2', () => {
   const siap = () => {
     const document = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom', { date: '2027-06-12', venue: 'Pendopo Aruna' });
-    document.sections.find((section) => section.type === 'gift')!.data.account1 = '1234567890';
+    // Hadiah lahir mati sejak fase 73.2 (ia fitur Mekar ke atas); fixture ini menyalakannya
+    // supaya cabang rekening di bawah punya sesuatu untuk diperiksa.
+    const gift = document.sections.find((section) => section.type === 'gift')!;
+    gift.enabled = true;
+    gift.data.account1 = '1234567890';
     return document;
   };
 
@@ -71,9 +75,10 @@ describe('syarat terbit dokumen v2', () => {
 
   it('menuntut rekening hanya bila bagian hadiah menyala', () => {
     const kosong = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom', { date: '2027-06-12' });
-    expect(() => validatePublishableDocument(kosong)).toThrow('Nomor rekening pertama wajib diisi');
-    kosong.sections.find((section) => section.type === 'gift')!.enabled = false;
+    // Bawaannya mati, jadi undangan polos terbit tanpa pernah ditanyai nomor rekening.
     expect(() => validatePublishableDocument(kosong)).not.toThrow();
+    kosong.sections.find((section) => section.type === 'gift')!.enabled = true;
+    expect(() => validatePublishableDocument(kosong)).toThrow('Nomor rekening pertama wajib diisi');
     const kedua = siap();
     kedua.sections.find((section) => section.type === 'gift')!.data.hasSecondAccount = true;
     expect(() => validatePublishableDocument(kedua)).toThrow('Nomor rekening kedua wajib diisi');

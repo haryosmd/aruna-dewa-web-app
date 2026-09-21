@@ -47,8 +47,13 @@ export const isRequiredSection = (type: SectionType) => requiredSectionTypes.has
 
 /**
  * Fitur paket yang membuka tiap tipe bagian. Bagian baru fase 72 menumpang fitur yang sudah
- * ada di `catalog` — entitlement di basis data tidak perlu disentuh, dan paket dasar tetap
- * membuka seluruh template Elegance.
+ * ada di `catalog` — entitlement di basis data tidak perlu disentuh.
+ *
+ * Yang dijamin paket dasar bukan "seluruh template Elegance" melainkan **seluruh bagian yang
+ * menyala secara bawaan**. Bedanya bukan bahasa: `gift` adalah salah satu dari empat fitur yang
+ * membedakan Mula dari Mekar, dan selama ia lahir menyala, setiap undangan baru di paket termurah
+ * ditolak `publish()` dengan "Paket aktif belum mencakup seluruh section yang diaktifkan" — di
+ * tombol Publikasikan, jauh dari berkas ini. Invariannya dijaga `tests/sections.test.ts`.
  */
 export const sectionFeature: Record<SectionType, string> = {
   'cover': 'cover', 'opening-envelope': 'cover', 'hero': 'cover',
@@ -455,7 +460,7 @@ export function createEleganceSections(input: DefaultDocumentInput): V2Section[]
       eyebrow: 'Our Moments', title: 'Galeri Bahagia', viewLabel: 'lihat foto', subtitle: 'Two hearts, one beautiful story.',
       lightboxTitle: pasangan, imageUrls: [] as string[],
     } },
-    { id: 'gift', type: 'gift', enabled: true, data: {
+    { id: 'gift', type: 'gift', enabled: false, data: {
       eyebrow: 'Tanda Kasih', title: 'Wedding Gift',
       subtitle: 'Doa restu Anda merupakan hadiah terindah bagi kami. Namun bila ingin memberikan tanda kasih, dapat melalui rekening berikut.',
       bank1: 'Bank BCA', account1: '', holder1: `a.n. ${partner2}`, buttonLabel: 'Salin nomor', copiedLabel: 'Tersalin',

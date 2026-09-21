@@ -79,6 +79,26 @@ describe('struktur bagian Elegance (fase 72)', () => {
     expect(migrateLegacyDocument(baru)).toBe(baru)
   })
 
+  /*
+   * Invarian yang menjaga `publish()` (`invitations.service.ts`): ia menolak undangan yang
+   * menyalakan bagian di luar entitlement paketnya. `gift` pernah lahir menyala padahal ia fitur
+   * Mekar ke atas, dan akibatnya setiap undangan BARU di paket Mula gagal terbit — galatnya muncul
+   * di tombol Publikasikan, bukan di berkas yang menyebabkannya.
+   */
+  it('setiap bagian yang menyala secara bawaan tercakup paket dasar', () => {
+    const dasar = new Set(catalog.packages[0]!.features)
+    const d = createDefaultDocument()
+    expect(d.sections.filter(s => s.enabled && !dasar.has(sectionFeature[s.type])).map(s => s.type)).toEqual([])
+    // Penjaga arah sebaliknya: invarian di atas tidak boleh bisa dihijaukan dengan mematikan semuanya.
+    expect(d.sections.filter(s => !s.enabled).map(s => s.type)).toEqual(['unduh-mantu', 'gift', 'story', 'rundown', 'dresscode', 'video'])
+  })
+
+  it('dokumen hasil migrasi pun tidak lahir dalam keadaan tidak bisa terbit', () => {
+    const dasar = new Set(catalog.packages[0]!.features)
+    const baru = migrateLegacyDocument(createLegacyDocument('Dea', 'Haryo'))
+    expect(baru.sections.filter(s => s.enabled && !dasar.has(sectionFeature[s.type])).map(s => s.type)).toEqual([])
+  })
+
   it('memecah tanggal untuk kolom teks referensi', () => {
     expect(dateParts('2026-10-03')).toMatchObject({ day: 'Sabtu', date: '03', monthYear: 'Oktober 2026', dotted: '03 · 10 · 2026' })
     expect(dateParts('')).toMatchObject({ day: '', dotted: '' })
