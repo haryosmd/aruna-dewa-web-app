@@ -5,7 +5,8 @@ import type {
   SectionBackground, SectionMotion, ShareCardStyle, TextStyle,
 } from '@aruna/contracts'
 import {
-  canEditDesign as designUnlocked, createDefaultDocument, designFeatureId, invitationDocumentSchema, isLiveTemplateId,
+  canEditDesign as designUnlocked, createDefaultDocument, designFeatureId, documentStructureId, documentThemeId,
+  invitationDocumentSchema, isLiveTemplateId,
   isV2SectionType, migrateLegacyDocument, templateById,
 } from '@aruna/contracts'
 import { toOrnamentOverrides } from '~/utils/invitation-options'
@@ -438,7 +439,18 @@ async function reset() {
   checkpoint()
   const couple = document.value.sections.find(section => section.type === 'couple')?.data ?? {}
   const nama = (key: string, fallback: string) => (typeof couple[key] === 'string' && (couple[key] as string).trim()) ? (couple[key] as string) : fallback
-  document.value = createDefaultDocument(nama('brideName', nama('partner1', 'Aruna')), nama('groomName', nama('partner2', 'Dewa')), document.value.templateId as LiveTemplateId)
+  /*
+   * Tema DAN struktur ikut terbawa. Barisnya sudah mengoper tema sejak dulu; strukturnya harus
+   * ikut sejak fase 74.9, kalau tidak pasangan yang menekan "kembalikan preset" diam-diam
+   * kehilangan strukturnya dan mendapat `elegance` bawaan.
+   */
+  document.value = createDefaultDocument(
+    nama('brideName', nama('partner1', 'Aruna')),
+    nama('groomName', nama('partner2', 'Dewa')),
+    documentThemeId(document.value),
+    {},
+    documentStructureId(document.value),
+  )
   toast.message('Preset dimuat kembali. Simpan untuk menerapkannya.')
 }
 

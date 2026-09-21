@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   catalog, createDefaultDocument, createEleganceSections, headlessSectionTypes, invitationDocumentSchema,
   isLiveStructureId, legacySectionTypes, liveStructureIds, sectionFeature, sectionFields, sectionMeta,
-  structureById, structureIds, structures, v2SectionTypes, documentStructureId,
+  structureById, structureIds, structures, v2SectionTypes, documentStructureId, documentThemeId,
+  createLegacyDocument, templateIds, liveTemplateIds,
 } from '../packages/contracts/src/index'
 
 /*
@@ -120,5 +121,65 @@ describe('ayat dan bismillah tetap di tempatnya', () => {
     const couple = doc.sections.find(s => s.type === 'couple')!
     expect(String(couple.data.bismillah)).toContain('بِسْمِ')
     expect(invitationDocumentSchema.safeParse(doc).success).toBe(true)
+  })
+})
+
+/*
+ * Fase 74.9: dokumen akhirnya bisa MENGATAKAN tema dan strukturnya.
+ *
+ * Keduanya opsional, dan itu keputusan yang menahan seluruh irisan ini: tidak satu pun dokumen
+ * lama ditulis ulang (revisi terbit dibaca, tidak pernah disimpan ulang), jadi absennya harus
+ * berarti persis perilaku sebelum fase 74 — bukan galat, dan bukan nilai lain.
+ */
+describe('dua sumbu di dalam dokumen', () => {
+  it('dokumen baru menulis templateId dan themeId dengan nilai yang SAMA', () => {
+    const doc = createDefaultDocument('Dea', 'Haryo', 'aruna-sekar')
+    expect(doc.templateId).toBe('aruna-sekar')
+    expect(doc.themeId).toBe('aruna-sekar')
+    expect(doc.structureId).toBe('elegance')
+  })
+
+  it('dokumen v1 lahir dengan struktur warisan', () => {
+    const doc = createLegacyDocument('Dea', 'Haryo', 'aruna-pelita')
+    expect(doc.structureId).toBe('warisan')
+    expect(doc.themeId).toBe('aruna-pelita')
+    expect(documentStructureId(doc)).toBe('warisan')
+  })
+
+  it('dokumen lama tanpa kedua kunci tetap lolos skema — tidak ada yang ditulis ulang', () => {
+    const doc = createDefaultDocument('Dea', 'Haryo') as Record<string, unknown>
+    delete doc.themeId
+    delete doc.structureId
+    const hasil = invitationDocumentSchema.safeParse(doc)
+    expect(hasil.success).toBe(true)
+    expect(documentStructureId(doc as { schemaVersion?: number })).toBe('elegance')
+    expect(documentThemeId(doc as { templateId?: string })).toBe('aruna-bloom')
+  })
+
+  it('structureId asing DITOLAK skema — beda dari documentStructureId yang memaafkan', () => {
+    // Skema menjaga apa yang boleh MASUK; `documentStructureId` menjaga apa yang sudah terlanjur
+    // ada di basis data tetap bisa dibuka. Keduanya sengaja tidak sama ketatnya.
+    const doc = { ...createDefaultDocument('Dea', 'Haryo'), structureId: 'palsu' }
+    expect(invitationDocumentSchema.safeParse(doc).success).toBe(false)
+  })
+
+  it('schemaVersion 3 tetap ditolak — fase 74 sengaja TIDAK menaikkannya', () => {
+    const doc = { ...createDefaultDocument('Dea', 'Haryo'), schemaVersion: 3 }
+    expect(invitationDocumentSchema.safeParse(doc).success).toBe(false)
+  })
+
+  it('documentThemeId mengutamakan themeId, dan menerjemahkan id pensiun', () => {
+    expect(documentThemeId({ templateId: 'aruna-bloom', themeId: 'aruna-pelita' })).toBe('aruna-pelita')
+    expect(documentThemeId({ templateId: 'aruna-pelita' })).toBe('aruna-pelita')
+    // `aruna-lumine` pensiun; ia harus keluar sebagai penggantinya, bukan apa adanya.
+    expect(templateIds).toContain('aruna-lumine')
+    expect(liveTemplateIds as readonly string[]).not.toContain('aruna-lumine')
+    expect(liveTemplateIds as readonly string[]).toContain(documentThemeId({ themeId: 'aruna-lumine' }))
+  })
+
+  it('createDefaultDocument memakai struktur yang diminta untuk membangun bagiannya', () => {
+    const doc = createDefaultDocument('Dea', 'Haryo', 'aruna-bloom', {}, 'warisan')
+    expect(doc.structureId).toBe('warisan')
+    expect(doc.sections.map(s => s.type)).toEqual([...structures.warisan.sectionTypes])
   })
 })

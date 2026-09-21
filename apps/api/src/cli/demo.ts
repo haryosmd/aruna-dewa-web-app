@@ -40,7 +40,7 @@ try {
     const slug = `demo-aruna-dewa-${Math.random().toString(36).slice(2, 6)}`;
     const date = '2027-06-12';
     // Dokumen v2 (fase 72): tanggal dan lokasi masuk lewat pembangun bawaannya, sama seperti `create()`.
-    const document = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom', { date, venue: 'Pendopo Aruna', address: 'Yogyakarta' });
+    const document = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom', { date, venue: 'Pendopo Aruna', address: 'Yogyakarta' }, 'elegance');
     const invitation = await prisma.$transaction(async (tx) => {
       const created = await tx.invitation.create({ data: { slug, title: 'Demo Aruna & Dewa', partner1: 'Aruna', partner2: 'Dewa', eventDate: new Date(date), venue: 'Pendopo Aruna', address: 'Yogyakarta', draftDocument: JSON.parse(JSON.stringify(document)), createdById: user.id } });
       await tx.invitationMember.create({ data: { invitationId: created.id, userId: user.id, role: 'OWNER' } });

@@ -17,9 +17,12 @@ function buildDemo(): InvitationDocument {
   const iso = weddingDay.toISOString()
   const t = dateParts(iso)
 
+  // Strukturnya ditulis eksplisit: dokumen ini dibangun SEKALI saat modul dimuat dan dipakai
+  // halaman landing maupun `/i/demo`, jadi mewarisi bawaan diam-diam adalah bug laten pada hari
+  // bawaannya berubah.
   const document = createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom', {
     date: iso, venue: 'Pendopo Aruna', address: 'Jl. Kaliurang KM 9, Sleman, Yogyakarta', mapUrl: 'https://maps.google.com/?q=Sleman+Yogyakarta',
-  })
+  }, 'elegance')
   const at = (id: string) => document.sections.find(section => section.id === id) as Section
   const isi = (id: string, data: Record<string, unknown>) => { at(id).data = { ...at(id).data, ...data } }
 

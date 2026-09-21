@@ -13,7 +13,7 @@
 
 import type { MediaKind } from './index'
 import { z } from 'zod'
-import { invitationDocumentSchema, templateIds, type ImportRow, type InvitationDocument } from './index.js'
+import { invitationDocumentSchema, structureIds, templateIds, type ImportRow, type InvitationDocument } from './index.js'
 
 /** Angka revisi optimistik. Harus ada — ketiadaannya persis yang dulu menghilangkan data. */
 const revision = z.number().int().nonnegative()
@@ -84,6 +84,12 @@ export const createInvitationBodySchema = z.object({
   address: z.string().trim().max(300).optional(),
   // String kosong berarti "pakai bawaan"; itu yang dikirim wizard `/order` saat tema belum dipilih.
   templateId: z.union([z.literal(''), z.enum(templateIds)]).optional(),
+  /*
+   * Struktur undangan (fase 74.9). Bentuknya sengaja meniru `templateId` di atas — termasuk
+   * string kosongnya — supaya wizard bisa mengirim keduanya dengan cara yang sama. Hari ini
+   * hanya `elegance` yang hidup, jadi pemilihnya belum tampil; plumbingnya lebih dulu.
+   */
+  structureId: z.union([z.literal(''), z.enum(structureIds)]).optional(),
 })
 export type CreateInvitationBody = z.infer<typeof createInvitationBodySchema>
 

@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { canEditDesign, createDefaultDocument, isLiveTemplateId, migrateLegacyDocument, sectionFeature, type InvitationDocument } from '@aruna/contracts';
+import { canEditDesign, createDefaultDocument, isLiveStructureId, isLiveTemplateId, migrateLegacyDocument, sectionFeature, type InvitationDocument } from '@aruna/contracts';
 import { shareSettingsSchema, type CreateInvitationBody, type ShareSettings } from '@aruna/contracts/api';
 import { PrismaService } from '../database/prisma.service.js';
 import { Prisma } from '@aruna/database';
@@ -28,10 +28,14 @@ export class InvitationsService {
     // tidak boleh lahir langsung memakai tema yang sudah pensiun dari pemilih.
     const templateId = input.templateId?.trim() || 'aruna-bloom';
     if (!isLiveTemplateId(templateId)) throw new BadRequestException('Template tidak tersedia');
+    // Diukur terhadap struktur yang HIDUP, alasan yang sama persis dengan tema di atas: undangan
+    // baru tidak boleh lahir memakai struktur yang sudah pensiun (`warisan`).
+    const structureId = input.structureId?.trim() || 'elegance';
+    if (!isLiveStructureId(structureId)) throw new BadRequestException('Struktur undangan tidak tersedia');
     // Dokumen v2 (fase 72): tanggal, lokasi, dan alamat dari form pemesanan mendarat langsung di
     // kata-kata bagian `event`/`map`/`countdown` lewat pembangun bawaannya — tidak ada lagi
     // `events.events[]` yang perlu ditulis ulang di sini.
-    const document = createDefaultDocument(input.partner1.trim(), input.partner2.trim(), templateId, { date: input.date?.trim() || undefined, venue: input.venue?.trim() || undefined, address: input.address?.trim() || undefined });
+    const document = createDefaultDocument(input.partner1.trim(), input.partner2.trim(), templateId, { date: input.date?.trim() || undefined, venue: input.venue?.trim() || undefined, address: input.address?.trim() || undefined }, structureId);
     try {
       return await this.prisma.$transaction(async (tx) => {
         const invitation = await tx.invitation.create({ data: { slug, title: input.title.trim(), partner1: input.partner1.trim(), partner2: input.partner2.trim(), eventDate: input.date ? new Date(input.date) : null, venue: input.venue?.trim(), address: input.address?.trim(), draftDocument: toJson(document), createdById: user.sub } });

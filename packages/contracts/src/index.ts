@@ -16,8 +16,8 @@ export function buildGuestUrl(base: string, slug: string, displayName: string, t
 
 export * from './sections'
 export * from './structures'
-import { createLegacySections } from './structures'
-import { sectionTypes, createEleganceSections, isV2SectionType, sectionDataSchema, invitationSettingsSchema, shareCardSchema, layoutFocuses, type DefaultDocumentInput } from './sections'
+import { createLegacySections, structureIds, structures, type StructureId } from './structures'
+import { sectionTypes, isV2SectionType, sectionDataSchema, invitationSettingsSchema, shareCardSchema, layoutFocuses, type DefaultDocumentInput } from './sections'
 export { sectionTypes }
 
 /**
@@ -74,6 +74,18 @@ const liveTemplateIdSet: ReadonlySet<string> = new Set(liveTemplateIds)
 
 export function isLiveTemplateId(id: string): id is LiveTemplateId {
   return liveTemplateIdSet.has(id)
+}
+
+/**
+ * Tema sebuah dokumen, sesudah id pensiun diterjemahkan.
+ *
+ * **Satu-satunya cara membaca tema dari dokumen.** Membaca `document.templateId` mentah akan
+ * salah begitu dokumen mulai membawa `themeId` (fase 74.9), dan salahnya diam: skrip migrasi
+ * tema pensiun menulis `templateId`, jadi dokumen yang kedua kuncinya berselisih akan merender
+ * tema yang sudah tidak punya wajah.
+ */
+export function documentThemeId(document: { templateId?: string; themeId?: string }): LiveTemplateId {
+  return resolveTemplateId(document.themeId ?? document.templateId ?? '')
 }
 
 /**
@@ -258,6 +270,30 @@ export const invitationDocumentSchema = z.object({
   /** 1 = struktur lama (cover/events/rsvp…), 2 = struktur Elegance (fase 72). Lihat `sections.ts`. */
   schemaVersion: z.union([z.literal(1), z.literal(2)]), templateId: z.enum(templateIds), templateVersion: z.literal(1),
   /*
+   * Dua sumbu, fase 74.9 — dan keduanya OPSIONAL, dengan alasan yang sama seperti tiga kunci
+   * `tokens` di bawah: dokumen yang lahir sebelum fase ini tidak punya keduanya, dan tidak satu
+   * pun ditulis ulang (revisi terbit dibaca, tidak pernah disimpan ulang).
+   *
+   * `themeId` adalah penerus `templateId`. Namanya diganti karena `templateId` SELALU berarti
+   * tema di produk ini — langkah "Tema" `/order`, grid "Tema" editor, galeri tema landing —
+   * sementara kata "template" kini dipakai untuk struktur. `templateId` sendiri TIDAK disentuh
+   * dan tetap wajib: ia `z.enum(templateIds)` yang hanya tumbuh dan menyuapi tiap draft dan tiap
+   * revisi terbit; memakainya ulang untuk struktur berarti kolom itu boleh berisi id struktur
+   * ATAU id tema lama selamanya — ambiguitas yang justru melahirkan `resolveTemplateId`.
+   * Dokumen baru menulis keduanya dengan nilai yang sama.
+   *
+   * **Tidak ada `schemaVersion: 3`.** Tipe bagiannya tidak berubah — struktur pertama ADALAH
+   * himpunan Elegance yang sekarang — jadi versi ketiga hanya menambah cabang di tiap
+   * `schemaVersion === 2` yang ada, dan yang lebih berbahaya: `hasDesignChange` membebaskan
+   * migrasi lewat `oldDocument.schemaVersion !== 2 && next.schemaVersion === 2`, jadi versi
+   * ketiga menuntut jendela pembebasan kedua — persis mekanisme yang mengunci pasangan di 73.1.
+   *
+   * Keduanya di AKAR, bukan di dalam `tokens`: `tokens` digerbangi utuh oleh sidik jari desain,
+   * dan kedua sumbu ini perlu gerbang yang berbeda.
+   */
+  themeId: z.enum(templateIds).optional(),
+  structureId: z.enum(structureIds).optional(),
+  /*
    * Ketiga key baru fase 59 **opsional dengan sengaja**, dan itu menyelesaikan tiga hal sekaligus.
    *
    * Dokumen yang ditulis sebelum fase ini tetap lolos tanpa migrasi. Preset tema tidak perlu
@@ -307,12 +343,22 @@ export type InvitationSection = InvitationDocument['sections'][number]
  * Dokumen baru = struktur Elegance (fase 72). Template `templateId` hanya menentukan palet,
  * ornamen, dan partitur gerak; struktur bagian dan kata-katanya sama untuk semua tema.
  */
-export function createDefaultDocument(partner1 = 'Aruna', partner2 = 'Dewa', templateId: TemplateId = 'aruna-bloom', input: Partial<DefaultDocumentInput> = {}): InvitationDocument {
+export function createDefaultDocument(
+  partner1 = 'Aruna',
+  partner2 = 'Dewa',
+  templateId: TemplateId = 'aruna-bloom',
+  input: Partial<DefaultDocumentInput> = {},
+  structureId: StructureId = 'elegance',
+): InvitationDocument {
   const template = templateById(templateId) ?? templates[0]!
+  const structure = structures[structureId] ?? structures.elegance
   return {
-    schemaVersion: 2, templateId: template.id, templateVersion: 1,
+    // `templateId` dan `themeId` lahir SAMA NILAINYA, dan kesetaraan itu dipatok tes: selama
+    // keduanya ditulis, pembaca mana pun — yang lama maupun yang baru — melihat tema yang sama.
+    schemaVersion: 2, templateId: template.id, themeId: template.id, templateVersion: 1,
+    structureId: structure.id,
     tokens: { ...template.tokens },
-    sections: createEleganceSections({ partner1, partner2, ...input }),
+    sections: structure.build({ partner1, partner2, ...input }),
   }
 }
 
@@ -322,7 +368,8 @@ export function createLegacyDocument(partner1 = 'Aruna', partner2 = 'Dewa', temp
   // baru lahir tidak punya alasan membawa id yang sudah tidak punya wajah.
   const template = templateById(templateId) ?? templates[0]!
   return {
-    schemaVersion: 1, templateId: template.id, templateVersion: 1,
+    schemaVersion: 1, templateId: template.id, themeId: template.id, templateVersion: 1,
+    structureId: 'warisan',
     tokens: { ...template.tokens },
     // Bagiannya hidup di `structures.ts` sebagai `warisan.build` sejak fase 74.8 — satu sumber,
     // supaya struktur v1 punya pembangun seperti struktur lain dan tidak bisa berselisih.

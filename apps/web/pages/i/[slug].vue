@@ -51,7 +51,11 @@ function demoDocument(): InvitationDocument {
   const template = invitationThemes.find(item => item.id === demoTemplate.value)!
   return {
     ...fallbackDocument,
+    // `themeId` ikut sejak fase 74.9. Tanpa ia, `?tema=aruna-pelita` merender TOKEN Pelita
+    // dengan ORNAMEN Bloom: `documentThemeId` membaca `themeId` lebih dulu, dan `themeId`
+    // milik `fallbackDocument` akan bertahan lewat sebaran di atas.
     templateId: template.id,
+    themeId: template.id,
     tokens: { ...template.tokens },
   }
 }

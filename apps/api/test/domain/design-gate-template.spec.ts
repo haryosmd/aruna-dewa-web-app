@@ -15,15 +15,23 @@ import { hasDesignChange } from '../../src/invitations/invitations.service';
 const pensiun = Object.keys(templateAliases);
 const hidup = templates[0]!;
 
+/*
+ * KEDUA kunci tema diset di fixture, dan itu bukan kelebihan hati-hati.
+ *
+ * Sejak fase 74.9 `createDefaultDocument` menulis `themeId` juga, dan `documentThemeId` membaca
+ * `themeId` LEBIH DULU. Menimpa `templateId` saja akan menghasilkan dokumen yang tema
+ * efektifnya tetap `aruna-bloom` — jadi berkas ini akan tetap hijau sambil menguji hal yang
+ * sama sekali berbeda dari yang tertulis di nama tesnya.
+ */
 /** Dokumen lama yang tersimpan, dengan id tema apa adanya — termasuk yang sudah pensiun. */
 function tersimpan(templateId: string): unknown {
-  return { ...createDefaultDocument('Aruna', 'Dewa'), templateId };
+  return { ...createDefaultDocument('Aruna', 'Dewa'), templateId, themeId: templateId };
 }
 
 /** Dokumen yang dikirim editor setelah pasangan memilih tema lain. */
 function dikirim(templateId: string): InvitationDocument {
   const preset = templates.find((t) => t.id === templateId) ?? hidup;
-  return { ...createDefaultDocument('Aruna', 'Dewa'), templateId: preset.id, tokens: { ...preset.tokens } };
+  return { ...createDefaultDocument('Aruna', 'Dewa'), templateId: preset.id, themeId: preset.id, tokens: { ...preset.tokens } };
 }
 
 describe('gerbang design terhadap tema pensiun', () => {
