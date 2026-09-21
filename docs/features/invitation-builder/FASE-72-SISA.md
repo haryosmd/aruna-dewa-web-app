@@ -204,6 +204,31 @@ penting — tanpanya 21 tes dasbor lolos tanpa pernah berjalan.
 > pemeriksaan integrasi hijau, e2e desktop 51/51 hijau dengan dashboard yang benar-benar
 > berjalan.
 
+## 6d. Satu e2e merah yang BUKAN dari fase 74, dan sudah dilokalisasi
+
+`[mobile] signed-in editor and guest management use persisted data` (`dashboard.spec.ts:156`)
+gagal di `scrollWidth <= innerWidth`: **364 vs 360**, konsisten, bukan flake.
+
+**Bukan regresi fase 74.** Diuji dengan menjalankan tes yang sama pada worktree `d3a4ffb`
+(fase 73.6, sebelum satu pun commit fase 74) — gagal dengan angka yang persis sama.
+
+Yang sudah diketahui, supaya sesi berikutnya tidak mengulang penelusurannya:
+
+- Hanya muncul **sesudah editor dikunjungi lebih dulu**. Membuka `/dashboard/<id>/guests`
+  langsung: `scrollWidth === innerWidth`, lolos.
+- Bukan tabel lebarnya: `table.min-w-[52rem]` (853px) ada di dalam `.table-wrap`
+  ber-`overflow-x: auto` dan memang terpotong — `scrollWidth` berhenti di 364, bukan 853.
+- Akarnya **jalur grid di wadah halaman**: `div.mx-auto.grid.w-full.px-5` lebarnya 360 dengan
+  padding 20px, jadi kolomnya seharusnya 320 — terukur **`grid-template-columns: 343.781px`**.
+  Tiga dari empat anaknya ber-`min-width: auto` (HEADER dan dua SECTION), jadi salah satunya
+  menyumbang min-content 343,78.
+- Bukan isi HEADER: min-content anak-anaknya 91 · 183 · 81 · 69, semuanya jauh di bawah 320.
+  Jadi tersangkanya salah satu `SECTION`.
+- Obatnya kemungkinan besar idiom yang sudah dipakai repo ini (`minmax(0,1fr)` / `min-w-0` di
+  tiap tingkat, memori `editor-studio-fase62`), tapi **belum dipasang**: ia halaman Generator,
+  di luar lingkup fase 74, dan mengubah tata letak tanpa bisa melihat layarnya adalah cara
+  membuat cacat kedua.
+
 ## 7. Verifikasi
 
 ```bash
