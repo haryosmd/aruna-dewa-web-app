@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
-import { Check, CloudUpload, Images, Search, Trash2, X } from 'lucide-vue-next'
+import { Check, CloudUpload, Crop, Images, Search, Trash2, X } from 'lucide-vue-next'
 import { formatBytes, mediaRules } from '@aruna/contracts'
 import type { MediaUploadResult } from '@aruna/contracts/api'
 
@@ -78,6 +78,28 @@ function onChange(event: Event) {
   const element = event.target as HTMLInputElement
   onFiles(Array.from(element.files ?? []))
   element.value = ''
+}
+
+/*
+ * Pangkas (fase 74.6). Hasilnya diunggah sebagai aset BARU lewat `useMediaUploads` yang sudah
+ * ada, lalu diselipkan ke depan daftar — aslinya tidak pernah ditimpa, jadi bagian undangan
+ * yang masih memakai URL lama tidak berubah diam-diam, dan pangkasan yang terlalu dalam bisa
+ * diulang dari fotonya yang utuh.
+ */
+const pangkas = ref<MediaUploadResult | null>(null)
+const pangkasTerbuka = ref(false)
+
+function bukaPangkas(item: MediaUploadResult) {
+  pangkas.value = item
+  pangkasTerbuka.value = true
+}
+
+async function simpanPangkas(file: File) {
+  const hasil = await unggah.uploadDetailed([file], 'image')
+  if (!hasil.length) return
+  daftar.value = [...hasil, ...daftar.value]
+  // Sengaja TIDAK memanggil `selesai()`: pasangan yang memangkas belum tentu langsung memilih,
+  // dan menutup pustaka di bawah kakinya akan terasa seperti dialognya kabur.
 }
 
 async function hapus(item: MediaUploadResult) {
@@ -195,6 +217,16 @@ const rules = computed(() => mediaRules[jenis.value])
                   {{ terpilih.includes(item.publicUrl) ? 'Dipilih' : 'Pilih' }}
                 </UiButton>
                 <button
+                  v-if="jenis === 'image'"
+                  :id="`media-library-pangkas-${item.id}`"
+                  type="button"
+                  class="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-border text-ink-subtle hover:bg-surface-3 hover:text-ink"
+                  :aria-label="`Pangkas ${namaBerkas(item)}`"
+                  @click="bukaPangkas(item)"
+                >
+                  <Crop :size="15" aria-hidden="true" />
+                </button>
+                <button
                   :id="`media-library-hapus-${item.id}`"
                   type="button"
                   class="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-border text-ink-subtle hover:bg-danger-soft hover:text-danger"
@@ -219,4 +251,16 @@ const rules = computed(() => mediaRules[jenis.value])
       </DialogContent>
     </DialogPortal>
   </DialogRoot>
+
+  <!--
+    Dialog kedua, bersaudara dengan yang di atas dan bukan anaknya: reka-ui menutup induknya
+    saat anaknya ditutup, jadi memangkas satu foto akan ikut menutup Pustaka Saya.
+  -->
+  <DashboardMediaCropper
+    v-if="pangkas"
+    v-model:open="pangkasTerbuka"
+    :src="pangkas.publicUrl"
+    :nama="namaBerkas(pangkas)"
+    @simpan="simpanPangkas"
+  />
 </template>
