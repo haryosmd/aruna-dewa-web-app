@@ -192,7 +192,15 @@ bergeser sedikit pun. Yang berubah adalah undangan itu bisa dirender di lebar be
 tetap jujur, dan **itulah yang membuat pratinjau perangkat di editor bukan sekadar zoom**:
 render 390px berperilaku seperti ponsel 390px, termasuk cover yang menumpuk alih-alih membelah.
 Jangan pernah kembalikan salah satunya ke `md:` — di editor pada layar 1440, `md:` selalu benar,
-dan pratinjau "Ponsel" akan menampilkan tata letak yang tidak akan pernah dilihat tamu.
+dan pratinjau "Ponsel" akan menampilkan tata letak yang tidak akan pernah dilihat tamu. Sejak
+2026-09-21 aturan itu punya penjaga: `apps/web/test/invitation-breakpoints.spec.ts` membaca teks
+sumber tiap komponen undangan dan menolak `@media` berlebar maupun varian `sm:`/`md:`/`lg:`/`xl:`.
+
+**Satu lapisan lagi di luar `.iv-root`: `.iv-frame`** (fase 72). Sebuah elemen tidak bisa menanyai
+lebar dirinya sendiri lewat container query, jadi aturan yang berlaku *pada* undangan — kartu 480px
+"Fokuskan untuk Layar" — tinggal di pembungkus satu tingkat di luarnya, yang menerima lebar render
+dari `InvitationPhoneFrame`. Ditulis ber-`@media`, aturan itu membaca jendela editor: terukur,
+tinggi render 1280 berubah 7210 → 8148 hanya karena jendela editornya menyempit.
 
 ---
 
