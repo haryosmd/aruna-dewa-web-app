@@ -208,3 +208,82 @@ describe('kesetiaan migrasi v1→v2', () => {
     expect(JSON.stringify(lama)).toBe(semula)
   })
 })
+
+/*
+ * Penjaga fase 74.3: struktur berulang bagian ekstra akhirnya punya batas.
+ *
+ * `steps`, `items`, `colors`, dan `attire` disunting `ExtrasForm.vue` tapi tidak ada di
+ * `sectionFields` — `FieldMeta` menggambarkan satu kolom form, bukan daftar baris. Sampai fase
+ * ini akibatnya keempatnya lolos `.passthrough()` tanpa batas apa pun, dan satu-satunya plafon
+ * adalah 200 KB seluruh dokumen. Migrator pun menyalinnya bulat-bulat.
+ */
+describe('batas struktur berulang bagian ekstra (fase 74.3)', () => {
+  const dataSah = (type: 'story' | 'rundown' | 'dresscode', extra: Record<string, unknown>) =>
+    sectionDataSchema(type).safeParse(extra)
+
+  it('bentuk yang ditulis ExtrasForm diterima apa adanya', () => {
+    expect(dataSah('story', { steps: [{ id: 'a', title: 'Bertemu', text: 'Di kampus.', image: '', side: 'kiri' }] }).success).toBe(true)
+    expect(dataSah('rundown', { items: [{ id: 'a', time: '08.00', title: 'Akad', description: 'Di masjid' }] }).success).toBe(true)
+    expect(dataSah('dresscode', { colors: [{ hex: '#E8DCC8', name: 'Krem' }], attire: ['attire-kebaya'] }).success).toBe(true)
+  })
+
+  it('baris yang belum diisi tetap sah — yang dijaga panjang dan jumlah, bukan kelengkapan', () => {
+    expect(dataSah('story', { steps: [{ id: 'a' }, {}] }).success).toBe(true)
+    expect(dataSah('rundown', { items: [{}] }).success).toBe(true)
+  })
+
+  it('kunci pendamping di dalam baris tetap lewat — dokumen lama tidak boleh ditolak', () => {
+    // `name` dipakai dokumen v1 dan masih dibaca `Rundown.vue` sebagai cadangan `title`.
+    expect(dataSah('rundown', { items: [{ name: 'Akad', warna: 'merah' }] }).success).toBe(true)
+    expect(dataSah('story', { steps: [{ title: 'A', catatanLama: 1 }] }).success).toBe(true)
+  })
+
+  it.each([
+    ['story', 'steps', 21],
+    ['rundown', 'items', 31],
+    ['dresscode', 'colors', 13],
+  ] as const)('%s.%s menolak lebih dari batasnya', (type, key, jumlah) => {
+    const banyak = Array.from({ length: jumlah }, (_, index) => ({ id: String(index) }))
+    expect(dataSah(type, { [key]: banyak }).success).toBe(false)
+  })
+
+  it('attire dibatasi jumlah dan panjang idnya', () => {
+    expect(dataSah('dresscode', { attire: Array.from({ length: 13 }, () => 'x') }).success).toBe(false)
+    expect(dataSah('dresscode', { attire: ['x'.repeat(81)] }).success).toBe(false)
+  })
+
+  it('teks di dalam baris dibatasi panjangnya', () => {
+    expect(dataSah('story', { steps: [{ text: 'x'.repeat(601) }] }).success).toBe(false)
+    expect(dataSah('story', { steps: [{ title: 'x'.repeat(201) }] }).success).toBe(false)
+    expect(dataSah('rundown', { items: [{ description: 'x'.repeat(401) }] }).success).toBe(false)
+  })
+
+  it('side hanya kiri atau kanan', () => {
+    expect(dataSah('story', { steps: [{ side: 'kiri' }] }).success).toBe(true)
+    expect(dataSah('story', { steps: [{ side: 'tengah' }] }).success).toBe(false)
+  })
+
+  it('bukan larik ditolak, bukan diam-diam dianggap kosong', () => {
+    expect(dataSah('story', { steps: 'bukan larik' }).success).toBe(false)
+    expect(dataSah('dresscode', { attire: 'kebaya' }).success).toBe(false)
+  })
+
+  it('bagian yang tidak punya struktur berulang tidak kebagian kuncinya', () => {
+    // `video` memang tidak pernah disunting `ExtrasForm`; kuncinya lewat sebagai passthrough biasa.
+    expect(sectionDataSchema('video').safeParse({ steps: [{ title: 'x'.repeat(900) }] }).success).toBe(true)
+  })
+
+  it('dokumen bawaan dan hasil migrasi keduanya lolos skema penuh', () => {
+    expect(invitationDocumentSchema.safeParse(createDefaultDocument('Dea', 'Haryo')).success).toBe(true)
+    expect(invitationDocumentSchema.safeParse(migrateLegacyDocument(createLegacyDocument('Dea', 'Haryo'))).success).toBe(true)
+  })
+
+  it('dokumen dengan baris yang meledak ditolak lewat invitationDocumentSchema, bukan cuma lewat sectionDataSchema', () => {
+    const doc = createDefaultDocument('Dea', 'Haryo')
+    const story = doc.sections.find(section => section.type === 'story')!
+    story.data.steps = Array.from({ length: 40 }, (_, index) => ({ id: String(index), title: 'x' }))
+    const hasil = invitationDocumentSchema.safeParse(doc)
+    expect(hasil.success).toBe(false)
+    if (!hasil.success) expect(hasil.error.issues[0]!.path).toEqual(['sections', doc.sections.indexOf(story), 'data', 'steps'])
+  })
+})

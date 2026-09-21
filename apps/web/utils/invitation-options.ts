@@ -1,6 +1,6 @@
 import type { EntranceStyle } from '@aruna/contracts'
 import { mediaAssetIdFromUrl } from './media-file'
-import { entranceStyles } from '@aruna/contracts'
+import { entranceStyles, storySides, type StorySide } from '@aruna/contracts'
 import { uploadableSlots, layerSlots, muatLayer, muatSlot, ornamentSlots, type OrnamentOverrides } from './ornament-slots'
 import { isOrnamentId, ornament, ornamentsByCategory, type OrnamentId } from './ornaments'
 import { themeOrnaments } from './theme'
@@ -173,8 +173,8 @@ export function toDresscodeColors(value: unknown): DresscodeColor[] {
 }
 
 /* ── Cerita kami ────────────────────────────────────────────────────────────── */
-export const storySides = ['kiri', 'kanan'] as const
-export type StorySide = (typeof storySides)[number]
+/** Sumbernya `@aruna/contracts` sejak fase 74.3 — skema `sectionExtraSchemas` membacanya juga. */
+export { storySides, type StorySide }
 
 export interface StoryStep {
   id: string

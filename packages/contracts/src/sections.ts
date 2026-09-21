@@ -327,15 +327,62 @@ const kindSchema = (field: FieldMeta): z.ZodTypeAny => {
 }
 
 /**
- * Skema `data` sebuah bagian v2, diturunkan dari `sectionFields`. `passthrough`, bukan
- * `strict`: `ornamentOverrides`, `imageLabel`, dan kunci pendamping lain boleh ikut, tapi
- * setiap kolom yang dikenal divalidasi bentuk dan panjangnya.
+ * Struktur BERULANG milik bagian ekstra — yang tidak bisa dinyatakan sebagai satu `FieldMeta`.
+ *
+ * `sectionFields` memang tidak memuatnya, dan itu benar: `FieldMeta` menggambarkan satu kolom
+ * form, sementara ini daftar baris yang disunting `ExtrasForm.vue`. Tapi sampai fase 74.3
+ * akibatnya kunci-kunci ini lolos `.passthrough()` **tanpa batas apa pun** — satu-satunya
+ * plafonnya adalah 200 KB seluruh dokumen, dan migrator menyalinnya bulat-bulat
+ * (`Object.assign` di `migrateLegacyDocument`).
+ *
+ * Bentuknya mengikuti normalizer yang sudah dipakai renderer (`apps/web/utils/invitation-options.ts`:
+ * `toStorySteps`, `toDresscodeColors`, `toAttire`) supaya kontrak dan layar tidak berselisih.
+ * Tiap baris `.partial().passthrough()`: dokumen lama boleh punya kunci pendamping, dan kolom
+ * yang belum diisi memang kosong — yang dijaga di sini adalah PANJANG dan JUMLAH, bukan
+ * kelengkapan. `rundown` menerima `name` karena dokumen v1 memakainya dan `Rundown.vue` masih
+ * membacanya sebagai cadangan `title`.
+ */
+/**
+ * Sisi munculnya satu langkah cerita. Tinggal di kontrak sejak fase 74.3 karena skemanya
+ * membacanya; `apps/web/utils/invitation-options.ts` mengimpornya dari sini supaya tidak ada
+ * dua daftar yang bisa berselisih.
+ */
+export const storySides = ['kiri', 'kanan'] as const
+export type StorySide = (typeof storySides)[number]
+
+const baris = (bentuk: z.ZodRawShape) => z.object(bentuk).partial().passthrough()
+const teksBaris = (max = 200) => z.string().max(max)
+
+export const sectionExtraSchemas: Partial<Record<V2SectionType, z.ZodRawShape>> = {
+  story: {
+    steps: z.array(baris({
+      id: teksBaris(64), title: teksBaris(), text: z.string().max(600),
+      image: z.string().max(2048), side: z.enum(storySides),
+    })).max(20).optional(),
+  },
+  rundown: {
+    items: z.array(baris({
+      id: teksBaris(64), time: teksBaris(40), title: teksBaris(),
+      name: teksBaris(), description: z.string().max(400),
+    })).max(30).optional(),
+  },
+  dresscode: {
+    attire: z.array(z.string().max(80)).max(12).optional(),
+    colors: z.array(baris({ hex: teksBaris(32), name: teksBaris(60) })).max(12).optional(),
+  },
+}
+
+/**
+ * Skema `data` sebuah bagian v2, diturunkan dari `sectionFields` + `sectionExtraSchemas`.
+ * `passthrough`, bukan `strict`: `ornamentOverrides`, `imageLabel`, dan kunci pendamping lain
+ * boleh ikut, tapi setiap kolom yang dikenal divalidasi bentuk dan panjangnya.
  */
 export function sectionDataSchema(type: V2SectionType) {
   const fields = Object.fromEntries((sectionFields[type] ?? []).map(field => [field.key, kindSchema(field).optional()]))
   const styled = styledFieldKeys(type)
   return z.object({
     ...fields,
+    ...(sectionExtraSchemas[type] ?? {}),
     textStyles: z.object(Object.fromEntries(styled.map(key => [key, textStyleSchema.optional()]))).strict().optional(),
     background: sectionBackgroundSchema.optional(),
     motion: z.enum(sectionMotions).optional(),
