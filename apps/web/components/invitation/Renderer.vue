@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CopyKey } from '@aruna/contracts'
+import type { CopyKey, LegacySectionType, V2SectionType } from '@aruna/contracts'
 import { pilihCopy, resolveCopy } from '~/utils/invitation-copy'
 import type { Component } from 'vue'
 import type { GuestProfile, InvitationDocument, RendererMode, RsvpPayload, Section, Wish, WishPayload } from '~/types/aruna'
@@ -99,12 +99,19 @@ const sectionOf = (type: string) => visible.value.find(section => section.type =
  * lookup — artinya tombol naik/turun di editor tidak berpengaruh sama sekali. Sekarang
  * renderer melakukan `v-for` atas `document.sections`, jadi urutan yang disimpan pasangan
  * adalah urutan yang dilihat tamu. `music` (v1) dan `opening-envelope` (v2) sengaja tidak
- * ada di peta: yang pertama pemutar mengambang, yang kedua gerbang di depan halaman.
+ * ada di peta: yang pertama pemutar mengambang, yang kedua gerbang di depan halaman —
+ * keduanya terdaftar di `headlessSectionTypes` (kontrak), bukan cuma di komentar ini.
+ *
+ * Tipe kedua peta DIKETATKAN sejak fase 74.4: `Record<Exclude<…>, Component>`, bukan
+ * `Record<string, Component>`. Dengan bentuk lama, menambah satu tipe ke `v2SectionTypes`
+ * lolos compiler, lolos skema, lolos form, lolos simpan, lolos terbit — lalu TIDAK MERENDER
+ * APA PUN untuk tamu, karena `rendered` di bawah membuangnya diam-diam. Sekarang compiler
+ * menuntut entrinya, dan `renderer-coverage.spec.ts` menjaga arah sebaliknya.
  *
  * Bagian ekstra v2 (`story`, `rundown`, `dresscode`, `video`) memakai komponen v1-nya:
  * bentuk `data` mereka tidak berubah di fase 72, dan tidak ada wajah Elegance untuk mereka.
  */
-const legacyComponents: Record<string, Component> = {
+const legacyComponents: Record<Exclude<LegacySectionType, 'music'>, Component> = {
   cover: SectionCover,
   couple: SectionCouple,
   events: SectionEvents,
@@ -119,7 +126,7 @@ const legacyComponents: Record<string, Component> = {
   wishes: SectionWishes,
   closing: SectionClosing,
 }
-const eleganceComponents: Record<string, Component> = {
+const eleganceComponents: Record<Exclude<V2SectionType, 'opening-envelope'>, Component> = {
   hero: EleganceHero,
   couple: EleganceCouple,
   countdown: EleganceCountdown,
@@ -136,7 +143,7 @@ const eleganceComponents: Record<string, Component> = {
   dresscode: SectionDresscode,
   video: SectionVideo,
 }
-const sectionComponents = computed(() => (v2.value ? eleganceComponents : legacyComponents))
+const sectionComponents = computed<Record<string, Component | undefined>>(() => (v2.value ? eleganceComponents : legacyComponents))
 
 /*
  * Partitur tema, ditimpa pilihan dokumen bila ada (fase 69). Tanpa pilihan hasilnya persis

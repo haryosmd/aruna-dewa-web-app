@@ -41,6 +41,18 @@ export type V2SectionType = (typeof v2SectionTypes)[number]
 export const sectionTypes = [...legacySectionTypes, 'opening-envelope', 'hero', 'event', 'map', 'unduh-mantu', 'quote'] as const
 export type SectionType = (typeof sectionTypes)[number]
 
+/**
+ * Tipe yang memang TIDAK punya komponen di peta renderer, dan kenapa.
+ *
+ * `music` (v1) adalah pemutar mengambang, bukan bagian yang digulir; `opening-envelope` (v2)
+ * adalah gerbang di depan halaman, dirender sebelum daftar bagian. Keduanya dicatat di sini,
+ * bukan sebagai pengecualian yang diketik ulang di dalam tes: daftar pengecualian yang hidup
+ * di dalam tes hanya menyalin ulang bug-nya kalau suatu saat daftarnya salah.
+ *
+ * Dibaca `apps/web/test/renderer-coverage.spec.ts` (fase 74.4).
+ */
+export const headlessSectionTypes: ReadonlySet<SectionType> = new Set<SectionType>(['music', 'opening-envelope'])
+
 /** Bagian yang tidak bisa disembunyikan di undangan v2. */
 export const requiredSectionTypes: ReadonlySet<SectionType> = new Set<SectionType>(['opening-envelope', 'hero', 'couple', 'event', 'closing'])
 export const isRequiredSection = (type: SectionType) => requiredSectionTypes.has(type)
