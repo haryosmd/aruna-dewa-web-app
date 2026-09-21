@@ -19,6 +19,7 @@ import { MediaModule } from './media/media.module.js';
 import { HealthController } from './health.controller.js';
 import { ImportsModule } from './imports/imports.module.js';
 import { MaintenanceModule } from './maintenance/maintenance.module.js';
+import { ShareCardModule } from './share-card/share-card.module.js';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { MaintenanceModule } from './maintenance/maintenance.module.js';
     RsvpModule,
     MediaModule,
     MaintenanceModule,
+    ShareCardModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ApiThrottlerGuard }],

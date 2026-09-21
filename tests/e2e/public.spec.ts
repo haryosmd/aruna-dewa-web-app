@@ -24,7 +24,7 @@ const fitsViewport = (page: import('@playwright/test').Page) =>
  * Buka gerbang sampul, lalu **tunggu ia benar-benar pergi** sebelum menyentuh apa pun di
  * belakangnya.
  *
- * Mengklik "Buka Undangan" hanya memulai animasi amplop selama ~2,5 detik. Sepanjang itu
+ * Mengklik segel "Buka" hanya memulai animasi amplop selama ~2,5 detik. Sepanjang itu
  * `CoverGate` masih `fixed inset-0 z-50` — ia mencegat setiap klik — dan `document.body`
  * masih `overflow: hidden`, jadi `scrollIntoViewIfNeeded` tidak bisa menggerakkan apa pun.
  * Keduanya baru dilepas di `finish()`.
@@ -40,7 +40,8 @@ const fitsViewport = (page: import('@playwright/test').Page) =>
  * gerbangnya hilang dari DOM, dan kunci gulirnya dilepas.
  */
 async function bukaGerbang(page: import('@playwright/test').Page) {
-  await page.getByRole('button', { name: 'Buka Undangan' }).click()
+  // Demo v2 (fase 72): segel amplop adalah tombolnya, bernama `sealLabel` ("Buka").
+  await page.getByRole('button', { name: 'Buka', exact: true }).click()
   await expect(page.locator('.iv-gate')).toHaveCount(0)
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).overflow)).not.toBe('hidden')
 }
@@ -198,13 +199,13 @@ test('pricing shows every package with its catalog price', async ({ page }) => {
 
 test('invitation opens through the cover gate and keeps the theme palette', async ({ page }) => {
   await page.goto(`/i/demo?tema=${templates[0]!.id}`)
-  const gate = page.getByRole('button', { name: 'Buka Undangan' })
+  const gate = page.getByRole('button', { name: 'Buka', exact: true })
   await expect(gate).toBeVisible()
   await gate.click()
   await expect(gate).toBeHidden()
   // Scroll must be released once the gate is gone.
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).overflow)).not.toBe('hidden')
-  await expect(page.getByRole('heading', { name: 'Akad & Resepsi' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Hari Bahagia Kami' })).toBeVisible()
   await fitsViewport(page)
 })
 
@@ -277,14 +278,15 @@ test('theme motion scores actually reach the page', async ({ page }) => {
   expect(berpartitur.length, `tidak ada tema yang merender pita transisi (tanpa partitur: ${tanpa.join(', ')})`).toBeGreaterThan(0)
 })
 
-test('gift section shows every account with its bank and no owner label', async ({ page }) => {
+test('gift section shows both accounts with their bank and a copy button', async ({ page }) => {
   await page.goto('/i/demo')
   await bukaGerbang(page)
   const gift = page.locator('#iv-gift')
   await gift.scrollIntoViewIfNeeded()
+  // Struktur v2 (fase 72): satu rekening + rekening kedua bila `hasSecondAccount`.
   await expect(gift.getByText('8720 114 556', { exact: true })).toBeVisible()
   await expect(gift.getByText('1370 0099 8877', { exact: true })).toBeVisible()
-  await expect(gift.getByRole('button', { name: 'Salin nomor rekening' })).toHaveCount(4)
+  await expect(gift.getByRole('button', { name: 'Salin nomor' })).toHaveCount(2)
   await expect(gift.getByText('Mempelai pria', { exact: true })).toHaveCount(0)
   await expect(gift.getByText('Mempelai wanita', { exact: true })).toHaveCount(0)
 })
@@ -302,9 +304,10 @@ test('section order follows the document', async ({ page }) => {
   // menangkap kontrol dan bukan lagi daftar section. Yang dijaga tes ini tetap sama —
   // urutan bagian seperti yang dilihat tamu.
   const ids = await page.locator('[data-iv-section][id^="iv-"]').evaluateAll(nodes => nodes.map(node => node.id))
+  // Urutan bawaan Elegance (fase 72): amplop pembuka adalah gerbang, bukan section di aliran.
   expect(ids).toEqual([
-    'iv-cover', 'iv-couple', 'iv-events', 'iv-countdown', 'iv-gallery', 'iv-story',
-    'iv-rundown', 'iv-dresscode', 'iv-gift', 'iv-rsvp', 'iv-wishes', 'iv-closing',
+    'iv-hero', 'iv-couple', 'iv-countdown', 'iv-event', 'iv-map', 'iv-unduh-mantu', 'iv-quote',
+    'iv-gallery', 'iv-gift', 'iv-wishes', 'iv-closing', 'iv-story', 'iv-rundown', 'iv-dresscode',
   ])
 })
 
@@ -337,42 +340,30 @@ test('dresscode colours are named, not colour-only', async ({ page }) => {
 })
 
 /** Demo RSVP berjalan penuh tanpa menyimpan apa pun, dan mengatakannya. */
-test('demo rsvp answers and flips to an attendance ticket', async ({ page }) => {
+test('demo wishes form takes name, attendance and message without saving', async ({ page }) => {
   await page.goto('/i/demo')
   await bukaGerbang(page)
-  const rsvp = page.locator('#iv-rsvp')
-  await rsvp.scrollIntoViewIfNeeded()
-  await rsvp.getByRole('button', { name: /Hadir/ }).click()
-  await expect(rsvp.getByRole('button', { name: 'Tambah jumlah kursi' })).toBeVisible()
-  await rsvp.getByRole('button', { name: 'Kirim konfirmasi' }).click()
-  await expect(rsvp.getByText('Kehadiran dikonfirmasi', { exact: true })).toBeVisible()
-  await expect(rsvp.getByText('Ini pratinjau — jawaban tidak tersimpan.')).toBeVisible()
-  await rsvp.getByRole('button', { name: 'Ubah jawaban' }).click()
-  await expect(rsvp.getByRole('button', { name: /Berhalangan/ })).toBeVisible()
+  const wishes = page.locator('#iv-wishes')
+  await wishes.scrollIntoViewIfNeeded()
+  // Fase 72: RSVP dilebur ke form ucapan — nama, pilihan kehadiran, pesan, satu tombol kirim.
+  await wishes.getByLabel('Nama Anda').fill('Yosi Susanti')
+  await wishes.getByText('Hadir', { exact: true }).click()
+  await wishes.getByLabel('Ucapan & Doa').fill('Selamat menempuh hidup baru!')
+  await wishes.getByRole('button', { name: 'Kirim Ucapan' }).click()
+  await expect(wishes.getByText('Terima kasih atas doanya!')).toBeVisible()
+  // Demo = mode `live` tanpa API: kirimannya disisipkan ke dinding lokal oleh halaman, bukan tersimpan.
+  await expect(wishes.locator('.iv-wish-entry').first()).toContainText('Yosi Susanti')
 })
 
-/** Dinding ucapan memberi contoh saat kosong, dan memaginasinya lima per halaman. */
 test('wishes wall paginates five at a time', async ({ page }) => {
   await page.goto('/i/demo')
   await bukaGerbang(page)
   const wishes = page.locator('#iv-wishes')
   await wishes.scrollIntoViewIfNeeded()
-  await expect(wishes.locator('.iv-wish')).toHaveCount(5)
+  await expect(wishes.locator('.iv-wish-entry')).toHaveCount(5)
   await expect(wishes.getByText('Halaman 1 dari 3')).toBeVisible()
   await wishes.getByRole('button', { name: 'Halaman ucapan berikutnya' }).click()
   await expect(wishes.getByText('Halaman 2 dari 3')).toBeVisible()
-})
-
-/** Galeri sorot memakai ScrollTrigger `pin`; tanpa JS ia wajib runtuh jadi tumpukan terbaca. */
-test('spotlight gallery stays readable under reduced motion', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.goto('/i/demo?galeri=satu-per-satu')
-  await bukaGerbang(page)
-  const tile = page.locator('.iv-spotlight-tile img').first()
-  await tile.scrollIntoViewIfNeeded()
-  await expect(tile).toBeVisible()
-  expect(await tile.evaluate(node => getComputedStyle(node).opacity)).toBe('1')
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
 })
 
 /*

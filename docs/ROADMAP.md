@@ -43,50 +43,47 @@ alasannya.
 
 ## Sisa
 
-**Fase 72 — kanvas bagian: menambah, mengukur, dan menggerakkan elemen di panggung.** Ditulis
-2026-09-19 dari catatan pemilik yang keempat di atas tangkapan layar editor, **belum
-dikerjakan** — pemilik memilih rencana tertulis dulu. Permintaannya: "agak kurang leluasa" —
-ingin menambah ornamen di kiri/kanan/atas/bawah sebuah bagian, membesar-kecilkan huruf,
-menggeser seperti Figma atau setidaknya klik lalu ada pengaturan ukurannya, mengatur gerak per
-aset, dan saat melayang di atas bagian yang polos melihat area yang mengatakan "di sini bisa
-ditambah sesuatu", termasuk di tengah bagian.
+**Fase 72 — template utama "Elegance" dan editor ala Undangan Studio.** Ditulis 2026-09-19,
+dikerjakan 2026-09-20. Pemilik membedah undang.site (editor "Undangan Studio" dan undangan
+terbitnya) lalu memutuskan: struktur undangan **mengikuti format bawaannya persis** — dua belas
+bagian (Opening Envelope, Hero, Mempelai, Hitung Mundur, Rangkaian Acara, Lokasi, Unduh Mantu,
+Quote, Galeri, Hadiah, Ucapan, Penutup) dengan kata-kata **di dalam `data` tiap bagian** — dan
+menjadi template utama kita; editornya "lebih simple" mengikuti tata letak referensi, ditambah
+manajemen ornamen yang sudah kita punya. **Rencana kanvas ala Figma (elemen bebas, drag,
+gerak per aset) dibuang atas perintah pemilik** — jangan diusulkan lagi. Rencana lengkap
+berikut referensi UI (label kolom, pustaka lagu, halaman Generator, Card Style) ada di
+`docs/features/invitation-builder/FASE-72.md`.
 
-*Jarak dari hari ini.* Ornamen adalah sebelas slot global bernilai satu id (`ornament-slots.ts`),
-posisinya ditulis mati per section (`Couple.vue` menaruh `floral` di atas nama dengan kelas
-Tailwind tetap), dan ladang latar memilih dari empat resep `Placement[]` literal dengan delapan
-jangkar enum (`OrnamentField.vue`). Tidak ada skala huruf per bagian — hanya fluid type scale
-global di `main.css` — dan gerak hanya `tokens.motion { amplop, masuk }` untuk seluruh undangan.
-Tidak ada entitas "elemen" sama sekali; `sections[].data` masih `z.record(z.unknown())` dan
-`designFingerprint` di API hanya membaca `tokens`, `copy`, `ornamentOverrides`, dan `unggahan`.
+*Yang dibangun.* (72.0) `packages/contracts/src/sections.ts`: `schemaVersion: 2`, `sectionFields`
+per tipe (label form + jenis kolom → skema zod `sectionDataSchema()` + form editor yang
+digenerate), `textStyles` per kolom, `background` dan `motion` per bagian, `settings` musik,
+`shareCard`, `tokens.layout`; `createDefaultDocument()` kini v2, `createLegacyDocument()` untuk
+fixture, `migrateLegacyDocument()` dipanggil **editor saat memuat** (server tidak memigrasi;
+versi terbit v1 tetap v1 sampai diterbitkan ulang). (72.1) Toolbar: Editor | Generator |
+Ucapan + status Published; rail Wajib/Opsional dengan tombol mata dan drag; inspektor empat tab
+**Bagian | Global | Ornamen | Kartu** dengan baris ikon undo · redo · pustaka · riwayat ·
+pintasan · simpan · ciut. (72.2) Panggung hidup `mode="stage"` — amplop dirender dan bisa
+diklik, partitur berjalan — dengan zoom 50–100 % dan bezel iPhone/Android/Desktop/Clean.
+(72.3) Tab Global: kartu Musik (⭐ · genre · durasi · volume), Fokuskan untuk Layar, Preset
+Theme (4 palet per tema, `utils/theme-palettes.ts`, dijaga spec kontras), Kustom Warna.
+(72.4) `TextStyleField`: font tema · warna · ukuran px · tebal · miring · reset. (72.5) Tab
+Ornamen: slot bagian aktif + ringkasan penuh + Studio. (72.6) Generator (template WhatsApp
+lima gaya + daftar tamu + Kirim WA) dan Ucapan. (72.7) Tab Kartu + `GET
+/public/share-card/:slug.png` (satori + resvg) sebagai og:image. (72.8) Modal "Pustaka Saya"
+(`useMediaLibrary`, satu instance per halaman) dan kartu "Foto komponen". Renderer v2 di
+`components/invitation/elegance/*.vue`, memakai tema, ornamen, dan partitur GSAP kita — gerak
+per bagian adalah pembeda dari referensi yang hanya menggerakkan amplop.
 
-*Model data yang diusulkan.* `sections[].data.elemen: Elemen[]`, tiap elemen `{ id, jenis:
-'ornamen' | 'teks', sumber: id bank atau unggahan, jangkar: 'atas' | 'bawah' | 'kiri' |
-'kanan' | 'tengah' | 'sudut-kiri-atas' | …, geser: { x, y } dalam persen lebar render 390,
-skala 0.25–3, putar dalam derajat, cermin, opasitas, gerak: { preset dari partitur tema, tunda
-dalam detik } }`. Koordinat relatif lebar 390 supaya konsisten lewat `PhoneFrame` yang
-merender 390 lalu `scale()` — mengukur dalam px layar akan salah di setiap lebar selain yang
-dipakai saat menyunting. Divalidasi zod di contracts (bukan lagi `unknown`), dibatasi
-jumlahnya per bagian (usul: 6) dan tetap di bawah pagar 200 KB dokumen; `designFingerprint`
-membaca `elemen` supaya kanvas ikut terkunci di balik add-on `design`. Skala huruf **per
-bagian**, bukan per elemen: `data.skalaHuruf` 0.8–1.4 yang diterjemahkan `Section.vue` ke
-`--iv-scale` — kontrol per elemen untuk teks akan melanggar aturan DESIGN.md soal script di
-paragraf dan kontras yang sudah diaudit.
-
-*Urutan irisan, dari yang paling kecil dan paling banyak menjawab.* **72.1** area "+" saat
-melayang: `Stage.vue` menggambar lima jangkar tembus (atas, bawah, kiri, kanan, tengah) di atas
-`#iv-<type>` yang sedang disorot, hit-test lewat `getBoundingClientRect` karena panggung
-di-`scale()`; klik membuka Studio dalam mode "tambah ke jangkar", dan ini yang pertama karena
-ia menjawab "bagaimana saya menambah sesuatu di sini" tanpa drag sama sekali. **72.2** klik
-elemen → inspektor menampilkan ukuran, putar, opasitas, cermin, dan gerak sebagai kontrol
-bernomor (slider berpasangan input) — kontrol yang bisa diketik lebih dulu daripada yang harus
-diseret, karena angka bisa diulang, diundo, dan diakses dari keyboard. **72.3** skala huruf per
-bagian dengan pratinjau langsung dan laporan kontras yang sudah ada. **72.4** geser dan ubah
-ukuran langsung di panggung: pointer events di atas `transform: scale`, snap ke jangkar,
-nudge 1px/10px dari keyboard, dan `aria-live` yang membaca posisi — lapisan terakhir, bukan
-pertama, karena tanpa 72.2 elemen yang diseret tidak punya cara lain untuk diperbaiki.
-**Batas yang sengaja:** gerak tetap memilih preset partitur tema (bukan easing bebas), tidak
-ada font per elemen, unggahan tetap raster. Tiap irisan satu fase tersendiri dengan angka
-terukurnya; 72.1 baru dimulai setelah pemilik menyetujui bentuk model datanya.
+**Fase 72 selesai 2026-09-20.** Terukur di editor 1440×900 pada undangan yang dimigrasi dari v1:
+rail menampilkan 16 bagian (12 Elegance + 4 ekstra) dengan lima bertanda Wajib tanpa tombol mata;
+panggung iPhone membuka amplop sungguhan lalu memutar partitur; Gaya teks 40px pada "Nama mempelai"
+mengubah `font-size` judul panggung 46,8 → 40px; Simpan mengembalikan "Semua perubahan tersimpan";
+tab Kartu mengganti panggung dengan pratinjau 1200×630 dan `GET /v1/public/share-card/*.png`
+menjawab 200 image/png. `pnpm test` 1201 hijau, `lint` dan `typecheck` bersih, e2e desktop 51/51
+hijau (dashboard 22 + public 29) pada stack non-demo. Dua cacat ditemukan saat verifikasi dan
+diperbaiki: undo setelah menggeser urutan tidak pernah kembali (proxy Vue masuk dokumen →
+`structuredClone` melempar di `undo()`), dan kartu 480px memakai `@media` sehingga pratinjau
+Desktop bergantung pada lebar jendela editor (kini `@container`).
 
 **Fase 71 — form bagian yang utuh, dan gulir yang bocor lewat `sr-only`.** Ditulis 2026-09-19
 dari tiga catatan pemilik di atas tangkapan layar editor: halaman editor di 1440×900 masih bisa

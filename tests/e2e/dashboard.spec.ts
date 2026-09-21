@@ -104,6 +104,36 @@ async function saveDraft(page: import('@playwright/test').Page) {
   await expect(page.locator('#editor-save-state')).toHaveText('Semua perubahan tersimpan')
 }
 
+/**
+ * Draft QA lahir sebagai dokumen v1 dan dimigrasi ke struktur Elegance **di klien** saat editor
+ * dimuat (fase 72), jadi kunjungan pertama selalu "Ada perubahan yang belum tersimpan" meski belum
+ * ada yang disentuh — dan begitu terus sampai seseorang menekan Simpan. Tes yang berangkat dari
+ * keadaan tersimpan menyimpan dulu lewat sini, hanya bila memang kotor, supaya migrasi tidak
+ * terbaca sebagai suntingan yang sedang diuji.
+ */
+async function pastikanTersimpan(page: import('@playwright/test').Page) {
+  await hydrated(page)
+  const status = page.locator('#editor-save-state')
+  await expect(status).toHaveText(/tersimpan$/)
+  if ((await status.textContent())?.includes('belum')) await saveDraft(page)
+}
+
+/**
+ * Membuka amplop di panggung dan menunggu gerbangnya benar-benar pergi.
+ *
+ * Panggung merender undangan `mode="stage"` (fase 72.2): amplop pembuka tampil persis seperti di
+ * ponsel tamu, dan selama tertutup ia mengunci gulir viewport-nya — `gulirKe` di `Stage.vue`
+ * sengaja diam. Tes yang mengukur posisi bagian di panggung wajib lewat sini dulu. Segelnya
+ * dicari lewat `data-gate-seal`, bukan namanya: nama aksesibelnya adalah `sealLabel` milik
+ * pasangan, yang boleh saja sudah diganti di draft.
+ */
+async function bukaAmplop(stage: import('@playwright/test').Locator) {
+  const segel = stage.locator('[data-gate-seal]')
+  if (!(await segel.count())) return
+  await segel.click()
+  await expect(stage.locator('.iv-gate')).toHaveCount(0, { timeout: 10_000 })
+}
+
 /** Aset draft dilayani API langsung, bukan lewat origin web. */
 const apiOrigin = process.env.E2E_API_ORIGIN ?? 'http://127.0.0.1:3001'
 
@@ -115,12 +145,14 @@ test('signed-in editor and guest management use persisted data', async ({ page }
   await page.getByRole('button', { name: 'Masuk', exact: true }).click()
   await expect(page).toHaveURL(/dashboard/)
   await page.goto(`/dashboard/${account!.invitationId}/editor`)
-  await expect(page.getByRole('button', { name: 'Simpan draft', exact: true })).toBeVisible()
+  // Fase 72: tombol simpan jadi ikon di baris alat inspektor; teksnya tinggal di `aria-label`.
+  await expect(page.locator('#editor-save')).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.screenshot({ path: `docs/features/invitation-builder/verification/editor-${testInfo.project.name}.png`, fullPage: true })
   await page.goto(`/dashboard/${account!.invitationId}/guests`)
-  await expect(page.getByRole('heading', { name: 'Daftar yang terasa personal.', exact: true })).toBeVisible()
-  await expect(page.getByRole('textbox', { name: 'Nama undangan', exact: true }).nth(2)).toHaveValue('dr. Yosi Susanti, Sp.OG')
+  // Fase 72.6: halaman tamu menjadi Generator; nama tamu tampil sebagai teks tabel, bukan input inline.
+  await expect(page.getByRole('heading', { name: 'Manajemen Tamu & Broadcast WhatsApp', exact: true })).toBeVisible()
+  await expect(page.getByRole('cell', { name: /dr\. Yosi Susanti, Sp\.OG/ }).first()).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.screenshot({ path: `docs/features/guests-import/verification/guests-${testInfo.project.name}.png`, fullPage: true })
 })
@@ -201,15 +233,22 @@ test('device preview renders each width for real, without overflowing its rail',
   await page.getByRole('button', { name: 'Masuk', exact: true }).click()
   await expect(page).toHaveURL(/dashboard/)
   await page.goto(`/dashboard/${account!.invitationId}/editor`)
-  await expect(page.getByRole('button', { name: 'Simpan draft', exact: true })).toBeVisible()
+  await expect(page.locator('#editor-save')).toBeVisible()
 
   const stage = await openPreview(page)
 
   const ukur = async (panggung: typeof stage) => {
     const heights: Record<string, number> = {}
 
-    for (const [device, width] of [['Ponsel', 390], ['Tablet', 834], ['Laptop', 1280]] as const) {
-      await page.getByRole('button', { name: device, exact: true }).click()
+    /*
+     * Fase 72.2: Ponsel/Tablet/Laptop jadi iPhone (390) · Android (412) · Desktop (1280), plus
+     * "Clean" yang lebarnya sama dengan iPhone tanpa bezel — tidak ada lebar baru untuk diukur
+     * di sana. Tombolnya dipilih lewat id, bukan label: labelnya kini bahasa Inggris meniru
+     * referensi, sedangkan `aria-label`-nya kalimat panjang.
+     */
+    for (const [device, width] of [['iphone', 390], ['android', 412], ['laptop', 1280]] as const) {
+      await page.locator(`#editor-preview-${device}`).click()
+      await expect(page.locator(`#editor-preview-${device}`)).toHaveAttribute('aria-pressed', 'true')
       await expect(page.getByText(`Selebar ${width}px`, { exact: true })).toBeVisible()
       await expect(panggung).toHaveCSS('width', `${width}px`)
 
@@ -246,7 +285,10 @@ test('device preview renders each width for real, without overflowing its rail',
        */
       await expect.poll(
         () => panggung.evaluate((el) => {
-          const viewport = el.parentElement!.parentElement!
+          // Viewport penggulung panggung = anak terakhir `<section aria-label="Pratinjau draft">`
+          // (`Stage.vue`); sejak fase 72.2 ada bezel perangkat di antara keduanya, jadi menaiki
+          // dua induk tidak lagi mendarat di elemen yang sama.
+          const viewport = el.closest('section[aria-label="Pratinjau draft"]')!.querySelector(':scope > div:last-child')!
           return viewport.scrollWidth <= viewport.clientWidth
         }),
         { message: `${device} preview overflows its rail horizontally` },
@@ -258,7 +300,10 @@ test('device preview renders each width for real, without overflowing its rail',
   }
 
   const heights = await ukur(stage)
-  expect(heights.Ponsel, 'phone render must stack the cover, so it is taller than tablet').toBeGreaterThan(heights.Tablet)
+  // Selisih 390↔412 bisa nol kalau tidak ada baris yang kebetulan membungkus; yang pasti hanya
+  // bahwa lebar ponsel tidak pernah lebih pendek dari lebar yang lebih lapang.
+  expect(heights.iphone, 'render 390px harus lebih tinggi dari render 1280px').toBeGreaterThan(heights.laptop)
+  expect(heights.iphone, 'render 390px tidak boleh lebih pendek dari render 412px').toBeGreaterThanOrEqual(heights.android)
 
   /*
    * Lintasan kedua di lebar jendela yang berseberangan: di sinilah kemandirian dari viewport
@@ -349,48 +394,59 @@ async function signIn(page: import('@playwright/test').Page, sebagai: { email: s
   await expect(page).toHaveURL(/dashboard/)
 }
 
-/** Menjatuhkan berkas sungguhan ke dropzone lewat `DataTransfer`, bukan lewat `setInputFiles`. */
-async function dropFiles(page: import('@playwright/test').Page, inputId: string, files: { name: string; type: string; bytes: number }[]) {
-  await page.evaluate(({ inputId, files }) => {
-    const zone = document.querySelector(`#${inputId}`)!.closest('label')!
-    const dt = new DataTransfer()
-    for (const file of files) dt.items.add(new File([new Uint8Array(file.bytes)], file.name, { type: file.type }))
-    zone.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }))
-  }, { inputId, files })
+/**
+ * Membuka modal Pustaka (fase 72.8) dari tombol "Pilih dari Asset Saya" mana pun, dan menunggu
+ * daftar asetnya selesai diminta — permintaan GET itu terjadi saat dialog dibuka, dan tes yang
+ * menghitung permintaan jaringan tidak boleh menyangkanya sebagai unggahan.
+ */
+async function bukaPustaka(page: import('@playwright/test').Page, tombolId: string) {
+  await page.locator(`#${tombolId}`).click()
+  const pustaka = page.locator('#media-library')
+  await expect(pustaka).toBeVisible()
+  await expect(pustaka.getByText('Memuat pustaka…')).toHaveCount(0)
+  return pustaka
 }
 
-test('gallery dropzone refuses the wrong file before it reaches the network', async ({ page }) => {
+test('pustaka menolak berkas yang salah sebelum menyentuh jaringan', async ({ page }) => {
   test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
   await signIn(page)
   await page.goto(`/dashboard/${account!.invitationId}/editor`)
   await openSection(page, 'gallery')
-  await expect(page.locator('#editor-gallery-upload')).toBeAttached()
+  // Fase 72.8: dropzone per kolom diganti satu modal Pustaka; input berkasnya `sr-only` di dalam dialog.
+  await bukaPustaka(page, 'editor-field-gallery-imageUrls-pilih')
 
   const uploads: string[] = []
-  page.on('request', request => { if (request.url().includes('/media')) uploads.push(request.url()) })
+  page.on('request', request => { if (request.url().includes('/media') && request.method() === 'POST') uploads.push(request.url()) })
 
-  await dropFiles(page, 'editor-gallery-upload', [
-    { name: 'nikah-01.gif', type: 'image/gif', bytes: 500 },
-    { name: 'prewed-besar.jpg', type: 'image/jpeg', bytes: 12 * 1024 * 1024 },
+  await page.locator('#media-library-upload').setInputFiles([
+    { name: 'nikah-01.gif', mimeType: 'image/gif', buffer: Buffer.alloc(500) },
+    { name: 'prewed-besar.jpg', mimeType: 'image/jpeg', buffer: Buffer.alloc(12 * 1024 * 1024) },
   ])
 
-  // Pesannya menyebut berkas mana dan kenapa — satu jatuhan bisa berisi sepuluh foto.
+  // Pesannya menyebut berkas mana dan kenapa — satu pilihan bisa berisi sepuluh foto.
   await expect(page.getByText('nikah-01.gif — jenis berkas harus JPG, JPEG, PNG, atau WebP')).toBeVisible()
   await expect(page.getByText('prewed-besar.jpg — 12,0 MB, maksimal 10,0 MB')).toBeVisible()
   expect(uploads, 'berkas yang salah tidak boleh menyentuh jaringan').toEqual([])
 })
 
-test('gallery dropzone accepts a real photo, downscales it, and labels it as what it really is', async ({ page }) => {
+test('pustaka menerima foto sungguhan, memperkecilnya, melabelinya apa adanya, dan melepasnya saat dihapus', async ({ page }) => {
   test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
   await signIn(page)
   await page.goto(`/dashboard/${account!.invitationId}/editor`)
   await openSection(page, 'gallery')
-  await expect(page.locator('#editor-gallery-upload')).toBeAttached()
-  const before = await page.locator('[id^=editor-gallery-url-]').count()
+  // Foto galeri di form: satu tombol hapus per foto, jadi jumlah tombol = jumlah foto.
+  const fotoGaleri = page.locator('[id^="editor-field-gallery-imageUrls-hapus-"]')
+  const before = await fotoGaleri.count()
+  await bukaPustaka(page, 'editor-field-gallery-imageUrls-pilih')
+
+  // Id aset dibaca dari jawaban server, bukan dari DOM: kartu pustaka diberi id `media-library-pilih-<id>`.
+  const jawabanUnggah = page.waitForResponse(response => response.url().includes('/media') && response.request().method() === 'POST')
 
   // 2400px: di atas batas 2000px, jadi jalur perkecil + konversi WebP ikut teruji.
   // Berkas yang benar-benar dikirim ditangkap di `fetch` halaman — Playwright tidak menyangga
   // badan multipart lintas-origin, dan yang ingin dibuktikan justru apa yang keluar dari browser.
+  // Input berkasnya diisi lewat `DataTransfer` + `change`, bukan `setInputFiles`: PNG-nya
+  // dirakit di dalam halaman, dan hanya di sana ukuran aslinya bisa dibandingkan.
   const hasil = await page.evaluate(async () => {
     const terkirim: { nama: string; jenis: string; bytes: number }[] = []
     const asli = window.fetch
@@ -409,19 +465,26 @@ test('gallery dropzone accepts a real photo, downscales it, and labels it as wha
     context.fillStyle = '#8a5a3b'; context.fillRect(0, 0, 2400, 1600)
     const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'))
 
-    const zone = document.querySelector('#editor-gallery-upload')!.closest('label')!
+    const input = document.querySelector<HTMLInputElement>('#media-library-upload')!
     const dt = new DataTransfer()
     dt.items.add(new File([blob!], 'prewed-uji.png', { type: 'image/png' }))
-    zone.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }))
-    await new Promise(resolve => setTimeout(resolve, 6000))
+    input.files = dt.files
+    input.dispatchEvent(new Event('change', { bubbles: true }))
 
+    // Tunggu sampai `fetch`-nya benar-benar berangkat, lalu kembalikan yang asli.
+    for (let i = 0; i < 100 && !terkirim.length; i++) await new Promise(resolve => setTimeout(resolve, 100))
     window.fetch = asli
-    const inputs = [...document.querySelectorAll<HTMLInputElement>('[id^=editor-gallery-url-]')]
-    return { url: inputs[inputs.length - 1]?.value ?? '', terkirim, pngAsli: blob!.size }
+    return { terkirim, pngAsli: blob!.size }
   })
 
-  expect(await page.locator('[id^=editor-gallery-url-]').count()).toBe(before + 1)
-  expect(hasil.url).toMatch(/\/v1\/public\/media\/[0-9a-f-]{36}$/)
+  const aset = await (await jawabanUnggah).json() as { id: string; publicUrl: string }
+  expect(aset.publicUrl).toMatch(/\/v1\/public\/media\/[0-9a-f-]{36}$/)
+
+  // Galeri memilih banyak: kartunya ditandai dulu, lalu "Pakai … foto" yang menutup dialog.
+  await page.locator(`#media-library-pilih-${aset.id}`).click()
+  await page.locator('#media-library-selesai').click()
+  await expect(page.locator('#media-library')).toBeHidden()
+  await expect(fotoGaleri).toHaveCount(before + 1)
 
   /*
    * PNG 2400px yang dijatuhkan berangkat sudah diperkecil — dan berangkat dengan nama serta
@@ -452,18 +515,18 @@ test('gallery dropzone accepts a real photo, downscales it, and labels it as wha
    * server: simpan, muat ulang, foto masih ada; hapus, simpan, muat ulang, foto benar-benar
    * hilang dan berkasnya ikut dilepas.
    */
-  const assetId = hasil.url.split('/').pop()!
+  const assetId = aset.id
   await saveDraft(page)
   await page.reload()
   await openSection(page, 'gallery')
-  await expect(page.locator('[id^=editor-gallery-url-]')).toHaveCount(before + 1)
+  await expect(fotoGaleri).toHaveCount(before + 1)
   expect((await page.request.get(`${apiOrigin}/v1/media/${assetId}`)).status(), 'berkasnya ada sesudah disimpan').toBe(200)
 
-  await page.locator('[id^=editor-gallery-remove-]').last().click()
+  await fotoGaleri.last().click()
   await saveDraft(page)
   await page.reload()
   await openSection(page, 'gallery')
-  await expect(page.locator('[id^=editor-gallery-url-]')).toHaveCount(before)
+  await expect(fotoGaleri).toHaveCount(before)
 
   // Kuotanya benar-benar kembali: yang dilepas adalah berkasnya, bukan cuma tautannya.
   expect((await page.request.get(`${apiOrigin}/v1/media/${assetId}`)).status(), 'berkasnya ikut dilepas sesudah simpan').toBe(400)
@@ -482,23 +545,27 @@ test('editor menahan perpindahan halaman selama ada perubahan belum tersimpan', 
   test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
   await signIn(page)
   await page.goto(`/dashboard/${account!.invitationId}/editor`)
-  await openSection(page, 'cover')
+  await pastikanTersimpan(page)
+  await openSection(page, 'opening-envelope')
   await expect(page.locator('#editor-save-state')).toHaveText('Semua perubahan tersimpan')
   await expect(page.locator('#editor-save')).toBeDisabled()
 
+  // Fase 72: nama mempelai adalah kolom `title` amplop pembuka, ditulis saat `change` (Tab), bukan tiap ketikan.
   const judul = `Aruna & Dewa ${Date.now() % 10_000}`
-  await page.locator('#editor-text-title').fill(judul)
+  const kolomJudul = page.locator('#editor-field-opening-envelope-title')
+  await kolomJudul.fill(judul)
+  await kolomJudul.press('Tab')
   await expect(page.locator('#editor-save-state')).toHaveText('Ada perubahan yang belum tersimpan')
 
-  // Rel samping di ≥1024px, bilah bawah di bawah itu — keduanya menuju halaman yang sama.
-  const keTamu = page.locator('#dash-nav-guests:visible, #dash-tab-guests:visible').first()
+  // Segmented nav di header studio (Editor | Generator | Ucapan) — satu tautan untuk semua lebar.
+  const keTamu = page.locator('#editor-nav-generator')
 
   // "Kembali menyunting" menahan di halaman ini, dan suntingannya tetap ada.
   await keTamu.click()
   await expect(page.locator('#aruna-popup-title')).toHaveText('Perubahan belum tersimpan')
   await page.locator('#aruna-popup-kembali').click()
   await expect(page).toHaveURL(/\/editor$/)
-  await expect(page.locator('#editor-text-title')).toHaveValue(judul)
+  await expect(kolomJudul).toHaveValue(judul)
 
   // Escape berarti hal yang sama: yang ragu-ragu tidak boleh kehilangan pekerjaannya.
   await keTamu.click()
@@ -513,104 +580,161 @@ test('editor menahan perpindahan halaman selama ada perubahan belum tersimpan', 
   await expect(page).toHaveURL(/\/guests$/)
 
   await page.goto(`/dashboard/${account!.invitationId}/editor`)
-  await openSection(page, 'cover')
-  await expect(page.locator('#editor-text-title')).toHaveValue(judul)
+  await openSection(page, 'opening-envelope')
+  await expect(page.locator('#editor-field-opening-envelope-title')).toHaveValue(judul)
   await expect(page.locator('#editor-save-state')).toHaveText('Semua perubahan tersimpan')
 })
 
 /*
- * Studio tiga panel (fase 62): rail, inspektor bertab, dan preferensi yang bertahan.
+ * Studio tiga panel (fase 62, dirombak fase 72): rail struktur, inspektor empat tab, dan
+ * preferensi yang bertahan.
  *
- * Empat hal yang masing-masing pernah salah dengan cara yang diam:
- * - tab Tema yang tersimpan di `localStorage` menyembunyikan form bagian yang baru diklik;
- * - panah urut di daftar tersaring memindahkan bagian yang salah (indeks daftar ≠ indeks dokumen);
+ * Hal-hal yang masing-masing pernah salah dengan cara yang diam:
+ * - tab yang tersimpan di `localStorage` menyembunyikan form bagian yang baru diklik;
+ * - urutan dari daftar tersaring memindahkan bagian yang salah (indeks daftar ≠ indeks dokumen);
  * - sakelar tampil tidak lewat `checkpoint()`, jadi mematikan galeri tidak bisa di-undo;
  * - preferensi yang dibaca sebelum hidrasi membuat `width` panggung berganti di tengah render.
+ *
+ * Fase 72 mengubah kosakatanya, bukan janjinya: tombol mata (`aria-pressed` = tersembunyi)
+ * menggantikan checkbox, bagian wajib tidak punya tombol sama sekali, urutan digeser lewat
+ * pegangan ⠿ (drag, atau ↑/↓ dari keyboard), dan tab Tema jadi Global.
  */
 test('studio editor: rail, inspektor, dan preferensi yang bertahan', async ({ page }) => {
   test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
   await signIn(page)
   await page.goto(`/dashboard/${account!.invitationId}/editor`)
-  await openSection(page, 'cover')
+  await pastikanTersimpan(page)
+  await openSection(page, 'opening-envelope')
   const berdampingan = () => page.evaluate(() => matchMedia('(min-width: 80rem)').matches)
   const tidakMeluber = async () => expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
 
-  // Tab inspektor: Tema menyembunyikan form bagian, Bagian mengembalikannya.
-  await page.locator('#editor-inspector-tema').click()
+  // Tab inspektor: Global menyembunyikan form bagian, Bagian mengembalikannya.
+  await page.locator('#editor-inspector-global').click()
   await expect(page.locator('#editor-theme-aruna-bloom')).toBeVisible()
-  await expect(page.locator('#editor-text-title')).toBeHidden()
+  await expect(page.locator('#editor-field-opening-envelope-title')).toBeHidden()
   await tidakMeluber()
 
-  // Memilih bagian dari tab Tema membuka tab Bagian lagi — bukan membiarkan formnya tersembunyi.
+  /*
+   * Memilih bagian dari tab Kartu membuka tab Bagian lagi — tab Kartu mengganti panggungnya
+   * dengan pratinjau kartu, jadi bagian yang baru diklik tidak akan terlihat di mana pun. Dari
+   * Global dan Ornamen tabnya dibiarkan: keduanya ikut membaca bagian yang dipilih.
+   */
+  await page.locator('#editor-inspector-kartu').click()
   await openSection(page, 'couple')
   await expect(page.locator('#editor-inspector-bagian')).toHaveAttribute('aria-selected', 'true')
   await expect(page.locator('#editor-inspector-panel-bagian h2')).toHaveText('Mempelai')
 
-  // Pencarian menyaring rail; panah mati selama tersaring supaya indeksnya tidak berbohong.
+  // Pencarian menyaring rail; pegangan mati selama tersaring supaya indeksnya tidak berbohong.
   await page.locator('#editor-section-search').fill('gal')
   await expect(page.locator('[id^="editor-section-toggle-"]')).toHaveCount(1)
   await expect(page.locator('#editor-section-toggle-gallery')).toBeVisible()
-  await expect(page.locator('#editor-section-up-gallery')).toBeDisabled()
+  await expect(page.locator('#editor-section-handle-gallery')).toBeDisabled()
   await page.locator('#editor-section-search-clear').click()
-  await expect(page.locator('[id^="editor-section-toggle-"]')).toHaveCount(14)
+  // Struktur Elegance: 12 bagian referensi + 4 bagian ekstra; 5 di antaranya wajib dan tanpa tombol mata.
+  await expect(page.locator('[id^="editor-section-handle-"]')).toHaveCount(16)
+  await expect(page.locator('[id^="editor-section-toggle-"]')).toHaveCount(11)
 
-  // Bagian inti tidak bisa disembunyikan; sisanya bisa, dan bisa di-undo.
-  await expect(page.locator('#editor-section-toggle-cover')).toBeDisabled()
+  // Bagian inti tidak punya sakelar; sisanya bisa disembunyikan, dan bisa di-undo.
+  await expect(page.locator('#editor-section-toggle-opening-envelope')).toHaveCount(0)
+  await expect(page.locator('#editor-section-toggle-couple')).toHaveCount(0)
   const hitung = async () => Number((await page.locator('#editor-section-count').innerText()).match(/^(\d+)/)?.[1])
   const sebelum = await hitung()
   const video = page.locator('#editor-section-toggle-video')
-  const semulaHidup = await video.isChecked()
-  await video.setChecked(!semulaHidup)
-  expect(await hitung()).toBe(sebelum + (semulaHidup ? -1 : 1))
+  // `aria-pressed="true"` berarti mata-coret: bagiannya sedang disembunyikan.
+  const semulaTampil = (await video.getAttribute('aria-pressed')) === 'false'
+  await video.click()
+  await expect(video).toHaveAttribute('aria-pressed', String(semulaTampil))
+  expect(await hitung()).toBe(sebelum + (semulaTampil ? -1 : 1))
   await expect(page.locator('#editor-save-state')).toHaveText('Ada perubahan yang belum tersimpan')
   await page.locator('#editor-undo').click()
-  await expect(video).toBeChecked({ checked: semulaHidup })
+  await expect(video).toHaveAttribute('aria-pressed', String(!semulaTampil))
   expect(await hitung()).toBe(sebelum)
   await expect(page.locator('#editor-save-state')).toHaveText('Semua perubahan tersimpan')
 
-  // Rail → panggung (fase 70): memilih bagian menggulir viewport pratinjau sampai bagian itu
-  // berdiri di bawah pemilih perangkat. Di ponsel gulirnya ditahan sampai tab Pratinjau dibuka.
+  // Urutan dari keyboard: ↑ pada pegangan memindahkan bagian satu langkah, lewat `checkpoint()` juga.
+  const urutan = () => page.locator('[id^="editor-section-handle-"]').evaluateAll(els => els.map(el => el.id.replace('editor-section-handle-', '')))
+  const urutanSemula = await urutan()
+  const posisiVideo = urutanSemula.indexOf('video')
+  await page.locator('#editor-section-handle-video').focus()
+  await page.keyboard.press('ArrowUp')
+  await expect.poll(async () => (await urutan()).indexOf('video')).toBe(posisiVideo - 1)
+  await page.locator('#editor-undo').click()
+  await expect.poll(urutan).toEqual(urutanSemula)
+  await expect(page.locator('#editor-save-state')).toHaveText('Semua perubahan tersimpan')
+
+  /*
+   * Rail → panggung (fase 70): memilih bagian menggulir viewport pratinjau sampai bagian itu
+   * berdiri di bawah pemilih perangkat. Di ponsel gulirnya ditahan sampai tab Pratinjau dibuka.
+   *
+   * Diukur pada "Clean": bezel iPhone/Android memotong layarnya di 780px (`DeviceBezel`,
+   * `overflow-hidden`), jadi di sana bagian di bawah lipatan memang tidak pernah bisa digulir
+   * ke bawah pil — dan amplopnya harus dibuka dulu, karena selama tertutup panggung terkunci.
+   */
   const posisiBagian = (type: string) => page.evaluate((t) => {
     const stage = document.querySelector('[data-preview-stage]')!
-    const viewport = stage.parentElement!.parentElement!
+    const viewport = stage.closest('section[aria-label="Pratinjau draft"]')!.querySelector(':scope > div:last-child')!
     const el = document.getElementById(`iv-${t}`)!
     return { atas: el.getBoundingClientRect().top - viewport.getBoundingClientRect().top, gulir: viewport.scrollTop }
   }, type)
-  await openSection(page, 'rsvp')
-  if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pratinjau', exact: true }).click()
-  await expect.poll(async () => (await posisiBagian('rsvp')).gulir).toBeGreaterThan(0)
-  await expect.poll(async () => Math.abs((await posisiBagian('rsvp')).atas - 96)).toBeLessThan(24)
+  const panggung = await openPreview(page)
+  await page.locator('#editor-preview-bersih').click()
+  await expect(panggung).toHaveCSS('width', '390px')
+  await bukaAmplop(panggung)
   if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
-  await openSection(page, 'cover')
+  await openSection(page, 'wishes')
+  if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pratinjau', exact: true }).click()
+  await expect.poll(async () => (await posisiBagian('wishes')).gulir).toBeGreaterThan(0)
+  await expect.poll(async () => Math.abs((await posisiBagian('wishes')).atas - 96)).toBeLessThan(24)
+  if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
+  await openSection(page, 'opening-envelope')
 
   // Ponsel: tab Pratinjau menyembunyikan rail dan inspektor; Pengaturan mengembalikannya.
   if (!(await berdampingan())) {
     await page.getByRole('tab', { name: 'Pratinjau', exact: true }).click()
-    await expect(page.locator('#editor-section-cover')).toBeHidden()
+    await expect(page.locator('#editor-section-opening-envelope')).toBeHidden()
     await expect(page.locator('[data-preview-stage]')).toBeVisible()
     await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
-    await expect(page.locator('#editor-section-cover')).toBeVisible()
+    await expect(page.locator('#editor-section-opening-envelope')).toBeVisible()
   }
 
-  // Preferensi bertahan setelah muat ulang: perangkat Laptop dan tab Tema.
+  // Preferensi bertahan setelah muat ulang: perangkat Desktop, zoom 90 %, tab Global, rail ciut.
   await openPreview(page)
-  await page.getByRole('button', { name: 'Laptop', exact: true }).click()
+  await page.locator('#editor-preview-laptop').click()
   await expect(page.locator('[data-preview-stage]')).toHaveCSS('width', '1280px')
+  await page.locator('#editor-zoom-out').click()
+  await expect(page.locator('#editor-zoom-reset')).toHaveText('90%')
   if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
-  await page.locator('#editor-inspector-tema').click()
+  await page.locator('#editor-inspector-global').click()
+  // Tombol ciut rail hanya ada di ≥lg; di bawah itu rail memang satu kolom dengan yang lain.
+  const railToggle = page.locator('#editor-rail-toggle')
+  const railBisaCiut = await railToggle.isVisible()
+  if (railBisaCiut) {
+    await railToggle.click()
+    await expect(railToggle).toHaveAttribute('aria-expanded', 'false')
+    await expect(page.locator('#editor-section-search')).toBeHidden()
+  }
   await tidakMeluber()
 
   await page.reload()
   await hydrated(page)
-  await expect(page.locator('#editor-inspector-tema')).toHaveAttribute('aria-selected', 'true')
+  await expect(page.locator('#editor-inspector-global')).toHaveAttribute('aria-selected', 'true')
+  if (railBisaCiut) await expect(railToggle).toHaveAttribute('aria-expanded', 'false')
   const stage = await openPreview(page)
   await expect(stage).toHaveCSS('width', '1280px')
   await expect(page.getByText('Selebar 1280px', { exact: true })).toBeVisible()
+  await expect(page.locator('#editor-zoom-reset')).toHaveText('90%')
   await tidakMeluber()
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('aruna:editor:prefs') ?? '{}')))
+    .toMatchObject({ device: 'laptop', inspectorTab: 'global', railCollapsed: railBisaCiut, zoom: 90 })
 
-  // Kembalikan bawaannya supaya tes lain di konteks ini tidak mewarisi Laptop + Tema.
-  await page.getByRole('button', { name: 'Ponsel', exact: true }).click()
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('aruna:editor:prefs') ?? '{}'))).toMatchObject({ device: 'ponsel', inspectorTab: 'tema' })
+  // Kembalikan bawaannya supaya tes lain di konteks ini tidak mewarisi Desktop + Global + rail ciut.
+  await page.locator('#editor-preview-iphone').click()
+  await page.locator('#editor-zoom-reset').click()
+  if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
+  if (railBisaCiut) await railToggle.click()
+  await page.locator('#editor-inspector-bagian').click()
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('aruna:editor:prefs') ?? '{}')))
+    .toMatchObject({ device: 'iphone', inspectorTab: 'bagian', railCollapsed: false, zoom: 100 })
 })
 
 /*
@@ -630,16 +754,19 @@ test('studio tidak menarik gulir dokumen', async ({ page }, testInfo) => {
     await page.evaluate(() => window.scrollTo(0, 9999))
     expect(await page.evaluate(() => scrollY)).toBe(0)
   }
-  await openSection(page, 'music')
+  // Fase 72.8: input berkas pindah ke modal Pustaka; yang tinggal di form adalah tombol pembukanya.
+  await openSection(page, 'gallery')
+  await expect(page.locator('#editor-field-gallery-imageUrls-pilih')).toBeAttached()
+  await tidakMenggulung()
+  await openSection(page, 'hero')
+  await expect(page.locator('#editor-field-hero-imageUrl-pilih')).toBeAttached()
+  await tidakMenggulung()
+  await page.locator('#editor-inspector-global').click()
+  await expect(page.locator('#editor-theme-aruna-bloom')).toBeVisible()
   await expect(page.locator('#editor-music-upload')).toBeAttached()
   await tidakMenggulung()
-  await openSection(page, 'cover')
-  await expect(page.locator('#editor-cover-image-drop')).toBeAttached()
-  await tidakMenggulung()
-  await page.locator('#editor-inspector-tema').click()
-  await expect(page.locator('#editor-theme-aruna-bloom')).toBeVisible()
-  await tidakMenggulung()
-  await openSection(page, 'cover')
+  await page.locator('#editor-inspector-bagian').click()
+  await openSection(page, 'opening-envelope')
 })
 
 /*
@@ -687,29 +814,61 @@ test('rail dasbor ciut jadi ikon, bertahan setelah muat ulang, dan tetap bisa di
   await expect(rail).toHaveCSS('width', '256px')
 })
 
-test('music section offers a library, and picking a track switches it on', async ({ page }) => {
+/**
+ * Musik pindah dari bagian `music` ke tab Global (fase 72.3): `settings.musicUrl` di dokumen,
+ * bukan lagi section yang bisa dimatikan. Memilih lagu langsung menyalakannya — tidak ada lagi
+ * sakelar terpisah yang bisa lupa dinyalakan — dan "Tanpa musik" adalah pilihan yang sama jelasnya.
+ */
+async function pilihLagu(page: import('@playwright/test').Page, url: string) {
+  await page.locator('#editor-inspector-global').click()
+  await page.locator('#editor-music-select').selectOption(url)
+  await expect(page.locator('#editor-music-select')).toHaveValue(url)
+}
+
+test('tab Global menawarkan pustaka lagu, dan memilih lagu menyalakan musiknya', async ({ page }) => {
   test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
   await signIn(page)
   await page.goto(`/dashboard/${account!.invitationId}/editor`)
-  await openSection(page, 'music')
+  await pastikanTersimpan(page)
+  await page.locator('#editor-inspector-global').click()
   await expect(page.locator('#editor-music-upload')).toBeAttached()
 
-  // Sebelum fase ini bagian ini hanya menampilkan satu kotak teks berlabel "URL".
-  // Tujuh lagu, masing-masing dengan id sendiri — judulnya sendiri tidak unik di layar ini,
-  // karena kartu "sedang dipakai" di atas mengulang judul yang sama.
-  await expect(page.locator('[id^=editor-music-pick-]')).toHaveCount(7)
-  await page.locator('#editor-music-pick-gymnopedie-1').click()
+  // Tujuh lagu pustaka, tiap-tiap `option` bernilai URL berkasnya; opsi kosong = tanpa musik.
+  const lagu = page.locator('#editor-music-select')
+  await expect(lagu.locator('option[value^="/audio/"]')).toHaveCount(7)
+  await expect(lagu.locator('option[value=""]')).toHaveCount(1)
 
-  await expect(page.locator('#editor-music-pick-gymnopedie-1')).toHaveText(/Dipakai/)
-  // Memilih lagu menyalakan sectionnya — memilih lalu bingung kenapa senyap adalah jebakan.
-  await expect(page.locator('#editor-section-toggle-music')).toBeChecked()
-  await expect(page.locator('#editor-music-url')).toHaveValue('/audio/gymnopedie-1.mp3')
+  // Lagu yang belum tentu sama dengan simpanan, supaya perubahannya sungguh terhitung.
+  await pilihLagu(page, '/audio/etude-harpa.mp3')
+  await expect(page.locator('#editor-music-preview')).toBeEnabled()
+  await expect(page.locator('#editor-music-volume')).toBeEnabled()
+  await expect(page.locator('#editor-save-state')).toHaveText('Ada perubahan yang belum tersimpan')
+
+  // Tanpa musik: tombol tes dan volume mati — tidak ada yang bisa "diputar" dari kekosongan.
+  await pilihLagu(page, '')
+  await expect(page.locator('#editor-music-preview')).toBeDisabled()
+  await expect(page.locator('#editor-music-volume')).toBeDisabled()
 
   // Berkasnya benar-benar ada dan benar-benar audio.
   const track = await page.request.get('/audio/gymnopedie-1.mp3')
   expect(track.status()).toBe(200)
   expect(track.headers()['content-type']).toContain('audio')
 })
+
+/**
+ * Menerbitkan dari toolbar studio dan menutup dialog "Undangan telah published" yang menyusul —
+ * dialog itu memang untuk pasangan (salin URL, buka undangan), tapi ia menutupi apa pun yang
+ * hendak diklik tes sesudahnya.
+ */
+async function terbitkan(page: import('@playwright/test').Page) {
+  await page.locator('#editor-publish').click()
+  await expect(page.getByText('Versi publik diperbarui.')).toBeVisible({ timeout: 15_000 })
+  await page.locator('#aruna-popup-tutup').click()
+  await expect(page.locator('#aruna-popup-title')).toHaveCount(0)
+}
+
+/** Segel amplop di halaman tamu: nama aksesibelnya `sealLabel` pasangan, jadi dicari lewat penandanya. */
+const segelTamu = (page: import('@playwright/test').Page) => page.locator('[data-gate-seal]')
 
 /*
  * Musik sampai ke tamu, dan sampai dengan cara yang benar.
@@ -723,15 +882,14 @@ test('background music reaches the guest only after the gate, and stays refused 
   test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
   await signIn(page)
   await page.goto(`/dashboard/${account!.invitationId}/editor`)
-  await openSection(page, 'music')
-  await page.locator('#editor-music-pick-gymnopedie-1').click()
-  await expect(page.locator('#editor-music-pick-gymnopedie-1')).toHaveText(/Dipakai/)
-  await page.getByRole('button', { name: 'Publikasikan', exact: true }).click()
-  await expect(page.getByText('Versi publik diperbarui.')).toBeVisible({ timeout: 15_000 })
+  await hydrated(page)
+  await pilihLagu(page, '/audio/gymnopedie-1.mp3')
+  await terbitkan(page)
 
   await page.goto(`/i/${account!.slug}`)
   // Diumumkan lebih dulu: tamu yang dikejutkan suara menutup tab, bukan mengecilkan volume.
-  await expect(page.getByText('Undangan ini memakai musik latar — nyalakan suara ponselmu.')).toBeVisible()
+  // Kalimatnya milik amplop Elegance (fase 72), bukan lagi `copy` gerbang v1.
+  await expect(page.getByText('Undangan ini memutar musik saat dibuka.')).toBeVisible()
   /*
    * Elemennya memang sudah ada sebelum gerbang dibuka — harus, karena `arm()` dipanggil
    * sinkron di dalam klik gerbang dan butuh sasaran yang sudah ter-mount. Yang ditahan adalah
@@ -743,7 +901,7 @@ test('background music reaches the guest only after the gate, and stays refused 
     return { ada: Boolean(audio), berbunyi: audio ? !audio.paused : null, preload: audio?.preload, terunduh: audio?.readyState }
   })).toEqual({ ada: true, berbunyi: false, preload: 'none', terunduh: 0 })
 
-  await page.getByRole('button', { name: 'Buka Undangan' }).click()
+  await segelTamu(page).click()
   await expect.poll(() => page.evaluate(() => {
     const audio = document.querySelector('audio')
     return audio ? !audio.paused : false
@@ -762,7 +920,7 @@ test('background music reaches the guest only after the gate, and stays refused 
   await expect(page.getByRole('button', { name: 'Putar musik' })).toBeVisible()
 
   await page.reload()
-  await page.getByRole('button', { name: 'Buka Undangan' }).click()
+  await segelTamu(page).click()
   await page.waitForTimeout(2500)
   expect(await page.evaluate(() => {
     const audio = document.querySelector('audio')
@@ -788,16 +946,20 @@ test('background music yields to the live stream and stays silent for a guest wh
 
   await signIn(page)
   await page.goto(`/dashboard/${account!.invitationId}/editor`)
-  await openSection(page, 'music')
-  await page.locator('#editor-music-pick-gymnopedie-1').click()
-  await expect(page.locator('#editor-music-pick-gymnopedie-1')).toHaveText(/Dipakai/)
+  await hydrated(page)
+  await pilihLagu(page, '/audio/gymnopedie-1.mp3')
 
+  await page.locator('#editor-inspector-bagian').click()
   await openSection(page, 'video')
-  await page.locator('#editor-section-toggle-video').check()
-  await page.locator('#editor-text-url').fill(stream)
+  // Tombol mata: `aria-pressed="true"` = sedang disembunyikan, jadi sekali klik menampilkannya.
+  const sakelarVideo = page.locator('#editor-section-toggle-video')
+  if ((await sakelarVideo.getAttribute('aria-pressed')) === 'true') await sakelarVideo.click()
+  await expect(sakelarVideo).toHaveAttribute('aria-pressed', 'false')
+  const kolomUrl = page.locator('#editor-field-video-url')
+  await kolomUrl.fill(stream)
+  await kolomUrl.press('Tab')
 
-  await page.getByRole('button', { name: 'Publikasikan', exact: true }).click()
-  await expect(page.getByText('Versi publik diperbarui.')).toBeVisible({ timeout: 15_000 })
+  await terbitkan(page)
 
   const berbunyi = () => page.evaluate(() => {
     const audio = document.querySelector('audio')
@@ -810,7 +972,7 @@ test('background music yields to the live stream and stays silent for a guest wh
   }, value)
 
   await page.goto(`/i/${account!.slug}`)
-  await page.getByRole('button', { name: 'Buka Undangan' }).click()
+  await segelTamu(page).click()
   await expect.poll(berbunyi, { timeout: 10_000 }).toBe(true)
 
   const popup = page.waitForEvent('popup')
@@ -929,12 +1091,28 @@ async function openAccountMenu(page: import('@playwright/test').Page) {
  * penuh. Ketiganya pernah salah di fase ini — Studio versi pertama mendarat di cabang `v-else`
  * yang mati, dan tiap gerbang statis tetap hijau.
  */
+/**
+ * Membuka tab Ornamen pada bagian **Hadiah**, yang tidak merender satu keping pun.
+ *
+ * Tab Ornamen (fase 72.1) menumpuk dua ringkasan: "Ornamen di bagian ini" untuk bagian yang
+ * dipilih, lalu ringkasan penuh dengan tombol kembalikan-semua. Keduanya memakai id kartu yang
+ * sama (`ornament-ganti-<slot>`), jadi pada bagian yang punya keping — amplop, mempelai — id itu
+ * muncul dua kali dan locator-nya ambigu. Hadiah tidak punya keping: hanya ringkasan penuh yang
+ * berdiri, dan tiap id kembali tunggal. (Duplikat id-nya sendiri dilaporkan sebagai cacat.)
+ */
+async function bukaTabOrnamen(page: import('@playwright/test').Page) {
+  await openSection(page, 'gift')
+  await page.locator('#editor-inspector-ornamen').click()
+  await expect(page.locator('#editor-inspector-panel-ornamen')).toBeVisible()
+}
+
 test.describe('studio ornamen', () => {
   test('membuka bank penuh, menyimpan pilihan, dan melayani salinan ringan', async ({ page }) => {
     test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
     await signIn(page)
     await page.goto(`/dashboard/${account!.invitationId}/editor`)
-    await openSection(page, 'cover')
+    await pastikanTersimpan(page)
+    await bukaTabOrnamen(page)
 
     /*
      * Mulai dari bawaan tema, bukan dari apa pun yang tertinggal di draft.
@@ -988,7 +1166,9 @@ test.describe('studio ornamen', () => {
       .exclude('nuxt-devtools-frame')
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
       .analyze()
-    expect(sapuan.violations.map(v => `${v.id} (${v.impact})`)).toEqual([])
+    // Node pelanggarnya ikut ditulis (pola fase 71.5): `id (impact)` saja tidak pernah cukup
+    // untuk menemukan elemen mana yang gagal di dalam dialog sebesar ini.
+    expect(sapuan.violations.flatMap(v => v.nodes.map(n => `${v.id} (${v.impact}) ${n.target.join(' ')}`))).toEqual([])
 
     // Aset referensi: jalur terberat yang ada, dan satu-satunya yang paletnya terpanggang.
     /*
@@ -1020,7 +1200,7 @@ test.describe('studio ornamen', () => {
 
     await saveDraft(page)
     await page.reload()
-    await openSection(page, 'cover')
+    await bukaTabOrnamen(page)
 
     /*
      * Sesudah muat ulang, buktinya diambil dari DOM yang ADA — bukan dari yang terlihat.
@@ -1057,7 +1237,7 @@ test.describe('studio ornamen', () => {
     expect(terkunci, 'fixture QA wajib memuat akun tanpa add-on desain; jalankan ulang `pnpm test:integration`').toBeTruthy()
     await signIn(page, terkunci!)
     await page.goto(`/dashboard/${terkunci!.invitationId}/editor`)
-    await openSection(page, 'cover')
+    await bukaTabOrnamen(page)
 
     await expect(page.locator('#ornament-locked')).toHaveCount(1)
     await expect(page.locator('#ornament-ganti-divider')).toBeDisabled()
@@ -1066,96 +1246,111 @@ test.describe('studio ornamen', () => {
 })
 
 /*
- * Tulisan bagian (fase 69, pindah ke form bagian di fase 71): kalimat sistem yang dulu ditulis
- * mati kini disunting dari form bagian yang dipilih di rail, dan hasilnya terlihat di panggung
- * tanpa memuat ulang. Yang diperiksa lewat `rsvp.yes`, bukan `gate.open`: gerbang tidak dirender
- * di pratinjau `compact`, sedangkan kartu RSVP ada di panggung — jadi satu tes mengukur form,
- * dokumen, autosave, dan renderer sekaligus. Bagian kedua (Ucapan) memastikan "Kembalikan bawaan
- * bagian ini" tidak merembet ke bagian lain, dan tab Tema hanya menyisakan jalan keluar globalnya.
+ * Tulisan dan gaya teks per kolom (fase 72.4), menggantikan `copyKeys` fase 69–71: kata-kata
+ * bagian hidup di `data` bagiannya dan disunting dari kolom yang digenerate kontrak, dan tiap
+ * kolom teks punya panel lipat "Gaya teks" (font · warna · ukuran px · tebal · miring · reset).
+ *
+ * Yang diukur di panggung, bukan di form: ukuran yang diketik dalam px harus menjadi `font-size`
+ * elemen yang benar-benar dirender tamu, dan reset harus mengembalikan ukuran tema **tanpa**
+ * menyentuh teksnya. Judul Ucapan dipilih karena ia `h2` tunggal di `#iv-wishes`, jadi
+ * pengukurannya tidak bergantung pada urutan elemen lain.
  */
-test.describe('tulisan bagian', () => {
-  test('menulis ulang pilihan hadir RSVP dari form bagiannya, tampil di pratinjau, bertahan, dan reset per bagian', async ({ page }) => {
+test.describe('gaya teks bagian', () => {
+  test('menulis judul Ucapan dari form bagiannya, mengubah ukurannya, tampil di panggung, bertahan, dan bisa direset', async ({ page }) => {
     test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
     await signIn(page)
     await page.goto(`/dashboard/${account!.invitationId}/editor`)
-    await hydrated(page)
+    await pastikanTersimpan(page)
     const berdampingan = () => page.evaluate(() => matchMedia('(min-width: 80rem)').matches)
+    const kePengaturan = async () => { if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click() }
 
-    // Bersih-bersih dari putaran sebelumnya lewat jalan keluar global di tab Tema.
-    await page.locator('#editor-inspector-tema').click()
-    const kembalikanSemua = page.locator('#editor-copy-kembalikan-semua')
-    if (await kembalikanSemua.count()) {
-      await kembalikanSemua.click()
-      await saveDraft(page)
-    }
-
-    await openSection(page, 'rsvp')
-    const blokRsvp = page.locator('#editor-copy-rsvp')
-    await expect(blokRsvp).toBeVisible()
-    await expect(page.locator('#editor-copy-rsvp-diubah')).toHaveCount(0)
-    const kolom = page.locator('#editor-copy-rsvp-yes')
-    await expect(kolom).toHaveAttribute('placeholder', 'Hadir')
-    await kolom.fill('Datang')
-    await kolom.press('Tab')
-    await expect(page.locator('#editor-copy-rsvp-diubah')).toHaveText(/1 diubah/)
-
-    const stage = await openPreview(page)
-    await expect(stage.locator('#iv-rsvp')).toContainText('Datang')
-    if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
-
-    // Bagian kedua, supaya reset per bagian punya sesuatu untuk tidak disentuh.
     await openSection(page, 'wishes')
-    const judulUcapan = page.locator('#editor-copy-wishes-title')
-    await judulUcapan.fill('Doa kalian')
-    await judulUcapan.press('Tab')
-    await page.locator('#editor-inspector-tema').click()
-    await expect(page.locator('#editor-copy-ringkasan')).toHaveText(/2 tulisan/)
+    const judul = page.locator('#editor-field-wishes-title')
+    const gaya = page.locator('#editor-field-wishes-title-gaya')
+    const ukuran = page.locator('#editor-field-wishes-title-ukuran')
+    const tebal = page.locator('#editor-field-wishes-title-tebal')
+    const reset = page.locator('#editor-field-wishes-title-reset-gaya')
+    await expect(judul).toBeVisible()
+
+    // Bersih-bersih dari putaran sebelumnya: gaya yang tertinggal membuat "ukuran semula" berbohong.
+    await gaya.click()
+    await expect(gaya).toHaveAttribute('aria-expanded', 'true')
+    if (await reset.count()) await reset.click()
+    await expect(reset).toHaveCount(0)
+
+    await judul.fill('Doa kalian')
+    await judul.press('Tab')
+    const stage = await openPreview(page)
+    const judulPanggung = stage.locator('#iv-wishes h2')
+    await expect(judulPanggung).toHaveText('Doa kalian')
+    const ukuranTema = await judulPanggung.evaluate(el => getComputedStyle(el).fontSize)
+    expect(ukuranTema).not.toBe('40px')
+    await kePengaturan()
+
+    // Ukuran ditulis saat `change` (Tab); tebal langsung saat diklik — keduanya satu langkah undo.
+    await ukuran.fill('40')
+    await ukuran.press('Tab')
+    await tebal.click()
+    await expect(tebal).toHaveAttribute('aria-pressed', 'true')
+    await expect(gaya).toContainText('diubah')
+    await expect(page.locator('#editor-save-state')).toHaveText('Ada perubahan yang belum tersimpan')
+    await openPreview(page)
+    await expect(judulPanggung).toHaveCSS('font-size', '40px')
+    await expect(judulPanggung).toHaveCSS('font-weight', '700')
+    await kePengaturan()
     await saveDraft(page)
 
     await page.reload()
     await hydrated(page)
-    await openSection(page, 'rsvp')
-    await expect(page.locator('#editor-copy-rsvp-yes')).toHaveValue('Datang')
-
-    // Reset per bagian hanya menyentuh RSVP; Ucapan tetap.
-    await page.locator('#editor-copy-kembalikan-rsvp').click()
-    await expect(page.locator('#editor-copy-kembalikan-rsvp')).toHaveCount(0)
-    await expect(page.locator('#editor-copy-rsvp-yes')).toHaveValue('')
     await openSection(page, 'wishes')
-    await expect(page.locator('#editor-copy-wishes-title')).toHaveValue('Doa kalian')
+    await expect(judul).toHaveValue('Doa kalian')
+    await expect(ukuran).toHaveValue('40')
+    await expect(tebal).toHaveAttribute('aria-pressed', 'true')
+    await expect((await openPreview(page)).locator('#iv-wishes h2')).toHaveCSS('font-size', '40px')
+    await kePengaturan()
 
-    // Ornamen di bagian ini (fase 71): Mempelai hanya memuat keping yang ia render, dan Ganti
-    // membuka Studio pada slot itu — nilainya tetap yang global.
+    // Reset gaya hanya menyentuh gayanya; teksnya tetap milik pasangan.
+    await gaya.click()
+    await reset.click()
+    await expect(reset).toHaveCount(0)
+    await expect(judul).toHaveValue('Doa kalian')
+    await expect((await openPreview(page)).locator('#iv-wishes h2')).toHaveCSS('font-size', ukuranTema)
+    await kePengaturan()
+
+    // Ornamen di bagian ini (fase 71, kini tab Ornamen): Mempelai hanya memuat keping yang ia
+    // render, dan Ganti membuka Studio pada slot itu — nilainya tetap yang global.
     await openSection(page, 'couple')
-    await expect(page.locator('#ornament-ganti-floral')).toBeVisible()
-    await expect(page.locator('#ornament-ganti-frame')).toHaveCount(0)
-    await expect(page.locator('#ornament-kembalikan-semua')).toHaveCount(0)
-    await page.locator('#ornament-ganti-floral').click()
+    await page.locator('#editor-inspector-ornamen').click()
+    const bagianIni = page.locator('#editor-inspector-panel-ornamen > div').filter({ has: page.getByRole('heading', { name: 'Ornamen di bagian ini' }) })
+    await expect(bagianIni.locator('#ornament-ganti-floral')).toBeVisible()
+    await expect(bagianIni.locator('#ornament-ganti-frame')).toHaveCount(0)
+    await expect(bagianIni.locator('#ornament-kembalikan-semua')).toHaveCount(0)
+    await bagianIni.locator('#ornament-ganti-floral').click()
     await expect(page.getByRole('dialog')).toBeVisible()
     await page.keyboard.press('Escape')
     await expect(page.getByRole('dialog')).toBeHidden()
 
-    // Jalan keluar global: dokumen tidak lagi membawa `copy`.
-    await page.locator('#editor-inspector-tema').click()
-    await page.locator('#editor-copy-kembalikan-semua').click()
-    await expect(page.locator('#editor-copy-kembalikan-semua')).toHaveCount(0)
+    await page.locator('#editor-inspector-bagian').click()
     await saveDraft(page)
   })
 })
 
 /*
- * Gerak per undangan (fase 69): dua pilihan terenumerasi di tab Tema. Yang diukur di sini adalah
- * penulisannya — "Sedang"/"Ikut tema" menghapus kuncinya (dokumen kembali identik dengan preset),
- * pilihan lain tersimpan dan bertahan setelah muat ulang. Temponya sendiri diukur di
- * `motion-envelope.spec.ts`; gerbang tidak dirender di pratinjau `compact`.
+ * Gerak per undangan (fase 69): dua pilihan terenumerasi, kini di tab Global. Yang diukur di sini
+ * adalah penulisannya — "Sedang"/"Ikut tema" menghapus kuncinya (dokumen kembali identik dengan
+ * preset), pilihan lain tersimpan dan bertahan setelah muat ulang. Temponya sendiri diukur di
+ * `motion-envelope.spec.ts`.
+ *
+ * Fase 72 menambah gerak **per bagian** di form bagiannya: pilihannya dipancarkan renderer sebagai
+ * `data-iv-entrance` pada elemen bagian di panggung, dan "Ikut tema" mencabut atributnya lagi.
  */
 test.describe('gerak undangan', () => {
   test('memilih tempo amplop dan gaya masuk, bertahan setelah muat ulang, kembali ke tema', async ({ page }) => {
     test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
     await signIn(page)
     await page.goto(`/dashboard/${account!.invitationId}/editor`)
-    await hydrated(page)
-    await page.locator('#editor-inspector-tema').click()
+    await pastikanTersimpan(page)
+    await page.locator('#editor-inspector-global').click()
 
     const amplop = page.locator('#editor-motion-amplop')
     const masuk = page.locator('#editor-motion-masuk')
@@ -1169,13 +1364,27 @@ test.describe('gerak undangan', () => {
 
     await page.reload()
     await hydrated(page)
-    await page.locator('#editor-inspector-tema').click()
+    await page.locator('#editor-inspector-global').click()
     await expect(page.locator('#editor-motion-amplop')).toHaveValue('pelan')
     await expect(page.locator('#editor-motion-masuk')).toHaveValue('iris')
 
     await page.locator('#editor-motion-amplop').selectOption('sedang')
     await page.locator('#editor-motion-masuk').selectOption('tema')
     await saveDraft(page)
+
+    // Gerak per bagian: Ucapan masuk dengan "Iris", sisanya tetap ikut tema.
+    await page.locator('#editor-inspector-bagian').click()
+    await openSection(page, 'wishes')
+    const gerakUcapan = page.locator('#editor-motion-wishes')
+    await expect(gerakUcapan).toHaveValue('tema')
+    await gerakUcapan.selectOption('iris')
+    const stage = await openPreview(page)
+    await expect(stage.locator('#iv-wishes')).toHaveAttribute('data-iv-entrance', 'iris')
+    await expect(stage.locator('#iv-closing')).not.toHaveAttribute('data-iv-entrance', /./)
+    if (!(await page.evaluate(() => matchMedia('(min-width: 80rem)').matches))) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
+    await gerakUcapan.selectOption('tema')
+    await expect(page.locator('#iv-wishes')).not.toHaveAttribute('data-iv-entrance', /./)
+    await expect(page.locator('#editor-save-state')).toHaveText('Semua perubahan tersimpan')
   })
 })
 
@@ -1216,7 +1425,8 @@ test.describe('ornamen unggahan', () => {
     test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
     await signIn(page)
     await page.goto(`/dashboard/${account!.invitationId}/editor`)
-    await openSection(page, 'cover')
+    await pastikanTersimpan(page)
+    await bukaTabOrnamen(page)
 
     await page.locator('#ornament-ganti-symbol').click()
     const dialog = page.getByRole('dialog')
@@ -1250,6 +1460,69 @@ test.describe('ornamen unggahan', () => {
     await dialog.getByRole('button', { name: 'Pakai ornamen ini' }).click()
     await expect(kartu).not.toContainText('Unggahan kalian')
     await saveDraft(page)
+  })
+})
+
+/*
+ * Tab Kartu (fase 72.7): gaya kartu bagikan (WhatsApp/Open Graph) disunting di inspektor dan
+ * pratinjaunya **menggantikan panggung** — bukan ditumpuk di atasnya. Tiga hal yang diuji:
+ * pratinjau kartu benar-benar mengambil tempat panggung, pilihannya tersimpan di `shareCard`
+ * (bukan `tokens`, jadi tidak terkunci add-on) dan bertahan setelah muat ulang, dan memilih
+ * bagian di rail mengembalikan tab Bagian beserta panggungnya — tanpa itu pasangan mengklik rail
+ * dan tidak melihat apa pun berubah.
+ */
+test.describe('kartu bagikan', () => {
+  test('tab Kartu mengganti panggung dengan pratinjau kartu, menyimpan gayanya, dan kembali ke Bagian dari rail', async ({ page }) => {
+    test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
+    await signIn(page)
+    await page.goto(`/dashboard/${account!.invitationId}/editor`)
+    await pastikanTersimpan(page)
+    const berdampingan = () => page.evaluate(() => matchMedia('(min-width: 80rem)').matches)
+
+    await page.locator('#editor-inspector-kartu').click()
+    // Bersih-bersih: gaya kartu yang tertinggal dari putaran sebelumnya.
+    const resetKartu = page.locator('#editor-kartu-reset')
+    if (await resetKartu.isEnabled()) { await resetKartu.click(); await saveDraft(page) }
+    await expect(resetKartu).toBeDisabled()
+
+    // Pratinjau kartu berdiri di tempat panggung; di ponsel ia di balik tab Pratinjau seperti panggung.
+    if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pratinjau', exact: true }).click()
+    await expect(page.locator('#editor-kartu-preview')).toBeVisible()
+    await expect(page.locator('[data-preview-stage]')).toHaveCount(0)
+    await expect(page.locator('#editor-kartu-unduh')).toHaveAttribute('href', /\/public\/share-card\/.+\.png/)
+    if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
+
+    await page.locator('#editor-kartu-gaya-minimal').click()
+    await expect(page.locator('#editor-kartu-gaya-minimal')).toHaveAttribute('aria-checked', 'true')
+    await page.locator('#editor-kartu-rata-left').click()
+    await expect(page.locator('#editor-kartu-rata-left')).toHaveAttribute('aria-checked', 'true')
+    // Sakelarnya checkbox `sr-only` di balik label; yang diklik labelnya, seperti pasangan.
+    await page.locator('label', { has: page.locator('#editor-kartu-showDate') }).click()
+    await expect(page.locator('#editor-kartu-showDate')).toBeChecked()
+    await expect(resetKartu).toBeEnabled()
+    await expect(page.locator('#editor-save-state')).toHaveText('Ada perubahan yang belum tersimpan')
+    await saveDraft(page)
+
+    await page.reload()
+    await hydrated(page)
+    await expect(page.locator('#editor-inspector-kartu')).toHaveAttribute('aria-selected', 'true')
+    await expect(page.locator('#editor-kartu-gaya-minimal')).toHaveAttribute('aria-checked', 'true')
+    await expect(page.locator('#editor-kartu-rata-left')).toHaveAttribute('aria-checked', 'true')
+    await expect(page.locator('#editor-kartu-showDate')).toBeChecked()
+
+    // Rail → Bagian: panggung kembali, tab Kartu ditinggalkan.
+    await openSection(page, 'couple')
+    await expect(page.locator('#editor-inspector-bagian')).toHaveAttribute('aria-selected', 'true')
+    await expect(page.locator('[data-preview-stage]')).toBeAttached()
+    await expect(page.locator('#editor-kartu-preview')).toHaveCount(0)
+
+    // Reset mengosongkan `shareCard` sepenuhnya, dan dokumen kembali identik dengan simpanan sebelum tes ini.
+    await page.locator('#editor-inspector-kartu').click()
+    await resetKartu.click()
+    await expect(resetKartu).toBeDisabled()
+    await expect(page.locator('#editor-kartu-gaya-template')).toHaveAttribute('aria-checked', 'true')
+    await saveDraft(page)
+    await page.locator('#editor-inspector-bagian').click()
   })
 })
 

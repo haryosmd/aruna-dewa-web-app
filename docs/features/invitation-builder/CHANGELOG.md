@@ -1,5 +1,36 @@
 # Revision history
 
+## 2026-09-20: Fase 72 — template utama "Elegance" dan editor ala Undangan Studio
+
+- **Kontrak v2** (72.0): `sections.ts` — dua belas bagian Elegance + empat ekstra, kolom per tipe
+  (`sectionFields`) yang sekaligus skema zod dan sumber form editor; `textStyles`, `background`,
+  `motion` per bagian; `settings` musik; `shareCard`; `tokens.layout`. `createDefaultDocument()`
+  kini v2; `migrateLegacyDocument()` di editor. `copyKeys` tidak dipakai dokumen v2.
+- **Editor** (72.1–72.5, 72.8): `Toolbar` (nav Editor | Generator | Ucapan, Published), `SectionRail`
+  (Wajib/Opsional, mata, drag), `Inspector` empat tab, `Stage` (zoom, bezel, `mode="stage"`),
+  `SectionForm` (digenerate) + `TextStyleField` + `ExtrasForm`, `GlobalPanel`, `KartuPanel` +
+  `ShareCardPreview`, `MediaLibrary` + `useMediaLibrary`, `PhotoField` gaya "Foto komponen",
+  `useEditorPrefs` (device iphone/android/laptop/bersih, tab, zoom, inspektor ciut),
+  `utils/theme-palettes.ts`, metadata pustaka musik. `CopyFields.vue` dan cabang form per tipe
+  di `editor.vue` dihapus (1.788 → ±430 baris).
+- **Renderer v2** (`components/invitation/elegance/*.vue`): dua belas bagian Elegance memakai tema,
+  ornamen, dan partitur kita; `Renderer` memilih peta komponen per `schemaVersion`, `mode`
+  `live|stage|compact`, gerbang `contained` untuk panggung editor, musik dari `settings`.
+- **API**: `create()` menulis dokumen v2, `document-validation` bercabang v2, `publish()` memakai
+  `sectionFeature`, `designFingerprint` membaca `textStyles`/`background`/`motion` per bagian;
+  `GET /v1/public/share-card/:slug.png` (satori + resvg) jadi `og:image`; Generator mendapat
+  `PATCH /invitations/:id/share-settings` dan `POST …/guests/:id/sent`.
+- **Dua cacat ditemukan saat verifikasi dan diperbaiki.** (1) Menggeser urutan bagian menanam
+  proxy Vue ke dalam dokumen, sehingga `structuredClone` di `undo()` melempar tepat sesudah
+  `pop()` — tumpukan habis, redo kosong, urutan tidak pernah kembali; `reorder()` kini menyusun
+  dari `toRaw`, dan riwayat memakai salinan JSON yang tahan proxy. (2) Kartu 480px
+  ("Fokuskan untuk Layar") memakai `@media`, jadi pratinjau Desktop di editor berbohong: tinggi
+  render 1280 berubah 7210 → 8148 hanya karena jendela editornya menyempit. Aturannya pindah ke
+  `@container` pada pembungkus `.iv-frame`, sesuai aturan DESIGN.md "undangan mengukur dirinya".
+- **Rencana kanvas bagian ala Figma dibuang** (keputusan pemilik 2026-09-20).
+- Verifikasi: `pnpm test` 1201 hijau (80 berkas), `pnpm lint` dan `typecheck` bersih, e2e desktop
+  **51/51 hijau** pada stack lokal non-demo (web `dev` biasa di 3000 + API `dist` di 3001).
+
 ## 2026-09-19: Fase 71 — form bagian yang utuh, gulir yang bocor
 
 - **Gulir bocor** (71.1): label `UiDropzone` jadi `relative` (input `sr-only`-nya absolut tanpa
@@ -10,7 +41,8 @@
   Tab Tema hanya ringkasan + "Kembalikan semua". E2e "tulisan bagian" menggantikan "kata-kata undangan".
 - **Ornamen di bagian ini** (71.3): `sectionOrnamentSlots` (dijaga vitest yang membaca
   `components/invitation/`), `SlotSummary` prop `slots`; `ornamentOverrides` editor dibaca dari cover.
-- **Fase 72** ditulis (kanvas bagian), belum dikerjakan.
+- **Fase 72** ditulis. Rencana kanvas bagian yang disebut di sini dibuang pemilik sehari
+  kemudian; yang dikerjakan adalah "Elegance" — lihat entri 2026-09-20 di atas.
 
 ## 2026-09-19: Fase 69 — "Buat tema versi Anda sendiri" (langkah 1–4, 6)
 
