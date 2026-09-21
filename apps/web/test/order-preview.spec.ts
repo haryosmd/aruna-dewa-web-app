@@ -7,17 +7,17 @@ const enabledIds = (sections: { id: string; enabled: boolean }[]) =>
   sections.filter(section => section.enabled).map(section => section.id)
 
 describe('previewSectionIds', () => {
-  it('langkah nama hanya menampilkan cover', () => {
-    expect([...previewSectionIds(1, { hasDate: false })!]).toEqual(['cover'])
+  it('langkah nama hanya menampilkan hero (fase 72: pengganti cover)', () => {
+    expect([...previewSectionIds(1, { hasDate: false })!]).toEqual(['hero'])
   })
 
-  it('langkah acara menambah hitung mundur hanya kalau tanggal terisi', () => {
-    expect([...previewSectionIds(2, { hasDate: false })!]).toEqual(['events'])
-    expect([...previewSectionIds(2, { hasDate: true })!]).toEqual(['events', 'countdown'])
+  it('langkah acara menampilkan acara dan lokasi, hitung mundur hanya kalau tanggal terisi', () => {
+    expect([...previewSectionIds(2, { hasDate: false })!]).toEqual(['event', 'map'])
+    expect([...previewSectionIds(2, { hasDate: true })!]).toEqual(['event', 'map', 'countdown'])
   })
 
-  it('langkah tema cukup cover: palet, ornamen, dan huruf tema semua ada di sana', () => {
-    expect([...previewSectionIds(3, { hasDate: true })!]).toEqual(['cover'])
+  it('langkah tema cukup hero: palet, ornamen, dan huruf tema semua ada di sana', () => {
+    expect([...previewSectionIds(3, { hasDate: true })!]).toEqual(['hero'])
   })
 
   it('langkah paket menampilkan seluruh dokumen dan boleh menggulung', () => {
@@ -32,7 +32,7 @@ describe('focusPreview', () => {
 
   it('menyalakan hanya section langkah itu, tanpa memutasi masukan', () => {
     const focused = focusPreview(sections, 1, { hasDate: false })
-    expect(enabledIds(focused)).toEqual(['cover'])
+    expect(enabledIds(focused)).toEqual(['hero'])
     expect(enabledIds(sections)).toContain('couple')
     expect(focused[0]).not.toBe(sections[0])
   })

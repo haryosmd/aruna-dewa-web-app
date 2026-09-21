@@ -1,5 +1,6 @@
 import type { MediaKind } from '@aruna/contracts'
 import type { MediaUploadResult } from '@aruna/contracts/api'
+import { validateMediaFile } from '~/utils/media-file'
 
 /**
  * Antrean unggah media untuk editor.
@@ -38,6 +39,17 @@ export function useMediaUploads(invitationId: MaybeRefOrGetter<string>) {
 
     const hasil: MediaUploadResult[] = []
     for (const file of files) {
+      /*
+       * Penolakan di klien lebih dulu (fase 16), di sini dan bukan hanya di `UiDropzone`: modal
+       * Pustaka (fase 72.8) memakai `<input type="file">` polos, dan `accept` tidak menahan apa
+       * pun — GIF dan berkas 12 MB sempat naik penuh lewat data seluler hanya untuk ditolak server.
+       */
+      const ditolak = validateMediaFile(file, kind)
+      if (ditolak) {
+        failures.value.push(ditolak)
+        done.value += 1
+        continue
+      }
       try {
         const prepared = kind === 'image' ? await normalizePhoto(file) : file
         const body = new FormData()

@@ -15,14 +15,15 @@ export interface PreviewFocusOptions {
 /** Id section yang dirender di langkah `step`; `null` berarti seluruh dokumen. */
 export function previewSectionIds(step: number, options: PreviewFocusOptions): ReadonlySet<string> | null {
   switch (step) {
-    case 1: return new Set(['cover'])
-    case 2: return new Set(options.hasDate ? ['events', 'countdown'] : ['events'])
+    // Id bagian v2 (fase 72): `hero` adalah wajah pertama di balik amplop, `event` + `map` acara.
+    case 1: return new Set(['hero'])
+    case 2: return new Set(options.hasDate ? ['event', 'map', 'countdown'] : ['event', 'map'])
     /*
-     * Cover saja, bukan cover + mempelai: dengan batas tinggi bingkai, dua section sekaligus
+     * Hero saja, bukan hero + mempelai: dengan batas tinggi bingkai, dua section sekaligus
      * diperkecil sampai 54% dan huruf temanya — justru yang sedang dipilih — tidak terbaca.
-     * Cover sendiri sudah memuat palet, ornamen, foto tema, dan huruf skrip.
+     * Hero sendiri sudah memuat palet, ornamen, foto tema, dan huruf skrip.
      */
-    case 3: return new Set(['cover'])
+    case 3: return new Set(['hero'])
     default: return null
   }
 }

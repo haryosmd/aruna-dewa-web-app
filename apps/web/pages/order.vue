@@ -205,51 +205,32 @@ const previewScalePct = computed(() => Math.round(previewScale.value * 100))
  * sendiri jatuh di bawah lipatan.
  */
 const preview = computed<InvitationDocument>(() => {
-  const document = createDefaultDocument(form.partner1 || 'Aruna', form.partner2 || 'Dewa', form.templateId)
-  const cover = document.sections.find(section => section.id === 'cover')!
-  cover.data = {
-    ...cover.data,
-    title: previewTitle.value,
-    image: themeOf(form.templateId).cover,
-  }
-  const events = document.sections.find(section => section.id === 'events')!
   /*
-   * Toggle "lokasi sama" hanya gula di formulir: nilainya disalin ke kedua acara di sini,
+   * Toggle "lokasi sama" hanya gula di formulir: nilainya disalin ke bagian `map` di sini,
    * sehingga dokumen yang tersimpan selalu lengkap dan tidak ada pembaca lain yang perlu
-   * tahu soal flag-nya.
+   * tahu soal flag-nya. Struktur v2 (fase 72) punya satu bagian lokasi, jadi lokasi resepsi
+   * yang berbeda ditulis sebagai baris kedua alamatnya.
    */
   const reception = form.sameVenue
     ? { venue: form.venue, address: form.address, mapUrl: form.mapUrl }
     : { venue: form.venue2, address: form.address2, mapUrl: form.mapUrl2 }
-  const longDate = formatLongDate(form.date) || 'Tanggal menyusul'
-  events.data = {
-    events: [
-      {
-        id: 'ceremony',
-        name: 'Akad nikah',
-        date: longDate,
-        time: '09.00 WIB',
-        venue: form.venue || 'Lokasi menyusul',
-        address: form.address,
-        mapUrl: form.mapUrl,
-        public: true,
-      },
-      {
-        id: 'reception',
-        name: 'Resepsi',
-        date: longDate,
-        time: '11.00 WIB',
-        venue: reception.venue || form.venue || 'Lokasi menyusul',
-        address: reception.address,
-        mapUrl: reception.mapUrl,
-        public: true,
-      },
-    ],
+  const document = createDefaultDocument(form.partner1 || 'Aruna', form.partner2 || 'Dewa', form.templateId, {
+    date: form.date || undefined, venue: form.venue, address: form.address, mapUrl: form.mapUrl,
+  })
+  const at = (id: string) => document.sections.find(section => section.id === id)!
+  at('opening-envelope').data = { ...at('opening-envelope').data, title: previewTitle.value }
+  at('hero').data = { ...at('hero').data, title: previewTitle.value, imageUrl: themeOf(form.templateId).cover }
+  at('couple').data = { ...at('couple').data, imageUrl: '/images/couple.webp' }
+  at('countdown').data = { ...at('countdown').data, targetDate: form.date ? `${form.date}T09:00` : '' }
+  const lokasiAkad = [form.venue || 'Lokasi menyusul', form.address].filter(Boolean).join('\n')
+  const lokasiResepsi = form.sameVenue ? '' : [reception.venue || form.venue || 'Lokasi menyusul', reception.address].filter(Boolean).join('\n')
+  at('map').data = {
+    ...at('map').data,
+    title: form.sameVenue ? 'Lokasi Akad & Resepsi' : 'Lokasi Acara',
+    subtitle: lokasiResepsi ? `Akad: ${lokasiAkad}\n\nResepsi: ${lokasiResepsi}` : lokasiAkad,
+    mapUrl: form.mapUrl || reception.mapUrl,
   }
-  const countdown = document.sections.find(section => section.id === 'countdown')!
-  countdown.data = { date: form.date }
-  const gallery = document.sections.find(section => section.id === 'gallery')!
-  gallery.data = { images: ['/images/couple.webp', '/images/rings.webp'] }
+  at('gallery').data = { ...at('gallery').data, imageUrls: ['/images/couple.webp', '/images/rings.webp'] }
   document.sections = focusPreview(document.sections, step.value, previewFocus.value)
   return document
 })
