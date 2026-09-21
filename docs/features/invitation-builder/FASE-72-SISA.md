@@ -52,7 +52,7 @@ Tidak ada berkas data mentah — seluruh hasil bedah hidup sebagai prosa di `FAS
 
 ## 3. P0 — memblokir pelanggan sungguhan
 
-- [ ] **3.1 Gerbang desain menolak simpan sesudah migrasi v1→v2.** Pasangan tanpa add-on `design`
+- [x] **3.1 Gerbang desain menolak simpan sesudah migrasi v1→v2.** SELESAI `73.1`. Pasangan tanpa add-on `design`
   membuka editor → dokumen dimigrasi di klien (`editor.vue:103`) → toast menyuruh menyimpan →
   `invitations.service.ts:71` menolak **400 selamanya**, karena `designFingerprint` membaca `order`
   (dua belas id berganti) dan `copy` (dibuang migrator, `sections.ts:552`).
@@ -63,7 +63,7 @@ Tidak ada berkas data mentah — seluruh hasil bedah hidup sebagai prosa di `FAS
   pembebasannya habis sendiri sesudah tersimpan. `designFingerprint` tidak disentuh, jadi sidik
   jari revisi terbit lama tidak bergeser. Tulis risiko skew versi web↔API di komentar.
   Uji: ~14 kasus di `apps/api/test/domain/design-gate-v2.spec.ts`.
-- [ ] **3.2 `gift` menyala bawaan tapi bukan fitur paket Mula.** `sections.ts:458` `enabled: true`,
+- [x] **3.2 `gift` menyala bawaan tapi bukan fitur paket Mula.** SELESAI `73.2`. `sections.ts:458` `enabled: true`,
   `sectionFeature.gift = 'gift'`, `baseFeatures` (`index.ts:538`) tidak memuatnya → `publish()`
   menolak **setiap undangan baru di paket Mula**. Komentar `sections.ts:48-51` mengklaim sebaliknya.
   **Perbaikan: `enabled: false`** (sama seperti `story`/`rundown`/`dresscode`/`video`), bukan
@@ -71,7 +71,7 @@ Tidak ada berkas data mentah — seluruh hasil bedah hidup sebagai prosa di `FAS
   `priceOrder()` akan mulai menolak add-on `gift` yang sah kemarin. Perbaiki komentarnya.
   Uji: invarian di `tests/sections.test.ts` — *setiap bagian `enabled: true` bawaan harus tercakup
   `baseFeatures`*, plus penjaga arah sebaliknya, plus versi untuk hasil migrasi.
-- [ ] **3.3 Kesetiaan `migrateLegacyDocument`** (`sections.ts:496-554`):
+- [x] **3.3 Kesetiaan `migrateLegacyDocument`** SELESAI `73.3`. (`sections.ts:496-554`):
   - `enabled` yang hilang: `countdown`, `gallery`, `map`(←`events`), `wishes` (lebur `rsvp ∪ wishes`).
     `closing` berpindah ke wajib — kehilangan yang **dipin tes**, bukan disembunyikan.
   - Musik yang dimatikan ikut terbawa (`:550`): `settings.musicUrl` ditulis tanpa melihat
@@ -89,7 +89,7 @@ Tidak ada berkas data mentah — seluruh hasil bedah hidup sebagai prosa di `FAS
 
 ## 4. P1 — penjaga supaya dua cacat kemarin tidak kembali
 
-- [ ] **4.1 Riwayat keluar dari SFC lalu diuji.** `salin/checkpoint/undo/redo` → composable
+- [x] **4.1 Riwayat keluar dari SFC lalu diuji.** SELESAI `73.4`. `salin/checkpoint/undo/redo` → composable
   `apps/web/composables/useDocumentHistory.ts` (composable, bukan util: `canUndo`/`canRedo` dibaca
   template jadi tumpukannya wajib `ref`). Impor `ref/computed/toRaw` eksplisit dari `'vue'`, jangan
   pakai alias `~/` — `vitest.config.ts` akar tidak punya alias. Bagian murni `reorder` jadi
@@ -98,7 +98,7 @@ Tidak ada berkas data mentah — seluruh hasil bedah hidup sebagai prosa di `FAS
   `salinOverrides()` **tidak** ikut. Spec baru `apps/web/test/document-history.spec.ts` (11 kasus),
   termasuk reproduksi persis bug kemarin: larik bagian yang ditanami proxy. Koreksi komentar
   `editor.vue:171-177` yang menyiratkan reorder satu-satunya sumber proxy.
-- [ ] **4.2 Gerbang teks-sumber "nol breakpoint viewport".** `apps/web/test/invitation-breakpoints.spec.ts`,
+- [x] **4.2 Gerbang teks-sumber "nol breakpoint viewport".** SELESAI `73.5`. `apps/web/test/invitation-breakpoints.spec.ts`,
   meniru `motion-rules.spec.ts`. Buang komentar `<!-- -->`, `/* */`, `//` dulu. Larang **hanya**
   `@media` berlebar (`@container (min-width:…)` justru bentuk yang benar di sembilan berkas),
   maafkan `prefers-reduced-motion`, jangan tersandung deklarasi `max-width: 480px`, dan lepaskan
@@ -117,7 +117,7 @@ Tidak ada berkas data mentah — seluruh hasil bedah hidup sebagai prosa di `FAS
 - [ ] Penjaga kelengkapan renderer: `Renderer.vue:145` membuang tipe tanpa komponen **diam-diam**.
 - [ ] Share-card tidak pernah benar-benar dirender di tes (satori+resvg tak pernah dipanggil; e2e
   hanya memeriksa `href`).
-- [ ] DESIGN.md:186 belum menyebut `.iv-frame` sebagai lapisan pengukur di luar `.iv-root`.
+- [x] DESIGN.md menyebut `.iv-frame` sebagai lapisan pengukur di luar `.iv-root` (`73.5`).
 - [ ] **Ditunda resmi** (ditulis apa adanya, bukan dilupakan): pangkas foto di Pustaka
   (`FASE-72.md:488` meminta `vue-advanced-cropper`), impor Google Sheets (`ImportDialog.vue:111`),
   undang kolaborator (`Toolbar.vue:86`), riwayat versi (`editor.vue:466`), dan `WishCard.vue:13`
@@ -142,6 +142,20 @@ Tidak ada berkas data mentah — seluruh hasil bedah hidup sebagai prosa di `FAS
 masih merender v1 sementara `types/aruna.ts` sudah v2) dan 72.1–72.2 unit-merah (spec lama + e2e
 menyusul) tidak bisa dihindari tanpa satu commit raksasa. Sebutkan di pesan commit berkas mana yang
 menyusul. `pnpm test && pnpm typecheck` hijau di HEAD.
+
+## 6b. Yang sudah dikerjakan 2026-09-21
+
+`73.1` gerbang migrasi · `73.2` hadiah lahir mati + invarian paket · `73.3` kesetiaan migrator ·
+`73.4` riwayat undo jadi composable yang diuji · `73.5` gerbang breakpoint + DESIGN.md.
+
+Terukur sesudahnya: `pnpm test` **1241 hijau** (dari 1201), `pnpm typecheck` dan `pnpm lint`
+bersih. Kedua penjaga baru dibuktikan bisa merah: `salinDokumen` dikembalikan ke `structuredClone`
+→ tiga kasus gagal; satu `md:grid-cols-2` di `elegance/Hero.vue` → gerbang breakpoint gagal.
+Keduanya dikembalikan. `/i/demo` dirender lewat `web-demo` dan bagian Hadiah tetap muncul.
+
+**Belum diverifikasi: e2e.** `pnpm test:integration` + `pnpm test:e2e` menuntut Postgres, Redis,
+dan API hidup; di laptop ini port 3001 mati dan Docker tidak menjawab. Itu sisa verifikasi paling
+penting — tanpanya 21 tes dasbor lolos tanpa pernah berjalan.
 
 ## 7. Verifikasi
 
