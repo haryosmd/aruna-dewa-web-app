@@ -354,7 +354,7 @@ function finish() {
   top: 0;
   display: grid;
   align-content: center;
-  min-height: min(100svh, 100%);
+  min-height: min(var(--iv-layar-h, 100svh), 100%);
 }
 
 /* Segel yang jadi tombol: tanpa kromium tombol bawaan, dan kursor mengatakan ia bisa ditekan. */

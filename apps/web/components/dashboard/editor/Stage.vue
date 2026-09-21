@@ -16,12 +16,21 @@ import { sectionDomId, stageScrollTop } from '~/utils/editor-sections'
  * berbohong soal ukuran huruf. Zoom karena itu 50–100 %: ia memperkecil dari "pas", bukan
  * memperbesar melampaui aslinya.
  */
+/*
+ * `height` sepasang dengan `width`, dan itu bukan hiasan: bagian yang setinggi "satu layar"
+ * (cover, hero, gerbang amplop) butuh tahu setinggi apa layar perangkat yang sedang dipratinjau.
+ * Tanpa angka ini mereka membaca `100svh` — tinggi JENDELA EDITOR — jadi mengecilkan jendela
+ * memendekkan cover di dalam bingkai iPhone, yang tidak pernah terjadi di ponsel sungguhan.
+ *
+ * Angkanya viewport perangkat aslinya (iPhone 14/15 Pro 390×844, Pixel 8 412×915), bukan tinggi
+ * bezel gambar: yang harus ditiru adalah ruang yang dilihat tamu, bukan ukuran hiasannya.
+ */
 const previewDevices = [
-  { id: 'laptop', label: 'Desktop', width: 1280, icon: Monitor, aria: 'Tampilan Desktop Viewport' },
-  { id: 'iphone', label: 'iPhone', width: 390, icon: Smartphone, aria: 'Tampilan Frame iPhone' },
-  { id: 'android', label: 'Android', width: 412, icon: Smartphone, aria: 'Frame Android (Camera Punchhole)' },
-  { id: 'bersih', label: 'Clean', width: 390, icon: Maximize2, aria: 'Tampilan Minimalis Tanpa Frame' },
-] as const satisfies readonly { id: PreviewDevice; label: string; width: number; icon: unknown; aria: string }[]
+  { id: 'laptop', label: 'Desktop', width: 1280, height: 800, icon: Monitor, aria: 'Tampilan Desktop Viewport' },
+  { id: 'iphone', label: 'iPhone', width: 390, height: 844, icon: Smartphone, aria: 'Tampilan Frame iPhone' },
+  { id: 'android', label: 'Android', width: 412, height: 915, icon: Smartphone, aria: 'Frame Android (Camera Punchhole)' },
+  { id: 'bersih', label: 'Clean', width: 390, height: 844, icon: Maximize2, aria: 'Tampilan Minimalis Tanpa Frame' },
+] as const satisfies readonly { id: PreviewDevice; label: string; width: number; height: number; icon: unknown; aria: string }[]
 
 const props = defineProps<{
   document: InvitationDocument
@@ -71,6 +80,7 @@ watch(() => props.focusSection, async (fokus) => {
 
 const aktif = computed(() => previewDevices.find(d => d.id === device.value) ?? previewDevices[1])
 const previewWidth = computed(() => aktif.value.width)
+const previewHeight = computed(() => aktif.value.height)
 const bezel = computed<'iphone' | 'android' | 'none'>(() => device.value === 'iphone' ? 'iphone' : device.value === 'android' ? 'android' : 'none')
 
 const previewScale = ref(1)
@@ -136,10 +146,11 @@ function ubahZoom(delta: number) {
       :class="cn('max-h-[36rem] min-h-0 flex-1 overflow-x-hidden px-4 pb-12 pt-28 [scrollbar-gutter:stable] sm:px-6 lg:max-h-none', terkunci ? 'overflow-y-hidden' : 'overflow-y-auto')"
     >
       <div class="mx-auto" :style="{ width: `${Math.round(zoomFactor * 100)}%` }">
-        <InvitationDeviceBezel :device="bezel">
+        <InvitationDeviceBezel :device="bezel" :screen-height="previewHeight">
           <InvitationPhoneFrame
             v-model:scale="previewScale"
             :width="previewWidth"
+            :screen-height="previewHeight"
           >
             <InvitationRenderer :key="ulang" :document="props.document" mode="stage" @gate-lock="value => terkunci = value" />
           </InvitationPhoneFrame>

@@ -463,7 +463,8 @@ export function useArunaMotion(
            * Aturan 6 DESIGN.md menuntut rentang scroll yang sama, bukan gerakan kedua yang
            * berdiri sendiri — jadi ini `'<0.12'` terhadap tween foto terakhir, bukan
            * ScrollTrigger sendiri. Bedanya terasa: bingkai yang punya trigger sendiri akan
-           * mengatup lagi setelah fotonya selesai, dan pada cover setinggi 92svh jaraknya
+           * mengatup lagi setelah fotonya selesai, dan pada cover setinggi satu layar
+           * (`--iv-layar-h`, bawaan 92svh — fase 74.2) jaraknya
            * cukup jauh untuk terbaca sebagai dua kejadian terpisah.
            *
            * `transformOrigin` sengaja TIDAK disentuh. Menggeser origin ke pojok memang

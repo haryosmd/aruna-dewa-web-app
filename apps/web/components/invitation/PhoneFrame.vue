@@ -23,7 +23,23 @@ const props = withDefaults(defineProps<{
    * selebar 390px saja sudah 680px tinggi dan nama pasangan jatuh di bawah lipatan.
    */
   maxHeight?: number
-}>(), { width: 390, maxHeight: undefined })
+  /**
+   * Tinggi VIEWPORT perangkat yang sedang ditiru, dalam koordinat render (sebelum diperkecil).
+   *
+   * Diterbitkan sebagai `--iv-layar-h` ke dalam undangan, dan itu satu-satunya gunanya. Bagian
+   * yang setinggi "satu layar" — cover, hero, gerbang amplop — dulu memakai `100svh`, yang di
+   * dalam editor berarti tinggi JENDELA EDITOR: mengecilkan jendela memendekkan cover di dalam
+   * bingkai iPhone, sesuatu yang tidak pernah terjadi di ponsel sungguhan.
+   *
+   * Nilainya tidak dibagi `fit`: ia hidup DI DALAM elemen yang di-`scale()`, jadi ia sudah berada
+   * di koordinat render yang sama dengan lebar 390/412 di sebelahnya.
+   *
+   * Dibiarkan `undefined` di halaman publik `/i/[slug]`, dan di sana `100svh` memang jawaban yang
+   * benar — pembacanya menulis `var(--iv-layar-h, 100svh)`, jadi absennya var ini adalah
+   * perilaku lama, cuma-cuma.
+   */
+  screenHeight?: number
+}>(), { width: 390, maxHeight: undefined, screenHeight: undefined })
 
 /** Skala yang sedang berlaku, untuk induk yang ingin menuliskannya ("diperkecil 62%"). */
 const scale = defineModel<number>('scale', { default: 1 })
@@ -55,7 +71,12 @@ watch(fit, next => { scale.value = next }, { immediate: true })
     <div
       ref="stage"
       data-preview-stage
-      :style="{ width: `${width}px`, transform: `scale(${fit})`, transformOrigin: 'top left' }"
+      :style="{
+        width: `${width}px`,
+        transform: `scale(${fit})`,
+        transformOrigin: 'top left',
+        ...(screenHeight ? { '--iv-layar-h': `${screenHeight}px` } : {}),
+      }"
     >
       <slot />
     </div>

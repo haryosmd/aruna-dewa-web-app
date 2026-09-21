@@ -25,7 +25,7 @@ const entrance = computed(() => (gerak.value && gerak.value !== 'tema' ? gerak.v
     :id="sectionDomId('hero')"
     data-iv-section
     :data-iv-entrance="entrance"
-    :class="cn('iv-hero relative grid place-items-center overflow-hidden px-5 text-center', compact ? 'min-h-[30rem] py-12' : 'min-h-[100svh] py-16')"
+    :class="cn('iv-hero relative grid place-items-center overflow-hidden px-5 text-center', compact ? 'min-h-[30rem] py-12' : 'min-h-[var(--iv-layar-h,100svh)] py-16')"
     :style="{ color: '#fffdf7', background: latar?.color || 'var(--iv-fg)' }"
   >
     <img data-iv-parallax data-iv-photo :src="photo" :alt="`Foto ${coupleNames}`" class="absolute inset-0 h-[118%] w-full object-cover">

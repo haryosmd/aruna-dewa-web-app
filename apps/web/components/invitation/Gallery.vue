@@ -139,6 +139,14 @@ function onKey(event: KeyboardEvent) {
             Gunakan tombol panah kiri dan kanan untuk berpindah foto, Escape untuk menutup.
           </DialogDescription>
 
+          <!--
+            `svh` DI SINI BENAR, dan sengaja tidak ikut `--iv-layar-h` (fase 74.2).
+
+            Lightbox adalah `DialogContent` reka-ui yang di-portal ke `body`: ia hidup di luar
+            bingkai pratinjau, jadi pembandingnya memang viewport sungguhan. Menukarnya dengan
+            tinggi layar perangkat akan membuat foto diperbesar melampaui jendela dan sisi
+            bawahnya terpotong. Jangan "diseragamkan".
+          -->
           <img
             :src="props.images[index]"
             :alt="`Potret pasangan ${index + 1}`"

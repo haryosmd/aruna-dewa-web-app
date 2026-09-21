@@ -31,7 +31,7 @@ void coverLayouts
     :data-cover-layout="layout"
     :class="cn(
       'iv-cover relative grid place-items-center overflow-hidden px-5 text-center',
-      compact ? 'min-h-[26rem]' : 'min-h-[92svh]',
+      compact ? 'min-h-[26rem]' : 'min-h-[var(--iv-layar-h,92svh)]',
     )"
     :style="onPhoto ? { color: '#fffdf7' } : { background: 'var(--iv-bg)', color: 'var(--iv-fg)' }"
   >
