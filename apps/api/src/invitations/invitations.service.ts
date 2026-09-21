@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { canEditDesign, createDefaultDocument, isLiveTemplateId, sectionFeature, type InvitationDocument } from '@aruna/contracts';
+import { canEditDesign, createDefaultDocument, isLiveTemplateId, migrateLegacyDocument, sectionFeature, type InvitationDocument } from '@aruna/contracts';
 import { shareSettingsSchema, type CreateInvitationBody, type ShareSettings } from '@aruna/contracts/api';
 import { PrismaService } from '../database/prisma.service.js';
 import { Prisma } from '@aruna/database';
@@ -161,12 +161,15 @@ function isPrismaUniqueError(error: unknown): boolean { return typeof error === 
 export function designFingerprint(document: InvitationDocument): string {
   // Fase 72: pada dokumen v2 `ornamentOverrides` tinggal di `opening-envelope` (migrator memindahkannya
   // dari `cover`); dokumen v1 tetap dibaca dari `cover` supaya revisi lama tidak berubah sidik jarinya.
-  const gerbang = document.sections?.find((section) => section.type === (document.schemaVersion === 2 ? 'opening-envelope' : 'cover'));
+  // `sections` datang dari JSON basis data: seluruh berkas ini memperlakukan bentuk yang tidak
+  // berbentuk sebagai "tidak ada bagian" supaya draft rusak berujung 400, bukan 500.
+  const sections = Array.isArray(document.sections) ? document.sections : [];
+  const gerbang = sections.find((section) => section.type === (document.schemaVersion === 2 ? 'opening-envelope' : 'cover'));
   return JSON.stringify({
     // Disortir sampai ke dalam: `tokens.motion` (fase 69) adalah objek, dan `{}` ≡ absen.
     // `tokens.layout` (fase 72) ikut di sini tanpa cabang baru.
     tokens: kanonikDalam(document.tokens ?? {}),
-    order: document.sections?.map((section) => section.id) ?? [],
+    order: sections.map((section) => section.id),
     ornaments: kanonik(gerbang?.data?.ornamentOverrides),
     // Kata-kata (fase 69) ikut digerbangi — keputusan pemilik: seluruh "tema sendiri" masuk
     // add-on desain. `{}` dan absen sama-sama `null`, supaya form yang dikosongkan kembali tidak
@@ -177,7 +180,7 @@ export function designFingerprint(document: InvitationDocument): string {
     // begitu pula `settings` (musik) dan `shareCard` (kartu bagikan) yang tinggal di luar sini.
     // Hanya v2: `gallery.data.motion` sudah ada di dokumen v1 (gerak galeri) dan tidak pernah
     // digerbangi — membacanya di sini akan mengubah sidik jari revisi lama tanpa ada yang menyentuhnya.
-    sections: document.schemaVersion === 2 ? kanonikBagian(document.sections) : [],
+    sections: document.schemaVersion === 2 ? kanonikBagian(sections) : [],
   });
 }
 
@@ -277,7 +280,30 @@ export function hasDesignChange(previous: unknown, next: InvitationDocument): bo
    * tidak bisa dipakai lagi.
    */
   if (!isLiveTemplateId(oldDocument.templateId)) return false;
-  return designFingerprint(oldDocument) !== designFingerprint(next);
+  /*
+   * Simpan pertama sesudah migrasi v1→v2 diukur terhadap HASIL MIGRASI, bukan terhadap dokumen
+   * v1-nya.
+   *
+   * Editor memigrasi draft saat memuatnya lalu menyuruh pasangan menyimpan. Sidik jari membaca
+   * `order` (dua belas id bagian berganti sekaligus) dan `copy` (migrator membuangnya), jadi ia
+   * SELALU berbeda — dan pasangan tanpa add-on `design` tidak bisa menyimpan apa pun lagi
+   * selamanya, termasuk mengetik nama orang tuanya.
+   *
+   * Yang diganti adalah pembandingnya, bukan gerbangnya: dokumen lama dimigrasikan dengan
+   * migrator yang sama persis dengan yang dipakai editor, lalu dibandingkan seperti biasa.
+   * Migrasi murni lolos; satu warna, satu urutan, atau satu `textStyles` yang diselundupkan dalam
+   * simpan itu tetap tertangkap. Pembebasannya habis sendiri — sesudah tersimpan, `schemaVersion`
+   * lama sudah 2 dan cabang ini tidak pernah dimasuki lagi.
+   *
+   * `Array.isArray` bukan hiasan: `previous` adalah JSON mentah dari basis data, dan migrator
+   * memetakan `document.sections`. Tanpa penjaga itu, sebuah draft rusak berubah dari 400 menjadi
+   * 500. Dan satu risiko yang harus diketahui: sidik jari sisi sini dihitung oleh migrator API,
+   * sidik jari `next` oleh migrator bundel web — mengubah urutan `eleganceSectionTypes` atau
+   * pembawaan ornamen di antara dua deploy yang tidak sinkron akan menolak simpan pertama.
+   */
+  const perluMigrasi = oldDocument.schemaVersion !== 2 && next.schemaVersion === 2 && Array.isArray(oldDocument.sections);
+  const dasar = perluMigrasi ? migrateLegacyDocument(oldDocument) : oldDocument;
+  return designFingerprint(dasar) !== designFingerprint(next);
 }
 
 function toJson(value: unknown): Prisma.InputJsonValue { return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue; }
