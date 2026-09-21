@@ -162,7 +162,11 @@ describe('simpan pertama sesudah migrasi v1→v2', () => {
   });
 
   it('pembebasan tema pensiun tetap menang lebih dulu', () => {
-    const pensiun = selundupkan(v1lengkap(), (doc) => { doc.templateId = 'aruna-lumine'; });
+    // KEDUA kunci tema diset. Sejak fase 74.9 dokumen membawa `themeId`, dan pembebasan tema
+    // pensiun membaca `themeId ?? templateId` — menimpa `templateId` saja menghasilkan dokumen
+    // yang tema tersimpannya masih hidup, jadi tes ini akan menguji hal yang berbeda dari
+    // namanya. Dokumen sungguhan selalu punya keduanya bernilai sama.
+    const pensiun = selundupkan(v1lengkap(), (doc) => { doc.templateId = 'aruna-lumine'; doc.themeId = 'aruna-lumine'; });
     const bebas = selundupkan(migrateLegacyDocument(pensiun), (doc) => { doc.tokens.primary = '#123456'; });
     expect(hasDesignChange(pensiun, bebas)).toBe(false);
   });

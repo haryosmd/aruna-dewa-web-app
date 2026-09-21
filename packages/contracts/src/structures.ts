@@ -147,3 +147,64 @@ export function documentStructureId(document: { schemaVersion?: number; structur
   if (document.structureId && document.structureId in structures) return document.structureId as StructureId
   return document.schemaVersion === 2 ? 'elegance' : 'warisan'
 }
+
+/* ── Pindah struktur ─────────────────────────────────────────────────────── */
+
+type DokumenApaPun = {
+  schemaVersion?: number
+  structureId?: string
+  sections?: { id: string; type: string; enabled: boolean; data: Record<string, unknown> }[]
+  [k: string]: unknown
+}
+
+/**
+ * Memindahkan sebuah dokumen ke struktur lain.
+ *
+ * Berdiri terhadap STRUKTUR persis seperti `migrateLegacyDocument` berdiri terhadap VERSI: murni,
+ * idempoten (struktur yang sama masuk → objek yang sama keluar), dan kehilangannya disebutkan
+ * alih-alih disembunyikan.
+ *
+ * **Isinya dibawa menurut TIPE, bukan menurut posisi.** Dua struktur boleh punya `gallery` di
+ * urutan yang berbeda, dan yang harus ikut pindah adalah foto-fotonya — bukan bagian yang
+ * kebetulan berada di indeks yang sama.
+ *
+ * Tiga kehilangan yang dipilih, masing-masing dipin tes:
+ *
+ * 1. **Tipe yang tidak ada di struktur tujuan hilang.** Pindah ke struktur tanpa `unduh-mantu`
+ *    berarti alamat acara ketiga tidak punya tempat untuk ditulis. Ia tidak diselundupkan
+ *    sebagai kunci passthrough tanpa pembaca — itu cuma menunda kebingungannya.
+ * 2. **`enabled` bagian WAJIB tujuan dipaksa menyala.** Kalau tidak, pindah struktur bisa
+ *    melahirkan dokumen yang langsung ditolak `validatePublishableDocument`.
+ * 3. **Id bagian mengikuti struktur tujuan.** Itu memang berarti seluruh `order` berganti — dan
+ *    itulah kenapa `hasDesignChange` memakai fungsi ini sebagai PEMBANDING, bukan melewati
+ *    gerbangnya.
+ *
+ * Yang dipertahankan apa adanya: `tokens`, `copy`, `settings`, `shareCard`, `templateId`, dan
+ * `themeId` — semuanya sumbu tema, bukan sumbu struktur.
+ */
+export function restructureDocument<T extends DokumenApaPun>(document: T, tujuanId: StructureId): T {
+  if (documentStructureId(document) === tujuanId) return document
+  const tujuan = structures[tujuanId] ?? structures.elegance
+  const lama = new Map((document.sections ?? []).map(section => [section.type, section]))
+
+  const sections = tujuan.build({ partner1: 'Aruna', partner2: 'Dewa' }).map(bawaan => {
+    const sebelumnya = lama.get(bawaan.type)
+    if (!sebelumnya) return bawaan
+    return {
+      ...bawaan,
+      // Bagian wajib tidak boleh mewarisi `enabled: false` dari struktur sebelumnya — dokumen
+      // yang lahir begitu langsung gagal terbit.
+      enabled: tujuan.required.has(bawaan.type) ? true : sebelumnya.enabled,
+      // Bawaan tujuan jadi ALAS, bukan penimpa: kolom yang belum pernah diisi pasangan tetap
+      // mendapat kata-kata bawaannya, dan yang sudah diisi menang.
+      data: { ...bawaan.data, ...sebelumnya.data },
+    }
+  })
+
+  return {
+    ...document,
+    schemaVersion: tujuan.family === 'warisan' ? 1 : 2,
+    structureId: tujuan.id,
+    sections,
+  }
+}

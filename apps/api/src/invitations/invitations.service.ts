@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { canEditDesign, createDefaultDocument, isLiveStructureId, isLiveTemplateId, migrateLegacyDocument, sectionFeature, type InvitationDocument } from '@aruna/contracts';
+import { canEditDesign, createDefaultDocument, documentStructureId, documentThemeId, isLiveStructureId, isLiveTemplateId, migrateLegacyDocument, restructureDocument, sectionFeature, type InvitationDocument } from '@aruna/contracts';
 import { shareSettingsSchema, type CreateInvitationBody, type ShareSettings } from '@aruna/contracts/api';
 import { PrismaService } from '../database/prisma.service.js';
 import { Prisma } from '@aruna/database';
@@ -170,6 +170,27 @@ export function designFingerprint(document: InvitationDocument): string {
   const sections = Array.isArray(document.sections) ? document.sections : [];
   const gerbang = sections.find((section) => section.type === (document.schemaVersion === 2 ? 'opening-envelope' : 'cover'));
   return JSON.stringify({
+    /*
+     * Kedua sumbu ikut sejak fase 74.11 — tapi nilai yang SUDAH DIRESOLUSI, tidak pernah kunci
+     * mentahnya. Ini jebakan paling mahal di seluruh pemisahan itu, jadi ditulis keras:
+     *
+     * Kalau yang ditulis `document.structureId` mentah, maka setiap draft pra-fase-74 (yang
+     * tidak punya kunci itu) berbalik dari `undefined` ke `'elegance'` pada simpan PERTAMA
+     * sesudah editor mulai menulisnya — dan seluruh pelanggan tanpa add-on `design` terkunci
+     * tidak bisa menyimpan apa pun. Itu cacat 73.1, kata per kata, untuk seluruh basis
+     * pelanggan yang ada. Dengan nilai teresolusi kedua sisi membaca `'elegance'`, dan tidak
+     * ada yang bergerak.
+     *
+     * Menambah kunci ke sini aman karena sidik jari TIDAK PERNAH dipersistensi: `hasDesignChange`
+     * menghitung kedua sisinya segar di API setiap kali disimpan.
+     *
+     * `theme` juga menutup lubang kecil yang sudah ada sebelum fase ini: pindah tema hanya
+     * menjatuhkan gerbang secara tidak langsung, karena `applyTemplate()` kebetulan ikut menulis
+     * `tokens`. Pasangan yang sudah menyetel paletnya sendiri bisa bertukar tema dengan `tokens`
+     * identik dan sidik jarinya tidak melihat apa pun.
+     */
+    theme: documentThemeId(document),
+    structure: documentStructureId(document),
     // Disortir sampai ke dalam: `tokens.motion` (fase 69) adalah objek, dan `{}` ≡ absen.
     // `tokens.layout` (fase 72) ikut di sini tanpa cabang baru.
     tokens: kanonikDalam(document.tokens ?? {}),
@@ -283,7 +304,17 @@ export function hasDesignChange(previous: unknown, next: InvitationDocument): bo
    * antar tema hidup tetap digerbangi seperti biasa, dan sekali pasangan sudah pindah ia
    * tidak bisa dipakai lagi.
    */
-  if (!isLiveTemplateId(oldDocument.templateId)) return false;
+  /*
+   * Yang dibaca di sini adalah tema yang TERSIMPAN, bukan hasil resolusinya — dan bedanya
+   * menentukan.
+   *
+   * `documentThemeId()` menerjemahkan id pensiun ke penggantinya, jadi ia TIDAK PERNAH
+   * mengembalikan id pensiun dan pembebasan di bawah tidak akan pernah menyala. Yang ditanyakan
+   * pembebasan ini justru "apakah yang tersimpan sudah pensiun?", jadi ia butuh nilai mentahnya.
+   * Urutan kuncinya tetap sama dengan `documentThemeId` supaya keduanya tidak bisa berselisih.
+   */
+  const temaTersimpan = oldDocument.themeId ?? oldDocument.templateId;
+  if (!isLiveTemplateId(temaTersimpan)) return false;
   /*
    * Simpan pertama sesudah migrasi v1→v2 diukur terhadap HASIL MIGRASI, bukan terhadap dokumen
    * v1-nya.
@@ -304,9 +335,31 @@ export function hasDesignChange(previous: unknown, next: InvitationDocument): bo
    * 500. Dan satu risiko yang harus diketahui: sidik jari sisi sini dihitung oleh migrator API,
    * sidik jari `next` oleh migrator bundel web — mengubah urutan `eleganceSectionTypes` atau
    * pembawaan ornamen di antara dua deploy yang tidak sinkron akan menolak simpan pertama.
+   * Sejak fase 74.11 resolusi STRUKTUR ikut berada di jendela skew yang sama; ia aman hanya
+   * karena kedua sisi menurunkan `undefined → 'elegance'` dengan cara yang identik.
    */
   const perluMigrasi = oldDocument.schemaVersion !== 2 && next.schemaVersion === 2 && Array.isArray(oldDocument.sections);
-  const dasar = perluMigrasi ? migrateLegacyDocument(oldDocument) : oldDocument;
+  /*
+   * Pindah struktur diukur dengan cara yang sama persis (fase 74.11), dan alasannya juga sama.
+   *
+   * Struktur tujuan memberi id barunya ke SELURUH bagian, jadi `order` berganti seluruhnya dan
+   * sidik jarinya dijamin berbeda — pasangan yang membayar add-on `design` untuk bisa pindah
+   * struktur justru akan ditolak oleh gerbang yang seharusnya mengizinkannya.
+   *
+   * Yang diganti pembandingnya, bukan gerbangnya: dokumen lama dipindahkan dengan fungsi yang
+   * sama persis dengan yang dipakai editor, lalu dibandingkan seperti biasa. Pindah murni lolos;
+   * satu warna atau satu `textStyles` yang diselundupkan dalam simpan yang sama tetap tertangkap;
+   * dan pembebasannya habis sendiri begitu tersimpan.
+   *
+   * Ini BUKAN melewati gerbang: pindah struktur tetap menuntut add-on `design`, dan yang
+   * menegakkannya adalah `canEditDesign` di pemanggil, bukan fungsi ini.
+   */
+  const gantiStruktur = documentStructureId(oldDocument) !== documentStructureId(next);
+  const dasar = perluMigrasi
+    ? migrateLegacyDocument(oldDocument)
+    : gantiStruktur && Array.isArray(oldDocument.sections)
+      ? restructureDocument(oldDocument, documentStructureId(next))
+      : oldDocument;
   return designFingerprint(dasar) !== designFingerprint(next);
 }
 
