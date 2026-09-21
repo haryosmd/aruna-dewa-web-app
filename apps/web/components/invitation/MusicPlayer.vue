@@ -2,7 +2,15 @@
 import { Disc3, Pause } from 'lucide-vue-next'
 import { nextMusicState, silentMusic, type MusicEvent } from '~/utils/music-state'
 
-const props = withDefaults(defineProps<{ url: string; title?: string; credit?: string }>(), { title: '', credit: '' })
+const props = withDefaults(defineProps<{
+  url: string
+  title?: string
+  credit?: string
+  /** Volume puncak 0–1 (fase 72: `settings.musicVolume`). Bawaan 0,6 = angka v1. */
+  volume?: number
+  /** Panggung editor (fase 72): tombol menempel di dalam `.iv-root`, bukan di viewport. */
+  contained?: boolean
+}>(), { title: '', credit: '', volume: 0.6, contained: false })
 
 const audio = ref<HTMLAudioElement | null>(null)
 
@@ -16,8 +24,11 @@ const audio = ref<HTMLAudioElement | null>(null)
 const state = ref(silentMusic())
 const playing = computed(() => state.value.playing)
 
-/** Volume puncak. Musik latar di balik teks; penuh terdengar seperti iklan, bukan undangan. */
-const peak = 0.6
+/**
+ * Volume puncak. Musik latar di balik teks; penuh terdengar seperti iklan, bukan undangan —
+ * bawaannya 0,6, dan pasangan boleh menggesernya di tab Global (fase 72).
+ */
+const peak = computed(() => (Number.isFinite(props.volume) ? Math.min(1, Math.max(0, props.volume)) : 0.6))
 let fade: ReturnType<typeof setInterval> | undefined
 
 /**
@@ -44,12 +55,13 @@ function fadeIn() {
   if (!element) return
   clearInterval(fade)
   element.volume = 0
-  const step = peak / 24
+  const puncak = peak.value
+  const step = puncak / 24
   fade = setInterval(() => {
     if (!audio.value) { clearInterval(fade); return }
-    const next = Math.min(peak, audio.value.volume + step)
+    const next = Math.min(puncak, audio.value.volume + step)
     audio.value.volume = next
-    if (next >= peak) clearInterval(fade)
+    if (next >= puncak) clearInterval(fade)
   }, 50)
 }
 
@@ -111,7 +123,7 @@ defineExpose({
     kiri dipilih karena ibu jari kanan menyapu di sisi kanan selagi menggulir, dan tombol yang
     tersenggol di sana membuat musik mati tanpa tamu tahu kenapa.
   -->
-  <div v-if="props.url" class="fixed bottom-[5.5rem] left-4 z-30 flex items-center gap-2">
+  <div v-if="props.url" :class="cn('bottom-[5.5rem] left-4 z-30 flex items-center gap-2', contained ? 'sticky w-fit' : 'fixed')">
     <audio ref="audio" :src="props.url" loop preload="none" />
     <button
       type="button"

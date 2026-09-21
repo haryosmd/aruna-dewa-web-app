@@ -1,4 +1,4 @@
-import type { InvitationDocument } from '@aruna/contracts'
+import { isRequiredSection, sectionMeta, type InvitationDocument, type SectionType } from '@aruna/contracts'
 
 /**
  * Aturan murni rail struktur editor — tanpa DOM, supaya bisa diuji tanpa merender halaman.
@@ -9,14 +9,28 @@ import type { InvitationDocument } from '@aruna/contracts'
 
 export type EditorSection = InvitationDocument['sections'][number]
 
-/** Bagian yang selalu ada dalam undangan; sakelarnya dimatikan di rail. */
+/**
+ * Bagian yang selalu ada dalam undangan; tombol sembunyikannya dimatikan di rail.
+ * Dokumen v1: cover, mempelai, acara. Dokumen v2 (fase 72): `requiredSectionTypes` kontrak.
+ */
 export const wajib = new Set<EditorSection['type']>(['cover', 'couple', 'events'])
 
 export type SectionRequirement = 'wajib' | 'opsional'
 
 export function sectionRequirement(type: EditorSection['type']): SectionRequirement {
-  return wajib.has(type) ? 'wajib' : 'opsional'
+  return wajib.has(type) || isRequiredSection(type) ? 'wajib' : 'opsional'
 }
+
+/**
+ * Label rail per tipe. Tipe v2 membaca `sectionMeta` kontrak (nama persis referensi); tipe v1
+ * yang tidak punya padanan tetap punya nama lamanya supaya dokumen lama tetap terbaca di rail.
+ */
+export const sectionLabels: Readonly<Record<string, string>> = {
+  cover: 'Cover pembuka', events: 'Acara', rsvp: 'RSVP', music: 'Musik',
+  ...Object.fromEntries(Object.entries(sectionMeta).map(([type, meta]) => [type, meta.label])),
+}
+
+export const sectionDescription = (type: SectionType): string => (sectionMeta as Record<string, { description: string }>)[type]?.description ?? ''
 
 /** Berapa bagian yang akan dilihat tamu. */
 export function visibleCount(sections: readonly EditorSection[]): number {

@@ -29,11 +29,37 @@ const props = withDefaults(
     hasMusic?: boolean
     /** Tempo flap dan surat (fase 69); segel tidak ikut. Lihat `motion-envelope.ts`. */
     speed?: EnvelopeSpeed
+    /*
+     * Wajah Elegance (fase 72): kata-katanya dari `opening-envelope.data`, bukan `copy`, segelnya
+     * tombol dengan callout berdenyut, dan tombol "Buka Undangan" v1 tidak ada. Semua prop teks di
+     * bawah hanya dibaca saat `elegance` menyala; wajah v1 tidak berubah satu piksel pun.
+     */
+    elegance?: boolean
+    eyebrow?: string
+    kicker?: string
+    guestLabel?: string
+    noGuest?: string
+    sealMonogram?: string
+    sealLabel?: string
+    callout?: string
+    subtitle?: string
+    footer?: string
+    musicNote?: string
+    /**
+     * Panggung editor (fase 72): gerbang `absolute` di dalam `.iv-root`, bukan `fixed` di
+     * viewport, dan tidak menyentuh `document.body` — panggungnya yang memutuskan lewat emit
+     * `lock`/`unlock` apa yang harus dikunci.
+     */
+    contained?: boolean
   }>(),
-  { greeting: '', image: '', intensity: 'seimbang', hasMusic: false, speed: 'sedang' },
+  {
+    greeting: '', image: '', intensity: 'seimbang', hasMusic: false, speed: 'sedang',
+    elegance: false, eyebrow: '', kicker: '', guestLabel: '', noGuest: '', sealMonogram: '', sealLabel: '',
+    callout: '', subtitle: '', footer: '', musicNote: '', contained: false,
+  },
 )
 
-const emit = defineEmits<{ open: [] }>()
+const emit = defineEmits<{ open: []; lock: []; unlock: [] }>()
 
 const root = ref<HTMLElement | null>(null)
 const opening = ref(false)
@@ -42,9 +68,25 @@ const hidden = ref(false)
 const ready = useInteractiveReady()
 const timeline = useArunaTimeline(root)
 
+/**
+ * Inisial di dalam segel. Teks SVG segel dipatok 32px pada viewBox 120, jadi "A & D" akan
+ * meluap; monogram pasangan dipadatkan (spasi dan `&` dibuang, maksimal tiga huruf) dan
+ * jatuh ke inisial nama bila kosong.
+ */
+const sealInitials = computed(() => {
+  const padat = props.sealMonogram.replace(/[\s&·.]+/g, '').slice(0, 3)
+  return props.elegance && padat ? padat : props.initials
+})
+
 /** Nothing behind the gate should scroll while it is closed. */
-onMounted(() => { document.body.style.overflow = 'hidden' })
-onBeforeUnmount(() => { document.body.style.overflow = '' })
+onMounted(() => {
+  if (props.contained) emit('lock')
+  else document.body.style.overflow = 'hidden'
+})
+onBeforeUnmount(() => {
+  if (props.contained) emit('unlock')
+  else document.body.style.overflow = ''
+})
 
 async function open() {
   if (opening.value) return
@@ -81,7 +123,8 @@ async function open() {
 }
 
 function finish() {
-  document.body.style.overflow = ''
+  if (props.contained) emit('unlock')
+  else document.body.style.overflow = ''
   hidden.value = true
 }
 </script>
@@ -90,7 +133,8 @@ function finish() {
   <div
     v-if="!hidden"
     ref="root"
-    class="iv-gate fixed inset-0 z-50 grid place-items-center overflow-hidden px-5"
+    :class="cn('iv-gate inset-0 z-50 grid place-items-center overflow-hidden px-5', contained ? 'iv-gate--contained absolute' : 'fixed')"
+    :data-gate-variant="elegance ? 'elegance' : 'v1'"
     style="background: var(--iv-bg); color: var(--iv-fg)"
   >
     <img
@@ -104,7 +148,98 @@ function finish() {
     <!-- Ladang ornamen yang sama seperti section, supaya amplop tidak jadi halaman paling sepi. -->
     <InvitationOrnamentField :set="props.ornaments" :intensity="props.intensity" tone="base" :seed="1" />
 
-    <div class="relative grid w-full max-w-sm justify-items-center gap-8" style="perspective: 1400px">
+    <!--
+      Wajah Elegance (fase 72). Amplop yang sama, tapi segelnya adalah tombolnya: callout
+      "Klik di sini" berdenyut di bawahnya, kartu "Kepada Yth." berdiri di bawah amplop, dan
+      catatan bawah menutup layar. Kata-katanya seluruhnya dari `opening-envelope.data`.
+    -->
+    <div v-if="elegance" class="iv-gate-elegance relative grid w-full max-w-sm justify-items-center gap-6" style="perspective: 1400px">
+      <div data-gate-body class="relative grid w-full justify-items-center gap-6">
+        <div class="grid justify-items-center gap-1.5 text-center">
+          <p v-if="props.eyebrow" class="iv-body m-0 text-[0.8125rem]">{{ props.eyebrow }}</p>
+          <p v-if="props.kicker" class="iv-kicker m-0">{{ props.kicker }}</p>
+        </div>
+
+        <div class="relative w-full" style="aspect-ratio: 3 / 2">
+          <div class="absolute inset-0 overflow-hidden rounded-md" style="box-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.45)">
+            <div class="absolute inset-0" style="background: color-mix(in srgb, var(--iv-primary) 16%, var(--iv-bg))" />
+            <OrnamentGlyph
+              :glyph="props.ornaments.envelopePocket"
+              class="absolute inset-0 z-20 h-full w-full"
+              :style="{ color: 'color-mix(in srgb, var(--iv-primary) 26%, var(--iv-bg))', '--amplop-garis': 'var(--iv-fg)' }"
+            />
+          </div>
+
+          <div
+            data-gate-card
+            class="pointer-events-none absolute inset-x-[7%] top-[16%] z-20 grid justify-items-center gap-2 rounded-sm px-5 py-5 opacity-0"
+            style="background: color-mix(in srgb, #ffffff 90%, var(--iv-bg)); box-shadow: 0 12px 30px -14px rgb(0 0 0 / 0.55)"
+          >
+            <OrnamentGlyph :glyph="props.ornaments.divider" data-iv-ornament class="h-4 w-28 opacity-70" :style="{ color: 'var(--iv-primary)' }" />
+            <p v-if="props.kicker" class="iv-kicker m-0">{{ props.kicker }}</p>
+            <p class="iv-display iv-script m-0 text-[1.7rem] leading-none">{{ props.couple }}</p>
+            <p v-if="props.date" class="iv-body m-0 text-[0.75rem]">{{ props.date }}</p>
+          </div>
+
+          <div data-gate-flap class="absolute inset-x-0 top-0 z-30 origin-top" style="height: 58%; transform-style: preserve-3d; backface-visibility: hidden">
+            <OrnamentGlyph
+              :glyph="props.ornaments.envelopeFlap"
+              class="h-full w-full drop-shadow-sm"
+              :style="{ color: 'color-mix(in srgb, var(--iv-primary) 34%, var(--iv-bg))', '--amplop-garis': 'var(--iv-fg)' }"
+            />
+          </div>
+
+          <!--
+            Segel = tombol. Nama aksesibelnya `sealLabel` ("Buka"); isinya dua separuh segel
+            yang terbelah saat ditekan, persis mekanik v1 — hanya pemicunya yang pindah.
+          -->
+          <button
+            data-gate-seal
+            type="button"
+            class="iv-seal iv-seal--button absolute left-1/2 top-[58%] z-40 -translate-x-1/2 -translate-y-1/2"
+            :aria-label="props.sealLabel || 'Buka'"
+            :disabled="!ready || opening"
+            @click="open"
+          >
+            <span data-gate-seal-half="left" class="iv-seal-half iv-seal-half--left">
+              <OrnamentGlyph :glyph="props.ornaments.seal" :initials="sealInitials" class="iv-seal-art" />
+            </span>
+            <span data-gate-seal-half="right" class="iv-seal-half iv-seal-half--right">
+              <OrnamentGlyph :glyph="props.ornaments.seal" :initials="sealInitials" class="iv-seal-art" />
+            </span>
+          </button>
+        </div>
+
+        <!-- Callout berdenyut di bawah segel: judul petunjuk + petunjuk segel. -->
+        <p v-if="props.callout || props.subtitle" data-gate-callout class="iv-gate-callout m-0 text-center" aria-hidden="true">
+          <span v-if="props.callout" class="iv-display block text-[1.05rem]">{{ props.callout }}</span>
+          <span v-if="props.subtitle" class="iv-body block text-[0.8125rem]">{{ props.subtitle }}</span>
+        </p>
+
+        <!-- Kartu "Kepada Yth." — nama tamu dari `?to=` atau tautan personal. -->
+        <div class="iv-gate-guest relative grid w-full justify-items-center gap-1.5 rounded-md px-5 py-4 text-center">
+          <OrnamentGlyph :glyph="props.ornaments.corner" data-iv-ornament class="iv-gate-guest-corner iv-gate-guest-corner--tl" aria-hidden="true" />
+          <OrnamentGlyph :glyph="props.ornaments.corner" data-iv-ornament class="iv-gate-guest-corner iv-gate-guest-corner--br" aria-hidden="true" />
+          <!-- Satu paragraf seperti v1: label dan nama tamu terbaca sebagai satu kalimat "Kepada Yth. …". -->
+          <p v-if="props.greeting" class="iv-body m-0 text-[0.9375rem]">
+            {{ props.guestLabel }}<br><span class="iv-display text-[1.35rem] leading-tight">{{ props.greeting }}</span>
+          </p>
+          <template v-else>
+            <p v-if="props.guestLabel" class="iv-kicker m-0">{{ props.guestLabel }}</p>
+            <p v-if="props.noGuest" class="iv-body m-0 text-[0.9375rem]">{{ props.noGuest }}</p>
+          </template>
+        </div>
+
+        <p v-if="props.footer" class="iv-body m-0 text-center text-[0.8125rem]">{{ props.footer }}</p>
+
+        <p v-if="props.hasMusic && props.musicNote" class="iv-body m-0 mx-auto flex max-w-[19rem] items-start justify-center gap-1.5 text-center text-[0.8125rem] opacity-75">
+          <Volume2 :size="15" class="mt-0.5 shrink-0" aria-hidden="true" />
+          <span>{{ props.musicNote }}</span>
+        </p>
+      </div>
+    </div>
+
+    <div v-else class="relative grid w-full max-w-sm justify-items-center gap-8" style="perspective: 1400px">
       <!-- Envelope: back wall, letter, then the flap folding over the top. -->
       <div data-gate-body class="relative grid w-full justify-items-center gap-7">
         <!--
@@ -208,6 +343,59 @@ function finish() {
 </template>
 
 <style>
+/*
+ * Gerbang terkurung (fase 72, panggung editor): `absolute inset-0` di dalam `.iv-root` yang
+ * tingginya sepanjang undangan, jadi isinya ditempelkan ke tepi atas wadah gulirnya
+ * (`sticky top-0`) setinggi satu layar — bukan di tengah root yang ribuan piksel.
+ */
+.iv-gate--contained { place-items: start center; }
+.iv-gate--contained > .relative {
+  position: sticky;
+  top: 0;
+  display: grid;
+  align-content: center;
+  min-height: min(100svh, 100%);
+}
+
+/* Segel yang jadi tombol: tanpa kromium tombol bawaan, dan kursor mengatakan ia bisa ditekan. */
+.iv-seal--button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+}
+.iv-seal--button:focus-visible { outline: 3px solid var(--iv-primary); outline-offset: 6px; border-radius: 999px; }
+.iv-seal--button:disabled { cursor: default; }
+
+/*
+ * Callout "Klik di sini" berdenyut — keadaan diamnya terlihat penuh; animasinya hanya
+ * mengayun antara 0,55 dan 1, dan berhenti sama sekali bagi yang meminta gerak minimal.
+ */
+.iv-gate-callout { animation: iv-gate-pulse 1.8s ease-in-out infinite; }
+@keyframes iv-gate-pulse {
+  0%, 100% { opacity: 1; transform: translateY(0); }
+  50% { opacity: 0.55; transform: translateY(-3px); }
+}
+@media (prefers-reduced-motion: reduce) { .iv-gate-callout { animation: none; } }
+
+/* Kartu tamu: kertas tipis berbingkai garis primary dan sudut ornamen kecil. */
+.iv-gate-guest {
+  background: color-mix(in srgb, #ffffff 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--iv-primary) 45%, transparent);
+}
+.iv-gate-guest-corner {
+  position: absolute;
+  width: 1.75rem;
+  height: auto;
+  aspect-ratio: 1;
+  color: var(--iv-primary);
+  opacity: 0.7;
+  pointer-events: none;
+}
+.iv-gate-guest-corner--tl { top: 0.3rem; left: 0.3rem; }
+.iv-gate-guest-corner--br { bottom: 0.3rem; right: 0.3rem; transform: rotate(180deg); }
+
 /*
  * Segel: dua separuh yang ditumpuk persis, masing-masing memotong setengah bentuknya
  * dengan `clip-path`. Di keadaan diam keduanya menyatu jadi satu kayon utuh, jadi tanpa

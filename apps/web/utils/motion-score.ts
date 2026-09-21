@@ -101,6 +101,14 @@ export const sectionRole: Record<SectionType, SectionRole> = {
   // `music` tidak pernah dirender sebagai section — ia pemutar mengambang. Ada di peta ini
   // hanya supaya `Record` lengkap dan tipe section baru tidak bisa lupa memberi peran.
   music: 'coda',
+  // Struktur Elegance (fase 72). Amplop = overture, hero + mempelai = introduction, kutipan =
+  // interlude, informasi acara/lokasi/hadiah = information, galeri = showcase, ucapan = response.
+  'opening-envelope': 'overture',
+  hero: 'introduction',
+  event: 'information',
+  map: 'information',
+  'unduh-mantu': 'information',
+  quote: 'interlude',
 }
 
 /**

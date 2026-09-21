@@ -1,18 +1,35 @@
 <script setup lang="ts">
 import { CalendarDays, Gift, Home, Images, MailCheck } from 'lucide-vue-next'
 
-const props = defineProps<{ available: string[] }>()
+const props = withDefaults(defineProps<{
+  available: string[]
+  /** Struktur dokumen (fase 72): v2 menunjuk id bagian Elegance dan "Ucapan" menggantikan "RSVP". */
+  version?: 1 | 2
+  /**
+   * Panggung editor (fase 72): dock menempel di dasar wadah gulir `.iv-root`, bukan di
+   * viewport — `sticky bottom` pada anak terakhir root, jadi ia tetap tampak selagi pratinjau
+   * digulung dan tidak bocor keluar bingkai ponsel.
+   */
+  contained?: boolean
+}>(), { version: 1, contained: false })
 
-const all = [
+const v1 = [
   { id: 'iv-cover', label: 'Awal', icon: Home, needs: 'cover' },
   { id: 'iv-events', label: 'Acara', icon: CalendarDays, needs: 'events' },
   { id: 'iv-gallery', label: 'Galeri', icon: Images, needs: 'gallery' },
   { id: 'iv-gift', label: 'Hadiah', icon: Gift, needs: 'gift' },
   { id: 'iv-rsvp', label: 'RSVP', icon: MailCheck, needs: 'rsvp' },
 ]
+const v2 = [
+  { id: 'iv-hero', label: 'Awal', icon: Home, needs: 'hero' },
+  { id: 'iv-event', label: 'Acara', icon: CalendarDays, needs: 'event' },
+  { id: 'iv-gallery', label: 'Galeri', icon: Images, needs: 'gallery' },
+  { id: 'iv-gift', label: 'Hadiah', icon: Gift, needs: 'gift' },
+  { id: 'iv-wishes', label: 'Ucapan', icon: MailCheck, needs: 'wishes' },
+]
 
-const items = computed(() => all.filter(item => props.available.includes(item.needs)))
-const active = ref('iv-cover')
+const items = computed(() => (props.version === 2 ? v2 : v1).filter(item => props.available.includes(item.needs)))
+const active = ref(props.version === 2 ? 'iv-hero' : 'iv-cover')
 
 onMounted(() => {
   const observer = new IntersectionObserver(
@@ -35,7 +52,7 @@ function go(id: string) {
   <nav
     v-if="items.length > 1"
     aria-label="Bagian undangan"
-    class="fixed inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-3"
+    :class="cn('inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-3', contained ? 'sticky' : 'fixed')"
   >
     <ul
       class="m-0 flex list-none items-center gap-0.5 rounded-full p-1.5 shadow-[0_12px_34px_-12px_rgb(0_0_0/0.45)] backdrop-blur-xl"

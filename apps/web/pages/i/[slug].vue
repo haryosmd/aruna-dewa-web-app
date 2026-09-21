@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { isLiveTemplateId, normalizeDisplayName, type LiveTemplateId } from '@aruna/contracts'
-import { galleryMotions, type GalleryMotion } from '~/utils/invitation-options'
 import type { InvitationDocument } from '@aruna/contracts'
 import type { GuestProfile, PublicInvitation, Wish } from '@aruna/contracts/api'
+import type { WishPayload } from '~/types/aruna'
 import { fallbackDocument } from '~/composables/useDocument'
 
 const toast = useToast()
@@ -43,27 +43,17 @@ const demoTemplate = computed<LiveTemplateId>(() => {
   return isLiveTemplateId(requested) ? requested : 'aruna-bloom'
 })
 
-/** `?galeri=` juga hanya berlaku di demo, supaya tiap gaya galeri bisa dilihat langsung. */
-const demoGallery = computed<GalleryMotion | ''>(() => {
-  const requested = typeof route.query.galeri === 'string' ? route.query.galeri : ''
-  return (galleryMotions as readonly string[]).includes(requested) ? (requested as GalleryMotion) : ''
-})
-
+/**
+ * `?galeri=` (gaya galeri v1) sudah tidak berlaku: dokumen demo v2 (fase 72) memakai galeri
+ * grid Elegance, dan `data.motion` pada bagian v2 berarti gerak masuk, bukan tata letak galeri.
+ */
 function demoDocument(): InvitationDocument {
   const template = invitationThemes.find(item => item.id === demoTemplate.value)!
-  const document: InvitationDocument = {
+  return {
     ...fallbackDocument,
     templateId: template.id,
     tokens: { ...template.tokens },
   }
-  if (!demoGallery.value) return document
-
-  // Disalin, bukan diubah di tempat: `fallbackDocument` dipakai bersama seluruh halaman.
-  document.sections = document.sections.map(section =>
-    section.type === 'gallery'
-      ? { ...section, data: { ...section.data, motion: demoGallery.value } }
-      : section)
-  return document
 }
 
 async function loadPublic() {
@@ -107,7 +97,7 @@ await loadGuest()
 await loadWishes()
 
 watch(token, loadGuest)
-watch([demoTemplate, demoGallery], () => {
+watch(demoTemplate, () => {
   if (isDemo.value) publicData.value = { document: demoDocument(), title: 'Contoh undangan Aruna Dewa', slug: 'demo', publishedAt: '' }
 })
 
@@ -151,6 +141,30 @@ async function sendWish(message: string) {
   }
 }
 
+/**
+ * Form ucapan v2 (fase 72): nama + kehadiran + pesan, terbuka juga tanpa token — API yang
+ * memutuskan apakah tamunya dikenal. Di demo tidak ada baris di database, jadi kirimannya
+ * disisipkan ke dinding lokal supaya alurnya tetap bisa dicoba dari landing.
+ */
+async function sendWishEntry(payload: WishPayload) {
+  if (!payload.attendance) return
+  if (isDemo.value) {
+    wishes.value = [{ id: `demo-${Date.now()}`, authorName: payload.name, message: payload.message, attendance: payload.attendance, approved: true }, ...wishes.value]
+    return
+  }
+  wishPending.value = true
+  try {
+    const created = await publicApi.createWish(slug, { token: token.value || undefined, name: payload.name, attendance: payload.attendance, message: payload.message })
+    toast.success('Ucapan dikirim untuk ditinjau pasangan.')
+    await loadWishes()
+    if (created?.id && !wishes.value.some(wish => wish.id === created.id)) wishes.value = [created, ...wishes.value]
+  } catch (cause) {
+    toast.error(apiErrorMessage(cause))
+  } finally {
+    wishPending.value = false
+  }
+}
+
 async function recordOpened() {
   if (!token.value || isDemo.value || openedRecorded.value) return
   openedRecorded.value = true
@@ -170,12 +184,39 @@ async function recordOpened() {
  * `robots.txt` sengaja tidak mem-`Disallow` `/i/*`: yang di-`Disallow` tidak pernah dibaca
  * isinya, jadi `noindex` di bawah ini justru tidak akan pernah sampai ke perayapnya.
  */
+/**
+ * Kartu bagikan (fase 72.7): PNG 1200×630 yang dirender API dari revisi terbit. `v` = waktu terbit,
+ * supaya WhatsApp/FB yang menyimpan pratinjau lama mengambil ulang begitu pasangan menerbitkan
+ * ulang; `to` diteruskan supaya kartu menyapa tamu yang tautannya dibagikan. Demo tidak punya
+ * revisi terbit, jadi tidak diberi kartu.
+ */
+const shareCardUrl = computed(() => {
+  if (isDemo.value) return ''
+  const params = new URLSearchParams()
+  const publishedAt = publicData.value?.publishedAt ? Date.parse(publicData.value.publishedAt) : 0
+  if (publishedAt) params.set('v', String(publishedAt))
+  if (guestGreeting.value) params.set('to', guestGreeting.value)
+  const query = params.toString()
+  return `${config.public.apiBase}/public/share-card/${encodeURIComponent(slug)}.png${query ? `?${query}` : ''}`
+})
+
 useHead({
   title: () => publicData.value?.title ?? 'Undangan pernikahan',
   link: [{ rel: 'canonical', href: `${config.public.webBase}/i/${slug}` }],
-  meta: [
+  meta: () => [
     { name: 'referrer', content: 'no-referrer' },
     { name: 'robots', content: isDemo.value ? 'index, follow' : 'noindex, nofollow' },
+    ...(shareCardUrl.value
+      ? [
+          { property: 'og:title', content: publicData.value?.title ?? 'Undangan pernikahan' },
+          { property: 'og:type', content: 'website' },
+          { property: 'og:image', content: shareCardUrl.value },
+          { property: 'og:image:width', content: '1200' },
+          { property: 'og:image:height', content: '630' },
+          { name: 'twitter:card', content: 'summary_large_image' },
+          { name: 'twitter:image', content: shareCardUrl.value },
+        ]
+      : []),
   ],
 })
 </script>
@@ -212,6 +253,7 @@ useHead({
       @cover-open="recordOpened"
       @rsvp="sendRsvp"
       @wish="sendWish"
+      @wish-entry="sendWishEntry"
     />
 
     <p v-else class="px-5 py-24 text-center text-ink-muted">Memuat undangan…</p>

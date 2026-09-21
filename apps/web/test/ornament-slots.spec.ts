@@ -213,8 +213,14 @@ describe('sectionOrnamentSlots mengikuti sumber section', () => {
     countdown: ['sections/Countdown.vue'], gallery: ['sections/Gallery.vue'], story: ['sections/Story.vue'],
     rundown: ['sections/Rundown.vue'], dresscode: ['sections/Dresscode.vue'], video: ['sections/Video.vue'],
     gift: ['sections/Gift.vue'], rsvp: ['sections/Rsvp.vue'], wishes: ['sections/Wishes.vue'],
-    closing: ['sections/Closing.vue'], music: [],
+    closing: ['sections/Closing.vue', 'elegance/Closing.vue'], music: [],
+    // Struktur Elegance (fase 72). `couple/countdown/gallery/gift/wishes/closing` punya dua
+    // renderer (v1 dan v2); tabelnya gabungan keduanya.
+    'opening-envelope': ['elegance/OpeningEnvelope.vue', 'CoverGate.vue'], hero: ['elegance/Hero.vue'],
+    event: ['elegance/Event.vue'], map: ['elegance/Map.vue'], 'unduh-mantu': ['elegance/UnduhMantu.vue'], quote: ['elegance/Quote.vue'],
   }
+  berkas.couple.push('elegance/Couple.vue'); berkas.countdown.push('elegance/Countdown.vue'); berkas.gallery.push('elegance/Gallery.vue')
+  berkas.gift.push('elegance/Gift.vue'); berkas.wishes.push('elegance/Wishes.vue')
   const pola = new RegExp(`\\born(?:aments)?\\.(${ornamentSlots.join('|')})\\b`, 'g')
 
   it.each(sectionTypes)('%s', (section) => {

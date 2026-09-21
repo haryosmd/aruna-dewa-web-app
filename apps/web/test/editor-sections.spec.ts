@@ -2,15 +2,10 @@ import { createDefaultDocument } from '@aruna/contracts'
 import { describe, expect, it } from 'vitest'
 
 import {
-  filterSections, normalize, sectionDomId, sectionRequirement, stageScrollOffset, stageScrollTop, visibleCount,
+  filterSections, normalize, sectionDomId, sectionLabels, sectionRequirement, stageScrollOffset, stageScrollTop, visibleCount,
 } from '../utils/editor-sections'
 
-const labels = {
-  cover: 'Cover pembuka', couple: 'Mempelai', events: 'Acara', countdown: 'Hitung mundur',
-  gallery: 'Galeri', story: 'Cerita cinta', rundown: 'Rundown', dresscode: 'Dresscode',
-  video: 'Video & live stream', gift: 'Hadiah', rsvp: 'RSVP', wishes: 'Ucapan',
-  closing: 'Penutup', music: 'Musik',
-}
+const labels = sectionLabels
 
 describe('filterSections', () => {
   const sections = createDefaultDocument().sections
@@ -24,6 +19,7 @@ describe('filterSections', () => {
   it('mencocokkan label Indonesia tanpa peduli kapital dan diakritik', () => {
     expect(filterSections(sections, 'GALERI', labels).map(e => e.section.id)).toEqual(['gallery'])
     expect(filterSections(sections, 'cérita', labels).map(e => e.section.id)).toEqual(['story'])
+    expect(filterSections(sections, 'lokasi', labels).map(e => e.section.id)).toEqual(['map'])
   })
 
   it('mencocokkan type mentah supaya "gallery" pun ketemu', () => {
@@ -31,8 +27,8 @@ describe('filterSections', () => {
   })
 
   it('indeks yang dikembalikan tetap indeks di dokumen, bukan di daftar tersaring', () => {
-    const [entry] = filterSections(sections, 'musik', labels)
-    expect(entry?.index).toBe(sections.findIndex(section => section.id === 'music'))
+    const [entry] = filterSections(sections, 'penutup', labels)
+    expect(entry?.index).toBe(sections.findIndex(section => section.id === 'closing'))
   })
 
   it('kueri yang tidak cocok mengembalikan daftar kosong, bukan semuanya', () => {
@@ -47,6 +43,11 @@ describe('sectionRequirement', () => {
     expect(sectionRequirement('events')).toBe('wajib')
     expect(sectionRequirement('gallery')).toBe('opsional')
     expect(sectionRequirement('music')).toBe('opsional')
+  })
+
+  it('struktur Elegance (fase 72): amplop, hero, mempelai, acara, penutup wajib', () => {
+    for (const type of ['opening-envelope', 'hero', 'couple', 'event', 'closing'] as const) expect(sectionRequirement(type)).toBe('wajib')
+    for (const type of ['countdown', 'map', 'unduh-mantu', 'quote', 'gallery', 'gift', 'wishes'] as const) expect(sectionRequirement(type)).toBe('opsional')
   })
 })
 

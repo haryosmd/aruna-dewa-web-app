@@ -29,6 +29,8 @@
 
   /* Status */
   --color-success: #1f7a4d;
+  /* Fase 72: pil "Tampil", tab aktif, kartu preset — hijau muda referensi. */
+  --color-success-soft: #e6f4ec;
   --color-danger: #b3261e;
   --color-danger-soft: #fdeceb;
   --color-warning: #8a5a00;

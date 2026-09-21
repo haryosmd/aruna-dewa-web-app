@@ -64,6 +64,13 @@ export const sectionOrnamentSlots: Record<(typeof sectionTypes)[number], readonl
   wishes: [],
   closing: ['garland', 'monogram'],
   music: [],
+  // Struktur Elegance (fase 72): dirender `components/invitation/elegance/*.vue`.
+  'opening-envelope': ['divider', 'seal', 'envelopePocket', 'envelopeFlap', 'corner'],
+  hero: ['monogram', 'symbol', 'corner'],
+  event: ['divider', 'corner'],
+  map: ['symbol'],
+  'unduh-mantu': ['symbol'],
+  quote: ['divider'],
 }
 
 /**
