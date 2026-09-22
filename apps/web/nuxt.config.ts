@@ -100,6 +100,21 @@ export default defineNuxtConfig({
       whatsapp: process.env.NUXT_PUBLIC_WHATSAPP ?? '',
       instagram: process.env.NUXT_PUBLIC_INSTAGRAM ?? '',
       email: process.env.NUXT_PUBLIC_EMAIL ?? 'halo@arunadewa.id',
+      /*
+       * Google Picker untuk impor daftar tamu (fase 75). Backend-nya sudah lengkap sejak lama
+       * (`POST /imports/google-sheets-preview`); yang menahan hanya konfigurasi Google Cloud —
+       * Picker API dinyalakan, API key, dan OAuth client id ber-origin yang sah.
+       *
+       * Keduanya kosong secara bawaan, dan tombolnya TIDAK dirender selama kosong. Itu pilihan
+       * yang disengaja: tombol yang terlihat hidup lalu gagal dengan galat Google adalah bentuk
+       * yang paling membingungkan, dan kalimat "belum aktif di lingkungan ini" yang sudah ada
+       * lebih jujur daripada itu.
+       *
+       * Scope-nya `drive.file` — sempit, hanya berkas yang dipilih sendiri lewat Picker — dan
+       * itulah yang membuat aplikasi ini tidak perlu melewati verifikasi Google.
+       */
+      googlePickerApiKey: process.env.NUXT_PUBLIC_GOOGLE_PICKER_API_KEY ?? '',
+      googlePickerClientId: process.env.NUXT_PUBLIC_GOOGLE_PICKER_CLIENT_ID ?? '',
     },
   },
   typescript: { strict: true, typeCheck: true },

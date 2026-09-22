@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
 import type { ImportPreviewResult } from '@aruna/contracts/api'
-import { Upload, X } from 'lucide-vue-next'
+import { Sheet, Upload, X } from 'lucide-vue-next'
 
 /**
  * Alur impor yang sudah ada (tinjau dulu, baru simpan), dipindah dari badan halaman ke dialog
@@ -48,6 +48,29 @@ async function previewFile(event: Event) {
     importError.value = apiErrorMessage(cause)
   } finally {
     (event.target as HTMLInputElement).value = ''
+  }
+}
+
+const picker = useGoogleSheetPicker()
+const memilihSheet = ref(false)
+
+/**
+ * Impor langsung dari Google Sheets. Tombolnya hanya ada kalau kuncinya dikonfigurasi — lihat
+ * `useGoogleSheetPicker`. Sesudah pratinjau datang, alurnya menyatu dengan dua pintu lain:
+ * tinjau dulu, baru commit dengan idempotency key.
+ */
+async function previewSheet() {
+  importError.value = ''
+  preview.value = null
+  memilihSheet.value = true
+  try {
+    const dipilih = await picker.pilih()
+    if (!dipilih) return // ditutup tanpa memilih — bukan galat
+    preview.value = await guestsApi.previewGoogleSheet(props.invitationId, dipilih)
+  } catch (cause) {
+    importError.value = cause instanceof Error ? cause.message : apiErrorMessage(cause)
+  } finally {
+    memilihSheet.value = false
   }
 }
 
@@ -109,7 +132,15 @@ async function commitImport() {
             Pilih berkas CSV atau XLSX
             <input id="guest-import-file" class="sr-only" type="file" accept=".csv,.xlsx" @change="previewFile">
           </label>
-          <p class="m-0 text-caption text-ink-subtle">Maksimal 10 MB. Impor Google Sheets memerlukan konfigurasi khusus dan belum aktif di lingkungan ini.</p>
+          <UiButton v-if="picker.tersedia.value" id="guest-import-sheets" tone="outline" class="justify-self-start" :loading="memilihSheet" @click="previewSheet">
+            <Sheet :size="17" aria-hidden="true" />
+            Ambil dari Google Sheets
+          </UiButton>
+          <p class="m-0 text-caption text-ink-subtle">
+            Maksimal 10 MB.
+            <template v-if="picker.tersedia.value">Google Sheets membaca hanya berkas yang kalian pilih sendiri.</template>
+            <template v-else>Impor Google Sheets memerlukan konfigurasi khusus dan belum aktif di lingkungan ini.</template>
+          </p>
         </div>
 
         <p v-if="importError" class="error m-0" role="alert">{{ importError }}</p>

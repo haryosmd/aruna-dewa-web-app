@@ -6,6 +6,7 @@ import type {
   ImportCommitResult,
   ImportPreviewResult,
   ImportPreviewBody,
+  GoogleSheetsPreviewBody,
   UpdateGuestBody,
 } from '@aruna/contracts/api'
 
@@ -36,8 +37,15 @@ export function useGuests() {
   const previewFile = (invitationId: string, file: FormData) =>
     request<ImportPreviewResult>(`/invitations/${invitationId}/imports/file-preview`, { method: 'POST', body: file })
 
+  /**
+   * Pratinjau dari Google Sheets (fase 75). Endpoint-nya sudah ada sejak fase awal; yang baru
+   * cuma pemanggilnya. Token akses hanya dilewatkan, tidak pernah disimpan di kedua sisi.
+   */
+  const previewGoogleSheet = (invitationId: string, body: GoogleSheetsPreviewBody) =>
+    request<ImportPreviewResult>(`/invitations/${invitationId}/imports/google-sheets-preview`, { method: 'POST', body })
+
   const commitImport = (invitationId: string, jobId: string, idempotencyKey: string) =>
     request<ImportCommitResult>(`/invitations/${invitationId}/imports/${jobId}/commit`, { method: 'POST', body: { idempotencyKey } })
 
-  return { list, create, update, remove, markSent, previewText, previewFile, commitImport }
+  return { list, create, update, remove, markSent, previewText, previewFile, previewGoogleSheet, commitImport }
 }

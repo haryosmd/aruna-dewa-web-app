@@ -28,14 +28,14 @@ type Fixture = {
 /** Prisma dan MembershipService seperlunya: kedua metode yang diuji menyentuh permukaan yang sempit. */
 function layanan(fixture: Fixture = {}) {
   const revisions = (fixture.revisions ?? []).map((row, i) => ({ id: `rev-${row.revision}`, invitationId: 'inv-1', revision: row.revision, document: row.document, createdAt: new Date(2026, 8, 20 + i) }));
-  const state = { draftDocument: fixture.draftDocument ?? createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom'), draftRevision: fixture.draftRevision ?? 5 };
+  const state: { draftDocument: unknown; draftRevision: number } = { draftDocument: fixture.draftDocument ?? createDefaultDocument('Aruna', 'Dewa', 'aruna-bloom'), draftRevision: fixture.draftRevision ?? 5 };
   const audit: Record<string, unknown>[] = [];
 
   const prisma = {
     invitation: {
       findUnique: async ({ select }: { select?: Record<string, boolean | object> }) => {
-        if (select && 'activeRevisionId' in select) return { activeRevisionId: fixture.activeRevisionId ?? null };
-        return { draftDocument: state.draftDocument, draftRevision: state.draftRevision, entitlements: (fixture.entitlements ?? []).map((featureId) => ({ featureId })) };
+        if (select && 'activeRevisionId' in select) return { activeRevisionId: fixture.activeRevisionId ?? null } as never;
+        return { draftDocument: state.draftDocument, draftRevision: state.draftRevision, entitlements: (fixture.entitlements ?? []).map((featureId) => ({ featureId })) } as never;
       },
       updateMany: async ({ where, data }: { where: { draftRevision?: number }; data: { draftDocument: unknown } }) => {
         if (where.draftRevision !== state.draftRevision) return { count: 0 };

@@ -24,6 +24,24 @@ Referensi cepat untuk menjalankan & memverifikasi stack `aruna-dewa` di lokal. L
 | `pnpm test:integration` | Smoke test API terhadap DB/SMTP lokal beneran |
 | `pnpm exec playwright test` | E2E test browser |
 
+## Impor Google Sheets (fase 75)
+
+Backend-nya sudah selesai sejak fase awal (`POST /invitations/:id/imports/google-sheets-preview`);
+yang menahan hanya dua nilai di `apps/web/.env`, dan keduanya milik akun Google Cloud pemilik:
+
+| Env | Dari mana |
+|---|---|
+| `NUXT_PUBLIC_GOOGLE_PICKER_API_KEY` | console.cloud.google.com → Credentials → API key (batasi ke domain situs) |
+| `NUXT_PUBLIC_GOOGLE_PICKER_CLIENT_ID` | Credentials → OAuth client ID → Web application, origin = asal situs |
+
+"Google Picker API" dan "Google Sheets API" harus dinyalakan di proyek yang sama. Scope yang
+diminta `drive.file` — hanya berkas yang dipilih sendiri — jadi aplikasinya tidak perlu melewati
+verifikasi Google.
+
+**Selama keduanya kosong, tombolnya tidak dirender sama sekali** dan dialog impor mengatakan
+fiturnya belum aktif. Unggah CSV/XLSX tetap jalan tanpa konfigurasi apa pun, dan template
+Excel-nya bisa diunduh dari halaman Generator.
+
 ## Lihat isi database — DBeaver
 
 Connection string sama persis baik pakai Docker maupun `pnpm db:local` (port & kredensial hardcode sama di keduanya):

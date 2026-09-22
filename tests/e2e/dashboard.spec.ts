@@ -1472,6 +1472,24 @@ test.describe('ornamen unggahan', () => {
  * dan tidak melihat apa pun berubah.
  */
 /*
+ * Google Picker (fase 75) dipasang di belakang env, dan tes ini menjaga sisi GELAPnya — yang
+ * justru lebih sering salah. Tanpa kunci, tombolnya tidak boleh ada sama sekali dan kalimat
+ * "belum aktif" harus berdiri: tombol yang terlihat hidup lalu gagal dengan galat Google jauh
+ * lebih membingungkan daripada tombol yang memang tidak ada.
+ */
+test('tanpa kunci Google, tombol Sheets tidak dirender dan kalimatnya jujur', async ({ page }) => {
+  test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
+  await signIn(page)
+  await page.goto(`/dashboard/${account!.invitationId}/guests`)
+  await hydrated(page)
+  await page.locator('#guest-import-file-toggle').click()
+
+  await expect(page.locator('#guest-import-file')).toBeAttached()
+  await expect(page.locator('#guest-import-sheets')).toHaveCount(0)
+  await expect(page.getByText('belum aktif di lingkungan ini')).toBeVisible()
+})
+
+/*
  * Riwayat versi (fase 75). Sampai fase ini tombol jam hanya membuka `alert()` yang menjanjikan
  * fiturnya menyusul, padahal `PublishedRevision` sudah menyimpan snapshot tiap terbit.
  */
