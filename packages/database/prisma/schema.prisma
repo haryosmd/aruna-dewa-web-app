@@ -329,6 +329,21 @@ model Guest {
   groupName     String?
   category      String?
   quota         Int      @default(1)
+  /// Fase 75 — empat kolom yang meniru lembar tamu pemilik. Semuanya OPSIONAL dan tidak pernah
+  /// memblokir satu baris impor pun; kosong adalah keadaan yang sah, bukan data yang hilang.
+  ///
+  /// `String?` dan bukan enum Prisma, mengikuti `Wish.attendance` dan bukan `RSVPAttendance`:
+  /// daftar pilihannya milik pasangan dan memang diubah di spreadsheet mereka sendiri, jadi enum
+  /// basis data akan menolak nilai yang mereka tambahkan secara sah. Bentuk dan panjangnya dijaga
+  /// zod di batas controller; sinonim yang dikenal dinormalkan, sisanya disimpan apa adanya.
+  ///
+  /// `Status` sengaja TIDAK punya kolom di sini: ia sudah diturunkan dari `sentAt` + RSVP, dan
+  /// kolom kedua yang mengklaim hal yang sama pasti menyimpang dari yang pertama.
+  guestFrom     String?
+  /// Jumlah anak dalam satu undangan. Tanpa minimum dan tanpa wajib — murni pendataan.
+  childCount    Int?
+  invitationKind String?
+  notes         String?
   tokenHash     String   @unique
   tokenCiphertext String
   tokenVersion  Int      @default(1)

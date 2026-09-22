@@ -79,7 +79,8 @@ async function commitImport() {
           <div class="grid gap-1">
             <DialogTitle class="m-0 font-display text-h3 font-semibold text-ink">{{ mode === 'file' ? 'Import Excel / CSV' : 'Tempel teks' }}</DialogTitle>
             <DialogDescription class="m-0 text-caption text-ink-muted">
-              Tinjau dulu, baru simpan. Kolom: nama, telepon, kategori, kuota. Nama yang sama diberi peringatan dan tetap dibuat sebagai tamu terpisah.
+              Tinjau dulu, baru simpan. Kolom: nama, nomor WA, kategori, kuota, dari, anak, jenis undangan, catatan — hanya nama yang wajib.
+              Lembar berspanduk dan berbaris petunjuk boleh diunggah apa adanya; barisnya dicari sendiri. Nama yang sama diberi peringatan dan tetap dibuat sebagai tamu terpisah.
             </DialogDescription>
           </div>
           <DialogClose id="guest-import-close" class="grid h-11 w-11 shrink-0 place-items-center rounded-md text-ink-muted transition-colors hover:bg-surface-3 hover:text-ink" aria-label="Tutup">

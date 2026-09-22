@@ -1,5 +1,5 @@
 import type { InvitationDocument } from '@aruna/contracts'
-import { dateParts } from '@aruna/contracts'
+import { dateParts, safeSpreadsheetCell } from '@aruna/contracts'
 import type { SharePreset } from '@aruna/contracts/api'
 
 /*
@@ -226,9 +226,19 @@ export function formatPhone(phone: string | undefined): string {
 }
 
 /** Baris CSV untuk ekspor dan template unduhan; sel yang memuat koma/kutip/baris baru dibungkus kutip. */
+/**
+ * CSV untuk diunduh pasangan — dan dibuka di Excel/Sheets, yang membuat pengutipan saja tidak cukup.
+ *
+ * Sebuah nama tamu yang diawali `=`, `+`, `-`, atau `@` akan dieksekusi sebagai rumus saat
+ * berkasnya dibuka; `=HYPERLINK(...)` adalah bentuk yang paling sering dipakai untuk itu. Repo
+ * ini sudah punya penangkalnya di `safeSpreadsheetCell` sejak lama — lengkap dengan tesnya — tapi
+ * sampai fase 75 fungsi itu **tidak punya satu pun pemanggil produksi**, dan ekspor tamu di sini
+ * mengirimkannya mentah. Nama tamu datang dari pasangan sendiri, jadi risikonya kecil; yang tidak
+ * masuk akal adalah punya obatnya lalu tidak meminumnya.
+ */
 export function toCsv(rows: (string | number)[][]): string {
   const cell = (value: string | number) => {
-    const text = String(value ?? '')
+    const text = safeSpreadsheetCell(String(value ?? ''))
     return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
   }
   return `${rows.map(row => row.map(cell).join(',')).join('\n')}\n`

@@ -4,13 +4,18 @@ import { X } from 'lucide-vue-next'
 import type { Guest } from '~/types/aruna'
 
 /**
- * Dialog tambah/sunting tamu (fase 72.6): nama, nomor WhatsApp, kategori, kuota.
+ * Dialog tambah/sunting tamu (fase 72.6): nama, nomor WhatsApp, kategori, kuota — dan sejak
+ * fase 75 empat kolom lembar tamu pemilik (dari, anak, bentuk undangan, catatan).
  *
  * Fondasinya `Dialog*` reka-ui seperti Studio Ornamen — jebakan fokus, `aria-modal`, dan
  * pengembalian fokus ke tombol pemicu datang gratis, dan itulah yang membuat sapuan axe
  * halaman ini tetap nol pelanggaran.
  */
-export interface GuestForm { displayName: string; phone: string; category: string; quota: number }
+export interface GuestForm {
+  displayName: string; phone: string; category: string; quota: number
+  /** Fase 75. Semuanya boleh kosong — kolom anak khususnya murni pendataan. */
+  guestFrom: string; childCount: number | null; invitationKind: string; notes: string
+}
 
 const props = defineProps<{
   open: boolean
@@ -23,7 +28,7 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ 'update:open': [boolean]; submit: [GuestForm] }>()
 
-const form = reactive<GuestForm>({ displayName: '', phone: '', category: '', quota: 1 })
+const form = reactive<GuestForm>({ displayName: '', phone: '', category: '', quota: 1, guestFrom: '', childCount: null, invitationKind: '', notes: '' })
 
 watch(() => [props.open, props.guest] as const, ([open, guest]) => {
   if (!open) return
@@ -31,7 +36,15 @@ watch(() => [props.open, props.guest] as const, ([open, guest]) => {
   form.phone = guest?.phone ?? ''
   form.category = guest?.category ?? guest?.group ?? ''
   form.quota = guest?.quota ?? 1
+  form.guestFrom = guest?.guestFrom ?? ''
+  form.childCount = guest?.childCount ?? null
+  form.invitationKind = guest?.invitationKind ?? ''
+  form.notes = guest?.notes ?? ''
 }, { immediate: true })
+
+/** Ejaan tersimpan, bukan label — yang dikirim ke API harus sama dengan yang dikenali impor. */
+const asalPilihan = [['', '—'], ['pria', 'Mempelai pria'], ['wanita', 'Mempelai wanita'], ['keduanya', 'Keduanya']] as const
+const bentukPilihan = [['', '—'], ['digital', 'Digital'], ['cetak', 'Cetak'], ['belum', 'Belum dikirim']] as const
 
 const title = computed(() => (props.guest ? 'Sunting tamu' : 'Tambah tamu'))
 </script>
@@ -60,7 +73,7 @@ const title = computed(() => (props.guest ? 'Sunting tamu' : 'Tambah tamu'))
           </DialogClose>
         </div>
 
-        <form class="grid gap-4" @submit.prevent="emit('submit', { ...form, quota: Math.min(20, Math.max(1, Number(form.quota) || 1)) })">
+        <form class="grid gap-4" @submit.prevent="emit('submit', { ...form, quota: Math.min(20, Math.max(1, Number(form.quota) || 1)), childCount: form.childCount === null || Number(form.childCount) < 1 ? null : Math.min(20, Number(form.childCount)) })">
           <UiField id="guest-form-name" v-slot="{ id }" label="Nama tamu undangan" hint="Tulis lengkap dengan gelar bila ada." required>
             <UiInput :id="id" v-model="form.displayName" maxlength="200" required autofocus />
           </UiField>
@@ -79,6 +92,26 @@ const title = computed(() => (props.guest ? 'Sunting tamu' : 'Tambah tamu'))
               <input :id="id" v-model.number="form.quota" class="control" type="number" min="1" max="20" inputmode="numeric" required>
             </UiField>
           </div>
+
+          <div class="grid gap-4 sm:grid-cols-[1fr_7rem]">
+            <UiField id="guest-form-from" v-slot="{ id }" label="Undangan dari" hint="Pihak mempelai yang mengundang.">
+              <UiSelect :id="id" v-model="form.guestFrom">
+                <option v-for="[nilai, label] in asalPilihan" :key="nilai" :value="nilai">{{ label }}</option>
+              </UiSelect>
+            </UiField>
+            <!-- Tanpa `required` dan tanpa minimum: kolom anak murni pendataan, kosong tetap sah. -->
+            <UiField id="guest-form-child" v-slot="{ id }" label="Anak" hint="Opsional.">
+              <input :id="id" v-model.number="form.childCount" class="control" type="number" min="1" max="20" inputmode="numeric" placeholder="—">
+            </UiField>
+          </div>
+          <UiField id="guest-form-kind" v-slot="{ id }" label="Bentuk undangan" hint="Catatan pribadi; tidak mengubah apa pun di undangan.">
+            <UiSelect :id="id" v-model="form.invitationKind">
+              <option v-for="[nilai, label] in bentukPilihan" :key="nilai" :value="nilai">{{ label }}</option>
+            </UiSelect>
+          </UiField>
+          <UiField id="guest-form-notes" v-slot="{ id }" label="Catatan" hint="Mis. vegetarian, kursi roda, teman satu meja.">
+            <UiInput :id="id" v-model="form.notes" maxlength="500" />
+          </UiField>
 
           <p v-if="error" class="error m-0" role="alert">{{ error }}</p>
 

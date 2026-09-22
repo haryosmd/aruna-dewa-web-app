@@ -16,9 +16,11 @@ export function buildGuestUrl(base: string, slug: string, displayName: string, t
 
 export * from './sections'
 export * from './photo-quota'
+export * from './guest-fields'
 export * from './structures'
 import { createLegacySections, structureIds, structures, type StructureId } from './structures'
 import { packagePhotoLimits } from './photo-quota'
+import { normalizeChildCount, normalizeGuestFrom, normalizeGuestNotes, normalizeInvitationKind } from './guest-fields'
 import { sectionTypes, isV2SectionType, sectionDataSchema, invitationSettingsSchema, shareCardSchema, layoutFocuses, type DefaultDocumentInput } from './sections'
 export { sectionTypes }
 
@@ -599,11 +601,76 @@ export function priceOrder(packageId: string, addonIds: string[]) {
 }
 
 
-export type ImportRow = { row: number; displayName: string; phone?: string; group?: string; quota?: number; errors: string[]; warnings: string[] }
+export type ImportRow = {
+  /** Nomor baris **spreadsheet aslinya**, bukan indeks setelah preamble dibuang — lihat `parseGuestText`. */
+  row: number
+  displayName: string
+  phone?: string
+  group?: string
+  quota?: number
+  /** Fase 75, mengikuti lembar tamu pemilik. Semuanya opsional dan tidak pernah membuat baris gagal. */
+  guestFrom?: string
+  childCount?: number
+  invitationKind?: string
+  notes?: string
+  errors: string[]
+  warnings: string[]
+}
+
+/** Ejaan judul kolom yang diterima — bahasa Inggris (lembar pemilik) dan Indonesia, berdampingan. */
+const importAliases = {
+  name: ['nama', 'nama undangan', 'nama tamu', 'nama lengkap', 'name', 'guest name', 'displayname'],
+  phone: ['telepon', 'phone', 'no hp', 'nomor hp', 'whatsapp', 'no wa', 'nomor wa', 'nomor whatsapp', 'wa', 'kontak'],
+  group: ['grup', 'group', 'kategori', 'relationship', 'hubungan'],
+  quota: ['kuota', 'quota', 'person', 'pax', 'orang', 'jumlah', 'jumlah orang', 'jumlah tamu'],
+  guestFrom: ['guest from', 'dari', 'undangan dari', 'pihak'],
+  child: ['child', 'anak', 'jumlah anak', 'children'],
+  invitationKind: ['invitation', 'jenis undangan', 'bentuk undangan', 'media undangan'],
+  notes: ['notes', 'note', 'catatan', 'keterangan'],
+} as const
+
+/** Sel yang berarti "tidak diisi" pada lembar berkotak-centang — lihat penyaring baris kosong. */
+const selKosong = ['', 'false', '0', '-', 'no', 'tidak']
+
+const judul = (value: string) => value.replace(/^\uFEFF/, '').trim().toLowerCase().replace(/\s+/g, ' ')
+
+/**
+ * Membaca daftar tamu dari CSV/TSV, termasuk lembar kerja yang **tidak rapi**.
+ *
+ * Sampai fase 75 fungsi ini menuntut baris pertama sebagai header, dan itu membuat lembar tamu
+ * sungguhan tidak bisa diimpor sama sekali: lembar pemilik punya spanduk judul, blok ringkasan,
+ * dua baris petunjuk, satu kolom kiri yang kosong, dan datanya baru mulai di baris 16. Spanduknya
+ * terbaca sebagai header, `hasHeader` jadi salah, dan seluruh kolom jatuh ke pemetaan posisi —
+ * hasilnya bukan galat melainkan **sampah yang terlihat berhasil**.
+ *
+ * Empat hal yang membuatnya bertahan, dan masing-masing menutup satu cara gagal:
+ *
+ * 1. **Kolom kiri yang kosong di setiap baris dibuang.** Lembar yang rapi sering menyisakan satu
+ *    kolom margin.
+ * 2. **Header dicari di 20 baris pertama**, bukan di baris pertama saja. Yang di atasnya preamble.
+ *    Tidak ketemu → jatuh ke pemetaan posisi lama, persis seperti sebelumnya.
+ * 3. **Nomor baris yang dilaporkan adalah nomor baris spreadsheet aslinya.** "Baris 17" di
+ *    pratinjau harus baris 17 yang pemilik lihat di Sheets, kalau tidak pratinjau galat justru
+ *    menyesatkan. Karena itu nomornya dihitung saat parsing, bukan dari indeks larik sesudah
+ *    preamble dan baris kosong dibuang.
+ * 4. **Baris yang benar-benar kosong dilewati diam-diam.** Ekspor lembar berkotak-centang menulis
+ *    `FALSE` di ratusan baris kosong di bawah data — lembar pemilik punya ~190 — dan tanpa aturan
+ *    ini pratinjaunya jadi 190 galat "nama kosong" dan fiturnya tidak terpakai. Aturannya sempit:
+ *    dilewati hanya kalau **tidak satu pun** selnya berisi di luar penanda kosong. Baris bernomor
+ *    telepon tanpa nama tetap galat — itu kehilangan data sungguhan yang harus dilihat.
+ */
 export function parseGuestText(text: string, format: 'csv' | 'tsv'): ImportRow[] {
   if (text.length > 10_000_000) throw new Error('Batas impor 10 MB.')
   const delimiter = format === 'csv' ? ',' : '\t'
-  const records: string[][] = []; let record: string[] = []; let field = ''; let quoted = false
+  // `line` menghitung SETIAP baris berkas, termasuk yang dibuang, supaya nomornya tetap nomor
+  // baris spreadsheet.
+  const records: { cells: string[]; line: number }[] = []
+  let record: string[] = []; let field = ''; let quoted = false; let line = 1
+  const tutup = () => {
+    record.push(field)
+    if (record.some(v => v !== '')) records.push({ cells: record, line })
+    record = []; field = ''
+  }
   for (let i = 0; i < text.length; i++) {
     const c = text[i]
     if (c === '"') {
@@ -613,30 +680,66 @@ export function parseGuestText(text: string, format: 'csv' | 'tsv'): ImportRow[]
     } else if (!quoted && c === delimiter) { record.push(field); field = '' }
     else if (!quoted && (c === '\n' || c === '\r')) {
       if (c === '\r' && text[i + 1] === '\n') i++
-      record.push(field); if (record.some(v => v !== '')) records.push(record); record = []; field = ''
+      tutup(); line++
     } else field += c
   }
   if (quoted) throw new Error('Tanda kutip CSV tidak ditutup.')
-  record.push(field); if (record.some(v => v !== '')) records.push(record)
-  const first = records[0]?.map(v => v.replace(/^\uFEFF/, '').trim().toLowerCase()) ?? []
-  const nameKeys = ['nama', 'nama undangan', 'name', 'displayname', 'nama lengkap']
-  const hasHeader = first.some(v => nameKeys.includes(v))
-  const nameIndex = hasHeader ? first.findIndex(v => nameKeys.includes(v)) : 0
-  const phoneIndex = hasHeader ? first.findIndex(v => ['telepon', 'phone', 'no hp', 'whatsapp', 'kontak'].includes(v)) : 1
-  const groupIndex = hasHeader ? first.findIndex(v => ['grup', 'group', 'kategori'].includes(v)) : 2
-  const quotaIndex = hasHeader ? first.findIndex(v => ['kuota', 'quota'].includes(v)) : 3
-  const rows = hasHeader ? records.slice(1) : records
+  tutup()
+
+  // (1) Kolom terdepan yang kosong di SETIAP baris dibuang.
+  let potong = 0
+  while (records.length && records.every(r => (r.cells[potong] ?? '').trim() === '')
+    && records.some(r => r.cells.length > potong + 1)) potong++
+  const baris = records.map(r => ({ cells: r.cells.slice(potong), line: r.line }))
+
+  // (2) Header dicari di 20 baris pertama.
+  const headerAt = baris.slice(0, 20).findIndex(r => r.cells.some(v => importAliases.name.includes(judul(v) as never)))
+  const header = headerAt >= 0 ? baris[headerAt]!.cells.map(judul) : []
+  const kolom = (kunci: keyof typeof importAliases, bawaan: number) =>
+    headerAt >= 0 ? header.findIndex(v => (importAliases[kunci] as readonly string[]).includes(v)) : bawaan
+  const nameIndex = kolom('name', 0)
+  const phoneIndex = kolom('phone', 1)
+  const groupIndex = kolom('group', 2)
+  const quotaIndex = kolom('quota', 3)
+  const fromIndex = kolom('guestFrom', -1)
+  const childIndex = kolom('child', -1)
+  const kindIndex = kolom('invitationKind', -1)
+  const notesIndex = kolom('notes', -1)
+
+  const rows = headerAt >= 0 ? baris.slice(headerAt + 1) : baris
   if (rows.length > 5000) throw new Error('Maksimum 5.000 baris per impor.')
+
   const seen = new Set<string>()
-  return rows.map((columns, i) => {
-    const errors: string[] = [], warnings: string[] = []; let displayName = columns[nameIndex] ?? ''
+  const hasil: ImportRow[] = []
+  for (const { cells, line: nomor } of rows) {
+    const ambil = (index: number) => (index >= 0 ? cells[index]?.trim() : undefined)
+    // (4) Baris kosong dilewati diam-diam.
+    if (!ambil(nameIndex) && cells.every(v => selKosong.includes(v.trim().toLowerCase()))) continue
+
+    const errors: string[] = [], warnings: string[] = []
+    let displayName = cells[nameIndex] ?? ''
     try { displayName = normalizeDisplayName(displayName) } catch (error) { errors.push((error as Error).message) }
     if (seen.has(displayName)) warnings.push('Nama sama ditemukan; tetap dibuat sebagai tamu terpisah.')
     seen.add(displayName)
-    const rawQuota = columns[quotaIndex]?.trim(); const quota = rawQuota ? Number(rawQuota) : 1
+    const rawQuota = ambil(quotaIndex); const quota = rawQuota ? Number(rawQuota) : 1
     if (!Number.isInteger(quota) || quota < 1 || quota > 20) errors.push('Kuota harus 1–20 orang.')
-    return { row: i + (hasHeader ? 2 : 1), displayName, phone: columns[phoneIndex]?.trim(), group: columns[groupIndex]?.trim(), quota, errors, warnings }
-  })
+    hasil.push({
+      row: nomor,
+      displayName,
+      phone: ambil(phoneIndex),
+      group: ambil(groupIndex),
+      quota,
+      // Keempatnya lewat normalisasi yang tidak pernah melempar: kolom pendataan tidak boleh
+      // menggagalkan baris. Yang tidak dikenal disimpan apa adanya (fase 75).
+      guestFrom: normalizeGuestFrom(ambil(fromIndex)) ?? undefined,
+      childCount: normalizeChildCount(ambil(childIndex)) ?? undefined,
+      invitationKind: normalizeInvitationKind(ambil(kindIndex)) ?? undefined,
+      notes: normalizeGuestNotes(ambil(notesIndex)) ?? undefined,
+      errors,
+      warnings,
+    })
+  }
+  return hasil
 }
 
 export function safeSpreadsheetCell(value: string): string {

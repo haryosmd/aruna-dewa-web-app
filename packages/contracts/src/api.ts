@@ -13,7 +13,7 @@
 
 import type { MediaKind } from './index'
 import { z } from 'zod'
-import { invitationDocumentSchema, structureIds, templateIds, type ImportRow, type InvitationDocument } from './index.js'
+import { guestChildMax, guestFieldMaxLength, guestNotesMaxLength, invitationDocumentSchema, structureIds, templateIds, type ImportRow, type InvitationDocument } from './index.js'
 
 /** Angka revisi optimistik. Harus ada — ketiadaannya persis yang dulu menghilangkan data. */
 const revision = z.number().int().nonnegative()
@@ -107,6 +107,16 @@ const guestFields = {
   /** Fase 72.6: kategori tamu di halaman Generator ("Keluarga", "Teman CPP"). Sinonim `group` — API menyimpan keduanya ke satu kolom, `category` menang bila keduanya dikirim. */
   category: z.string().trim().max(80).optional(),
   quota: z.number().int().min(1).max(20).optional(),
+  /**
+   * Empat kolom lembar tamu (fase 75). Semuanya opsional, dan `childCount` sengaja **tanpa
+   * minimum selain 1**: kolom anak murni pendataan, kosong sama sahnya dengan terisi, dan tidak
+   * boleh pernah memblokir satu baris pun. Impor menormalkan nilainya lebih dulu, jadi yang
+   * sampai ke sini sudah berbentuk; skema ini menjaga jalur form yang mengetik langsung.
+   */
+  guestFrom: z.string().trim().max(guestFieldMaxLength).optional(),
+  childCount: z.number().int().min(1).max(guestChildMax).nullish(),
+  invitationKind: z.string().trim().max(guestFieldMaxLength).optional(),
+  notes: z.string().trim().max(guestNotesMaxLength).optional(),
 }
 
 export const createGuestBodySchema = z.object(guestFields)
@@ -325,6 +335,14 @@ export interface Guest {
   rsvp?: GuestRsvp | null
   /** ISO; ada setelah "Kirim WA" ditekan untuk tamu ini. */
   sentAt?: string | null
+  /**
+   * Empat kolom lembar tamu (fase 75). Absen berarti tidak diisi, dan itu keadaan yang sah.
+   * `Status` tidak ada di sini dengan sengaja: ia diturunkan dari `sentAt` dan `rsvp`.
+   */
+  guestFrom?: string
+  childCount?: number
+  invitationKind?: string
+  notes?: string
 }
 
 export interface GuestPage {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { guestFromLabel, invitationKindLabel } from '@aruna/contracts'
 import type { GuestPage, InvitationDetail, ShareSettings } from '@aruna/contracts/api'
 import type { Guest } from '~/types/aruna'
 import { ArrowLeft, ClipboardPaste, Download, FileSpreadsheet, Plus, Search, Upload } from 'lucide-vue-next'
@@ -155,7 +156,13 @@ async function submitGuest(form: GuestForm) {
   saving.value = true
   formError.value = ''
   try {
-    const body = { displayName: form.displayName, phone: form.phone || undefined, category: form.category || undefined, quota: form.quota }
+    const body = {
+      displayName: form.displayName, phone: form.phone || undefined, category: form.category || undefined, quota: form.quota,
+      // Kolom lembar tamu (fase 75): string kosong dikirim sebagai `undefined`, bukan `''` —
+      // zod memangkasnya jadi '' dan API akan menyimpannya sebagai teks kosong alih-alih null.
+      guestFrom: form.guestFrom || undefined, childCount: form.childCount ?? null,
+      invitationKind: form.invitationKind || undefined, notes: form.notes || undefined,
+    }
     if (editing.value) {
       await guestsApi.update(invitationId.value, editing.value.id, { ...body, revision: editing.value.revision })
       toast.success('Tamu diperbarui.')
@@ -207,8 +214,29 @@ function downloadCsv(name: string, rows: (string | number)[][]) {
   URL.revokeObjectURL(url)
 }
 
+/**
+ * CSV datar — bentuk paling sederhana, tetap ada untuk yang mengetik sendiri.
+ * Judul kolomnya sama persis dengan yang dibaca pengimpor.
+ */
 function downloadTemplate() {
-  downloadCsv('template-tamu-aruna.csv', [['nama', 'telepon', 'kategori', 'kuota'], ['dr. Yosi Susanti, Sp.OG', '081234567890', 'Keluarga', 2], ['Budi Santoso', '+62 812 9876 5432', 'Teman CPP', 1]])
+  downloadCsv('template-tamu-aruna.csv', [
+    ['nama', 'nomor wa', 'kategori', 'kuota', 'dari', 'anak', 'jenis undangan', 'catatan'],
+    ['dr. Yosi Susanti, Sp.OG', '081234567890', 'Keluarga', 2, 'Mempelai wanita', '', 'Digital', 'Vegetarian'],
+    ['Budi Santoso', '+62 812 9876 5432', 'Teman CPP', 1, 'Mempelai pria', '', 'Cetak', ''],
+  ])
+}
+
+/**
+ * XLSX berbentuk lembar kerja: spanduk, petunjuk, dropdown kategori yang diisi kategori undangan
+ * INI. Dibangkitkan server (fase 75) justru karena kategorinya — berkas statis tidak bisa tahu
+ * kategori apa yang dipakai pernikahan ini.
+ *
+ * Dibuka lewat `window.open`, bukan `fetch` lalu Blob: permintaannya butuh cookie sesi, dan
+ * navigasi biasa membawanya sendiri tanpa kita menyentuh token apa pun.
+ */
+function downloadTemplateXlsx() {
+  const config = useRuntimeConfig()
+  window.open(`${config.public.apiBase}/invitations/${invitationId.value}/guests/template.xlsx`, '_blank', 'noopener')
 }
 
 const exporting = ref(false)
@@ -216,10 +244,12 @@ const exporting = ref(false)
 async function exportCsv() {
   exporting.value = true
   try {
-    const rows: (string | number)[][] = [['nama', 'telepon', 'kategori', 'kuota', 'status', 'terkirim_pada', 'tautan']]
+    // Judul kolomnya sengaja sama dengan yang dibaca `parseGuestText`, jadi hasil ekspor bisa
+    // diimpor kembali apa adanya — itu yang membuatnya berguna sebagai cadangan, bukan sekadar laporan.
+    const rows: (string | number)[][] = [['nama', 'nomor wa', 'kategori', 'kuota', 'dari', 'anak', 'jenis undangan', 'catatan', 'status', 'terkirim_pada', 'tautan']]
     for (let page = 1; ; page++) {
       const chunk = await guestsApi.list(invitationId.value, { page, pageSize: 100 })
-      for (const guest of chunk.items) rows.push([guest.displayName, guest.phone ?? '', guest.category ?? '', guest.quota, guest.sentAt ? 'Terkirim' : 'Belum', guest.sentAt ?? '', guestUrl(guest)])
+      for (const guest of chunk.items) rows.push([guest.displayName, guest.phone ?? '', guest.category ?? '', guest.quota, guestFromLabel(guest.guestFrom), guest.childCount ?? '', invitationKindLabel(guest.invitationKind), guest.notes ?? '', guest.sentAt ? 'Terkirim' : 'Belum', guest.sentAt ?? '', guestUrl(guest)])
       if (chunk.items.length < 100) break
     }
     downloadCsv(`tamu-${invitation.value?.slug ?? 'undangan'}.csv`, rows)
@@ -303,6 +333,10 @@ useHead({ title: () => invitation.value?.title
         <UiButton id="guest-import-text-toggle" tone="outline" @click="openImport('text')">
           <ClipboardPaste :size="17" aria-hidden="true" />
           Tempel teks
+        </UiButton>
+        <UiButton id="guest-template-xlsx" tone="ghost" @click="downloadTemplateXlsx">
+          <FileSpreadsheet :size="17" aria-hidden="true" />
+          Template Excel
         </UiButton>
         <UiButton id="guest-template-download" tone="ghost" @click="downloadTemplate">
           <FileSpreadsheet :size="17" aria-hidden="true" />

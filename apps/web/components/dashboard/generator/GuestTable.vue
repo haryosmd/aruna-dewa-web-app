@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Check, Clock, Link, Pencil, Trash2 } from 'lucide-vue-next'
+import { guestFromLabel, invitationKindLabel } from '@aruna/contracts'
 import type { Guest } from '~/types/aruna'
 import { formatPhone } from './templates'
 
@@ -36,6 +37,15 @@ function toggle(guest: Guest) {
 }
 
 const sentLabel = (guest: Guest) => (guest.sentAt ? `Terkirim ${new Date(guest.sentAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}` : 'Belum')
+
+/** Baris kedua sel nama: kuota, anak, dan pihak pengundang — hanya yang benar-benar terisi. */
+function rincian(guest: Guest): string {
+  const bagian: string[] = []
+  if (guest.quota > 1) bagian.push(`Kuota ${guest.quota} orang`)
+  if (guest.childCount) bagian.push(`${guest.childCount} anak`)
+  if (guest.guestFrom) bagian.push(guestFromLabel(guest.guestFrom))
+  return bagian.join(' · ')
+}
 </script>
 
 <template>
@@ -79,13 +89,22 @@ const sentLabel = (guest: Guest) => (guest.sentAt ? `Terkirim ${new Date(guest.s
           <td>
             <div class="grid gap-0.5">
               <span :id="`guest-name-${guest.id}`" class="font-semibold text-ink">{{ guest.displayName }}</span>
-              <span v-if="guest.quota > 1" class="text-caption text-ink-subtle">Kuota {{ guest.quota }} orang</span>
+              <!--
+                Keempat kolom lembar tamu (fase 75) menumpang di sel nama sebagai satu baris
+                ringkas, BUKAN empat kolom sendiri: tabel ini sudah `min-w-[52rem]`, dan menambah
+                empat kolom lagi akan mengembalikan persis limpahan yang baru diperbaiki 75.3.
+              -->
+              <span v-if="rincian(guest)" class="text-caption text-ink-subtle">{{ rincian(guest) }}</span>
+              <span v-if="guest.notes" :id="`guest-notes-${guest.id}`" class="text-caption italic text-ink-subtle">{{ guest.notes }}</span>
             </div>
           </td>
           <td class="tabular-nums text-ink-muted">{{ formatPhone(guest.phone) }}</td>
           <td>
-            <UiBadge v-if="guest.category || guest.group" tone="primary" size="md">{{ guest.category || guest.group }}</UiBadge>
-            <span v-else class="text-ink-subtle">—</span>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <UiBadge v-if="guest.category || guest.group" tone="primary" size="md">{{ guest.category || guest.group }}</UiBadge>
+              <UiBadge v-if="guest.invitationKind" tone="outline" size="md">{{ invitationKindLabel(guest.invitationKind) }}</UiBadge>
+              <span v-if="!guest.category && !guest.group && !guest.invitationKind" class="text-ink-subtle">—</span>
+            </div>
           </td>
           <td>
             <UiBadge :tone="guest.sentAt ? 'sage' : 'outline'" size="md">

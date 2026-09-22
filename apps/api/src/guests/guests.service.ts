@@ -1,13 +1,18 @@
 import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { normalizeDisplayName, parseGuestText, type ImportRow } from '@aruna/contracts';
+import { normalizeChildCount, normalizeDisplayName, normalizeGuestFrom, normalizeGuestNotes, normalizeInvitationKind, parseGuestText, type ImportRow } from '@aruna/contracts';
 import { guestListQuerySchema, type GuestListQuery } from '@aruna/contracts/api';
 import { PrismaService } from '../database/prisma.service.js';
 import { MembershipService } from '../common/membership.service.js';
 import { isOperator, type AuthenticatedUser } from '../common/auth.js';
 import { serializeRsvp, type StoredRsvp } from '../rsvp/attendance.js';
 import { createGuestToken, tryDecryptGuestToken } from './guest-token.js';
+import { buildGuestTemplate } from './guest-template.js';
 
-type GuestInput = { displayName: string; phone?: string; group?: string; category?: string; quota?: number };
+type GuestInput = {
+  displayName: string; phone?: string; group?: string; category?: string; quota?: number;
+  /** Kolom lembar tamu (fase 75) — semuanya opsional dan tidak pernah menggagalkan penyimpanan. */
+  guestFrom?: string; childCount?: number | null; invitationKind?: string; notes?: string;
+};
 
 @Injectable()
 export class GuestsService {
@@ -77,6 +82,16 @@ export class GuestsService {
     if (!deleted.count) throw new NotFoundException('Tamu tidak ditemukan');
   }
 
+  /**
+   * Template daftar tamu, dengan dropdown kategori yang diisi kategori undangan INI (fase 75).
+   * VIEWER boleh mengunduhnya — ia tidak memuat satu pun data tamu, cuma nama kategorinya.
+   */
+  async template(user: AuthenticatedUser, invitationId: string): Promise<Buffer> {
+    await this.memberships.requireInvitationRole(user, invitationId);
+    const groups = await this.prisma.guest.findMany({ where: { invitationId, groupName: { not: null } }, distinct: ['groupName'], select: { groupName: true }, orderBy: { groupName: 'asc' } });
+    return buildGuestTemplate(groups.map((row) => row.groupName!).filter(Boolean));
+  }
+
   async preview(user: AuthenticatedUser, invitationId: string, text: string, format: 'csv' | 'tsv') {
     await this.memberships.requireInvitationRole(user, invitationId, 'EDITOR');
     const rows = parseGuestText(text, format);
@@ -97,7 +112,9 @@ export class GuestsService {
       if (!claimed.count) throw new ConflictException('Impor sedang atau sudah diproses');
       const rows = job.rows as unknown as ImportRow[];
       const validRows = rows.filter((row) => row.errors.length === 0);
-      await tx.guest.createMany({ data: validRows.map((row) => { const token = createGuestToken(); return { invitationId, displayName: row.displayName, phone: normalizePhone(row.phone), groupName: row.group || null, quota: row.quota ?? 1, tokenHash: token.hash, tokenCiphertext: token.ciphertext }; }) });
+      // Keempat kolom lembar tamu ikut tersimpan (fase 75). `parseGuestText` sudah menormalkannya,
+      // jadi di sini cukup `?? null` — bukan dinormalkan dua kali dengan aturan yang bisa menyimpang.
+      await tx.guest.createMany({ data: validRows.map((row) => { const token = createGuestToken(); return { invitationId, displayName: row.displayName, phone: normalizePhone(row.phone), groupName: row.group || null, quota: row.quota ?? 1, guestFrom: row.guestFrom ?? null, childCount: row.childCount ?? null, invitationKind: row.invitationKind ?? null, notes: row.notes ?? null, tokenHash: token.hash, tokenCiphertext: token.ciphertext }; }) });
       await tx.importJob.update({ where: { id: job.id }, data: { importedCount: validRows.length } });
       await tx.auditEvent.create({ data: { actorId: user.sub, invitationId, action: 'GUEST_IMPORT_COMMITTED', targetType: 'ImportJob', targetId: job.id, metadata: { imported: validRows.length } } });
       return { imported: validRows.length };
@@ -117,7 +134,7 @@ export class GuestsService {
    * Dicatat `warn` per baris: tanpa ini kegagalannya jadi benar-benar senyap, karena filter
    * global yang tadinya mencatat stack-nya tidak lagi pernah kena.
    */
-  private serializeGuest(guest: { id: string; displayName: string; phone: string | null; groupName: string | null; quota: number; revision: number; tokenCiphertext: string; sentAt?: Date | null; rsvps?: StoredRsvp[] }, revealToken = true) {
+  private serializeGuest(guest: { id: string; displayName: string; phone: string | null; groupName: string | null; quota: number; revision: number; tokenCiphertext: string; sentAt?: Date | null; rsvps?: StoredRsvp[]; guestFrom?: string | null; childCount?: number | null; invitationKind?: string | null; notes?: string | null }, revealToken = true) {
     let personal: { token: string } | { tokenUnavailable: true } | Record<string, never> = {};
     if (revealToken) {
       const token = tryDecryptGuestToken(guest.tokenCiphertext);
@@ -129,13 +146,24 @@ export class GuestsService {
     }
     // `category` = `group`: satu kolom (`groupName`) dengan dua ejaan — impor lama menyebutnya grup,
     // halaman Generator menyebutnya kategori. Tidak dipisah supaya tamu hasil impor langsung terfilter.
-    return { id: guest.id, displayName: guest.displayName, ...personal, revision: guest.revision, phone: guest.phone ?? undefined, group: guest.groupName ?? undefined, category: guest.groupName ?? undefined, quota: guest.quota, rsvp: serializeRsvp(guest.rsvps?.[0]), sentAt: guest.sentAt ?? null };
+    return { id: guest.id, displayName: guest.displayName, ...personal, revision: guest.revision, phone: guest.phone ?? undefined, group: guest.groupName ?? undefined, category: guest.groupName ?? undefined, quota: guest.quota, rsvp: serializeRsvp(guest.rsvps?.[0]), sentAt: guest.sentAt ?? null, guestFrom: guest.guestFrom ?? undefined, childCount: guest.childCount ?? undefined, invitationKind: guest.invitationKind ?? undefined, notes: guest.notes ?? undefined };
   }
 }
 
 /** Bentuk dan batasnya dijamin `createGuestBodySchema`/`updateGuestBodySchema` di batas controller. */
-function prepareGuest(input: GuestInput): { displayName: string; phone: string | null; groupName: string | null; quota: number } {
-  return { displayName: normalizeDisplayName(input.displayName), phone: normalizePhone(input.phone), groupName: (input.category ?? input.group)?.trim() || null, quota: input.quota ?? 1 };
+function prepareGuest(input: GuestInput): { displayName: string; phone: string | null; groupName: string | null; quota: number; guestFrom: string | null; childCount: number | null; invitationKind: string | null; notes: string | null } {
+  return {
+    displayName: normalizeDisplayName(input.displayName),
+    phone: normalizePhone(input.phone),
+    groupName: (input.category ?? input.group)?.trim() || null,
+    quota: input.quota ?? 1,
+    // Dinormalkan di sini juga, bukan hanya di impor: form dasbor mengetik langsung, dan dua
+    // jalur masuk yang menyimpan ejaan berbeda akan memecah filter dan statistik di kemudian hari.
+    guestFrom: normalizeGuestFrom(input.guestFrom),
+    childCount: normalizeChildCount(input.childCount ?? null),
+    invitationKind: normalizeInvitationKind(input.invitationKind),
+    notes: normalizeGuestNotes(input.notes),
+  };
 }
 
 /**
