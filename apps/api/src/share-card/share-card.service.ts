@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import satori, { type Font } from 'satori';
 import { Resvg } from '@resvg/resvg-js';
+import sharp from 'sharp';
 import { normalizeDisplayName, type InvitationDocument } from '@aruna/contracts';
 import { PrismaService } from '../database/prisma.service.js';
 import { buildShareCard, cardFonts, cardHeight, cardWidth, readCardContent } from './share-card.elements.js';
@@ -32,6 +33,11 @@ const cacheLimit = 200;
 /** Foto latar diunduh paling besar 6 MB dan paling lama 4 detik; lewat itu kartu jatuh ke latar tema. */
 const photoByteLimit = 6 * 1024 * 1024;
 const photoTimeoutMs = 4000;
+/**
+ * Jenis yang **resvg** bisa dekode sendiri. Sisanya ditranskode lebih dulu — lihat `fetchPhoto`.
+ * Ini bukan daftar jenis yang boleh diunggah; itu `mediaRules.image` di kontrak.
+ */
+const resvgDecodableTypes = ['image/png', 'image/jpeg'];
 
 @Injectable()
 export class ShareCardService {
@@ -73,6 +79,18 @@ export class ShareCardService {
    * Foto dibawa ke satori sebagai data URI: satori memang bisa mengambil URL sendiri, tapi tanpa
    * batas ukuran maupun waktu, dan satu foto 20 MB akan menahan seluruh permintaan `og:image`.
    * Gagal apa pun sebabnya → kartu tetap terbit dengan latar tema.
+   *
+   * **WebP wajib ditranskode, dan yang rusak bukan WebP-nya.** satori menyematkan data URI apa adanya
+   * ke `<image href>`, lalu resvg yang harus mendekodenya — dan resvg tidak punya dekoder WebP. Ia
+   * tidak melempar: ia menggambar **kosong**. Terukur lewat pipeline yang sama persis dengan yang di
+   * bawah ini, foto yang sama dalam dua format: WebP → PNG 4.411 byte, rata-rata kanal 0,0, stdev 0,0
+   * (kanvas kosong); PNG → 466.044 byte, rata-rata 102,6, stdev 51,5. Karena `normalizePhoto` di web
+   * mengubah **setiap** foto unggahan jadi WebP, tanpa baris transkode di bawah praktis semua kartu
+   * `backgroundMode: 'foto'` terbit hitam — dan tidak ada yang melapor, karena pembacanya crawler
+   * WhatsApp dan Facebook, bukan pasangan yang membuka editornya.
+   *
+   * Yang ditranskode hanya salinan di memori untuk satu render. Aset tersimpan tetap WebP, dan
+   * halaman undangan tetap menerimanya apa adanya — di sana pembacanya browser, yang memang bisa.
    */
   private async fetchPhoto(url: string): Promise<string> {
     try {
@@ -80,11 +98,13 @@ export class ShareCardService {
       if (!['http:', 'https:'].includes(parsed.protocol)) return '';
       const response = await fetch(parsed, { signal: AbortSignal.timeout(photoTimeoutMs) });
       if (!response.ok) return '';
-      const type = response.headers.get('content-type') ?? '';
-      if (!/^image\/(jpeg|png|webp)/.test(type)) return '';
+      const type = (response.headers.get('content-type') ?? '').split(';')[0]!.trim();
+      if (!/^image\/(jpeg|png|webp)$/.test(type)) return '';
       const bytes = Buffer.from(await response.arrayBuffer());
       if (bytes.byteLength > photoByteLimit) return '';
-      return `data:${type.split(';')[0]};base64,${bytes.toString('base64')}`;
+      if (resvgDecodableTypes.includes(type)) return `data:${type};base64,${bytes.toString('base64')}`;
+      const png = await sharp(bytes).png().toBuffer();
+      return `data:image/png;base64,${png.toString('base64')}`;
     } catch (error) {
       this.logger.warn(`Foto kartu bagikan gagal diambil (${url}): ${error instanceof Error ? error.message : String(error)}`);
       return '';

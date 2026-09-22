@@ -1472,6 +1472,13 @@ test.describe('ornamen unggahan', () => {
  * dan tidak melihat apa pun berubah.
  */
 test.describe('kartu bagikan', () => {
+  /*
+   * Diisi oleh tes pertama, dipakai tes kedua. Tesnya dipisah karena yang kedua tidak menyentuh
+   * browser sama sekali — ia satu permintaan HTTP — dan menaruhnya di tes pertama berarti
+   * menjalankannya empat kali di empat project untuk menguji satu jawaban server yang sama.
+   */
+  let kartuUnduhUrl = ''
+
   test('tab Kartu mengganti panggung dengan pratinjau kartu, menyimpan gayanya, dan kembali ke Bagian dari rail', async ({ page }) => {
     test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
     await signIn(page)
@@ -1490,6 +1497,7 @@ test.describe('kartu bagikan', () => {
     await expect(page.locator('#editor-kartu-preview')).toBeVisible()
     await expect(page.locator('[data-preview-stage]')).toHaveCount(0)
     await expect(page.locator('#editor-kartu-unduh')).toHaveAttribute('href', /\/public\/share-card\/.+\.png/)
+    kartuUnduhUrl = (await page.locator('#editor-kartu-unduh').getAttribute('href')) ?? ''
     if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
 
     await page.locator('#editor-kartu-gaya-minimal').click()
@@ -1523,6 +1531,29 @@ test.describe('kartu bagikan', () => {
     await expect(page.locator('#editor-kartu-gaya-template')).toHaveAttribute('aria-checked', 'true')
     await saveDraft(page)
     await page.locator('#editor-inspector-bagian').click()
+  })
+
+  /*
+   * Sampai fase 75 suite ini berhenti di `href`-nya: tidak satu pun byte PNG pernah menyeberang,
+   * jadi satori dan resvg tidak pernah berjalan di sini. Di situlah kartu hitam bisa hidup lama —
+   * `og:image` yang 500 atau yang kosong terlihat persis sama dari sisi editor.
+   *
+   * Hanya `desktop`: yang diuji jawaban server, dan mengulangnya di empat project berarti empat
+   * render 1200x630 untuk satu jawaban yang sama.
+   */
+  test('URL kartu bagikan benar-benar menjawab PNG', async ({ request, baseURL }) => {
+    test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
+    test.skip(test.info().project.name !== 'desktop', 'Jawaban server, bukan tata letak — cukup satu project.')
+    test.skip(!kartuUnduhUrl, 'Tes tab Kartu belum sempat mengambil href-nya.')
+
+    const response = await request.get(new URL(kartuUnduhUrl, baseURL ?? undefined).toString())
+    expect(response.status()).toBe(200)
+    expect(response.headers()['content-type']).toContain('image/png')
+
+    const body = await response.body()
+    // Tanda tangan PNG, lalu IHDR: 1200x630 dibaca big-endian dari offset 16 dan 20.
+    expect(body.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))).toBe(true)
+    expect([body.readUInt32BE(16), body.readUInt32BE(20)]).toEqual([1200, 630])
   })
 })
 
