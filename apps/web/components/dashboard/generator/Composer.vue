@@ -45,7 +45,14 @@ const stateLabel = computed(() => ({
 </script>
 
 <template>
-  <section class="card grid gap-4 p-5 sm:p-6" aria-labelledby="share-composer-title">
+  <!--
+    `grid-cols-[minmax(0,1fr)]`, bukan kolom `auto` bawaan (fase 75): `#share-live-banner` di bawah
+    memuat URL publik yang `truncate`, dan `truncate` hanya bisa memotong kalau wadahnya BOLEH
+    menyusut. Sebagai item grid ber-`min-width:auto`, banner itu justru memaksa kartunya selebar
+    URL utuh — 305px terhadap jatah 278px di 360px, jadi isinya terpotong 7px di dalam kartu
+    sendiri. `minmax(0,1fr)` di sini mengembalikan pekerjaan itu ke `truncate`.
+  -->
+  <section class="card grid grid-cols-[minmax(0,1fr)] gap-4 p-5 sm:p-6" aria-labelledby="share-composer-title">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div class="grid gap-1">
         <h2 id="share-composer-title" class="m-0 font-display text-h3 font-semibold text-ink">

@@ -43,9 +43,22 @@ withDefaults(defineProps<{
 
     <main v-else class="min-w-0 flex-1 pb-24 lg:pb-12">
       <DemoBadge class="rounded-none border-x-0 lg:hidden" />
+      <!--
+        Kolomnya `minmax(0,1fr)`, bukan `1fr` bawaan grid — yang berarti `minmax(auto,1fr)` dan
+        karena itu boleh MELAR mengikuti min-content anaknya, bukan mengekangnya (fase 75).
+
+        Terukur di 360px pada halaman Generator: `grid-template-columns` jadi **347,125px** padahal
+        jatahnya 320, jadi `document.scrollWidth` 367 lawan `innerWidth` 360. Rantainya
+        `#share-live-banner` (min-content 305) → `section.card.p-5` (+40 padding = 347) → kolom
+        `auto` → halaman. Bukan tabelnya: `.table-wrap` ber-`overflow-x:auto` memang min-content 0.
+
+        Diperbaiki di sini, bukan di halamannya, karena penyebabnya wadah — dan satu baris ini
+        menutup kelas bug yang sama untuk SETIAP halaman dasbor bervarian `page`. Idiom yang sama
+        sudah dipakai `Inspector.vue`, `Toolbar.vue`, dan `StudioTile.vue`.
+      -->
       <div
         :class="cn(
-          'mx-auto grid w-full content-start gap-8 px-5 py-8 lg:px-10 lg:py-12',
+          'mx-auto grid w-full grid-cols-[minmax(0,1fr)] content-start gap-8 px-5 py-8 lg:px-10 lg:py-12',
           width === 'wide' ? 'max-w-[96rem]' : 'max-w-5xl',
         )"
       >

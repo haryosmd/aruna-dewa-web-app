@@ -248,6 +248,31 @@ Yang sudah diketahui, supaya sesi berikutnya tidak mengulang penelusurannya:
   di luar lingkup fase 74, dan mengubah tata letak tanpa bisa melihat layarnya adalah cara
   membuat cacat kedua.
 
+> **SELESAI `75.3`, dan tebakan tersangkanya meleset.** Idiomnya benar, tersangkanya salah.
+> Bukan kelompok pil filter status — min-content-nya 302,77, di bawah jatah 320. Yang melar
+> **`section.card` milik Composer**, min-content **347,13**, dan rantainya terukur penuh:
+> `#share-live-banner` (305,13) → `+ p-5` (40) → kolom grid `auto` → `+ px-5` halaman (20) →
+> `document.scrollWidth` **367** lawan `innerWidth` 360 di Chromium headless.
+>
+> Dan peringatan "cacat kedua" di paragraf atas terbukti tepat. `minmax(0,1fr)` di
+> `DashboardShell` **memang** membuat `scrollWidth` jadi 360 — tesnya hijau — tapi kartunya lalu
+> memotong isinya sendiri: `scrollWidth` 325 lawan `clientWidth` 318. Halaman berhenti melar,
+> URL-nya yang hilang 7px. Kalau diukur hanya dengan angka yang dipin tes, perbaikan itu terlihat
+> selesai.
+>
+> Akar sebenarnya: `#share-live-banner` memuat URL ber-`truncate`, dan `truncate` cuma bisa
+> memotong kalau wadahnya boleh menyusut — sebagai item grid ber-`min-width: auto`, banner itu
+> justru memaksa kartunya selebar URL utuh. `grid-cols-[minmax(0,1fr)]` pada kartu Composer
+> mengembalikan pekerjaan itu ke `truncate`: banner 305,13 → 278, kartu 325 → 318, nol
+> pemotongan. **Itu obatnya**, dan sendirian ia sudah membuat keempat project hijau.
+>
+> `minmax(0,1fr)` di `DashboardShell` tetap dipasang, tapi jujur tentang perannya: ia bukan yang
+> menyembuhkan kasus ini melainkan penjaga kelas — ia menahan min-content anak mana pun sampai ke
+> tepi halaman, untuk setiap halaman dasbor bervarian `page`, bukan cuma yang ini.
+>
+> Terukur sesudahnya: 360 dan 375, `scrollWidth === innerWidth` di editor maupun Generator, nol
+> elemen terpotong. `[mobile] [tablet] [desktop] [safari]` keempatnya lulus.
+
 ## 7. Verifikasi
 
 ```bash
