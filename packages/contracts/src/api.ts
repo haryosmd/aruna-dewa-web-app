@@ -294,6 +294,28 @@ export interface InvitationDetail extends InvitationSummary {
   photoLimit: number
 }
 
+/**
+ * Satu baris riwayat terbit (fase 75). **Tanpa `document`** — daftar 50 revisi berisi dokumen
+ * penuh adalah muatan yang tidak punya pembaca; isinya baru diambil saat satu revisi dipulihkan.
+ */
+export interface RevisionSummary {
+  revision: number
+  /** ISO; waktu snapshot dibuat, yaitu waktu terbitnya. */
+  publishedAt: string
+  /** Revisi yang sedang dilihat tamu. */
+  isActive: boolean
+}
+
+/**
+ * `draftRevision` ikut supaya pemulihan tunduk pada penjaga konflik yang sama dengan
+ * `PUT /draft`: memulihkan versi lama tidak boleh menimpa draft yang baru disunting di tab lain.
+ */
+export const restoreRevisionBodySchema = z.object({
+  revision: z.number().int().min(1),
+  draftRevision: z.number().int().min(0),
+})
+export type RestoreRevisionBody = z.infer<typeof restoreRevisionBodySchema>
+
 export interface SavedDraft {
   document: InvitationDocument
   revision: number

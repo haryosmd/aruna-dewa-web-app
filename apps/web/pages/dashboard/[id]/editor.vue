@@ -4,6 +4,7 @@ import type {
   BackdropChoice, BackdropWeight, EntranceStyle, EnvelopeSpeed, FontChoice, LayoutFocus, LiveTemplateId,
   SectionBackground, SectionMotion, ShareCardStyle, TextStyle,
 } from '@aruna/contracts'
+import type { RevisionSummary } from '@aruna/contracts/api'
 import {
   canEditDesign as designUnlocked, createDefaultDocument, designFeatureId, documentStructureId, documentThemeId,
   invitationDocumentSchema, isLiveTemplateId, liveStructureIds, maxGalleryPhotoLimit, restructureDocument, sectionMeta, structures, type StructureId,
@@ -503,11 +504,54 @@ function pintasan() {
     description: 'Ctrl/⌘ + Z — undo · Ctrl/⌘ + Shift + Z atau Ctrl + Y — redo · Ctrl/⌘ + S — simpan draft · ↑/↓ pada pegangan bagian — geser urutan · Esc — tutup dialog.',
   })
 }
-function riwayat() {
-  alert({
-    title: 'Riwayat versi',
-    description: `Draft ini di revisi ${revision.value}. Riwayat versi otomatis (kembali ke versi sebelumnya) menyusul di fase berikutnya; untuk sekarang undo/redo memegang 30 langkah terakhir sesi ini.`,
+/* ── Riwayat versi (fase 75) ────────────────────────────────────────────────── */
+const riwayatOpen = ref(false)
+const riwayatList = ref<RevisionSummary[]>([])
+const riwayatLoading = ref(false)
+const riwayatError = ref('')
+const riwayatRestoring = ref<number | null>(null)
+
+async function riwayat() {
+  riwayatOpen.value = true
+  riwayatError.value = ''
+  riwayatLoading.value = true
+  try { riwayatList.value = await invitationsApi.listRevisions(String(route.params.id)) }
+  catch (cause) { riwayatError.value = apiErrorMessage(cause) }
+  finally { riwayatLoading.value = false }
+}
+
+/**
+ * Memulihkan menulis ke draft lewat endpoint yang memakai jalur simpan yang sama, jadi gerbang
+ * desain dan penjaga konflik revisi tetap berlaku. Yang dikerjakan di sini cuma akibatnya di layar:
+ * dokumen lokal diganti, revisi lokal ikut naik, dan `checkpoint()` dipanggil LEBIH DULU supaya
+ * pemulihan bisa di-undo dalam sesi yang sama.
+ */
+async function pulihkan(target: number) {
+  const jawaban = await confirm({
+    title: `Pulihkan versi ${target}?`,
+    description: 'Isi draft sekarang diganti isi versi itu, dan perubahan yang belum tersimpan hilang. Tamu belum melihatnya sampai kalian menekan Publikasikan lagi.',
+    tone: 'danger',
+    actions: [{ id: 'batal', label: 'Batal', tone: 'outline' }, { id: 'pulihkan', label: 'Ya, pulihkan', tone: 'ink' }],
+    dismissId: 'batal',
   })
+  if (jawaban !== 'pulihkan') return
+  riwayatRestoring.value = target
+  riwayatError.value = ''
+  try {
+    checkpoint()
+    const hasil = await invitationsApi.restoreRevision(String(route.params.id), { revision: target, draftRevision: revision.value })
+    document.value = bersihkan(hasil.document as InvitationDocument)
+    revision.value = hasil.revision
+    // Server sudah menyimpannya, jadi draft ini BERSIH — `savedSnapshot` disamakan supaya
+    // `dirty` tidak menyala dan pasangan tidak diminta menyimpan sesuatu yang sudah tersimpan.
+    savedSnapshot.value = JSON.stringify(document.value)
+    riwayatOpen.value = false
+    toast.success(`Versi ${target} dipulihkan ke draft. Publikasikan untuk menayangkannya.`)
+  } catch (cause) {
+    riwayatError.value = apiErrorMessage(cause)
+  } finally {
+    riwayatRestoring.value = null
+  }
 }
 function pustaka() { bukaPustaka({ judul: 'Kelola foto & musik' }) }
 async function salinUrl() {
@@ -781,6 +825,16 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
       @batal="batalkanStudio"
     />
     <DashboardMediaLibrary :invitation-id="invitation.id" />
+
+    <DashboardEditorRiwayatDialog
+      v-model:open="riwayatOpen"
+      :revisions="riwayatList"
+      :loading="riwayatLoading"
+      :error="riwayatError"
+      :draft-revision="revision"
+      :restoring="riwayatRestoring"
+      @restore="pulihkan"
+    />
   </DashboardShell>
 
   <div v-else class="shell section grid gap-4">

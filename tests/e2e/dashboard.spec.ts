@@ -1471,6 +1471,34 @@ test.describe('ornamen unggahan', () => {
  * bagian di rail mengembalikan tab Bagian beserta panggungnya — tanpa itu pasangan mengklik rail
  * dan tidak melihat apa pun berubah.
  */
+/*
+ * Riwayat versi (fase 75). Sampai fase ini tombol jam hanya membuka `alert()` yang menjanjikan
+ * fiturnya menyusul, padahal `PublishedRevision` sudah menyimpan snapshot tiap terbit.
+ */
+test('tombol riwayat membuka daftar versi terbit, bukan kotak penjelasan', async ({ page }) => {
+  test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
+  await signIn(page)
+  await page.goto(`/dashboard/${account!.invitationId}/editor`)
+  // `hydrated` wajib: tanpanya kliknya mendarat sebelum Vue terpasang dan diam-diam tidak
+  // melakukan apa-apa — jebakan yang sudah tercatat sejak fase 16, dan yang membuat tes ini
+  // lulus sendirian lalu merah begitu dijalankan bersama project lain.
+  await hydrated(page)
+  await expect(page.locator('#editor-save')).toBeVisible()
+
+  await page.locator('#editor-riwayat').click()
+  await expect(page.getByRole('heading', { name: 'Riwayat versi', exact: true })).toBeVisible()
+
+  // Undangan QA sudah diterbitkan `pnpm test:integration`, jadi daftarnya berisi — dan tepat satu
+  // barisnya bertanda "Sedang tayang".
+  await expect(page.locator('#editor-riwayat-daftar')).toBeVisible()
+  await expect(page.locator('#editor-riwayat-kosong')).toHaveCount(0)
+  await expect(page.locator('#editor-riwayat-daftar li')).not.toHaveCount(0)
+  await expect(page.getByText('Sedang tayang', { exact: true })).toHaveCount(1)
+
+  await page.locator('#editor-riwayat-close').click()
+  await expect(page.getByRole('heading', { name: 'Riwayat versi', exact: true })).toBeHidden()
+})
+
 test.describe('kartu bagikan', () => {
   /*
    * Diisi oleh tes pertama, dipakai tes kedua. Tesnya dipisah karena yang kedua tidak menyentuh

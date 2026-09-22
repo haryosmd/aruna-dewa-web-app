@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { canEditDesign, createDefaultDocument, documentStructureId, documentThemeId, galleryPhotoLimitFor, isLiveStructureId, isLiveTemplateId, migrateLegacyDocument, restructureDocument, sectionFeature, type InvitationDocument } from '@aruna/contracts';
+import { canEditDesign, createDefaultDocument, documentStructureId, documentThemeId, galleryPhotoLimitFor, invitationDocumentSchema, isLiveStructureId, isLiveTemplateId, migrateLegacyDocument, restructureDocument, sectionFeature, type InvitationDocument } from '@aruna/contracts';
 import { shareSettingsSchema, type CreateInvitationBody, type ShareSettings } from '@aruna/contracts/api';
 import { PrismaService } from '../database/prisma.service.js';
 import { Prisma } from '@aruna/database';
@@ -79,6 +79,49 @@ export class InvitationsService {
       throw new ConflictException({ code: 'REVISION_CONFLICT', message: 'Draft telah diubah di tempat lain', current });
     }
     return { document, revision: revision + 1 };
+  }
+
+  /**
+   * Riwayat terbit (fase 75). Substratnya sudah ada sejak lama — `publish()` menulis satu
+   * `PublishedRevision` per revisi baru dan tidak pernah menghapusnya — yang belum ada cuma pintunya.
+   *
+   * VIEWER boleh membacanya: daftar ini tidak memuat satu pun dokumen, hanya nomor dan waktu.
+   * Dibatasi 50 karena itu tentang berapa banyak yang berguna dibaca manusia, bukan berapa yang ada.
+   */
+  async listRevisions(user: AuthenticatedUser, invitationId: string) {
+    await this.memberships.requireInvitationRole(user, invitationId);
+    const invitation = await this.prisma.invitation.findUnique({ where: { id: invitationId }, select: { activeRevisionId: true } });
+    if (!invitation) throw new NotFoundException('Undangan tidak ditemukan');
+    const revisions = await this.prisma.publishedRevision.findMany({ where: { invitationId }, orderBy: { revision: 'desc' }, take: 50, select: { id: true, revision: true, createdAt: true } });
+    return revisions.map((row) => ({ revision: row.revision, publishedAt: row.createdAt.toISOString(), isActive: row.id === invitation.activeRevisionId }));
+  }
+
+  /**
+   * Memulihkan satu revisi terbit ke DRAFT — bukan ke yang dilihat tamu. Tamu baru melihatnya
+   * sesudah pasangan menekan Publikasikan lagi, dan itu disengaja: memulihkan adalah tindakan
+   * menyunting, bukan menerbitkan.
+   *
+   * Ditulis lewat `saveDraft` yang sama, bukan `update` langsung ke `draftDocument`. Itu yang
+   * menjaga pemulihan tetap melewati gerbang desain, penjaga konflik revisi, dan validasi
+   * dokumen — pintu kedua yang menulis dokumen tanpa ketiganya adalah cara menyimpan dokumen
+   * yang API-nya sendiri akan tolak di tempat lain.
+   *
+   * Dokumennya **tidak** dimigrasi di sini. Revisi lama boleh `schemaVersion: 1`, dan aturan sejak
+   * fase 72 tetap berlaku: yang memigrasi editor di klien, supaya server tidak pernah menulis
+   * ulang dokumen yang belum disentuh pasangan.
+   */
+  async restoreRevision(user: AuthenticatedUser, invitationId: string, revision: number, draftRevision: number) {
+    await this.memberships.requireInvitationRole(user, invitationId, 'EDITOR');
+    const snapshot = await this.prisma.publishedRevision.findFirst({ where: { invitationId, revision }, select: { id: true, document: true } });
+    if (!snapshot) throw new NotFoundException('Revisi tidak ditemukan');
+    const parsed = invitationDocumentSchema.safeParse(snapshot.document);
+    // Sebuah revisi yang pernah terbit seharusnya selalu lolos. Kalau tidak, skemanya sudah
+    // bergerak meninggalkannya, dan menuliskannya ke draft akan memindahkan kegagalan ke tempat
+    // yang jauh lebih membingungkan — editor yang tidak bisa menyimpan tanpa sebab yang terlihat.
+    if (!parsed.success) throw new BadRequestException('Revisi ini tidak bisa dipulihkan karena formatnya sudah tidak dikenali.');
+    const hasil = await this.saveDraft(user, invitationId, parsed.data, draftRevision);
+    await this.prisma.auditEvent.create({ data: { actorId: user.sub, invitationId, action: 'INVITATION_REVISION_RESTORED', targetType: 'PublishedRevision', targetId: snapshot.id, metadata: { revision } } });
+    return hasil;
   }
 
   async publish(user: AuthenticatedUser, invitationId: string) {
