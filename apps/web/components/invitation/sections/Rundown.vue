@@ -41,6 +41,6 @@ const items = computed(() => rows(props.section, 'items'))
         </span>
       </li>
     </ol>
-    <OrnamentGlyph :glyph="orn.divider" data-iv-ornament class="h-7 w-48 opacity-65" :style="{ color: 'var(--iv-primary)' }" />
+    <OrnamentGlyph :glyph="orn.divider" data-iv-ornament data-iv-slot="divider" class="h-7 w-48 opacity-65" :style="{ color: 'var(--iv-primary)' }" />
   </InvitationSection>
 </template>

@@ -123,7 +123,13 @@ defineExpose({
     kiri dipilih karena ibu jari kanan menyapu di sisi kanan selagi menggulir, dan tombol yang
     tersenggol di sana membuat musik mati tanpa tamu tahu kenapa.
   -->
-  <div v-if="props.url" :class="cn('bottom-[5.5rem] left-4 z-30 flex items-center gap-2', contained ? 'sticky w-fit' : 'fixed')">
+  <!--
+    `ml-4`, bukan `left-4` (fase 77). Pada elemen `sticky`, `left` adalah batas penahan gulir
+    horizontal — bukan offset — jadi di panggung editor tombolnya menempel bibir kiri layar tanpa
+    jarak sama sekali, sementara di halaman tamu (`fixed`) ia justru berjarak 1rem. Margin
+    berlaku sama di kedua posisi.
+  -->
+  <div v-if="props.url" :class="cn('iv-player bottom-[5.5rem] left-0 z-30 ml-4 flex w-fit items-center gap-2', contained ? 'sticky' : 'fixed')">
     <audio ref="audio" :src="props.url" loop preload="none" />
     <button
       type="button"

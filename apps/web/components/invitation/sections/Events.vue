@@ -63,8 +63,8 @@ function calendarUrl(event: Record<string, unknown>) {
         data-iv-reveal
         class="iv-card relative grid gap-3 rounded-md px-6 py-8"
       >
-        <OrnamentGlyph :glyph="orn.corner" data-iv-ornament class="iv-event-corner iv-event-corner--tl" aria-hidden="true" />
-        <OrnamentGlyph :glyph="orn.corner" data-iv-ornament class="iv-event-corner iv-event-corner--br" aria-hidden="true" />
+        <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" class="iv-event-corner iv-event-corner--tl" aria-hidden="true" />
+        <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" class="iv-event-corner iv-event-corner--br" aria-hidden="true" />
 
         <!-- Medali ikon di atas judul: penanda jenis acara, bukan bullet di samping nama. -->
         <span class="iv-event-badge justify-self-center" aria-hidden="true">

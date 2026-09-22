@@ -30,7 +30,7 @@ const hintMasuk = computed(() => selectableEntrances.find(o => o.id === masuk.va
 <template>
   <div class="grid gap-3">
     <div class="flex flex-wrap items-baseline gap-x-2">
-      <span class="text-[0.8125rem] font-medium text-ink">Gerak</span>
+      <span class="text-caption font-medium text-ink">Gerak</span>
       <span class="text-caption text-ink-subtle">Tempo amplop dan cara bagian masuk. Amplop hanya tampil di halaman publik.</span>
     </div>
     <div class="grid gap-3 sm:grid-cols-2">

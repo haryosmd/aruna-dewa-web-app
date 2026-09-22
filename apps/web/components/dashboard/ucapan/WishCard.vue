@@ -29,7 +29,7 @@ const time = computed(() => {
         <UiBadge v-if="attendance" :tone="attendance.tone">{{ attendance.label }}</UiBadge>
         <UiBadge :tone="wish.approved ? 'sage' : 'gold'" size="sm">{{ wish.approved ? 'Tampil' : 'Ditinjau' }}</UiBadge>
       </div>
-      <p class="m-0 whitespace-pre-line text-[0.9375rem] leading-relaxed text-ink">{{ wish.message }}</p>
+      <p class="m-0 whitespace-pre-line text-ui-lg leading-relaxed text-ink">{{ wish.message }}</p>
       <time v-if="time" :datetime="wish.createdAt" class="text-caption text-ink-subtle">{{ time }}</time>
     </div>
 

@@ -77,7 +77,7 @@ const fontsUntukKolom = computed(() => props.field.kind === 'paragraf' ? props.f
     <button
       :id="`${id}-gaya`"
       type="button"
-      class="flex min-h-10 items-center justify-between gap-2 rounded-md px-1 text-[0.875rem] text-ink-muted transition-colors duration-200 hover:text-ink"
+      class="flex min-h-10 items-center justify-between gap-2 rounded-md px-1 text-ui text-ink-muted transition-colors duration-200 hover:text-ink"
       :aria-expanded="terbuka"
       :aria-controls="`${id}-gaya-panel`"
       @click="terbuka = !terbuka"

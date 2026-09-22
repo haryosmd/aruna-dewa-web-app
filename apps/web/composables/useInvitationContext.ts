@@ -37,6 +37,8 @@ export interface InvitationContext {
   wishPending: Ref<boolean>
   /** Foto galeri, dipakai section lain sebagai cadangan saat tidak punya foto sendiri. */
   galleryImages: Ref<string[]>
+  /** Foto panel kiri desktop (fase 77): galeri kalau ada, foto utama kalau tidak. */
+  fotoSisi: Ref<string[]>
   headlineDate: Ref<string>
   sectionOf: (type: string) => Section | undefined
   submitRsvp: (payload: RsvpPayload) => void

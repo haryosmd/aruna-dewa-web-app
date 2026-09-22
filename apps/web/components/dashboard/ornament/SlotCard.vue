@@ -15,20 +15,51 @@ import { isUnggahan, ornament } from '~/utils/ornaments'
  * `StudioTile.vue`: aset referensi adalah `<img>` berdimensi, dan track `auto` akan
  * mengikutinya melampaui kotak.
  */
-defineProps<{
+const props = withDefaults(defineProps<{
   kunci: string
   label: string
   glyph: OrnamentRef
   bawaan: boolean
   ramp: Record<string, string>
   terkunci: boolean
-}>()
+  /**
+   * Nonce sorot dari klik ornamen di kanvas (fase 76); 0 berarti kartu ini bukan yang dituju.
+   * Angka, bukan boolean: pasangan yang menyentuh ornamen yang sama dua kali tetap berhak
+   * melihat kartunya berkedip lagi, dan boolean yang sudah `true` tidak akan memicu apa pun.
+   */
+  sorot?: number
+}>(), { sorot: 0 })
 
 const emit = defineEmits<{ buka: [] }>()
+
+/*
+ * Sorot sementara, bukan keadaan yang menetap: ia menjawab "yang barusan kamu sentuh yang ini",
+ * dan sesudah terjawab ia tidak punya arti lagi. Cincin yang tinggal akan terbaca sebagai
+ * seleksi — dan di panel ini tidak ada yang namanya slot terpilih.
+ */
+const kartu = ref<HTMLElement | null>(null)
+const menyala = ref(false)
+let padam: ReturnType<typeof setTimeout> | undefined
+
+watch(() => props.sorot, (nonce) => {
+  if (!nonce) return
+  const halus = typeof matchMedia === 'function' && !matchMedia('(prefers-reduced-motion: reduce)').matches
+  kartu.value?.scrollIntoView({ block: 'nearest', behavior: halus ? 'smooth' : 'instant' })
+  menyala.value = true
+  clearTimeout(padam)
+  padam = setTimeout(() => { menyala.value = false }, 1200)
+})
+onBeforeUnmount(() => clearTimeout(padam))
 </script>
 
 <template>
-  <div class="grid gap-2 rounded-md border border-border bg-surface p-2">
+  <div
+    ref="kartu"
+    :class="cn(
+      'grid gap-2 rounded-md border border-border bg-surface p-2 transition-shadow duration-200',
+      menyala && 'border-primary ring-2 ring-primary',
+    )"
+  >
     <span
       class="grid h-16 grid-rows-[minmax(0,1fr)] place-items-center overflow-hidden rounded-sm bg-surface-2 p-1.5"
       :style="ramp"
@@ -36,7 +67,7 @@ const emit = defineEmits<{ buka: [] }>()
       <OrnamentGlyph :glyph="glyph" ubin class="min-h-0 max-h-full max-w-full object-contain text-[color:var(--iv-orn-body)]" aria-hidden="true" />
     </span>
     <span class="grid gap-0.5">
-      <span class="flex flex-wrap items-center gap-x-1.5 text-[0.8125rem] font-medium text-ink">
+      <span class="flex flex-wrap items-center gap-x-1.5 text-caption font-medium text-ink">
         {{ label }}
         <span v-if="!bawaan" class="rounded-full bg-primary-soft px-1.5 py-0.5 text-caption font-semibold text-primary">Diganti</span>
       </span>

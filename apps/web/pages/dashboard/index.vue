@@ -74,7 +74,7 @@ useHead({ title: 'Undangan kalian — Aruna Dewa' })
 
             <div class="grid gap-1.5">
               <h2 class="m-0 font-display text-h2 font-semibold text-ink">{{ invitation.title }}</h2>
-              <p class="m-0 text-[0.9375rem] text-ink-muted">/i/{{ invitation.slug }}</p>
+              <p class="m-0 text-ui-lg text-ink-muted">/i/{{ invitation.slug }}</p>
               <p class="m-0 text-caption text-ink-subtle">
                 {{ invitation.publishedAt ? 'Sudah dipublikasikan' : 'Belum dipublikasikan' }}
               </p>

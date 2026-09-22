@@ -135,8 +135,44 @@ Yang bertambah beberapa KB CSS, bukan berkas fontnya.
 
 **Subset tidak bisa dibatasi lewat konfigurasi `@nuxt/fonts` (diuji 2026-09-17, gagal).** `subsets` per-keluarga maupun `defaults.subsets` diterima TypeScript — keduanya ada di tipenya — tapi keluaran build identik byte-per-byte dengan tanpa keduanya, dan `unicode-range` Thai milik Charm tetap tertulis. Konsekuensinya seluruh subset tiap keluarga ikut ke CSS: **60 KB `@font-face` di `entry.css` yang 129 KB**. Tidak ada yang diunduh kalau glifnya tidak dipakai, jadi ini biaya CSS, bukan biaya font — tapi angkanya cukup besar untuk jadi pekerjaan tersendiri, dan jalurnya menyaring di `providers/google-woff2.ts`, bukan memasang ulang opsi yang terbukti mati.
 
-Skala fluid (`clamp`, 7 langkah): `display-1 · display-2 · h1 · h2 · h3 · body-lg · body · caption`.
-Body minimal 16px. Heading pakai `text-balance`, paragraf pakai `text-pretty`. Script/handwriting tidak pernah untuk paragraf atau navigasi.
+#### Skala huruf
+
+Dua skala, dan memilih yang salah adalah cacat — bukan selera. **Editorial** untuk halaman yang
+dibaca (landing, undangan): fluid, melar bersama layar. **Antarmuka** untuk chrome aplikasi
+(dasbor, editor, dialog): tetap, karena kontrol yang ikut melar membuat baris tombol berpindah
+tinggi antar layar.
+
+| Token | Nilai | Dipakai untuk |
+|---|---|---|
+| `text-display-1` | `clamp(2.6 → 4.5rem)` | judul hero landing |
+| `text-display-2` | `clamp(2.15 → 3.4rem)` | judul seksi besar |
+| `text-h1` | `clamp(2.1 → 3.4rem)` | judul halaman |
+| `text-h2` | `clamp(1.65 → 2.5rem)` | judul seksi |
+| `text-h3` | `clamp(1.25 → 1.625rem)` | judul dialog dan judul seksi dasbor |
+| `text-body-lg` | 17px | paragraf lapang; judul dokumen & panel di chrome |
+| `text-body` | 16px | paragraf, **dan seluruh isian form** |
+| `text-ui-lg` | 15px | judul kartu/panel di chrome |
+| `text-ui` | 14px | bawaan antarmuka: tab, tombol, nama item, label |
+| `text-caption` | 13px | teks bantu, hint, status pasif |
+| `text-ui-label` | 12px | label mikro uppercase, badge, satuan |
+| `text-stat` | 36px | angka metrik dasbor |
+
+Aturan:
+- **`text-[…]` dilarang di chrome.** Nilai yang diketik di tempat tidak punya nama, jadi tidak ada
+  yang bisa memeriksanya — dan lubang antara 13px dan 16px yang dulu tidak bertoken diisi sendiri
+  oleh 79 nilai arbitrer, tujuh ukuran berbeda dalam satu layar. Dijaga `chrome-type-scale.spec.ts`.
+  Kalau tidak ada token yang cocok, tambahkan tokennya lebih dulu.
+- **Isian form tetap 16px**, meski tetangganya 14px. Di bawah 16px Safari iOS memperbesar halaman
+  saat field difokus, dan halaman yang melompat saat diketik lebih buruk daripada label yang
+  sedikit lebih besar dari semestinya.
+- **Dua peran yang terlihat kembar wajib seukuran.** Nav toolbar dan tab inspektor sama-sama pil
+  `font-semibold rounded-full`; sempat 14px lawan 13px, dan beda 1px itu tidak pernah diputuskan
+  siapa pun — ia hanya terbaca sebagai antarmuka yang goyah.
+- **Judul panel tidak boleh seukuran isinya.** Turunkan judulnya ke `text-ui-label` uppercase,
+  jangan naikkan beratnya: "Struktur Undangan" 15/700 di atas nama bagian 15/600 adalah dua baris
+  yang berebut tingkat yang sama.
+- Body minimal 16px. Heading pakai `text-balance`, paragraf pakai `text-pretty`.
+  Script/handwriting tidak pernah untuk paragraf atau navigasi.
 
 ### Skala lain
 
@@ -282,6 +318,41 @@ Aturan wajib:
 - Setiap kontrol form punya `<label>` terkait, `aria-invalid`, dan pesan galat ber-`role="alert"` yang terhubung lewat `aria-describedby`.
 - Tombol OAuth memakai logo resmi provider, tinggi 48px, di halaman login **dan** register.
 
+### Panggung editor (fase 76)
+
+Panggung merender undangan yang sama dengan yang dilihat tamu, jadi tiap afordans yang hanya milik
+pasangan harus punya gerbang yang tidak bisa bocor. Gerbangnya satu: kelas `.iv-root--stage`, yang
+hanya ada pada `mode="stage"`.
+
+- **Ornamen bisa disentuh di panggung, tidak pernah di halaman tamu.** Hover memberi
+  `outline: 1px dashed` 65 % primary dengan `outline-offset: 2px` — `outline`, bukan `border`, supaya
+  tidak ada satu piksel pun yang bergeser saat kursor lewat. Klik memindahkan inspektor ke tab
+  Ornamen dan menyorot kartu slotnya; ia tidak membuka Studio, karena nilai ornamen berlaku global
+  dan kartu slot itu yang mengatakannya.
+- **Tiap ornamen berslot membawa `data-iv-slot`** di samping `data-iv-ornament`; keping ladang
+  memakai `data-layer-slot` miliknya sendiri. Dijaga vitest yang membaca sumbernya: ornamen yang
+  lupa diberi slot tetap tergambar dan tetap dianimasikan, dan **hanya** tidak bisa diklik — jenis
+  kegagalan yang terbaca sebagai fitur rusak, bukan sebagai atribut yang hilang.
+- **Kontrol menang atas ornamen.** Delegasi kliknya melewati apa pun yang punya leluhur
+  `button`, `a`, atau `[role="button"]`. Tanpa aturan ini segel amplop — yang isinya glyph slot
+  `seal` — akan membuka pemilih ornamen alih-alih amplopnya.
+- **Ukuran pratinjau dihitung dari lebar DAN tinggi.** Ponsel yang terpotong bukan pratinjau;
+  skalanya menyusut sampai seluruh layar muat, dengan lantai supaya hurufnya tetap terbaca.
+  Layar ponsel yang menggulung isinya sendiri, bukan panggung yang menggeser bingkainya — dan
+  karena wadah gulirnya elemen yang di-`scale()`, tiap perhitungan posisi gulir membagi selisih
+  rect dengan skalanya lebih dulu.
+- **Tidak ada bezel bergambar.** Pemilih pratinjau menawarkan apa yang benar-benar mengubah tata
+  letak — lebar: Ponsel 390 · Tablet 768 · Desktop 1280 — dan merendernya sebagai layar bersudut
+  membulat. Notch dan bingkai hitam memakan ~120px tinggi panggung untuk sesuatu yang dilihat
+  pasangan sambil menyunting, bukan sambil menikmati.
+- **Kepala panel tidak ikut tergulir.** Rail dan inspektor memakai grid dua baris di `lg`: judul,
+  pencarian, alat, dan tab di baris yang diam; daftar dan isi form di baris yang menggulung.
+  `sticky` menuntut latar buram dan z-index sendiri dan tetap bisa tertindih cincin fokus.
+- **Panggung tidak pernah mengunci gulirnya.** Gerbang amplop di panggung ikut aliran setinggi
+  satu layar (`.iv-gate--contained`), bukan menindih seluruh undangan. Yang sedang menyunting
+  undangannya sendiri tidak sedang diundang: ia harus bisa menggulir ke bagian mana pun tanpa
+  membuka amplop lebih dulu, dan tanpa ditinggalkan menebak kenapa roda tetikusnya diam.
+
 ### Popup (`AtomicPopup`)
 
 Satu popup untuk seluruh aplikasi, dipasang sekali di `app.vue` — bukan di layout, karena editor
@@ -307,6 +378,31 @@ aksi yang dipilih.
   orang.
 
 ---
+
+### Tata letak undangan menurut lebar (fase 77)
+
+Undangan mengukur **kolomnya**, bukan jendelanya, dan kolom itu berbeda di tiap lebar:
+
+| Container `.iv-frame` | Kolom | Bentuk |
+|---|---|---|
+| < 48rem | penuh | satu kolom, seperti ponsel |
+| 48–64rem | 40rem | satu kolom melapang — tablet |
+| ≥ 64rem | 30rem | dua kolom: panel foto Galeri yang diam di kiri, undangan yang digulir di kanan |
+
+- **`container-type` milik `.iv-column`, bukan `.iv-root`.** Di desktop `.iv-root` adalah grid
+  selebar layar; section yang menanyainya akan menata diri untuk layar lebar padahal duduk di
+  kolom 480. Yang harus diukur tiap section adalah kolomnya.
+- **`.iv-frame` punya NAMA container.** `@container` tanpa nama menanyai wadah terdekat, dan dock
+  serta pemutar musik hidup di dalam `.iv-column` — aturan desktop yang ditulis tanpa nama
+  menanyai kolom 480px dan tidak pernah cocok, berapa pun lebar layarnya.
+- **Dua kolom menuntut foto, bukan cuma lebar.** Panel kiri memakai foto Galeri, dan jatuh ke foto
+  utama kalau galerinya kosong — undangan yang baru dibuat selalu ada di keadaan itu, dan
+  kehilangan seluruh tata letak desktopnya karena belum sempat mengunggah galeri adalah hukuman
+  yang tidak masuk akal. Kalau foto tidak ada sama sekali, gridnya tidak dinyalakan dan undangan
+  kembali jadi kartu di tengah. Gerbangnya kelas `iv-frame--sisi`, yang dipasang Vue — bukan
+  disimpulkan CSS, karena CSS tidak bisa tahu ada tidaknya foto tanpa `:has()` yang rapuh.
+- **Apa pun yang `fixed` ikut kolomnya di desktop.** Dock yang dipusatkan ke layar mendarat di
+  tengah panel foto dan menindih nama pasangan di sana.
 
 ## Tema undangan
 

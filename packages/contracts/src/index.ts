@@ -344,6 +344,21 @@ export type InvitationDocument = z.infer<typeof invitationDocumentSchema>
 export type InvitationSection = InvitationDocument['sections'][number]
 
 /**
+ * Lagu bawaan undangan baru (fase 77).
+ *
+ * Sampai fase ini `settings.musicUrl` lahir kosong, dan karena `Renderer` tidak merender pemutar
+ * tanpa lagu, tiap undangan baru berdiri tanpa satu pun tombol musik — pemilik membacanya sebagai
+ * tombol yang hilang, bukan sebagai lagu yang belum dipilih, dan ia benar: tidak ada apa pun di
+ * layar yang mengatakan bahwa ada yang harus diisi.
+ *
+ * Nilainya ditulis di sini, bukan diimpor dari `apps/web/utils/music-library.ts`: kontrak tidak
+ * boleh bergantung pada aplikasi web. Duplikasinya dijaga `music-default.spec.ts`, yang menuntut
+ * url ini benar-benar ada di pustaka — tanpa itu, merapikan pustaka suatu hari akan membuat tiap
+ * undangan baru menunjuk berkas yang tidak ada.
+ */
+export const defaultMusic = { url: '/audio/gymnopedie-1.mp3', title: 'Gymnopédie No. 1' } as const
+
+/**
  * Dokumen baru = struktur Elegance (fase 72). Template `templateId` hanya menentukan palet,
  * ornamen, dan partitur gerak; struktur bagian dan kata-katanya sama untuk semua tema.
  */
@@ -362,6 +377,7 @@ export function createDefaultDocument(
     schemaVersion: 2, templateId: template.id, themeId: template.id, templateVersion: 1,
     structureId: structure.id,
     tokens: { ...template.tokens },
+    settings: { musicUrl: defaultMusic.url, musicTitle: defaultMusic.title },
     sections: structure.build({ partner1, partner2, ...input }),
   }
 }

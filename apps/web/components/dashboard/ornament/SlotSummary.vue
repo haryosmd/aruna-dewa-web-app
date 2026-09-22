@@ -36,6 +36,11 @@ const props = defineProps<{
    * bahwa nilainya tetap berlaku di setiap bagian yang memakai keping yang sama.
    */
   slots?: readonly OrnamentSlotKey[]
+  /**
+   * Slot yang baru saja diklik di kanvas (fase 76). `nonce` yang naik, bukan boolean: menyentuh
+   * ornamen yang sama dua kali harus tetap menyorot ulang.
+   */
+  sorot?: { slot?: OrnamentSlotKey, layer?: LayerSlot, nonce: number } | null
 }>()
 
 const emit = defineEmits<{
@@ -58,6 +63,16 @@ const baris = computed(() => (props.slots ?? ornamentSlots).map(slot => ({
   ...slotLabels[slot],
 })))
 
+/** Kunci baris yang sedang disorot, dalam kosakata `kunci` yang sama dengan kartunya. */
+const sorotKunci = computed(() => {
+  const target = props.sorot
+  if (!target) return ''
+  return target.layer ? `layer-${target.layer}` : (target.slot ?? '')
+})
+/** Jangkar ladang terlipat di balik `<details>`; menyorot yang tidak terlihat sama saja diam. */
+const layerTerbuka = ref(false)
+watch(() => props.sorot, (target) => { if (target?.layer) layerTerbuka.value = true })
+
 const barisLayer = computed(() => layerSlots.map(jangkar => {
   const glyph = berlaku.value.layers.find(id => ornament(id).slot === jangkar) as OrnamentId
   return {
@@ -75,7 +90,7 @@ const barisLayer = computed(() => layerSlots.map(jangkar => {
   <div class="grid gap-3 rounded-md border border-border bg-surface-2 p-3.5">
     <div class="grid gap-1">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 class="m-0 text-[0.9375rem] font-semibold text-ink">{{ tersaring ? 'Ornamen di bagian ini' : 'Ornamen' }}</h3>
+        <h3 class="m-0 text-ui-lg font-semibold text-ink">{{ tersaring ? 'Ornamen di bagian ini' : 'Ornamen' }}</h3>
         <span v-if="diganti && !tersaring" class="text-caption text-ink-muted">{{ diganti }} diganti dari bawaan tema</span>
       </div>
       <p v-if="tersaring" class="m-0 text-caption text-ink-subtle">
@@ -88,7 +103,7 @@ const barisLayer = computed(() => layerSlots.map(jangkar => {
       </p>
     </div>
 
-    <p v-if="terkunci" id="ornament-locked" class="m-0 flex items-start gap-2 rounded-md border border-border bg-surface p-3 text-[0.8125rem] text-ink-muted">
+    <p v-if="terkunci" id="ornament-locked" class="m-0 flex items-start gap-2 rounded-md border border-border bg-surface p-3 text-caption text-ink-muted">
       <Lock :size="15" class="mt-0.5 shrink-0 text-ink-subtle" aria-hidden="true" />
       <span>
         Mengganti ornamen terkunci pada preset undangan ini.
@@ -105,13 +120,21 @@ const barisLayer = computed(() => layerSlots.map(jangkar => {
           :bawaan="row.bawaan"
           :ramp="ramp"
           :terkunci="terkunci"
+          :sorot="row.kunci === sorotKunci ? (sorot?.nonce ?? 0) : 0"
           @buka="emit('buka', { slot: row.slot, layer: row.layer })"
         />
       </li>
     </ul>
 
-    <details v-if="!tersaring" class="rounded-md border border-border bg-surface">
-      <summary class="cursor-pointer list-none px-3 py-2.5 text-[0.8125rem] font-medium text-ink">
+    <!-- `@toggle` menjaga keadaannya tetap milik pasangan: membukanya dari kanvas tidak boleh
+         membuat `<details>` ini menolak ditutup lagi dengan tangan. -->
+    <details
+      v-if="!tersaring"
+      :open="layerTerbuka"
+      class="rounded-md border border-border bg-surface"
+      @toggle="layerTerbuka = ($event.target as HTMLDetailsElement).open"
+    >
+      <summary class="cursor-pointer list-none px-3 py-2.5 text-caption font-medium text-ink">
         Keping latar bagian
         <span class="ml-1 text-caption font-normal text-ink-subtle">lima jangkar ladang ornamen</span>
       </summary>
@@ -124,6 +147,7 @@ const barisLayer = computed(() => layerSlots.map(jangkar => {
             :bawaan="row.bawaan"
             :ramp="ramp"
             :terkunci="terkunci"
+            :sorot="row.kunci === sorotKunci ? (sorot?.nonce ?? 0) : 0"
             @buka="emit('buka', { slot: row.slot, layer: row.layer })"
           />
         </li>

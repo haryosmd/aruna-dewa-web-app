@@ -27,12 +27,12 @@ const entrance = computed(() => ['rise', 'sweep-left', 'sweep-right', 'iris'][Ma
     <InvitationText :section="props.section" field="greeting" tag="p" data-iv-lead class="iv-display m-0 text-[1.05rem]" />
     <InvitationText :section="props.section" field="subtitle" tag="p" data-iv-reveal class="iv-body m-0 max-w-[32rem]" multiline />
 
-    <OrnamentGlyph :glyph="orn.floral" data-iv-ornament class="h-24 w-20 opacity-80" :style="{ color: 'var(--iv-primary)' }" />
+    <OrnamentGlyph :glyph="orn.floral" data-iv-ornament data-iv-slot="floral" class="h-24 w-20 opacity-80" :style="{ color: 'var(--iv-primary)' }" />
 
     <div v-if="photo" data-iv-reveal class="iv-portrait" :data-entrance="entrance">
       <img :src="photo" :alt="`Potret ${coupleNames}`" data-iv-photo loading="lazy" class="h-full w-full object-cover">
-      <OrnamentGlyph :glyph="orn.corner" data-iv-ornament class="iv-portrait-corner iv-portrait-corner--tl" aria-hidden="true" />
-      <OrnamentGlyph :glyph="orn.corner" data-iv-ornament class="iv-portrait-corner iv-portrait-corner--br" aria-hidden="true" />
+      <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" class="iv-portrait-corner iv-portrait-corner--tl" aria-hidden="true" />
+      <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" class="iv-portrait-corner iv-portrait-corner--br" aria-hidden="true" />
     </div>
 
     <div data-iv-reveal class="grid justify-items-center gap-1.5">
@@ -42,7 +42,7 @@ const entrance = computed(() => ['rise', 'sweep-left', 'sweep-right', 'iris'][Ma
       <InvitationText :section="props.section" field="brideParents" tag="p" class="iv-body m-0 text-[0.9375rem] font-semibold" multiline />
     </div>
 
-    <OrnamentGlyph :glyph="orn.divider" data-iv-ornament class="h-7 w-52 opacity-75" :style="{ color: 'var(--iv-primary)' }" />
+    <OrnamentGlyph :glyph="orn.divider" data-iv-ornament data-iv-slot="divider" class="h-7 w-52 opacity-75" :style="{ color: 'var(--iv-primary)' }" />
 
     <div data-iv-reveal class="grid justify-items-center gap-1.5">
       <InvitationText :section="props.section" field="groomLabel" tag="p" class="iv-kicker m-0" />

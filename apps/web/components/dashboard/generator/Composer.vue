@@ -58,7 +58,7 @@ const stateLabel = computed(() => ({
         <h2 id="share-composer-title" class="m-0 font-display text-h3 font-semibold text-ink">
           Edit Pesan WhatsApp <span class="uppercase tracking-[0.08em] text-sage">({{ presetMeta[preset].label }})</span>
         </h2>
-        <p class="m-0 text-[0.9375rem] text-ink-muted">
+        <p class="m-0 text-ui-lg text-ink-muted">
           Pesan ini dikirim ke tiap tamu lewat tombol <strong class="font-semibold text-ink">Kirim WA</strong> di tabel bawah.
         </p>
       </div>
@@ -75,8 +75,8 @@ const stateLabel = computed(() => ({
 
     <div class="flex flex-wrap items-center gap-2">
       <span class="text-caption font-semibold uppercase tracking-[0.08em] text-ink-subtle">Sisipkan:</span>
-      <button id="share-insert-guest" type="button" class="inline-flex min-h-9 items-center rounded-full border border-border-strong bg-surface px-3 font-mono text-[0.8125rem] text-ink transition-[border-color,background-color] hover:border-ink hover:bg-surface-2" @click="insert(guestPlaceholder)">{{ guestPlaceholder }}</button>
-      <button id="share-insert-link" type="button" class="inline-flex min-h-9 items-center rounded-full border border-border-strong bg-surface px-3 font-mono text-[0.8125rem] text-ink transition-[border-color,background-color] hover:border-ink hover:bg-surface-2" @click="insert(linkPlaceholder)">{{ linkPlaceholder }}</button>
+      <button id="share-insert-guest" type="button" class="inline-flex min-h-9 items-center rounded-full border border-border-strong bg-surface px-3 font-mono text-caption text-ink transition-[border-color,background-color] hover:border-ink hover:bg-surface-2" @click="insert(guestPlaceholder)">{{ guestPlaceholder }}</button>
+      <button id="share-insert-link" type="button" class="inline-flex min-h-9 items-center rounded-full border border-border-strong bg-surface px-3 font-mono text-caption text-ink transition-[border-color,background-color] hover:border-ink hover:bg-surface-2" @click="insert(linkPlaceholder)">{{ linkPlaceholder }}</button>
       <UiButton id="share-reset" tone="ghost" size="sm" class="ml-auto" :disabled="isDefault" @click="emit('reset')">
         <RotateCcw :size="15" aria-hidden="true" />
         Reset bawaan
@@ -94,10 +94,10 @@ const stateLabel = computed(() => ({
           rows="16"
           maxlength="4000"
           spellcheck="false"
-          class="block min-h-[22rem] w-full resize-y rounded-md border-0 bg-transparent p-1 font-sans text-[0.9375rem] leading-relaxed text-ink outline-none focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-[3px] focus-visible:outline-[var(--color-ring)]"
+          class="block min-h-[22rem] w-full resize-y rounded-md border-0 bg-transparent p-1 font-sans text-ui-lg leading-relaxed text-ink outline-none focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-[3px] focus-visible:outline-[var(--color-ring)]"
           aria-describedby="share-composer-state share-composer-count"
         />
-        <span id="share-composer-count" class="absolute bottom-2 right-3 inline-flex items-center gap-1 text-[0.6875rem] text-ink-muted">
+        <span id="share-composer-count" class="absolute bottom-2 right-3 inline-flex items-center gap-1 text-ui-label text-ink-muted">
           {{ count }} karakter
           <CheckCheck :size="14" class="text-[#4fc3f7]" aria-hidden="true" />
         </span>
@@ -107,7 +107,7 @@ const stateLabel = computed(() => ({
     <p
       v-if="publicUrl"
       id="share-live-banner"
-      class="m-0 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-md border border-success/30 bg-success-soft px-4 py-3 text-[0.9375rem] text-ink"
+      class="m-0 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-md border border-success/30 bg-success-soft px-4 py-3 text-ui-lg text-ink"
     >
       <CheckCheck :size="17" class="text-success" aria-hidden="true" />
       <strong class="font-semibold">Undangan Aktif & Siap Dibagikan</strong>

@@ -38,13 +38,22 @@ const tabs = [
 </script>
 
 <template>
+  <!--
+    Dua baris di `lg`, sama seperti `SectionRail` (fase 77).
+
+    Baris pertama diam: alat undo/redo/simpan DAN baris tab. Keduanya diminta pemilik tetap di
+    tempat — menggulir form Global yang panjang dulu menghilangkan tombol Simpan berikut keempat
+    tabnya, jadi jalan kembali ke tab lain adalah menggulir balik sampai atas.
+  -->
   <aside
     :class="cn(
-      'grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-4 border-t border-border bg-surface px-4 py-4 lg:min-h-0 lg:overflow-y-auto lg:border-l lg:border-t-0 lg:px-5',
+      'grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-4 border-t border-border bg-surface px-4 py-4',
+      'lg:min-h-0 lg:grid-rows-[auto_minmax(0,1fr)] lg:content-stretch lg:gap-0 lg:overflow-hidden lg:border-l lg:border-t-0 lg:px-5 lg:pb-0',
       collapsed && 'lg:px-2',
     )"
     aria-label="Pengaturan"
   >
+    <div class="grid content-start gap-4 lg:pb-4">
     <div :class="cn('flex items-center gap-0.5 rounded-full border border-border bg-surface p-1 shadow-hairline', collapsed ? 'lg:flex-col lg:rounded-md' : '')" role="toolbar" aria-label="Alat editor">
       <UiButton id="editor-undo" tone="ghost" size="sm" class="h-10 w-10 rounded-full px-0" :disabled="!canUndo" aria-label="Undo perubahan (Ctrl+Z)" @click="emit('undo')">
         <Undo2 :size="16" aria-hidden="true" />
@@ -81,8 +90,7 @@ const tabs = [
       </UiButton>
     </div>
 
-    <div :class="cn('grid gap-4', collapsed && 'lg:hidden')">
-      <div class="flex gap-1 rounded-full bg-surface-3 p-1" role="tablist" aria-label="Panel penyunting">
+      <div :class="cn('flex gap-1 rounded-full bg-surface-3 p-1', collapsed && 'lg:hidden')" role="tablist" aria-label="Panel penyunting">
         <button
           v-for="option in tabs"
           :id="`editor-inspector-${option.id}`"
@@ -93,7 +101,7 @@ const tabs = [
           :aria-controls="`editor-inspector-panel-${option.id}`"
           :tabindex="tab === option.id ? 0 : -1"
           :class="cn(
-            'flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-[0.8125rem] font-semibold transition-colors duration-200',
+            'flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-ui font-semibold transition-colors duration-200',
             tab === option.id ? 'bg-surface text-success shadow-hairline' : 'text-ink-muted hover:text-ink',
           )"
           @click="tab = option.id"
@@ -102,7 +110,10 @@ const tabs = [
           {{ option.label }}
         </button>
       </div>
+    </div>
 
+    <!-- Baris kedua: hanya isi panelnya yang menggulung. -->
+    <div :class="cn('grid content-start gap-4 lg:min-h-0 lg:overflow-y-auto lg:pb-5', collapsed && 'lg:hidden')">
       <!-- `@container` di sini, bukan di `<aside>`: tiap varian di dalam form wajib bertanya pada wadahnya (DESIGN.md). -->
       <div v-show="tab === 'bagian'" id="editor-inspector-panel-bagian" role="tabpanel" aria-labelledby="editor-inspector-bagian" class="@container grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-5">
         <slot name="bagian" />

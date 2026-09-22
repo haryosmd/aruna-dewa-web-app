@@ -54,7 +54,7 @@ const calendarHref = computed(() => {
   >
     <InvitationText :section="props.section" field="subtitle" tag="p" data-iv-lead class="iv-kicker m-0" />
     <InvitationText :section="props.section" field="title" tag="h2" data-iv-lead class="iv-display m-0 text-[clamp(2.1rem,7cqw,3.4rem)]" />
-    <OrnamentGlyph :glyph="orn.divider" data-iv-ornament class="h-7 w-48 opacity-80" />
+    <OrnamentGlyph :glyph="orn.divider" data-iv-ornament data-iv-slot="divider" class="h-7 w-48 opacity-80" />
 
     <InvitationCountdown :date="targetDate" :labels="labels" />
 

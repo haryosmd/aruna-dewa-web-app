@@ -29,7 +29,7 @@ defineEmits<{ 'update:pilihan': [BackdropChoice], 'update:bobot': [BackdropWeigh
 <template>
   <div class="grid gap-2.5">
     <div class="flex flex-wrap items-baseline gap-x-2">
-      <span id="editor-backdrop-label" class="text-[0.8125rem] font-medium text-ink">Latar bagian</span>
+      <span id="editor-backdrop-label" class="text-caption font-medium text-ink">Latar bagian</span>
       <span class="text-caption text-ink-subtle">Ubin tipis di balik teks, mengikuti warna aksen kalian.</span>
     </div>
 

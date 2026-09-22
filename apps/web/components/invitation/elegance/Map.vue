@@ -19,7 +19,7 @@ const mapUrl = computed(() => text(props.section, 'mapUrl'))
     :background="latarBagian(props.section)"
     :motion="gerakBagian(props.section)"
   >
-    <OrnamentGlyph :glyph="orn.symbol" data-iv-ornament data-iv-lead class="h-14 w-16 opacity-80" :style="{ color: 'var(--iv-primary)' }" />
+    <OrnamentGlyph :glyph="orn.symbol" data-iv-ornament data-iv-slot="symbol" data-iv-lead class="h-14 w-16 opacity-80" :style="{ color: 'var(--iv-primary)' }" />
     <InvitationText :section="props.section" field="title" tag="h2" data-iv-lead class="iv-display m-0 text-[clamp(1.9rem,6.5cqw,3rem)]" />
 
     <div data-iv-reveal class="iv-card grid w-full max-w-[26rem] justify-items-center gap-4 rounded-md px-6 py-7">

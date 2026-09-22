@@ -120,7 +120,7 @@ function onChange(event: Event) {
       <Music4 v-else-if="props.kind === 'audio'" :size="22" class="text-ink-subtle" aria-hidden="true" />
       <ImagePlus v-else :size="22" class="text-ink-subtle" aria-hidden="true" />
 
-      <span class="text-[0.9375rem] font-semibold text-ink">
+      <span class="text-ui-lg font-semibold text-ink">
         {{ props.pending ? 'Mengunggah…' : headline }}
       </span>
 

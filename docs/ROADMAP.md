@@ -43,6 +43,154 @@ alasannya.
 
 ## Sisa
 
+**Fase 77 — hierarki yang bisa dibaca, dan undangan yang akhirnya punya wajah desktop.** Ditulis
+2026-09-22, dari peninjauan pemilik atas hasil fase 76. Delapan butir; tiga cacat terukur, empat
+soal hierarki yang membusuk pelan sejak fase 72, satu fitur yang paling besar dari semuanya.
+
+**Chrome editor tidak punya skala, dan angkanya menjelaskan kenapa ia terbaca acak.** Di
+`components/dashboard/` ada **79 ukuran huruf arbitrer** (`text-[0.9375rem]` dst.) melawan 80
+pemakaian token — dan 73 dari 80 itu token yang sama, `text-caption`. Skala resmi 8 langkah,
+dalam praktiknya, adalah skala 2 langkah ditambah tujuh ukuran liar: 10/11/12/13/14/15/17px.
+**21 arbitrer di antaranya duplikat persis token yang sudah ada** (18× `0.8125rem` = `caption`,
+3× `1.0625rem` = `body-lg`); itu bug konsistensi, bukan kebutuhan desain.
+
+Akarnya di `DESIGN.md:138` — satu baris yang mengaku "7 langkah" lalu mendaftar **8 nama**, tanpa
+tabel, tanpa aturan pemakaian, dan dengan lubang menganga antara `caption` 13px dan `body` 16px.
+Lubang itulah yang diisi 14px (19×) dan 15px (25×), dua nilai terbanyak. **Nol tes menjaganya**,
+jadi nilai liar ke-80 bisa masuk besok tanpa suara.
+
+Akibatnya bisa ditunjuk, bukan diperdebatkan: "Struktur Undangan" 15/700 sementara nama bagian di
+dalamnya 15/600 — judul panel dan isinya seukuran, hierarkinya cuma 100 poin berat. Tab Inspector
+13px lawan nav Toolbar 14px, padahal keduanya pil `font-semibold rounded-full` yang kembar secara
+visual; beda 1px yang tidak pernah diputuskan siapa pun. Chip "Semua perubahan tersimpan" 13/600
+— seukuran subjudul di sebelahnya tapi satu-satunya yang semibold, berwarna, dan ber-pill, jadi
+bobotnya melampaui perannya sebagai status pasif. Dan `Field.vue` menulis `text-[0.8125rem]` di
+baris 29 lalu `text-caption` di baris 35: nilai yang sama persis, dua ejaan, satu komponen.
+
+Jawabannya lima langkah bernama peran — `ui-label` 12 · `caption` 13 · `ui` 14 · `ui-lg` 15 ·
+`body-lg` 17 — menggantikan tujuh, dengan 10px dan 11px dihapus. Input form **tetap 16px**, dan
+itu bukan kelalaian: di bawah itu Safari iOS memperbesar halaman saat field difokus. Penjaga
+berbasis-teks-sumber menolak `text-[<angka>rem]` di seluruh chrome, meniru
+`invitation-breakpoints.spec.ts` yang sudah jadi preseden.
+
+**Tiga cacat lain.** Latar panggung cokelat (`bg-surface-3` = `#f4efe8`) padahal yang diminta
+kanvas putih — dan tokennya **tidak** boleh digeser, karena ia juga hover tiap tombol ghost,
+latar tab, badge netral, `Skeleton`, `Dropzone`, `Input`, `Avatar`, dan lima seksi landing.
+Kepala rail dan tab inspektor ikut tergulir, karena di kedua panel `<aside>` adalah satu-satunya
+penggulung dan headernya saudara kandung daftar: menggulir bagian menghilangkan kotak cari,
+menggulir form panjang menghilangkan Undo/Redo/Simpan berikut keempat tabnya. Dan tombol musik
+tidak ada — bukan karena CSS melainkan karena `Renderer.vue:441` ber-`v-if="music.url"` sementara
+`settings.musicUrl` kosong: **tidak ada lagu bawaan di kode**, berlawanan dengan dugaan pemilik,
+dan tidak ada satu pun tes yang memverifikasi pemutar muncul di panggung editor.
+
+**Yang terbesar: undangan tidak punya wajah desktop sama sekali.** `tokens.layout` bawaannya
+`kartu`, yang di container ≥768px mengunci `.iv-root` jadi `max-width: 480px` di tengah. Jadi
+ketiga lebar pratinjau memang terlihat sama-sama mobile — itu bukan bug tata letak editor,
+melainkan satu-satunya tata letak yang pernah dibuat. Keputusan pemilik: di ≥1024px panel foto
+**Galeri** melebar di kiri dan diam, kolom seukuran ponsel di kanan yang digulir, dan **tamu ikut
+melihatnya**. Tablet tetap satu kolom, hanya melapang.
+
+Yang menghalangi bukan CSS: seluruh container query section membaca `.iv-root`, jadi begitu ia
+jadi grid selebar 1280 tiap section akan menata diri untuk layar lebar padahal duduk di kolom 480.
+Kolom kanan karena itu wajib membawa `container-type` sendiri (`.iv-column`), dan `.iv-root`
+melepasnya. Ukurannya yang membuktikan perubahan ini aman: tinggi render 390 dan 768 harus
+**identik** sebelum dan sesudah.
+
+**Satu kecurigaan yang wajib diukur lebih dulu, karena tata letak desktop berdiri di atasnya:**
+`.iv-root` ber-`container-type: inline-size` berarti `contain: layout`, yang menjadikannya
+containing block untuk keturunan `position: fixed`. Kalau benar, gerbang, pemutar musik, dan dock
+di halaman tamu selama ini berlabuh ke `.iv-root` setinggi ribuan piksel, bukan ke viewport —
+dan e2e tidak menangkapnya karena Playwright menggulir otomatis sebelum klik sementara
+`toBeVisible()` tidak menuntut elemen berada di dalam viewport.
+
+**Terukur sesudah selesai (2026-09-22).** Chrome editor: **117 nilai arbitrer diganti token**, dan
+di browser sungguhan tinggal enam ukuran huruf — 12 · 13 · 14 · 15 · 16 · 17 — dengan 16 khusus
+isian form. Latar panggung `rgb(255,255,255)`. Kolom undangan per lebar: **390 · 640 · 480**
+(desktop lebih sempit daripada tablet karena di sana ia berbagi layar dengan panel foto). Halaman
+tamu 1440: panel galeri **960px sticky** di kiri, kolom undangan 480px mulai di x=960; di 768 satu
+kolom 640px tanpa panel. **1.393 tes unit (92 berkas)**, dan **247 e2e hijau, nol merah** di
+keempat project (256 total, 9 skip) — termasuk axe 0 violation di editor dan halaman tamu.
+
+**Utang fase 76 ditutup di awal.** Suite penuh terakhirnya 236 lewat, 3 merah, ketiganya tes yang
+sama di project sempit (mobile 360, tablet 768, safari 390) dan bukan flake: bungkaman scroll-spy
+berbasis waktu menelan gulir yang datang di dalam jendelanya. Di lebar sempit `openPreview()`
+mengklik tab "Pratinjau", yang memicu `gulirKe()` berikut bungkamannya; di desktop tab itu tidak
+pernah diklik, jadi separuh project hijau dan separuhnya merah. Bungkamannya dicabut seluruhnya —
+pantulan yang dulu ditakutkan tidak bisa terjadi, karena `sorotSection()` sudah menolak id yang
+sama dan tidak pernah memanggil `fokuskanPanggung()`.
+
+---
+
+**Fase 76 — panggung editor berhenti berbohong, dan ornamen bisa disentuh.** Ditulis 2026-09-22,
+dari peninjauan pemilik di layar. Empat temuan; tiga di antaranya bukan selera melainkan cacat yang
+bisa ditunjuk barisnya.
+
+**Pratinjau ponsel menghitung skalanya hanya dari lebar.** `PhoneFrame.vue:54` memakai
+`Math.min(1, hostWidth / width)` dan tinggi tidak pernah ikut — padahal prop `maxHeight` sudah ada di
+komponen yang sama dan sudah dipakai `/order` sejak fase 65. `Stage.vue` tidak pernah mengopernya.
+Di laptop, bezel 390×844 berikut paddingnya jadi ~976px sementara panggung menyediakan ~550px, jadi
+ponselnya berdiri melewati tepi bawah dan pemilik melihat ponsel raksasa yang terpotong.
+
+**Dan yang terpotong itu tidak bisa digulir sama sekali.** `DeviceBezel.vue:38` memasang
+`maxHeight: ${screenHeight}px` bersama `overflow-hidden` **tanpa** gulir di dalamnya, jadi di mode
+iPhone/Android segala isi di bawah 844px benar-benar tidak bisa dicapai. Yang tergulir selama ini
+adalah viewport panggung (`Stage.vue:144`) — ia menggeser *bingkainya*, bukan isinya. Hanya mode
+"Clean" yang pernah bisa digulir, dan e2e sudah mencatat itu apa adanya di `dashboard.spec.ts:668`
+sebagai keterangan, bukan sebagai cacat. Itu bentuk kegagalan yang paling awet: sudah terlihat,
+sudah ditulis, dan tidak pernah dibaca sebagai bug.
+
+Perbaikannya membalik siapa yang menggulung: layar ponsel jadi wadah gulirnya sendiri setinggi
+viewport perangkat, dan `fit` yang sudah ada otomatis jadi "muat berdasarkan tinggi" karena
+`stageHeight` kini sama dengan `screenHeight` — tidak ada rumus baru, hanya satu prop. Konsekuensi
+yang tidak boleh dilewatkan: scroller berada **di dalam** elemen ber-`transform: scale()`, jadi
+`getBoundingClientRect()` sudah pasca-transform sementara `scrollTop` belum. `stageScrollTop()`
+menerima `scale`.
+
+**Dan yang mengunci gulirnya ternyata bukan bezel, melainkan gerbang amplop** — ketahuan hanya
+karena pemilik meninjau hasilnya di layar dan melaporkan bahwa roda tetikusnya masih diam. Gerbang
+di panggung dulu `absolute inset-0`, menindih seluruh tinggi undangan; agar gulir tidak menampakkan
+gerbang tanpa ujung, panggung menguncinya lewat `overflow-y: hidden` selama amplop belum dibuka.
+Terukur pada keadaan pemilik: `overflowY: 'hidden'`, roda 600px → `scrollTop` 0. Itu benar untuk
+tamu dan salah untuk pasangan — yang sedang menyunting undangannya sendiri tidak sedang "diundang",
+dan tidak ada satu pun isyarat bahwa amplopnya harus dibuka lebih dulu. Gerbang kini sekadar anak
+pertama setinggi satu layar; tidak ada yang perlu dikunci. Bonus: ia dapat `id="iv-opening-envelope"`,
+jadi satu-satunya entri rail yang selama ini tidak punya elemen untuk dituju maupun disorot akhirnya
+punya.
+
+**Bezel dibuang seluruhnya, bukan cuma dari bawaan.** Percobaan pertama menyisakannya sebagai opsi
+dan memindahkan bawaan ke `Clean`; itu keliru pada dua hal sekaligus. `useLocalStorage` membuat
+pasangan yang preferensinya sudah `iphone` tidak pernah melihat bawaan baru — pemilik melaporkan
+"masih ada bezel" dan ia benar. Dan `Clean` sendiri lahir sebagai "iPhone tanpa bezel", jadi tanpa
+bezel ia tidak lagi berbeda dari apa pun. Pemilihnya kini menawarkan apa yang benar-benar mengubah
+tata letak: **Ponsel 390 · Ponsel besar 412 · Desktop 1280**, dirender sebagai layar bersudut
+membulat. `DeviceBezel.vue` dihapus; nilai tersimpan lama dipetakan (`iphone`/`bersih`/`tablet` →
+`ponsel`, `android` → `ponsel-besar`) supaya preferensi yang tersangkut ikut sembuh sendiri.
+
+**Rail "Struktur Undangan" tidak pernah mengikuti gulir.** Sinkronisasinya satu arah sejak fase 70:
+rail → panggung lewat `focusSection`. Arah baliknya memakai resep yang sudah hidup di repo —
+`IntersectionObserver` ber-`rootMargin: '-45% 0px -45% 0px'` milik `Dock.vue:33` — dengan dua
+penjaga anti-pantul: diam selagi `gulirKe()` berjalan, dan diam selagi amplop masih mengunci.
+
+**Amplop terasa mati, dan tidak ada yang mematikannya.** `mode="stage"` memang merender gerbang
+hidup, dan e2e mengklik `[data-gate-seal]` di panggung setiap kali suite jalan. Yang keliru adalah
+areanya: satu-satunya target klik adalah segel selebar 4,75rem, sementara callout di bawahnya
+berbunyi "Klik di sini untuk membuka" — kalimat yang tidak ditepati markupnya. Badan amplop dan
+callout ikut jadi pemicu; segel tetap satu-satunya kontrol beraksesibilitas, karena tombol di dalam
+tombol tidak sah dan jalur keyboard tidak boleh bercabang dua.
+
+**Yang baru, bukan perbaikan:** ornamen di panggung mendapat afordans. Kotak putus-putus tipis saat
+hover, dan klik memindahkan panel kanan ke tab Ornamen dengan kartu slotnya tersorot — bukan
+langsung membuka Studio, supaya pasangan membaca dulu slot apa yang sedang ia sentuh dan di mana
+keping itu dipakai. Substratnya sudah ada seluruhnya: `data-iv-ornament` sudah terpasang di hampir
+tiap ornamen (dipakai `drawSvg`), `sectionOrnamentSlots` sudah memetakan slot per bagian, dan
+`bukaStudio()` sudah menerima slot. Yang kurang hanya nama slotnya di markup — `data-iv-slot` di
+samping atribut yang sudah ada, dijaga vitest yang membaca sumbernya.
+
+Afordans itu **tidak pernah menyeberang ke halaman tamu**: seluruhnya digerbangi `.iv-root--stage`,
+yang hanya ada di panggung editor.
+
+---
+
 **Fase 75 — sisa yang tertunda ditutup, dan satu kartu hitam yang tidak pernah ketahuan.** Ditulis
 2026-09-22, sesudah keenam butir yang belum tercentang di `FASE-72-SISA.md:142-151` ditelusuri sampai
 ke kodenya untuk menjawab satu pertanyaan: mana yang benar-benar perlu dikerjakan.

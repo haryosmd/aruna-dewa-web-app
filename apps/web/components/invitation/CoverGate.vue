@@ -46,16 +46,28 @@ const props = withDefaults(
     footer?: string
     musicNote?: string
     /**
-     * Panggung editor (fase 72): gerbang `absolute` di dalam `.iv-root`, bukan `fixed` di
-     * viewport, dan tidak menyentuh `document.body` — panggungnya yang memutuskan lewat emit
-     * `lock`/`unlock` apa yang harus dikunci.
+     * Panggung editor: gerbang hidup di dalam `.iv-root`, bukan `fixed` di viewport, dan tidak
+     * menyentuh `document.body`.
+     *
+     * **Sejak fase 76 ia ikut aliran, bukan menindih (`relative`, bukan `absolute`).** Bentuk
+     * lamanya menutupi seluruh tinggi undangan dan panggung mengunci gulirnya lewat emit
+     * `lock` — jadi di editor, roda tetikus tidak melakukan apa pun sampai amplopnya dibuka.
+     * Itu benar untuk tamu dan salah untuk pasangan: yang sedang menyunting undangannya sendiri
+     * tidak sedang "diundang", ia sedang melihat-lihat pekerjaannya. Kini gerbang berdiri
+     * setinggi satu layar di puncak aliran, dan sisa undangan tinggal digulir di bawahnya.
      */
     contained?: boolean
+    /**
+     * Id DOM gerbang saat terkurung, supaya rail editor bisa menggulir ke sana seperti ke bagian
+     * mana pun. Hanya diisi dokumen v2, yang amplopnya headless: pada v1 `#iv-cover` sudah dipakai
+     * section cover yang sungguhan, dan dua elemen berid sama bukan kaitan, melainkan jebakan.
+     */
+    gateId?: string
   }>(),
   {
     greeting: '', image: '', intensity: 'seimbang', hasMusic: false, speed: 'sedang',
     elegance: false, eyebrow: '', kicker: '', guestLabel: '', noGuest: '', sealMonogram: '', sealLabel: '',
-    callout: '', subtitle: '', footer: '', musicNote: '', contained: false,
+    callout: '', subtitle: '', footer: '', musicNote: '', contained: false, gateId: '',
   },
 )
 
@@ -132,8 +144,9 @@ function finish() {
 <template>
   <div
     v-if="!hidden"
+    :id="contained && gateId ? gateId : undefined"
     ref="root"
-    :class="cn('iv-gate inset-0 z-50 grid place-items-center overflow-hidden px-5', contained ? 'iv-gate--contained absolute' : 'fixed')"
+    :class="cn('iv-gate z-50 grid place-items-center overflow-hidden px-5', contained ? 'iv-gate--contained relative' : 'fixed inset-0')"
     :data-gate-variant="elegance ? 'elegance' : 'v1'"
     style="background: var(--iv-bg); color: var(--iv-fg)"
   >
@@ -160,7 +173,18 @@ function finish() {
           <p v-if="props.kicker" class="iv-kicker m-0">{{ props.kicker }}</p>
         </div>
 
-        <div class="relative w-full" style="aspect-ratio: 3 / 2">
+        <!--
+          Seluruh amplop adalah pemicunya (fase 76), bukan cuma segelnya.
+
+          Sebelum ini satu-satunya target klik adalah segel selebar 4,75rem, sementara callout di
+          bawahnya berbunyi "Klik di sini untuk membuka" — kalimat yang tidak ditepati markupnya.
+          Tamu yang menekan amplopnya tidak mendapat apa pun dan menyimpulkan undangannya rusak.
+
+          Tetap `<div>`, bukan `<button>`: segel sudah jadi tombolnya, tombol di dalam tombol tidak
+          sah, dan jalur keyboard tidak boleh bercabang dua untuk satu aksi yang sama. `@click.stop`
+          supaya panggung editor tidak ikut membaca kliknya sebagai "ganti ornamen".
+        -->
+        <div data-gate-envelope class="relative w-full cursor-pointer" style="aspect-ratio: 3 / 2" @click.stop="open">
           <div class="absolute inset-0 overflow-hidden rounded-md" style="box-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.45)">
             <div class="absolute inset-0" style="background: color-mix(in srgb, var(--iv-primary) 16%, var(--iv-bg))" />
             <OrnamentGlyph
@@ -175,7 +199,7 @@ function finish() {
             class="pointer-events-none absolute inset-x-[7%] top-[16%] z-20 grid justify-items-center gap-2 rounded-sm px-5 py-5 opacity-0"
             style="background: color-mix(in srgb, #ffffff 90%, var(--iv-bg)); box-shadow: 0 12px 30px -14px rgb(0 0 0 / 0.55)"
           >
-            <OrnamentGlyph :glyph="props.ornaments.divider" data-iv-ornament class="h-4 w-28 opacity-70" :style="{ color: 'var(--iv-primary)' }" />
+            <OrnamentGlyph :glyph="props.ornaments.divider" data-iv-ornament data-iv-slot="divider" class="h-4 w-28 opacity-70" :style="{ color: 'var(--iv-primary)' }" />
             <p v-if="props.kicker" class="iv-kicker m-0">{{ props.kicker }}</p>
             <p class="iv-display iv-script m-0 text-[1.7rem] leading-none">{{ props.couple }}</p>
             <p v-if="props.date" class="iv-body m-0 text-[0.75rem]">{{ props.date }}</p>
@@ -210,16 +234,16 @@ function finish() {
           </button>
         </div>
 
-        <!-- Callout berdenyut di bawah segel: judul petunjuk + petunjuk segel. -->
-        <p v-if="props.callout || props.subtitle" data-gate-callout class="iv-gate-callout m-0 text-center" aria-hidden="true">
+        <!-- Callout berdenyut di bawah segel: judul petunjuk + petunjuk segel. Ikut jadi pemicu (fase 76). -->
+        <p v-if="props.callout || props.subtitle" data-gate-callout class="iv-gate-callout m-0 cursor-pointer text-center" aria-hidden="true" @click.stop="open">
           <span v-if="props.callout" class="iv-display block text-[1.05rem]">{{ props.callout }}</span>
           <span v-if="props.subtitle" class="iv-body block text-[0.8125rem]">{{ props.subtitle }}</span>
         </p>
 
         <!-- Kartu "Kepada Yth." — nama tamu dari `?to=` atau tautan personal. -->
         <div class="iv-gate-guest relative grid w-full justify-items-center gap-1.5 rounded-md px-5 py-4 text-center">
-          <OrnamentGlyph :glyph="props.ornaments.corner" data-iv-ornament class="iv-gate-guest-corner iv-gate-guest-corner--tl" aria-hidden="true" />
-          <OrnamentGlyph :glyph="props.ornaments.corner" data-iv-ornament class="iv-gate-guest-corner iv-gate-guest-corner--br" aria-hidden="true" />
+          <OrnamentGlyph :glyph="props.ornaments.corner" data-iv-ornament data-iv-slot="corner" class="iv-gate-guest-corner iv-gate-guest-corner--tl" aria-hidden="true" />
+          <OrnamentGlyph :glyph="props.ornaments.corner" data-iv-ornament data-iv-slot="corner" class="iv-gate-guest-corner iv-gate-guest-corner--br" aria-hidden="true" />
           <!-- Satu paragraf seperti v1: label dan nama tamu terbaca sebagai satu kalimat "Kepada Yth. …". -->
           <p v-if="props.greeting" class="iv-body m-0 text-[0.9375rem]">
             {{ props.guestLabel }}<br><span class="iv-display text-[1.35rem] leading-tight">{{ props.greeting }}</span>
@@ -273,7 +297,7 @@ function finish() {
             class="pointer-events-none absolute inset-x-[7%] top-[16%] z-20 grid justify-items-center gap-2 rounded-sm px-5 py-5 opacity-0"
             style="background: color-mix(in srgb, #ffffff 90%, var(--iv-bg)); box-shadow: 0 12px 30px -14px rgb(0 0 0 / 0.55)"
           >
-            <OrnamentGlyph :glyph="props.ornaments.divider" data-iv-ornament class="h-4 w-28 opacity-70" :style="{ color: 'var(--iv-primary)' }" />
+            <OrnamentGlyph :glyph="props.ornaments.divider" data-iv-ornament data-iv-slot="divider" class="h-4 w-28 opacity-70" :style="{ color: 'var(--iv-primary)' }" />
             <p class="iv-kicker m-0">{{ t('gate.kicker') }}</p>
             <p class="iv-display iv-script m-0 text-[1.7rem] leading-none">{{ props.couple }}</p>
             <p v-if="props.date" class="iv-body m-0 text-[0.75rem]">{{ props.date }}</p>
@@ -344,17 +368,21 @@ function finish() {
 
 <style>
 /*
- * Gerbang terkurung (fase 72, panggung editor): `absolute inset-0` di dalam `.iv-root` yang
- * tingginya sepanjang undangan, jadi isinya ditempelkan ke tepi atas wadah gulirnya
- * (`sticky top-0`) setinggi satu layar — bukan di tengah root yang ribuan piksel.
+ * Gerbang terkurung (panggung editor).
+ *
+ * Fase 72 membuatnya `absolute inset-0` di dalam `.iv-root` yang tingginya ribuan piksel, dengan
+ * isi `sticky top-0` setinggi satu layar. Bentuk itu punya satu akibat yang baru ketahuan di
+ * fase 76: karena ia menindih SELURUH undangan, satu-satunya cara agar gulir tidak menampakkan
+ * gerbang tanpa ujung adalah mengunci gulirnya — dan pasangan yang memutar roda tetikus di
+ * panggung mendapati layarnya diam, tanpa tahu bahwa ia harus membuka amplop lebih dulu.
+ *
+ * Sekarang ia sekadar anak pertama setinggi satu layar. Tidak ada yang perlu dikunci, tidak ada
+ * yang ditindih, dan menggulir ke bawah memperlihatkan undangannya seperti di ponsel tamu yang
+ * sudah membuka amplop.
  */
-.iv-gate--contained { place-items: start center; }
-.iv-gate--contained > .relative {
-  position: sticky;
-  top: 0;
-  display: grid;
-  align-content: center;
-  min-height: min(var(--iv-layar-h, 100svh), 100%);
+.iv-gate--contained {
+  min-height: var(--iv-layar-h, 100svh);
+  place-items: center;
 }
 
 /* Segel yang jadi tombol: tanpa kromium tombol bawaan, dan kursor mengatakan ia bisa ditekan. */

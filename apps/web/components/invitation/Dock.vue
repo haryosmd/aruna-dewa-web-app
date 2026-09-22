@@ -52,7 +52,7 @@ function go(id: string) {
   <nav
     v-if="items.length > 1"
     aria-label="Bagian undangan"
-    :class="cn('inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-3', contained ? 'sticky' : 'fixed')"
+    :class="cn('iv-dock inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-3', contained ? 'sticky' : 'fixed')"
   >
     <ul
       class="m-0 flex list-none items-center gap-0.5 rounded-full p-1.5 shadow-[0_12px_34px_-12px_rgb(0_0_0/0.45)] backdrop-blur-xl"

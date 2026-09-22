@@ -203,7 +203,7 @@ async function simpan() {
             <Crop :size="20" />
           </span>
           <div class="grid min-w-0 flex-1 gap-0.5">
-            <DialogTitle class="m-0 text-[1.0625rem] font-semibold text-ink">Pangkas foto</DialogTitle>
+            <DialogTitle class="m-0 text-body-lg font-semibold text-ink">Pangkas foto</DialogTitle>
             <DialogDescription class="m-0 truncate text-caption text-ink-muted">
               Hasilnya disimpan sebagai foto baru — {{ props.nama }} tetap ada.
             </DialogDescription>
@@ -223,7 +223,7 @@ async function simpan() {
               type="button"
               :aria-pressed="rasio === pilihan.id"
               :class="cn(
-                'min-h-11 rounded-md border px-3 text-[0.875rem] font-medium transition-colors duration-200',
+                'min-h-11 rounded-md border px-3 text-ui font-medium transition-colors duration-200',
                 rasio === pilihan.id ? 'border-primary bg-primary-soft text-primary' : 'border-border text-ink hover:bg-surface-3',
               )"
               @click="terapkanRasio(pilihan.id)"

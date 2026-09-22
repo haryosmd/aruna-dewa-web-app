@@ -32,6 +32,7 @@ const note = computed(() => text(props.section, 'text'))
       v-else
       :glyph="orn.floralAlt"
       data-iv-ornament
+      data-iv-slot="floralAlt"
       class="h-24 w-20 opacity-80"
       :style="{ color: 'var(--iv-primary)' }"
     />

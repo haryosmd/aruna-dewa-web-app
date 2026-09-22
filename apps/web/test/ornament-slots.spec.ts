@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { liveTemplateIds, sectionTypes } from '@aruna/contracts'
@@ -236,5 +236,56 @@ describe('sectionOrnamentSlots mengikuti sumber section', () => {
       const daftar = sectionOrnamentSlots[section]
       expect(new Set(daftar).size, section).toBe(daftar.length)
     }
+  })
+})
+
+/**
+ * Afordans ornamen di panggung editor (fase 76) berdiri di atas satu atribut, dan atribut itu
+ * ditulis tangan di ~43 tempat.
+ *
+ * `data-iv-ornament` sudah lama ada — `motion-play.ts` memakainya untuk `drawSvg` — tapi ia tidak
+ * membawa nama slotnya, jadi kanvas tidak bisa menjawab "keping ini mengisi slot apa". Yang
+ * ditambahkan `data-iv-slot` di sebelahnya. Kegagalannya senyap dan itulah kenapa tes ini ada:
+ * ornamen yang lupa diberi slot tetap tergambar dengan benar, tetap dianimasikan dengan benar,
+ * dan **hanya** tidak bisa diklik — pasangan akan menyimpulkan fiturnya yang rusak, bukan satu
+ * atribut yang hilang di satu berkas.
+ *
+ * Yang sengaja di luar: glyph yang bukan isi slot sama sekali (keping ladang punya
+ * `data-layer-slot` sendiri, busana `Dresscode`, venue `Events`, topeng `Segue`).
+ */
+describe('data-iv-slot menemani tiap ornamen berslot (fase 76)', () => {
+  const invitation = join(__dirname, '..', 'components', 'invitation')
+  const tag = /<OrnamentGlyph\b[^>]*?\/?>/gs
+  const slotDariGlyph = new RegExp(`:glyph="(?:orn|props\\.ornaments)\\.(${ornamentSlots.join('|')})"`)
+
+  const berkas = readdirSync(invitation, { recursive: true, encoding: 'utf8' })
+    .filter(nama => nama.endsWith('.vue'))
+    .map(nama => [nama, readFileSync(join(invitation, nama), 'utf8')] as const)
+
+  it('memindai berkas undangan yang sungguhan, bukan daftar kosong', () => {
+    expect(berkas.length).toBeGreaterThan(20)
+  })
+
+  it('tiap OrnamentGlyph berslot membawa data-iv-slot yang cocok', () => {
+    const pelanggaran: string[] = []
+    let diperiksa = 0
+    for (const [nama, isi] of berkas) {
+      for (const [teks] of isi.matchAll(tag)) {
+        if (!teks.includes('data-iv-ornament')) continue
+        const slot = slotDariGlyph.exec(teks)?.[1]
+        if (!slot) continue
+        diperiksa++
+        if (!teks.includes(`data-iv-slot="${slot}"`)) pelanggaran.push(`${nama} → ${slot}`)
+      }
+    }
+    expect(pelanggaran).toEqual([])
+    // Angka bawahnya dijaga supaya regex yang berhenti cocok tidak lulus sebagai "nol pelanggaran".
+    expect(diperiksa).toBeGreaterThanOrEqual(40)
+  })
+
+  it('tidak memberi slot pada keping ladang — jangkarnya sudah punya atributnya sendiri', () => {
+    const ladang = readFileSync(join(invitation, 'OrnamentField.vue'), 'utf8')
+    expect(ladang).toContain(':data-layer-slot="piece.slot"')
+    expect(ladang).not.toContain('data-iv-slot')
   })
 })

@@ -136,7 +136,7 @@ const rules = computed(() => mediaRules[jenis.value])
             <Images :size="20" />
           </span>
           <div class="grid min-w-0 flex-1 gap-0.5">
-            <DialogTitle class="m-0 text-[1.0625rem] font-semibold text-ink">Pustaka Saya</DialogTitle>
+            <DialogTitle class="m-0 text-body-lg font-semibold text-ink">Pustaka Saya</DialogTitle>
             <DialogDescription class="m-0 truncate text-caption text-ink-muted">
               {{ state.request.judul || (jenis === 'audio' ? 'Musik undangan' : 'Foto & gambar undangan') }}
             </DialogDescription>
@@ -149,7 +149,7 @@ const rules = computed(() => mediaRules[jenis.value])
               v-model="query"
               type="search"
               placeholder="Cari nama foto..."
-              class="min-h-11 w-56 rounded-md border border-border-input bg-surface pl-9 pr-3 text-[0.875rem] text-ink placeholder:text-ink-subtle/80 focus:border-primary focus:outline-none"
+              class="min-h-11 w-56 rounded-md border border-border-input bg-surface pl-9 pr-3 text-ui text-ink placeholder:text-ink-subtle/80 focus:border-primary focus:outline-none"
             >
           </label>
           <DialogClose id="media-library-close" class="grid h-11 w-11 place-items-center rounded-md text-ink-muted hover:bg-surface-3 hover:text-ink" aria-label="Tutup pustaka">
@@ -166,7 +166,7 @@ const rules = computed(() => mediaRules[jenis.value])
                 <CloudUpload :size="20" />
               </span>
               <span class="grid gap-0.5">
-                <span class="text-[0.9375rem] font-semibold text-ink">{{ jenis === 'audio' ? 'Upload Musik Baru' : 'Upload Foto / Gambar Baru' }}</span>
+                <span class="text-ui-lg font-semibold text-ink">{{ jenis === 'audio' ? 'Upload Musik Baru' : 'Upload Foto / Gambar Baru' }}</span>
                 <span class="text-caption text-ink-muted">Format: {{ rules.label }} (Maks. {{ formatBytes(rules.maxBytes) }} per file)</span>
               </span>
             </span>
@@ -208,7 +208,7 @@ const rules = computed(() => mediaRules[jenis.value])
               <img v-if="jenis === 'image'" :src="item.publicUrl" alt="" class="aspect-[4/3] w-full rounded-md object-cover" loading="lazy">
               <div v-else class="grid aspect-[4/3] place-items-center rounded-md bg-surface-2 text-ink-muted">MP3</div>
               <div class="grid gap-0.5 px-1">
-                <p class="m-0 truncate text-[0.875rem] font-semibold text-ink" :title="namaBerkas(item)">{{ namaBerkas(item) }}</p>
+                <p class="m-0 truncate text-ui font-semibold text-ink" :title="namaBerkas(item)">{{ namaBerkas(item) }}</p>
                 <p class="m-0 text-caption text-ink-subtle">{{ tanggal(item) }}</p>
               </div>
               <div class="flex items-center gap-1.5">

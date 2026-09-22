@@ -46,7 +46,7 @@ function clear() {
 <template>
   <div class="grid gap-2.5 rounded-md border border-border bg-surface p-3.5">
     <div class="grid gap-0.5">
-      <p class="m-0 text-[0.75rem] font-bold uppercase tracking-[0.1em] text-ink">{{ props.label }}</p>
+      <p class="m-0 text-ui-label font-bold uppercase tracking-[0.12em] text-ink-muted">{{ props.label }}</p>
       <p v-if="props.modelValue" class="m-0 truncate text-caption text-ink-muted" :title="props.modelValue">{{ namaBerkas }}</p>
       <p v-else-if="props.hint" class="m-0 text-caption text-ink-subtle">{{ props.hint }}</p>
     </div>

@@ -143,6 +143,19 @@ function selectSection(id: string) {
 }
 watch(mobilePanel, (panel) => { if (panel === 'preview') fokuskanPanggung(selectedId.value) })
 
+/**
+ * Panggung → rail (fase 76): bagian yang sedang berdiri di tengah layar ikut menyorot railnya.
+ *
+ * Sengaja **bukan** `selectSection`. Yang itu memanggil `fokuskanPanggung()`, dan panggilan itu
+ * akan menggulir panggung ke bagian yang baru saja digulir sendiri oleh pasangan — pantulan yang
+ * terbaca sebagai panggung yang menolak digulir. Di sini hanya sorotannya yang berpindah.
+ */
+function sorotSection(type: string) {
+  const id = document.value.sections.find(section => section.type === type)?.id
+  if (!id || id === selectedId.value) return
+  selectedId.value = id
+}
+
 function toggleSection(id: string, enabled: boolean) {
   const section = document.value.sections.find(candidate => candidate.id === id)
   if (!section || section.enabled === enabled) return
@@ -347,6 +360,34 @@ function kembalikanSlot() {
   tulisOverrides(berikut)
 }
 function batalkanStudio() { if (studio.value) tulisOverrides(studio.value.semula) }
+
+/**
+ * Klik ornamen di kanvas (fase 76) → tab Ornamen, kartu slotnya tersorot.
+ *
+ * Studio sengaja TIDAK dibuka langsung: keputusan pemilik. Sebelum memilih keping baru, pasangan
+ * perlu membaca slot apa yang barusan ia sentuh dan di mana lagi keping itu dipakai — nilai
+ * ornamen berlaku global, satu `divider` yang sama dipakai lima bagian sekaligus, dan itulah yang
+ * dikatakan kartu slotnya. `nonce` memakai pola `fokusPanggung`: menyentuh ornamen yang sama dua
+ * kali harus tetap menyorot, bukan diam karena nilainya tidak berubah.
+ */
+const sorotSlot = ref<{ slot?: OrnamentSlotKey, layer?: LayerSlot, nonce: number } | null>(null)
+function sorotkanSlot(target: { slot?: OrnamentSlotKey, layer?: LayerSlot }) {
+  if (!target.slot && !target.layer) return
+  prefs.value.inspectorTab = 'ornamen'
+  // Di bawah `xl` inspektor bersembunyi selagi tab Pratinjau terbuka — persis tab tempat klik itu
+  // terjadi. Tanpa baris ini, menyentuh ornamen di ponsel tidak memperlihatkan apa pun.
+  mobilePanel.value = 'settings'
+  sorotSlot.value = { ...target, nonce: (sorotSlot.value?.nonce ?? 0) + 1 }
+}
+/*
+ * Dua ringkasan berdiri di panel yang sama, dan keduanya bisa memuat slot yang dituju. Kalau
+ * dua kartu menyorot sekaligus, dua `scrollIntoView` saling menimpa dan yang terlihat justru
+ * kartu yang bukan konteksnya. Yang tersaring menang bila ia memuatnya — itu kartu yang
+ * menjelaskan bagian yang sedang disunting.
+ */
+const sorotBagian = computed(() => (sorotSlot.value?.slot && slotBagianIni.value.includes(sorotSlot.value.slot) ? sorotSlot.value : null))
+const sorotPenuh = computed(() => (sorotBagian.value ? null : sorotSlot.value))
+
 function kembalikanSemuaOrnamen() {
   if (!canEditDesign.value) return
   checkpoint()
@@ -623,7 +664,7 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
             type="button"
             role="tab"
             :aria-selected="mobilePanel === tab.id"
-            :class="cn('min-h-11 flex-1 rounded-full text-[0.9375rem] font-semibold transition-colors duration-200', mobilePanel === tab.id ? 'bg-surface text-ink shadow-hairline' : 'text-ink-muted')"
+            :class="cn('min-h-11 flex-1 rounded-full text-ui-lg font-semibold transition-colors duration-200', mobilePanel === tab.id ? 'bg-surface text-ink shadow-hairline' : 'text-ink-muted')"
             @click="mobilePanel = tab.id as 'settings' | 'preview'"
           >
             {{ tab.label }}
@@ -663,7 +704,7 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
 
         <section
           v-if="prefs.inspectorTab === 'kartu'"
-          :class="cn('min-h-0 overflow-y-auto bg-surface-3 [background-image:radial-gradient(var(--color-border)_1px,transparent_1px)] [background-size:16px_16px] p-5', mobilePanel === 'settings' && 'hidden xl:block')"
+          :class="cn('min-h-0 overflow-y-auto bg-surface [background-image:radial-gradient(var(--color-border)_1px,transparent_1px)] [background-size:16px_16px] p-5', mobilePanel === 'settings' && 'hidden xl:block')"
           aria-label="Pratinjau kartu bagikan"
         >
           <DashboardEditorShareCardPreview :document="document" :slug="invitation.slug" :png-url="pngUrl" />
@@ -675,6 +716,8 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
           :document="document"
           :focus-section="fokusPanggung"
           :class="cn(mobilePanel === 'settings' && 'hidden xl:flex')"
+          @section-in-view="sorotSection"
+          @pilih-slot="sorotkanSlot"
         />
 
         <DashboardEditorInspector
@@ -760,7 +803,7 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
           </template>
 
           <template #ornamen>
-            <p v-if="!canEditDesign" class="m-0 flex items-start gap-2 rounded-md border border-border bg-surface-2 p-3.5 text-[0.8125rem] text-ink-muted">
+            <p v-if="!canEditDesign" class="m-0 flex items-start gap-2 rounded-md border border-border bg-surface-2 p-3.5 text-caption text-ink-muted">
               <Lock :size="15" class="mt-0.5 shrink-0 text-ink-subtle" aria-hidden="true" />
               <span>Mengganti ornamen terkunci pada preset undangan ini. <span v-if="lockedBy" class="text-ink">{{ lockedBy }}</span></span>
             </p>
@@ -773,6 +816,7 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
               :accent="themeAccent"
               :terkunci="!canEditDesign"
               :locked-by="lockedBy"
+              :sorot="sorotBagian"
               @buka="bukaStudio"
             />
             <p v-else class="m-0 rounded-md border border-border bg-surface-2 p-3.5 text-caption text-ink-muted">
@@ -785,6 +829,7 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
               :accent="themeAccent"
               :terkunci="!canEditDesign"
               :locked-by="lockedBy"
+              :sorot="sorotPenuh"
               @buka="bukaStudio"
               @kembalikan-semua="kembalikanSemuaOrnamen"
             />

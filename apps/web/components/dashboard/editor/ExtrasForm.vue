@@ -57,7 +57,7 @@ function toggleAttire(id: string, on: boolean) {
 <template>
   <div v-if="section.type === 'story'" class="grid gap-3 rounded-md border border-border bg-surface p-3.5">
     <div class="grid gap-0.5">
-      <p class="m-0 text-[0.75rem] font-bold uppercase tracking-[0.1em] text-ink">Langkah cerita</p>
+      <p class="m-0 text-ui-label font-bold uppercase tracking-[0.12em] text-ink-muted">Langkah cerita</p>
       <p class="m-0 text-caption text-ink-muted">Tiap langkah muncul dari sisi berbeda. Kosongkan semuanya untuk satu paragraf saja.</p>
     </div>
     <article v-for="(step, index) in rows('steps')" :key="String(step.id)" class="grid gap-3 rounded-md border border-border p-3">
@@ -95,7 +95,7 @@ function toggleAttire(id: string, on: boolean) {
   </div>
 
   <div v-else-if="section.type === 'rundown'" class="grid gap-3 rounded-md border border-border bg-surface p-3.5">
-    <p class="m-0 text-[0.75rem] font-bold uppercase tracking-[0.1em] text-ink">Susunan acara</p>
+    <p class="m-0 text-ui-label font-bold uppercase tracking-[0.12em] text-ink-muted">Susunan acara</p>
     <article v-for="(item, index) in rows('items')" :key="String(item.id)" class="grid gap-3 rounded-md border border-border p-3">
       <div class="grid grid-cols-[6rem_minmax(0,1fr)_auto] items-end gap-2">
         <UiField :id="`editor-rundown-time-${index + 1}`" v-slot="{ id }" label="Waktu">
@@ -120,16 +120,16 @@ function toggleAttire(id: string, on: boolean) {
 
   <div v-else-if="section.type === 'dresscode'" class="grid gap-4 rounded-md border border-border bg-surface p-3.5">
     <fieldset class="grid gap-2 border-0 p-0">
-      <legend class="mb-1 text-[0.75rem] font-bold uppercase tracking-[0.1em] text-ink">Busana yang ditampilkan</legend>
+      <legend class="mb-1 text-ui-label font-bold uppercase tracking-[0.12em] text-ink-muted">Busana yang ditampilkan</legend>
       <div class="flex flex-wrap gap-x-5 gap-y-2">
-        <label v-for="option in selectableAttire" :key="option.id" class="flex min-h-11 cursor-pointer items-center gap-2.5 text-[0.9375rem] text-ink">
+        <label v-for="option in selectableAttire" :key="option.id" class="flex min-h-11 cursor-pointer items-center gap-2.5 text-ui-lg text-ink">
           <input :id="`editor-dresscode-attire-${option.id}`" type="checkbox" class="h-4 w-4 accent-[var(--color-primary)]" :checked="attire.includes(option.id)" @change="toggleAttire(option.id, ($event.target as HTMLInputElement).checked)">
           {{ option.label }}
         </label>
       </div>
     </fieldset>
     <div class="grid gap-2">
-      <p class="m-0 text-[0.75rem] font-bold uppercase tracking-[0.1em] text-ink">Bundaran warna</p>
+      <p class="m-0 text-ui-label font-bold uppercase tracking-[0.12em] text-ink-muted">Bundaran warna</p>
       <article v-for="(color, index) in rows('colors')" :key="index" class="grid grid-cols-[4rem_minmax(0,1fr)_auto] items-end gap-2">
         <UiField :id="`editor-dresscode-color-${index + 1}`" v-slot="{ id }" label="Warna">
           <input :id="id" class="control" type="color" :value="String(color.hex || '#E8DCC8')" @change="(e: Event) => tulisBaris('colors', index, { hex: (e.target as HTMLInputElement).value })">

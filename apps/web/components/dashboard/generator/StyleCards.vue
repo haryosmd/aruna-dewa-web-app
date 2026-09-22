@@ -15,7 +15,7 @@ const model = defineModel<SharePreset>({ default: 'formal' })
   <fieldset class="m-0 grid gap-3 border-0 p-0">
     <legend class="m-0 mb-1 grid gap-1 p-0">
       <span class="font-display text-h3 font-semibold text-ink">Pilih Format & Gaya Bahasa Template WhatsApp</span>
-      <span class="text-[0.9375rem] text-ink-muted">Setiap gaya punya teks bawaan yang dirakit dari data acara di editor.</span>
+      <span class="text-ui-lg text-ink-muted">Setiap gaya punya teks bawaan yang dirakit dari data acara di editor.</span>
     </legend>
 
     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">

@@ -30,9 +30,9 @@ const button = cva(
         gold: 'bg-gold text-ink hover:bg-gold/90',
       },
       size: {
-        sm: 'min-h-11 px-3.5 text-[0.875rem]',
-        md: 'min-h-12 px-5 text-[0.9375rem]',
-        lg: 'min-h-[3.5rem] px-7 text-[1rem]',
+        sm: 'min-h-11 px-3.5 text-ui',
+        md: 'min-h-12 px-5 text-ui-lg',
+        lg: 'min-h-[3.5rem] px-7 text-body',
       },
       block: { true: 'w-full', false: '' },
     },

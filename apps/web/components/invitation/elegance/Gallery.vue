@@ -31,6 +31,6 @@ const images = computed(() => list(props.section, 'imageUrls'))
     />
 
     <InvitationText :section="props.section" field="subtitle" tag="p" data-iv-reveal class="iv-display iv-script m-0 text-[clamp(1.5rem,6cqw,2.2rem)]" />
-    <OrnamentGlyph :glyph="orn.divider" data-iv-ornament class="h-7 w-48 opacity-70" :style="{ color: 'var(--iv-primary)' }" />
+    <OrnamentGlyph :glyph="orn.divider" data-iv-ornament data-iv-slot="divider" class="h-7 w-48 opacity-70" :style="{ color: 'var(--iv-primary)' }" />
   </InvitationSection>
 </template>

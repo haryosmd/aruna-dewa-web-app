@@ -71,7 +71,7 @@ const signedIn = computed(() => Boolean(auth.me))
           :href="section.href"
           :aria-current="active === section.href ? 'true' : undefined"
           :class="cn(
-            'rounded-full px-3.5 py-2 text-[0.875rem] font-medium no-underline transition-colors duration-200',
+            'rounded-full px-3.5 py-2 text-ui font-medium no-underline transition-colors duration-200',
             active === section.href ? 'bg-surface-3 text-ink' : 'text-ink-muted hover:text-ink',
           )"
         >{{ section.label }}</a>
@@ -82,7 +82,7 @@ const signedIn = computed(() => Boolean(auth.me))
           v-if="!signedIn"
           id="nav-dashboard"
           to="/login"
-          class="hidden rounded-full px-3.5 py-2 text-[0.875rem] font-semibold text-ink no-underline transition-colors duration-200 hover:text-primary sm:inline-flex"
+          class="hidden rounded-full px-3.5 py-2 text-ui font-semibold text-ink no-underline transition-colors duration-200 hover:text-primary sm:inline-flex"
         >
           Masuk
         </NuxtLink>
@@ -122,7 +122,7 @@ const signedIn = computed(() => Boolean(auth.me))
                   v-for="section in props.sections"
                   :key="section.href"
                   :href="section.href"
-                  class="flex min-h-12 items-center gap-3 border-b border-border text-[1.0625rem] font-medium text-ink no-underline"
+                  class="flex min-h-12 items-center gap-3 border-b border-border text-body-lg font-medium text-ink no-underline"
                   @click="open = false"
                 >
                   <component :is="section.icon" :size="18" class="shrink-0 text-primary" aria-hidden="true" />

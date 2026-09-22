@@ -34,16 +34,16 @@ const entrance = computed(() => (gerak.value && gerak.value !== 'tema' ? gerak.v
 
     <!-- Bingkai garis tipis primary, dengan sudut ornamen di dua pojoknya. -->
     <div class="iv-hero-frame" aria-hidden="true">
-      <OrnamentGlyph :glyph="orn.corner" data-iv-ornament class="iv-hero-corner iv-hero-corner--tl" />
-      <OrnamentGlyph :glyph="orn.corner" data-iv-ornament class="iv-hero-corner iv-hero-corner--br" />
+      <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" class="iv-hero-corner iv-hero-corner--tl" />
+      <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" class="iv-hero-corner iv-hero-corner--br" />
     </div>
 
     <div class="relative grid w-full justify-items-center gap-3">
-      <OrnamentGlyph :glyph="orn.monogram" :initials="initials" data-iv-ornament data-iv-lead class="h-20 w-20 opacity-90" />
+      <OrnamentGlyph :glyph="orn.monogram" :initials="initials" data-iv-ornament data-iv-slot="monogram" data-iv-lead class="h-20 w-20 opacity-90" />
       <InvitationText :section="props.section" field="monogram" tag="p" data-iv-lead class="iv-display m-0 text-[0.9375rem] tracking-[0.3em]" />
       <InvitationText :section="props.section" field="kicker" tag="p" data-iv-lead class="iv-kicker m-0 opacity-90" />
 
-      <OrnamentGlyph :glyph="orn.symbol" data-iv-ornament class="h-10 w-14 opacity-85" />
+      <OrnamentGlyph :glyph="orn.symbol" data-iv-ornament data-iv-slot="symbol" class="h-10 w-14 opacity-85" />
       <InvitationText
         :section="props.section"
         field="title"
@@ -52,7 +52,7 @@ const entrance = computed(() => (gerak.value && gerak.value !== 'tema' ? gerak.v
         data-iv-lead
         class="iv-display iv-script m-0 text-[clamp(2.8rem,12cqw,5rem)]"
       />
-      <OrnamentGlyph :glyph="orn.symbol" data-iv-ornament class="h-10 w-14 rotate-180 opacity-85" />
+      <OrnamentGlyph :glyph="orn.symbol" data-iv-ornament data-iv-slot="symbol" class="h-10 w-14 rotate-180 opacity-85" />
 
       <InvitationText :section="props.section" field="subtitle" tag="p" data-iv-reveal class="iv-body m-0 text-[0.9375rem] opacity-95" />
 

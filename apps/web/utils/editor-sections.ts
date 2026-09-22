@@ -80,24 +80,37 @@ export function sectionDomId(type: EditorSection['type']): string {
 }
 
 /**
- * Tinggi pemilih perangkat yang mengambang di atas viewport panggung (`pt-28` di `Stage.vue`),
- * ditambah napas supaya judul bagian tidak menempel di bawah pilnya.
+ * Napas di atas bagian yang baru saja digulir ke tampak, dalam koordinat render (belum diperkecil).
+ *
+ * Dulu 96: wadah gulirnya adalah viewport panggung, dan pil pemilih perangkat mengambang di
+ * atasnya (`pt-28` di `Stage.vue`), jadi bagian yang berhenti di 0 akan berdiri di balik pil itu.
+ * Sejak fase 76 yang menggulung adalah LAYAR PONSEL, yang tidak punya apa pun mengambang di
+ * atasnya — jadi yang tersisa cuma napas supaya judul bagian tidak menempel di tepi layar.
  */
-export const stageScrollOffset = 96
+export const stageScrollOffset = 8
 
 /**
- * Posisi gulir viewport supaya elemen bagian berdiri tepat di bawah pemilih perangkat.
+ * Posisi gulir layar ponsel supaya elemen bagian berdiri tepat di bawah tepi atasnya.
  *
- * Dihitung dari `getBoundingClientRect()` keduanya, bukan `offsetTop`: undangan dirender
- * selebar 390px lalu di-`scale()` (`PhoneFrame.vue`), dan rect sudah pasca-transform sedangkan
- * `offsetTop` belum. Tidak pernah negatif — bagian pertama menggulir ke 0, bukan ke atas 0.
+ * Dihitung dari `getBoundingClientRect()` keduanya, bukan `offsetTop`: undangan dirender selebar
+ * 390px lalu di-`scale()` (`PhoneFrame.vue`), dan `offsetTop` tidak tahu soal transform.
+ *
+ * **`scale` wajib sejak fase 76**, dan ini bukan kehati-hatian melainkan koreksi satuan. Wadah
+ * gulirnya sekarang elemen yang di-`scale()` ITU SENDIRI: `getBoundingClientRect()` menjawab dalam
+ * piksel layar (sudah diperkecil) sementara `scrollTop` hidup di koordinat render (belum). Selisih
+ * rect karena itu harus dibagi skalanya dulu sebelum ditambahkan ke `scrollTop`; tanpa itu, pada
+ * skala 0,62 tiap lompatan hanya sampai 62% jalan dan bagian yang dituju berhenti di atas layar.
+ *
+ * Tidak pernah negatif — bagian pertama menggulir ke 0, bukan ke atas 0.
  */
 export function stageScrollTop(
   viewport: { top: number, scrollTop: number },
   target: { top: number },
   offset = stageScrollOffset,
+  scale = 1,
 ): number {
-  return Math.max(0, Math.round(viewport.scrollTop + target.top - viewport.top - offset))
+  const jarak = (target.top - viewport.top) / (scale || 1)
+  return Math.max(0, Math.round(viewport.scrollTop + jarak - offset))
 }
 
 /**

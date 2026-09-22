@@ -49,15 +49,15 @@ const halaman = computed(() => [
           <ArrowLeft :size="18" aria-hidden="true" />
         </UiButton>
         <div class="grid min-w-0 gap-0">
-          <h1 class="m-0 truncate font-display text-[1.0625rem] font-semibold leading-tight text-ink" :title="title">{{ title }}</h1>
+          <h1 class="m-0 truncate font-display text-body-lg font-semibold leading-tight text-ink" :title="title">{{ title }}</h1>
           <p class="m-0 truncate text-caption text-ink-muted">{{ themeName }} · <code class="font-semibold">{{ slug }}</code></p>
         </div>
         <p
           id="editor-save-state"
-          :class="cn('m-0 hidden shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-caption font-semibold md:flex', dirty ? 'bg-gold-soft text-warning' : 'bg-success-soft text-success')"
+          :class="cn('m-0 hidden shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-ui-label font-medium md:flex', dirty ? 'bg-gold-soft text-warning' : 'bg-success-soft text-success')"
         >
-          <AlertCircle v-if="dirty" :size="13" aria-hidden="true" />
-          <Check v-else :size="13" aria-hidden="true" />
+          <AlertCircle v-if="dirty" :size="12" aria-hidden="true" />
+          <Check v-else :size="12" aria-hidden="true" />
           {{ dirty ? 'Ada perubahan yang belum tersimpan' : 'Semua perubahan tersimpan' }}
         </p>
         <p class="sr-only">Draft revisi {{ revision }}. Versi publik hanya berubah saat kalian menerbitkan.</p>
@@ -71,7 +71,7 @@ const halaman = computed(() => [
               :to="item.to"
               :aria-current="aktif(item.to) ? 'page' : undefined"
               :class="cn(
-                'flex min-h-10 items-center gap-1.5 rounded-full px-3.5 text-[0.875rem] font-semibold transition-colors duration-200',
+                'flex min-h-10 items-center gap-1.5 rounded-full px-3.5 text-ui font-semibold transition-colors duration-200',
                 aktif(item.to) ? 'bg-surface text-success shadow-hairline' : 'text-ink-muted hover:text-ink',
               )"
             >

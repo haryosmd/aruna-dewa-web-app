@@ -1,5 +1,146 @@
 # Revision history
 
+## 2026-09-22: Fase 77 — hierarki yang bisa dibaca, dan wajah desktop
+
+- **Skala chrome, lima langkah bernama.** 117 nilai `text-[…]` arbitrer diganti token; chrome
+  editor turun dari **tujuh ukuran liar** (10/11/12/13/14/15/17px) jadi **lima bernama** —
+  `ui-label` 12 · `caption` 13 · `ui` 14 · `ui-lg` 15 · `body-lg` 17 — plus `stat` 36 untuk angka
+  metrik dan `body` 16 yang **tetap** untuk isian form (di bawah itu Safari iOS memperbesar halaman
+  saat field difokus). Hierarki yang bertabrakan dibetulkan: judul panel rail turun ke label mikro
+  uppercase (dulu 15/700, seukuran nama bagian di bawahnya), tab inspektor disamakan dengan nav
+  toolbar (dulu 13 lawan 14 — kembar visual, beda satu piksel yang tidak pernah diputuskan siapa
+  pun), chip "tersimpan" dari 13/600 ber-pill jadi 12/500. `chrome-type-scale.spec.ts` menolak
+  nilai arbitrer berikutnya.
+- **`tailwind-merge` membuang warna tombol — cacat laten sejak token kustom pertama.** Ia tidak
+  tahu `text-ui` itu ukuran, jadi menganggapnya bertabrakan dengan `text-white` dan membuang yang
+  pertama: tombol primary dasbor jadi tinta gelap di atas terakota, **kontras 3,45:1**, tertangkap
+  axe. `text-caption` lewat `cn()` pun sudah kehilangan ukurannya sejak dulu; yang membuat cacat
+  ini baru terlihat adalah arah kerugiannya — ukuran yang hilang cuma terbaca sebagai huruf agak
+  besar, warna yang hilang terbaca sebagai kontras yang gagal. `cn.ts` mendaftarkan kedua belas
+  ukuran; `cn-font-size.spec.ts` menjaganya.
+- **Latar panggung putih**, dan token `--color-surface-3` **tidak** digeser: ia juga hover tiap
+  tombol ghost, latar tab, badge netral, `Skeleton`, `Dropzone`, `Input`, `Avatar`, dan lima seksi
+  landing.
+- **Kepala rail dan inspektor berhenti tergulir.** Keduanya jadi grid dua baris di `lg`: judul +
+  pencarian, dan alat + tab, di baris yang diam; daftar dan isi form di baris yang menggulung.
+  Bukan `sticky` — ia menuntut latar buram dan z-index sendiri dan tetap bisa tertindih cincin fokus.
+- **Tiga lebar yang benar-benar berbeda**: Ponsel 390 · **Tablet 768** · Desktop 1280.
+  `ponsel-besar` 412 dibuang — ia tidak pernah menyalakan satu pun aturan tata letak.
+- **Undangan punya wajah desktop.** Di container ≥64rem: panel foto **Galeri** yang diam di kiri
+  (960px pada layar 1440), kolom undangan 480px yang digulir di kanan — **tamu ikut melihatnya**.
+  Tablet 48–64rem tetap satu kolom, melapang ke 640px. `container-type` pindah dari `.iv-root` ke
+  `.iv-column` baru, karena `.iv-root` kini grid selebar layar dan section yang menanyainya akan
+  menata diri untuk lebar yang bukan miliknya. `.iv-frame` diberi **nama** container: `@container`
+  tanpa nama menanyai wadah terdekat, dan dock serta pemutar musik hidup di dalam `.iv-column` —
+  aturan desktop yang ditulis tanpa nama menanyai kolom 480px dan tidak pernah cocok. Tanpa foto,
+  gridnya tidak dinyalakan sama sekali; panel jatuh ke foto utama supaya undangan baru tidak
+  kehilangan seluruh tata letak desktopnya.
+- **Musik**: `createDefaultDocument()` memasang lagu bawaan (`Gymnopédie No. 1`) untuk undangan
+  baru — sebelumnya `settings.musicUrl` lahir kosong dan pemutarnya memang tidak pernah dirender,
+  jadi "tombolnya hilang" adalah lagu yang belum pernah ada. Kalimat "Undangan ini memutar musik
+  saat dibuka." dicabut. `left-4` pada elemen `sticky` (yang di sana adalah batas penahan, bukan
+  offset) diganti `ml-4`. E2e baru membuktikan pemutarnya berdiri **di panggung** — jalur yang
+  sebelumnya nol tes.
+
+### Tiga cacat scroll-spy fase 76, semuanya ditemukan lewat tes yang merah di sebagian project
+
+1. **Titik tengah salah satuan.** `clientHeight` (koordinat render) dijumlahkan dengan `rect.top`
+   (piksel layar); pada skala 0,497 melesetnya 212px — cukup untuk menjawab bagian berikutnya. Di
+   desktop skalanya 0,79 sehingga melesetnya 89px dan jawabannya kebetulan benar. **Itulah sebab
+   tiga merah fase 76**, yang dua kali saya salah diagnosis sebagai soal waktu.
+2. **Panggung tersembunyi tetap menjawab.** Elemen `display: none` menjawab semua rect nol, jadi
+   tiap bagian "memuat" titik tengah dan yang pertama menang: berpindah ke tab Pengaturan di ponsel
+   melapor "Hero" dan menimpa bagian yang baru dipilih.
+3. **Sorot berpindah tanpa ada yang menggulir, dan itu menghapus ketikan.** `selectedId` yang
+   berubah me-remount `SectionForm` (ia ber-`:key`), jadi bagian yang cuma TERLEWATI dalam gulir
+   halus dari rail menghapus judul yang sedang diketik pasangan — terukur, judulnya kembali ke
+   nilai lama 1,5 detik sesudah diketik. Sekarang sorot hanya berpindah kalau `scrollTop` benar-benar
+   berubah, perjalanan menuju bagian yang diminta rail dibungkam sampai sampai, dan laporan
+   penutup dibaca dari keadaan yang sebenarnya — bukan dari tujuan yang tadi diminta.
+
+### Dua tes yang salah menuntut, bukan dua cacat
+
+- **Pemutar musik di panggung** dituntut berlabel "Putar musik" sesudah amplop dibuka. Tidak bisa
+  ditebak: `onGateOpen` memanggil `arm()` sinkron di dalam klik, dan apakah ia benar-benar berbunyi
+  tergantung kebijakan autoplay mesinnya — WebKit mengizinkan, Chromium headless tidak. Hijau di
+  satu project, merah di project lain, tanpa ada yang rusak. Yang diuji sekarang: menekannya
+  **membalik** labelnya.
+- **`demo wishes form`** merah sekali di WebKit lalu hijau 3/3 saat diulang; dicatat sebagai flake,
+  bukan diperbaiki dengan menebak.
+
+### Yang diperiksa dan TIDAK terbukti
+
+`container-type: inline-size` disangka membuat `position: fixed` berlabuh ke `.iv-root`, sehingga
+gerbang, dock, dan pemutar di halaman tamu dikira melayang di dasar dokumen. Diukur di browser:
+`contain: none`, gerbang `fixed` setinggi 900 = viewport, dock di dalam viewport. Tidak ada cacat.
+
+## 2026-09-22: Fase 76 — panggung yang bisa disentuh
+
+Empat keluhan dari peninjauan pemilik di layar, tiga di antaranya cacat yang bisa ditunjuk barisnya.
+
+- **Pratinjau ponsel akhirnya muat** (`PhoneFrame.vue`, `Stage.vue`). `fit` dulu hanya
+  `Math.min(1, hostWidth / width)` — tinggi tidak pernah ikut, padahal prop `maxHeight` sudah ada
+  sejak fase 65 dan dipakai `/order`. `Stage` kini mengopernya dari tinggi content-box viewport-nya
+  sendiri, dikurangi padding bezel, berlantai 420px. Terukur di 1440×900: Clean 79 %, bingkai 669px
+  di dalam viewport 829px (dulu 864px berdiri melewati tepi bawah); iPhone 77 %, bingkai 649px.
+- **Layar ponsel jadi wadah gulirnya sendiri** (`scrollable` di `PhoneFrame`). Sebelum ini
+  `DeviceBezel` memasang `max-height: ${screenHeight}px` + `overflow-hidden` **tanpa** gulir di
+  dalamnya, jadi di mode iPhone/Android seluruh isi di bawah 844px tidak bisa dicapai sama sekali —
+  hanya "Clean" yang pernah bisa digulir. Terukur: isi 7.534px menggulung di layar 844px, di kedua
+  mode. `stageScrollTop()` menerima `scale`, karena wadah gulirnya kini elemen yang di-`scale()`
+  itu sendiri dan rect (piksel layar) bukan lagi satu satuan dengan `scrollTop` (koordinat render).
+  `stageScrollOffset` 96 → 8: tidak ada lagi pil mengambang di atas wadah gulirnya.
+- **Panggung berhenti mengunci gulirnya, dan inilah akar keluhan yang sebenarnya.** Ditemukan
+  sesudah pemilik meninjau hasil putaran pertama dan melaporkan bahwa gulirnya masih diam. Gerbang
+  amplop di panggung dulu `absolute inset-0` menindih seluruh tinggi undangan, jadi satu-satunya
+  cara agar gulir tidak menampakkan gerbang tanpa ujung adalah `overflow-y: hidden` selama amplop
+  belum dibuka. Terukur pada keadaan pemilik: roda 600px → `scrollTop` tetap 0. `.iv-gate--contained`
+  kini `relative` setinggi `var(--iv-layar-h)` di puncak aliran; emit `lock`/`unlock` tidak lagi
+  mengunci apa pun dan `PhoneFrame.scrollLocked` dibuang. Gerbang juga dapat `id="iv-opening-envelope"`
+  (prop `gateId`, hanya v2 — pada v1 `#iv-cover` sudah dipakai section sungguhan), jadi rail bisa
+  menggulir ke amplop dan scroll-spy bisa menyorotnya.
+- **Bezel dibuang seluruhnya.** Putaran pertama hanya memindahkan bawaan ke `Clean` dan menyisakan
+  bezel sebagai opsi; itu keliru dua kali. `useLocalStorage` membuat pasangan yang preferensinya
+  sudah `iphone` tidak pernah melihat bawaan baru, dan `Clean` sendiri lahir sebagai "iPhone tanpa
+  bezel" sehingga tanpa bezel ia tidak beda dari apa pun. `DeviceBezel.vue` dihapus; pemilihnya
+  jadi **Ponsel 390 · Ponsel besar 412 · Desktop 1280** dengan layar `rounded-[1.75rem]`. Nilai
+  tersimpan lama dipetakan di `bacaDevice()` supaya preferensi yang tersangkut sembuh sendiri.
+- **Panggung menyorot balik ke rail** (fase 70 hanya punya arah sebaliknya). `IntersectionObserver`
+  ber-`rootMargin: '-45% 0px -45% 0px'` seperti `Dock.vue`. Callback pembuka dilewati lewat
+  **bendera, bukan jendela waktu**: versi pertamanya membungkam 250ms sesudah pemasangan dan itu
+  ikut menelan gulir sungguhan tepat sesudah amplop dibuka — gerakan paling wajar di panggung.
+  **`entries` tidak dipakai untuk memilih**,
+  hanya sebagai isyarat: satu lompatan gulir melintaskan lima bagian sekaligus, dan memilih dari
+  larik itu menyorot "Hadiah" saat yang dituju "Ucapan" — diukur, bukan dikhawatirkan. Yang memuat
+  titik tengah layar yang menang. `SectionRail` menggulir item aktifnya ke tampak.
+- **Amplop terbuka dari badannya**, bukan cuma dari segel seluas 4,75rem. Tidak ada yang pernah
+  mematikan kliknya — e2e sudah mengklik `[data-gate-seal]` di panggung sejak fase 72 — yang salah
+  adalah areanya, sementara callout di bawahnya berbunyi "Klik di sini untuk membuka". Kotak amplop
+  (`data-gate-envelope`) dan callout jadi pemicu dengan `@click.stop`; segel tetap satu-satunya
+  kontrol beraksesibilitas. Terukur klik→gerbang hilang: 2.085 ms, jadi timeline GSAP-nya memang
+  berjalan penuh.
+- **Ornamen punya afordans di panggung** (permintaan baru). `data-iv-slot` mendampingi
+  `data-iv-ornament` di 43 titik panggil; hover memberi `outline: 1px dashed` 65 % primary; klik
+  memindahkan inspektor ke tab Ornamen dan menyorot kartu slotnya 1,2 detik. Studio **tidak**
+  dibuka langsung — nilai ornamen berlaku global dan kartu slotnya yang mengatakan itu. Delegasi
+  kliknya melewati apa pun yang punya leluhur `button/a/[role=button]`, jadi segel amplop tetap
+  membuka amplop. Seluruhnya digerbangi `.iv-root--stage`: halaman tamu tidak melihat satu garis
+  pun, dan `.iv-field` di sana tetap `pointer-events: none`.
+- Penjaga baru: `ornament-slots.spec.ts` menolak `OrnamentGlyph` berslot yang lupa `data-iv-slot`
+  (kegagalannya senyap — ornamennya tetap tergambar, hanya tidak bisa diklik);
+  `editor-sections.spec.ts` mengunci konversi satuan `scale`; enam e2e baru di `dashboard.spec.ts`.
+- Dua tes lama diperbarui, bukan dilemahkan. `device preview` mengukur dua angka: `scrollHeight`
+  (tinggi isi; `offsetHeight` sejak fase ini menjawab tinggi LAYAR dan tidak bisa lagi membuktikan
+  apa pun) dan tinggi satu section yang benar-benar ditentukan lebar. Yang kedua perlu karena
+  `scrollHeight` kini memuat dua blok setinggi `--iv-layar-h`, dan tinggi itu datang dari viewport
+  perangkat: 8.378 di 390×844 lawan 8.449 di 412×915 — lebih lapang tapi lebih panjang. Probe-nya
+  "Ucapan" (1.768 · 1.714 · 1.550), dipilih sesudah ketiganya diukur; "Mempelai" justru NAIK
+  bersama lebar (815 · 819 · 833) karena tata letaknya bertukar. `studio editor` melepas keterangan
+  "di bezel bagian di bawah lipatan tidak pernah bisa digulir" dan menggantinya dengan tes yang
+  membuktikan sebaliknya.
+- Satu bug ada di tes, bukan di aplikasi, dan dicatat apa adanya: helper gulir e2e lupa membagi
+  skala, mendarat 648px terlalu tinggi, lalu menuduh scroll-spy-nya yang salah.
+
 ## 2026-09-20: Fase 72 — template utama "Elegance" dan editor ala Undangan Studio
 
 - **Kontrak v2** (72.0): `sections.ts` — dua belas bagian Elegance + empat ekstra, kolom per tipe

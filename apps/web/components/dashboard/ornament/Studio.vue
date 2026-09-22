@@ -225,7 +225,7 @@ function tutup(simpan: boolean) {
                 :aria-selected="tab === pilihan.id"
                 aria-controls="studio-grid"
                 :class="cn(
-                  'min-h-11 rounded-full px-4 text-[0.875rem] font-semibold transition-colors duration-200',
+                  'min-h-11 rounded-full px-4 text-ui font-semibold transition-colors duration-200',
                   tab === pilihan.id ? 'bg-surface text-ink shadow-hairline' : 'text-ink-muted',
                 )"
                 @click="tab = pilihan.id as StudioTab"
@@ -355,7 +355,7 @@ function tutup(simpan: boolean) {
             >
               <OrnamentGlyph :glyph="aktif" ubin class="min-h-0 max-h-full max-w-full object-contain text-[color:var(--iv-orn-body)]" aria-hidden="true" />
             </div>
-            <p class="m-0 text-[0.875rem] font-semibold text-ink">{{ aktifId ? ornament(aktifId).name : 'Unggahan kalian' }}</p>
+            <p class="m-0 text-ui font-semibold text-ink">{{ aktifId ? ornament(aktifId).name : 'Unggahan kalian' }}</p>
             <p v-if="!aktifId" class="m-0 text-caption text-ink-subtle">Raster transparan milik kalian. Warnanya tetap, tidak ikut palet.</p>
             <p v-else-if="aktifId === bawaan" class="m-0 text-caption text-ink-subtle">Bawaan tema.</p>
             <p v-else-if="fitAktif.ok" class="m-0 text-caption text-ink-subtle">Seresep dengan tema kalian.</p>

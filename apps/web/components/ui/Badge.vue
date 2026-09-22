@@ -11,7 +11,7 @@ const badge = cva('inline-flex items-center gap-1.5 rounded-full font-semibold l
       outline: 'border border-border-strong text-ink-muted',
     },
     size: {
-      sm: 'px-2.5 py-1 text-[0.6875rem] tracking-[0.08em] uppercase',
+      sm: 'px-2.5 py-1 text-ui-label tracking-[0.08em] uppercase',
       md: 'px-3 py-1.5 text-caption',
     },
   },

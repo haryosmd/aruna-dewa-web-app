@@ -121,12 +121,12 @@ const idKolom = (key: string) => `editor-field-${type.value}-${key}`
   <div class="grid gap-4">
     <div class="flex items-start justify-between gap-3">
       <div class="grid gap-0.5">
-        <h2 class="m-0 font-display text-h3 font-semibold text-ink">{{ meta.label }}</h2>
+        <h2 class="m-0 font-display text-body-lg font-semibold leading-tight text-ink">{{ meta.label }}</h2>
         <p class="m-0 text-caption text-ink-muted">{{ meta.description }}</p>
       </div>
       <span
         :id="`editor-section-status-${section.id}`"
-        :class="cn('shrink-0 rounded-full px-2 py-0.5 text-caption font-semibold', section.enabled ? 'bg-success-soft text-success' : 'bg-surface-3 text-ink-muted')"
+        :class="cn('shrink-0 rounded-full px-2 py-0.5 text-ui-label font-medium', section.enabled ? 'bg-success-soft text-success' : 'bg-surface-3 text-ink-muted')"
       >
         {{ section.enabled ? 'Tampil' : 'Tersembunyi' }}<span v-if="isRequiredSection(section.type)" class="sr-only"> (wajib)</span>
       </span>
@@ -168,7 +168,7 @@ const idKolom = (key: string) => `editor-field-${type.value}-${key}`
 
       <div v-else-if="field.kind === 'foto[]'" class="grid gap-2.5 rounded-md border border-border bg-surface p-3.5">
         <div class="grid gap-0.5">
-          <p class="m-0 text-[0.75rem] font-bold uppercase tracking-[0.1em] text-ink">{{ field.label }} (Maks {{ batasFoto(field) }})</p>
+          <p class="m-0 text-ui-label font-bold uppercase tracking-[0.12em] text-ink-muted">{{ field.label }} (Maks {{ batasFoto(field) }})</p>
           <p class="m-0 text-caption text-ink-muted">{{ list(field.key).length }} dari {{ batasFoto(field) }} foto. Foto tampil publik setelah undangan diterbitkan.</p>
         </div>
         <ul v-if="list(field.key).length" class="m-0 grid list-none grid-cols-3 gap-2 p-0">
@@ -199,7 +199,7 @@ const idKolom = (key: string) => `editor-field-${type.value}-${key}`
       </div>
 
       <label v-else-if="field.kind === 'boolean'" class="flex min-h-12 cursor-pointer items-center justify-between gap-3 rounded-md border border-border bg-surface px-3.5 py-2">
-        <span class="text-[0.875rem] font-semibold text-ink">{{ field.label }}</span>
+        <span class="text-ui font-semibold text-ink">{{ field.label }}</span>
         <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
           <input
             :id="idKolom(field.key)"
@@ -231,10 +231,10 @@ const idKolom = (key: string) => `editor-field-${type.value}-${key}`
     </UiField>
 
     <div class="grid gap-3">
-      <p class="m-0 text-[0.75rem] font-bold uppercase tracking-[0.14em] text-ink-muted">Background section</p>
+      <p class="m-0 text-ui-label font-bold uppercase tracking-[0.12em] text-ink-muted">Background section</p>
 
       <div class="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-3.5 py-2.5">
-        <label :for="`editor-bg-color-${section.id}`" class="text-[0.875rem] font-semibold text-ink">Warna background</label>
+        <label :for="`editor-bg-color-${section.id}`" class="text-ui font-semibold text-ink">Warna background</label>
         <span class="flex items-center gap-2">
           <input
             :id="`editor-bg-color-${section.id}`"
@@ -243,7 +243,7 @@ const idKolom = (key: string) => `editor-field-${type.value}-${key}`
             :value="background.color ?? document.tokens.background"
             @input="emit('tulisLatar', { color: ($event.target as HTMLInputElement).value })"
           >
-          <code class="text-[0.8125rem] font-semibold uppercase text-ink">{{ background.color ?? document.tokens.background }}</code>
+          <code class="text-caption font-semibold uppercase text-ink">{{ background.color ?? document.tokens.background }}</code>
           <button
             v-if="background.color"
             :id="`editor-bg-color-reset-${section.id}`"
@@ -258,7 +258,7 @@ const idKolom = (key: string) => `editor-field-${type.value}-${key}`
 
       <div class="grid gap-2.5 rounded-md border border-border bg-surface p-3.5">
         <div class="grid gap-0.5">
-          <p class="m-0 text-[0.75rem] font-bold uppercase tracking-[0.1em] text-ink">Background image</p>
+          <p class="m-0 text-ui-label font-bold uppercase tracking-[0.12em] text-ink-muted">Background image</p>
           <p class="m-0 text-caption text-ink-muted">Pilih background dari Asset Manager</p>
         </div>
         <div v-if="background.imageUrl" class="relative overflow-hidden rounded-md bg-surface-2">

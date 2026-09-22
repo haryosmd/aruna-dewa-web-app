@@ -75,7 +75,7 @@ useHead({ title: () => invitation.value?.title
     <dl class="m-0 grid gap-3 sm:grid-cols-3">
       <div v-for="stat in [['Hadir (ucapan + RSVP)', wishAttending + attending, 'text-sage'], ['Berhalangan', declined, 'text-ink'], ['Ucapan menunggu', pendingWishes, 'text-gold']]" :key="String(stat[0])" class="card grid gap-2 p-5">
         <dt class="text-caption font-semibold uppercase tracking-[0.1em] text-ink-subtle">{{ stat[0] }}</dt>
-        <dd :class="cn('m-0 font-display text-[2.5rem] leading-none font-semibold', stat[2] as string)">{{ stat[1] }}</dd>
+        <dd :class="cn('m-0 font-display text-stat leading-none font-semibold', stat[2] as string)">{{ stat[1] }}</dd>
       </div>
     </dl>
 
@@ -85,7 +85,7 @@ useHead({ title: () => invitation.value?.title
         :id="`dash-segment-${value}`"
         :key="value"
         type="button"
-        :class="cn('min-h-10 rounded-full px-4 text-[0.875rem] font-semibold transition-colors', segment === value ? 'bg-success-soft text-success' : 'text-ink-muted hover:bg-surface-2 hover:text-ink')"
+        :class="cn('min-h-10 rounded-full px-4 text-ui font-semibold transition-colors', segment === value ? 'bg-success-soft text-success' : 'text-ink-muted hover:bg-surface-2 hover:text-ink')"
         :aria-pressed="segment === value"
         @click="segment = value"
       >
@@ -119,7 +119,7 @@ useHead({ title: () => invitation.value?.title
         <li v-for="rsvp in rsvps" :key="rsvp.id" class="card flex flex-wrap items-start justify-between gap-4 p-4">
           <div class="grid min-w-0 gap-1">
             <span class="font-semibold text-ink">{{ rsvp.guest?.displayName || 'Tamu undangan' }}</span>
-            <span class="text-[0.9375rem] text-ink-muted">{{ rsvp.message || 'Tanpa pesan' }}</span>
+            <span class="text-ui-lg text-ink-muted">{{ rsvp.message || 'Tanpa pesan' }}</span>
           </div>
           <UiBadge :tone="rsvp.attendance === 'yes' ? 'sage' : 'neutral'">
             {{ rsvp.attendance === 'yes' ? `${rsvp.count ?? 1} hadir` : 'Berhalangan' }}

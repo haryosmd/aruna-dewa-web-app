@@ -1,10 +1,17 @@
 import { useLocalStorage } from '@vueuse/core'
 
 /**
- * Perangkat pratinjau panggung (fase 72.2), meniru referensi: Desktop | iPhone | Android | Bersih.
- * `bersih` = lebar ponsel tanpa bezel. Nilai lama `ponsel`/`tablet` dipetakan ke `iphone`.
+ * Lebar pratinjau panggung: Ponsel 390 | Tablet 768 | Desktop 1280.
+ *
+ * **Bezel ponsel dibuang di fase 76**, dan `ponsel-besar` 412 menyusul di fase 77: ia tidak pernah
+ * menyalakan satu pun aturan tata letak, hanya menggeser angka. Ketiga lebar yang tersisa
+ * masing-masing memilih cabang yang berbeda di `Renderer.vue` — satu kolom penuh, kolom melapang,
+ * dan dua kolom berpanel galeri.
+ *
+ * Nilai tersimpan yang lama dipetakan, bukan dibuang. Tanpa pemetaan ini pasangan yang
+ * preferensinya `iphone` akan tersangkut pada nilai yang sudah tidak punya kode.
  */
-export type PreviewDevice = 'laptop' | 'iphone' | 'android' | 'bersih'
+export type PreviewDevice = 'laptop' | 'ponsel' | 'tablet'
 /** Empat tab inspektor (fase 72.1). Nilai lama `tema` dipetakan ke `global`. */
 export type InspectorTab = 'bagian' | 'global' | 'ornamen' | 'kartu'
 
@@ -17,9 +24,9 @@ export interface EditorPrefs {
   zoom: number
 }
 
-export const editorPrefsDefaults: EditorPrefs = { device: 'iphone', inspectorTab: 'bagian', railCollapsed: false, inspectorCollapsed: false, zoom: 100 }
+export const editorPrefsDefaults: EditorPrefs = { device: 'ponsel', inspectorTab: 'bagian', railCollapsed: false, inspectorCollapsed: false, zoom: 100 }
 
-const devices = new Set<PreviewDevice>(['laptop', 'iphone', 'android', 'bersih'])
+const devices = new Set<PreviewDevice>(['laptop', 'ponsel', 'tablet'])
 const tabs = new Set<InspectorTab>(['bagian', 'global', 'ornamen', 'kartu'])
 
 export const zoomMin = 50
@@ -28,8 +35,8 @@ export const zoomStep = 10
 
 function bacaDevice(value: unknown): PreviewDevice {
   if (devices.has(value as PreviewDevice)) return value as PreviewDevice
-  // Simpanan sebelum fase 72.
-  if (value === 'ponsel' || value === 'tablet') return 'iphone'
+  // Simpanan fase 76 (`ponsel-besar`), fase 72.2 (bezel), dan sebelum fase 72.
+  if (value === 'ponsel-besar' || value === 'android' || value === 'iphone' || value === 'bersih') return 'ponsel'
   return editorPrefsDefaults.device
 }
 

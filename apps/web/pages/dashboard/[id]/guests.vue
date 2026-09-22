@@ -303,21 +303,21 @@ useHead({ title: () => invitation.value?.title
     <section class="grid gap-4" aria-labelledby="guest-list-title">
       <div class="grid gap-1">
         <h2 id="guest-list-title" class="m-0 font-display text-h3 font-semibold text-ink">Daftar Tamu Undangan Terdaftar</h2>
-        <p class="m-0 text-[0.9375rem] text-ink-muted">Tamu wajib terdaftar untuk menghindari manipulasi URL — tiap tamu mendapat tautan personalnya sendiri.</p>
+        <p class="m-0 text-ui-lg text-ink-muted">Tamu wajib terdaftar untuk menghindari manipulasi URL — tiap tamu mendapat tautan personalnya sendiri.</p>
       </div>
 
       <dl class="m-0 grid gap-3 sm:grid-cols-3">
         <div class="card grid gap-1.5 p-5">
           <dt class="text-caption font-semibold uppercase tracking-[0.1em] text-ink-subtle">Total tamu</dt>
-          <dd id="guest-stat-total" class="m-0 font-display text-[2.25rem] leading-none font-semibold text-ink">{{ totalAll }} <span class="text-[1rem] font-normal text-ink-muted">orang</span></dd>
+          <dd id="guest-stat-total" class="m-0 font-display text-stat leading-none font-semibold text-ink">{{ totalAll }} <span class="text-body font-normal text-ink-muted">orang</span></dd>
         </div>
         <div class="card grid gap-1.5 p-5">
           <dt class="text-caption font-semibold uppercase tracking-[0.1em] text-ink-subtle">Sudah terkirim</dt>
-          <dd id="guest-stat-sent" class="m-0 font-display text-[2.25rem] leading-none font-semibold text-success">{{ result.sent }} <span class="text-[1rem] font-normal text-ink-muted">({{ sentPercent }}%)</span></dd>
+          <dd id="guest-stat-sent" class="m-0 font-display text-stat leading-none font-semibold text-success">{{ result.sent }} <span class="text-body font-normal text-ink-muted">({{ sentPercent }}%)</span></dd>
         </div>
         <div class="card grid gap-1.5 p-5">
           <dt class="text-caption font-semibold uppercase tracking-[0.1em] text-ink-subtle">Belum terkirim</dt>
-          <dd id="guest-stat-unsent" class="m-0 font-display text-[2.25rem] leading-none font-semibold text-gold">{{ Math.max(0, totalAll - result.sent) }}</dd>
+          <dd id="guest-stat-unsent" class="m-0 font-display text-stat leading-none font-semibold text-gold">{{ Math.max(0, totalAll - result.sent) }}</dd>
         </div>
       </dl>
 
@@ -361,7 +361,7 @@ useHead({ title: () => invitation.value?.title
             :id="`guest-filter-${value}`"
             :key="value"
             type="button"
-            :class="cn('min-h-10 rounded-full px-4 text-[0.875rem] font-semibold transition-colors', status === value ? 'bg-success-soft text-success' : 'text-ink-muted hover:bg-surface-2 hover:text-ink')"
+            :class="cn('min-h-10 rounded-full px-4 text-ui font-semibold transition-colors', status === value ? 'bg-success-soft text-success' : 'text-ink-muted hover:bg-surface-2 hover:text-ink')"
             :aria-pressed="status === value"
             @click="status = value"
           >
@@ -386,7 +386,7 @@ useHead({ title: () => invitation.value?.title
         <button id="guest-retry" class="button button-secondary ml-2" type="button" @click="load">Coba lagi</button>
       </p>
 
-      <p v-if="selected.size" id="guest-selection-bar" class="m-0 flex flex-wrap items-center gap-3 rounded-md bg-sage-soft px-4 py-2.5 text-[0.9375rem] text-ink">
+      <p v-if="selected.size" id="guest-selection-bar" class="m-0 flex flex-wrap items-center gap-3 rounded-md bg-sage-soft px-4 py-2.5 text-ui-lg text-ink">
         <span><strong class="font-semibold">{{ selected.size }}</strong> tamu dipilih</span>
         <UiButton id="guest-send-next" size="sm" tone="ink" :disabled="!nextSelected" @click="sendNext">
           <DashboardGeneratorWhatsAppGlyph :size="15" />
@@ -406,7 +406,7 @@ useHead({ title: () => invitation.value?.title
         @remove="remove"
       />
 
-      <div class="flex flex-wrap items-center justify-between gap-3 text-[0.9375rem] text-ink-muted">
+      <div class="flex flex-wrap items-center justify-between gap-3 text-ui-lg text-ink-muted">
         <span>{{ result.total }} tamu{{ filtered ? ' cocok' : '' }}</span>
         <div class="flex items-center gap-3">
           <UiButton id="guest-page-prev" tone="outline" size="sm" :disabled="result.page <= 1" @click="result.page--; load()">Sebelumnya</UiButton>

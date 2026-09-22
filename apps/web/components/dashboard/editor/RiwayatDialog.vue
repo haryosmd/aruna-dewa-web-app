@@ -60,7 +60,7 @@ const waktu = (iso: string) => {
 
         <div v-else-if="!revisions.length" id="editor-riwayat-kosong" class="grid gap-1.5 rounded-md border border-border bg-surface-2 p-4">
           <strong class="text-ink">Belum ada versi tersimpan.</strong>
-          <span class="text-[0.9375rem] text-ink-muted">Undangan ini belum pernah diterbitkan. Versi pertama tersimpan begitu kalian menekan Publikasikan.</span>
+          <span class="text-ui-lg text-ink-muted">Undangan ini belum pernah diterbitkan. Versi pertama tersimpan begitu kalian menekan Publikasikan.</span>
         </div>
 
         <ul v-else id="editor-riwayat-daftar" class="m-0 grid list-none gap-2 p-0">

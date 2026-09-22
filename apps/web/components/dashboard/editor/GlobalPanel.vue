@@ -85,7 +85,7 @@ const fontLabel = (id: string) => selectableFonts.find(font => font.id === id)?.
 
 <template>
   <div class="grid gap-4">
-    <p v-if="!canEditDesign" id="design-locked" class="m-0 flex items-start gap-2 rounded-md border border-border bg-surface-2 p-3.5 text-[0.8125rem] text-ink-muted">
+    <p v-if="!canEditDesign" id="design-locked" class="m-0 flex items-start gap-2 rounded-md border border-border bg-surface-2 p-3.5 text-caption text-ink-muted">
       <Lock :size="15" class="mt-0.5 shrink-0 text-ink-subtle" aria-hidden="true" />
       <span>
         Tema, warna, font, ornamen, gaya teks, gerak, dan urutan bagian terkunci pada preset undangan ini.
@@ -97,7 +97,7 @@ const fontLabel = (id: string) => selectableFonts.find(font => font.id === id)?.
     <!-- Musik undangan -->
     <section class="card grid gap-3 p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <h3 class="m-0 flex items-center gap-2 text-[0.9375rem] font-semibold text-ink">
+        <h3 class="m-0 flex items-center gap-2 text-ui-lg font-semibold text-ink">
           <Music :size="16" class="text-success" aria-hidden="true" />
           Musik undangan
         </h3>
@@ -132,14 +132,14 @@ const fontLabel = (id: string) => selectableFonts.find(font => font.id === id)?.
         </button>
       </div>
 
-      <p v-if="track" class="m-0 flex items-center justify-between rounded-md bg-surface-2 px-3 py-2 text-[0.875rem] text-ink-muted">
+      <p v-if="track" class="m-0 flex items-center justify-between rounded-md bg-surface-2 px-3 py-2 text-ui text-ink-muted">
         <span>Genre: <strong class="text-ink">{{ track.genre }}</strong></span>
         <span class="tabular-nums">{{ trackDuration(track.seconds) }}</span>
       </p>
 
       <div class="grid gap-2 rounded-md border border-border px-3 py-2.5">
         <div class="flex items-center justify-between gap-2">
-          <label for="editor-music-volume" class="flex items-center gap-2 text-[0.875rem] font-semibold text-ink">
+          <label for="editor-music-volume" class="flex items-center gap-2 text-ui font-semibold text-ink">
             <Volume2 :size="15" class="text-success" aria-hidden="true" />
             Volume Musik
           </label>
@@ -168,10 +168,10 @@ const fontLabel = (id: string) => selectableFonts.find(font => font.id === id)?.
     <section class="card grid gap-3 p-4">
       <div class="flex items-start justify-between gap-2">
         <div class="grid gap-0.5">
-          <h3 class="m-0 text-[0.9375rem] font-semibold text-ink">Fokuskan untuk Layar</h3>
+          <h3 class="m-0 text-ui-lg font-semibold text-ink">Fokuskan untuk Layar</h3>
           <p class="m-0 text-caption text-ink-muted">Tata letak saat dibuka di layar komputer/desktop</p>
         </div>
-        <span class="rounded-full bg-success-soft px-2 py-0.5 text-[0.625rem] font-bold uppercase tracking-[0.12em] text-success">Layout</span>
+        <span class="rounded-full bg-success-soft px-2 py-0.5 text-ui-label font-bold uppercase tracking-[0.12em] text-success">Layout</span>
       </div>
       <div class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Fokus tata letak">
         <button
@@ -193,7 +193,7 @@ const fontLabel = (id: string) => selectableFonts.find(font => font.id === id)?.
             <component :is="option.icon" :size="18" />
           </span>
           <span class="grid gap-px">
-            <span class="text-[0.9375rem] font-semibold text-ink">{{ option.label }}</span>
+            <span class="text-ui-lg font-semibold text-ink">{{ option.label }}</span>
             <span :class="cn('text-caption', layout === option.id ? 'text-success' : 'text-ink-muted')">{{ option.hint }}</span>
           </span>
         </button>
@@ -203,8 +203,8 @@ const fontLabel = (id: string) => selectableFonts.find(font => font.id === id)?.
     <!-- Preset Theme -->
     <section class="card grid gap-3 p-4">
       <div class="flex items-center justify-between gap-2">
-        <h3 class="m-0 text-[0.9375rem] font-semibold text-ink">Preset Theme</h3>
-        <span class="rounded-full bg-success-soft px-2 py-0.5 text-[0.625rem] font-bold uppercase tracking-[0.12em] text-success">Global</span>
+        <h3 class="m-0 text-ui-lg font-semibold text-ink">Preset Theme</h3>
+        <span class="rounded-full bg-success-soft px-2 py-0.5 text-ui-label font-bold uppercase tracking-[0.12em] text-success">Global</span>
       </div>
       <div class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Preset warna">
         <button
@@ -227,7 +227,7 @@ const fontLabel = (id: string) => selectableFonts.find(font => font.id === id)?.
             <span class="h-6 w-6 rounded-full border border-border" :style="{ background: palette.tokens.background }" />
           </span>
           <span class="grid gap-px">
-            <span class="text-[0.9375rem] font-semibold text-ink">{{ palette.label }}</span>
+            <span class="text-ui-lg font-semibold text-ink">{{ palette.label }}</span>
             <span class="text-caption text-ink-muted">{{ fontLabel(palette.tokens.font) }}</span>
           </span>
         </button>
@@ -237,7 +237,7 @@ const fontLabel = (id: string) => selectableFonts.find(font => font.id === id)?.
     <!-- Kustom Warna Tema -->
     <section class="card grid gap-3 p-4">
       <div class="grid gap-0.5">
-        <h3 class="m-0 text-[0.9375rem] font-semibold text-ink">Kustom Warna Tema</h3>
+        <h3 class="m-0 text-ui-lg font-semibold text-ink">Kustom Warna Tema</h3>
         <p class="m-0 text-caption text-ink-muted">Sesuaikan dengan tema busana/dekorasi</p>
       </div>
       <div class="grid gap-2">
@@ -246,7 +246,7 @@ const fontLabel = (id: string) => selectableFonts.find(font => font.id === id)?.
           :key="row.key"
           class="flex items-center justify-between gap-3 rounded-md border border-border px-3.5 py-2.5"
         >
-          <label :for="`editor-color-${row.key}`" class="text-[0.875rem] font-semibold text-ink">{{ row.label }}</label>
+          <label :for="`editor-color-${row.key}`" class="text-ui font-semibold text-ink">{{ row.label }}</label>
           <span class="flex items-center gap-2 rounded-md bg-surface-2 px-2 py-1">
             <input
               :id="`editor-color-${row.key}`"
@@ -257,7 +257,7 @@ const fontLabel = (id: string) => selectableFonts.find(font => font.id === id)?.
               :aria-describedby="canEditDesign ? undefined : 'design-locked'"
               @input="emit('warna', row.key, ($event.target as HTMLInputElement).value)"
             >
-            <code class="text-[0.8125rem] font-semibold uppercase text-ink">{{ document.tokens[row.key] }}</code>
+            <code class="text-caption font-semibold uppercase text-ink">{{ document.tokens[row.key] }}</code>
           </span>
         </div>
       </div>
@@ -265,13 +265,13 @@ const fontLabel = (id: string) => selectableFonts.find(font => font.id === id)?.
       <div :class="cn('grid gap-3 rounded-md border p-3.5 transition-colors duration-300', paletteIssues.length ? 'border-warning/40 bg-gold-soft' : 'border-border bg-surface-2')">
         <div class="flex items-start gap-2">
           <component :is="paletteIssues.length ? AlertCircle : Check" :size="16" :class="cn('mt-0.5 shrink-0', paletteIssues.length ? 'text-warning' : 'text-success')" aria-hidden="true" />
-          <p class="m-0 text-[0.8125rem] font-semibold text-ink" aria-live="polite">
+          <p class="m-0 text-caption font-semibold text-ink" aria-live="polite">
             {{ paletteIssues.length ? `${paletteIssues.length} dari 4 pasangan warna sulit dibaca tamu` : 'Keempat pasangan warna terbaca jelas' }}
           </p>
         </div>
         <ul class="m-0 grid list-none gap-1.5 p-0">
           <li v-for="check in paletteChecks" :key="check.id" class="grid grid-cols-[1fr_auto] items-baseline gap-2">
-            <span class="text-[0.8125rem] text-ink">{{ check.label }}<span class="block text-caption text-ink-muted">{{ check.where }}</span></span>
+            <span class="text-caption text-ink">{{ check.label }}<span class="block text-caption text-ink-muted">{{ check.where }}</span></span>
             <span :class="cn('rounded-full px-2 py-0.5 text-caption font-semibold tabular-nums', check.passes ? 'bg-surface text-ink-muted' : 'bg-danger-soft text-danger')">
               {{ formatRatio(check.ratio) }}:1<span class="sr-only">{{ check.passes ? 'memenuhi' : 'di bawah' }} ambang 4,5:1</span>
             </span>
@@ -287,10 +287,10 @@ const fontLabel = (id: string) => selectableFonts.find(font => font.id === id)?.
     <!-- Tema & huruf -->
     <section class="card grid gap-4 p-4">
       <div class="grid gap-0.5">
-        <h3 class="m-0 text-[0.9375rem] font-semibold text-ink">Tema</h3>
+        <h3 class="m-0 text-ui-lg font-semibold text-ink">Tema</h3>
         <p class="m-0 text-caption text-ink-muted">Ornamen, partitur gerak, dan palet kurasi mengikuti tema; struktur bagiannya sama.</p>
       </div>
-      <p v-if="templatePensiun" id="template-pensiun" class="m-0 flex items-start gap-2 rounded-md border border-border bg-surface-2 p-3.5 text-[0.8125rem] text-ink-muted">
+      <p v-if="templatePensiun" id="template-pensiun" class="m-0 flex items-start gap-2 rounded-md border border-border bg-surface-2 p-3.5 text-caption text-ink-muted">
         <Lock :size="15" class="mt-0.5 shrink-0 text-ink-subtle" aria-hidden="true" />
         <span>Tema undangan ini sudah tidak tersedia lagi, dan sekarang ditampilkan memakai <span class="text-ink">{{ templatePensiun.name }}</span>. Pilih penggantinya kapan saja.</span>
       </p>
@@ -314,7 +314,7 @@ const fontLabel = (id: string) => selectableFonts.find(font => font.id === id)?.
             <span class="flex-1" :style="{ background: theme.tokens.primary }" />
             <span class="flex-1" :style="{ background: theme.accent }" />
           </span>
-          <span class="flex items-center gap-1 text-[0.8125rem] font-semibold text-ink">
+          <span class="flex items-center gap-1 text-caption font-semibold text-ink">
             <Check v-if="document.templateId === theme.id" :size="13" class="text-success" aria-hidden="true" />
             {{ theme.name }}
           </span>

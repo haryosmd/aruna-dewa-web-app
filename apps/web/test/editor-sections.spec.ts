@@ -73,20 +73,43 @@ describe('rail → panggung (fase 70)', () => {
     expect(sectionDomId('cover')).toBe('iv-cover')
   })
 
-  it('menggulir sampai bagian berdiri di bawah pemilih perangkat', () => {
-    // Viewport di y=100 sudah tergulir 400; bagian tampak di y=700 → jarak 600 dari atas viewport.
+  it('menggulir sampai bagian berdiri tepat di bawah tepi atas layar', () => {
+    // Layar di y=100 sudah tergulir 400; bagian tampak di y=700 → jarak 600 dari atas layar.
     expect(stageScrollTop({ top: 100, scrollTop: 400 }, { top: 700 })).toBe(400 + 600 - stageScrollOffset)
   })
 
   it('tidak pernah negatif untuk bagian pertama', () => {
-    expect(stageScrollTop({ top: 100, scrollTop: 0 }, { top: 120 })).toBe(0)
+    // Bagian yang tepiannya sudah di atas tepi layar: tujuannya 0, bukan angka minus.
+    expect(stageScrollTop({ top: 100, scrollTop: 0 }, { top: 104 })).toBe(0)
+    expect(stageScrollTop({ top: 100, scrollTop: 0 }, { top: 60 })).toBe(0)
   })
 
-  it('memakai rect pasca-transform apa adanya — skala tidak dikalikan lagi', () => {
-    // Dua rect yang selisihnya sama menghasilkan posisi yang sama, berapa pun skalanya.
+  it('hanya bergantung pada SELISIH rect, bukan pada posisi absolutnya', () => {
     const a = stageScrollTop({ top: 0, scrollTop: 0 }, { top: 500 })
     const b = stageScrollTop({ top: 50, scrollTop: 0 }, { top: 550 })
     expect(a).toBe(b)
+  })
+
+  /*
+   * Fase 76: wadah gulirnya adalah elemen yang di-`scale()` ITU SENDIRI, jadi rect (piksel layar)
+   * dan `scrollTop` (koordinat render) tidak lagi satu satuan. Tanpa pembagian ini, pada skala
+   * 0,5 tiap lompatan cuma sampai separuh jalan — bentuk kegagalan yang terlihat seperti
+   * "panggungnya menggulir kurang jauh", bukan seperti satuan yang salah.
+   */
+  it('mengubah selisih rect ke koordinat render sebelum menambahkannya ke scrollTop', () => {
+    // Bagian yang tampak 300px di bawah tepi layar pada skala 0,5 = 600px di koordinat render.
+    expect(stageScrollTop({ top: 0, scrollTop: 0 }, { top: 300 }, 0, 0.5)).toBe(600)
+    expect(stageScrollTop({ top: 0, scrollTop: 0 }, { top: 300 }, 0, 1)).toBe(300)
+  })
+
+  it('memperlakukan skala nol sebagai 1, bukan sebagai pembagian nol', () => {
+    // `previewScale` berawal 0 selama satu frame sebelum `useElementSize` menjawab.
+    expect(stageScrollTop({ top: 0, scrollTop: 0 }, { top: 300 }, 0, 0)).toBe(300)
+  })
+
+  it('napasnya jauh lebih kecil sejak yang menggulung bukan lagi viewport panggung', () => {
+    // Dulu 96, sepadan dengan pil pemilih perangkat yang mengambang di atas viewport luar.
+    expect(stageScrollOffset).toBeLessThan(32)
   })
 })
 

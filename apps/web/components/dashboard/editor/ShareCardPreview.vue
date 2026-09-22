@@ -41,7 +41,7 @@ const warnaLatar = computed(() => latar.value === 'warna' ? (kartu.value.backgro
 <template>
   <div class="grid gap-4">
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <span class="flex items-center gap-1.5 rounded-full border border-success/40 bg-success-soft px-3 py-1 text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-success">
+      <span class="flex items-center gap-1.5 rounded-full border border-success/40 bg-success-soft px-3 py-1 text-ui-label font-bold uppercase tracking-[0.14em] text-success">
         <Share2 :size="13" aria-hidden="true" />
         Preview WhatsApp / Open Graph
       </span>
@@ -78,7 +78,7 @@ const warnaLatar = computed(() => latar.value === 'warna' ? (kartu.value.backgro
       </div>
     </div>
 
-    <p class="m-0 rounded-md border border-success/30 bg-success-soft/50 p-3.5 text-[0.8125rem] leading-relaxed text-ink-muted">
+    <p class="m-0 rounded-md border border-success/30 bg-success-soft/50 p-3.5 text-caption leading-relaxed text-ink-muted">
       <strong class="block text-ink">Preview kartu saat dibagikan ke WhatsApp</strong>
       Kartu di atas tampil sebagai preview ketika tautan undangan dibagikan. Nama penerima mengikuti tamu yang dipilih pada Generator; nama Bpk. Budi Santoso di atas hanya contoh dan tidak disimpan.
     </p>

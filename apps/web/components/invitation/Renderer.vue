@@ -321,6 +321,27 @@ function onGateOpen() {
  */
 const kartu = computed(() => v2.value && mode.value !== 'compact' && props.document.tokens.layout !== 'penuh')
 
+/**
+ * Tata letak desktop dua kolom (fase 77) — dan syaratnya ada FOTO, bukan cuma lebar.
+ *
+ * Kelasnya dipasang di sini, bukan disimpulkan CSS lewat `:has()`, karena gridnya tidak boleh
+ * menyala tanpa penghuni kolom kiri: `.iv-aside` menyembunyikan dirinya sendiri saat galeri kosong,
+ * dan kalau gridnya tetap menyala, kolom undangan jatuh ke trek pertama dan melar jadi 800px.
+ * Terukur persis begitu pada undangan QA yang galerinya kosong.
+ */
+/**
+ * Foto panel kiri: galeri kalau ada, foto utama kalau tidak.
+ *
+ * Cadangan ini bukan kemewahan. Undangan yang belum mengunggah galeri — dan itu keadaan tiap
+ * undangan yang baru dibuat — akan kehilangan seluruh tata letak desktopnya dan kembali jadi
+ * kartu sendirian di tengah layar 1440. Foto utama selalu ada: `coverImage` jatuh ke foto bawaan
+ * tema kalau pasangan belum mengunggah apa pun, jadi kolom kiri tidak pernah kosong.
+ */
+const fotoSisi = computed(() => (galleryImages.value.length ? galleryImages.value : [coverImage.value].filter(Boolean)))
+
+const berpanelSisi = computed(() => kartu.value && !ringkas.value && fotoSisi.value.length > 0)
+
+
 /*
  * Konteks bersama, bukan tiga belas daftar prop. Setiap section mengambil potongan yang
  * dibutuhkannya lewat `useInvitation()`.
@@ -345,6 +366,7 @@ provideInvitation({
   rsvpPending: computed(() => props.rsvpPending),
   wishPending: computed(() => props.wishPending),
   galleryImages,
+  fotoSisi,
   headlineDate,
   sectionOf,
   submitRsvp,
@@ -375,14 +397,30 @@ useArunaMotion(root, (api) => {
     render 1280 berubah 7210 → 8148 hanya karena jendela editornya menyempit. `.iv-root` tidak
     bisa menanyai dirinya sendiri, jadi wadahnya berdiri satu tingkat di luar.
   -->
-  <div :class="['iv-frame', { 'iv-frame--kartu': kartu }]">
+  <div :class="['iv-frame', { 'iv-frame--kartu': kartu, 'iv-frame--sisi': berpanelSisi }]">
     <div
       ref="root"
       class="iv-root"
       :style="style"
-      :class="{ 'pb-24': !ringkas, 'iv-root--kartu': kartu, 'iv-root--stage': stage }"
+      :class="{ 'iv-root--kartu': kartu, 'iv-root--stage': stage }"
       :data-iv-mode="mode"
     >
+    <!--
+      Panel foto kiri (fase 77). Hanya dirender pada tata letak `kartu` dan hanya terlihat di
+      container ≥64rem; tanpa foto galeri ia menyembunyikan dirinya sendiri dan gridnya runtuh
+      jadi satu kolom.
+    -->
+    <InvitationDesktopAside v-if="berpanelSisi" />
+
+    <!--
+      Kolom undangan. **Ia yang membawa `container-type`, bukan `.iv-root` lagi.**
+
+      Seluruh container query di section membaca wadah terdekat, dan begitu `.iv-root` jadi grid
+      selebar 1280 ia akan menjawab 1280 — tiap section lalu menata diri untuk layar lebar padahal
+      duduk di kolom 480. Di bawah 64rem kolom ini selebar `.iv-root`, jadi tidak ada satu pun
+      section yang bergeser: itu yang membuat perubahan ini bisa dibuktikan, bukan cuma diyakini.
+    -->
+    <div :class="['iv-column', { 'pb-24': !ringkas }]">
     <!--
       Gerbang selalu ada pada undangan yang terbit, jadi musik selalu punya gestur untuk
       menumpang: `validatePublishableDocument` menolak publish kalau section `cover` mati.
@@ -448,6 +486,7 @@ useArunaMotion(root, (api) => {
       />
       <InvitationDock :available="visible.map(section => section.type)" :version="v2 ? 2 : 1" :contained="stage" />
       </template>
+    </div>
     </div>
   </div>
 </template>
@@ -624,27 +663,122 @@ useArunaMotion(root, (api) => {
  * yang berubah hanya apa yang diukur, jadi yang dilihat tamu tidak bergeser sedikit pun.
  */
 .iv-root {
-  container-type: inline-size;
   background: var(--iv-bg);
   color: var(--iv-fg);
   font-family: var(--iv-body);
 }
 /*
- * Fokus tata letak `kartu` (fase 72): di layar lebar undangan v2 berdiri sebagai kartu 480px di
- * tengah, seperti referensi — dan karena `.iv-root` mengukur dirinya sendiri, seluruh container
- * query di dalamnya ikut membaca 480px, bukan lebar layar. Latar halaman di sekelilingnya
- * memakai tinta tema yang dipudarkan supaya kartunya terangkat, bukan menempel di putih.
+ * `container-type` pindah ke sini dari `.iv-root` (fase 77): di desktop `.iv-root` jadi grid dua
+ * kolom selebar layar, dan section yang menanyainya akan menjawab lebar layar padahal ia duduk di
+ * kolom 480. Yang harus diukur tiap section adalah kolomnya, bukan halamannya.
  */
-.iv-frame { container-type: inline-size; }
-@container (min-width: 48rem) {
-  .iv-frame--kartu > .iv-root {
-    max-width: 480px;
+.iv-column { container-type: inline-size; }
+
+/*
+ * Bingkai diberi NAMA (fase 77), dan itu bukan kerapian melainkan syarat.
+ *
+ * `@container` tanpa nama menanyai wadah TERDEKAT. Dock dan pemutar musik hidup di dalam
+ * `.iv-column`, yang juga sebuah container — jadi aturan desktop yang ditulis tanpa nama
+ * menanyai kolom 480px dan tidak pernah cocok, berapa pun lebar layarnya. Terukur: dock tetap
+ * dipusatkan ke layar dan menindih nama pasangan di panel foto meski aturannya sudah ditulis.
+ *
+ * Nama tidak menutup pertanyaan tanpa nama: section di dalam `.iv-column` tetap menanyai
+ * kolomnya seperti sebelumnya.
+ */
+.iv-frame {
+  container-type: inline-size;
+  container-name: iv-frame;
+}
+
+/*
+ * Tablet (fase 77): tetap satu kolom seperti ponsel, hanya melapang.
+ *
+ * Sebelumnya rentang ini sudah mengunci kartu 480px — angka ponsel yang dipasang di layar
+ * tablet, jadi 768px menampilkan kolom 480 dengan dua bidang kosong selebar 144px di sisinya.
+ */
+@container iv-frame (min-width: 48rem) {
+  .iv-frame--kartu .iv-column {
+    max-width: 40rem;
     margin-inline: auto;
-    box-shadow: 0 24px 70px -30px rgb(0 0 0 / 0.45);
+  }
+}
+
+/*
+ * Desktop (fase 77): panel foto galeri yang diam di kiri, undangan yang digulir di kanan.
+ *
+ * Bentuk lama — kartu 480px di tengah kanvas 1280 — adalah tata letak ponsel yang dipasang di
+ * layar lebar: dua per tiga layar kosong, dan tidak ada satu pun aturan yang membedakan desktop
+ * dari ponsel selain lebar kosongnya. `30rem` di kanan menjaga kolomnya tetap selebar kartu lama,
+ * jadi tiap section merender dirinya persis seperti yang sudah diuji.
+ */
+@container iv-frame (min-width: 64rem) {
+  /*
+   * Tanpa foto galeri tidak ada panel untuk didampingi, dan kolom yang melar sendirian sampai
+   * 1280 adalah tata letak yang tidak pernah dirancang siapa pun. Ia kembali ke kartu di tengah —
+   * bentuk fase 72, yang setidaknya sudah diuji.
+   */
+  .iv-frame--kartu .iv-column { max-width: 30rem; }
+
+  .iv-frame--sisi > .iv-root {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 30rem;
+    align-items: start;
+  }
+  .iv-frame--sisi .iv-aside {
+    display: block;
+    position: sticky;
+    top: 0;
+    height: var(--iv-layar-h, 100svh);
+  }
+  .iv-frame--sisi .iv-column {
+    max-width: none;
+    margin-inline: 0;
+    min-height: var(--iv-layar-h, 100svh);
+    box-shadow: -24px 0 70px -40px rgb(0 0 0 / 0.5);
+  }
+  /*
+   * Dock dan pemutar musik ikut kolomnya, bukan layarnya.
+   *
+   * Keduanya `fixed inset-x-0` — benar selama undangan memenuhi layar, salah begitu ia tinggal
+   * sepertiga kanannya: dock yang dipusatkan ke layar mendarat di tengah PANEL FOTO dan menindih
+   * nama pasangan di sana. Terlihat langsung pada tangkapan layar pertama tata letak ini.
+   */
+  .iv-frame--sisi .iv-dock,
+  .iv-frame--sisi .iv-player {
+    left: auto;
+    right: 0;
+    width: 30rem;
   }
 }
 /* Panggung editor: gerbang, pemutar, dan dock terkurung di root ini, jadi ia harus jadi wadah posisinya. */
 .iv-root--stage { position: relative; }
+
+/*
+ * Afordans ornamen di panggung editor (fase 76).
+ *
+ * Ornamen di undangan tidak pernah punya isyarat bahwa ia bisa disentuh — pasangan harus tahu
+ * lebih dulu bahwa panel kanan punya tab Ornamen, lalu menebak keping mana yang mengisi slot
+ * mana. Kotak putus-putus tipis membalik arahnya: yang terlihat di kanvas yang ditunjuk.
+ *
+ * Seluruhnya digerbangi `.iv-root--stage`, dan itu bukan kehati-hatian melainkan syarat: kelas
+ * ini hanya ada di `mode="stage"`, jadi halaman tamu `/i/[slug]` tidak pernah melihat satu pun
+ * garis putus-putus dan ornamennya tetap tidak menangkap pointer.
+ *
+ * `outline`, bukan `border`: ia tidak ikut menghitung tata letak, jadi tidak ada satu piksel pun
+ * yang bergeser saat kursor lewat. 1px dan 65% supaya ia menandai, bukan meneriaki.
+ */
+.iv-root--stage [data-iv-slot]:hover,
+.iv-root--stage [data-layer-slot]:hover {
+  outline: 1px dashed color-mix(in srgb, var(--iv-primary) 65%, transparent);
+  outline-offset: 2px;
+  cursor: pointer;
+}
+
+/*
+ * Ladangnya tetap tembus pointer — ia menutupi seluruh section dan akan menelan klik ke isinya.
+ * Yang dihidupkan hanya kepingnya, yang persis seluas ornamen yang digambar.
+ */
+.iv-root--stage .iv-field-piece { pointer-events: auto; }
 
 /*
  * Ramp ornamen di bidang gelap, ditulis SEKALI.

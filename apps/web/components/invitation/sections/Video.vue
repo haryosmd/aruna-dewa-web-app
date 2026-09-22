@@ -19,7 +19,7 @@ const url = computed(() => text(props.section, 'url'))
     :intensity="intensity"
     :seed="props.seed"
   >
-    <OrnamentGlyph :glyph="orn.symbol" data-iv-ornament class="h-16 w-20 opacity-75" />
+    <OrnamentGlyph :glyph="orn.symbol" data-iv-ornament data-iv-slot="symbol" class="h-16 w-20 opacity-75" />
     <!--
       Musik dijeda di dalam klik, sebelum tab siaran terbuka. Tab undangan yang tersembunyi
       tetap berbunyi kalau tidak diminta berhenti — dan yang ditimpanya adalah ijab kabul.

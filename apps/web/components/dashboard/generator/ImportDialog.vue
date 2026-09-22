@@ -116,7 +116,7 @@ async function commitImport() {
           <textarea
             id="guest-import-text"
             v-model="previewText"
-            class="control font-mono text-[0.875rem]"
+            class="control font-mono text-ui"
             rows="7"
             placeholder="Nama undangan&#9;Telepon&#9;Kategori&#10;Yosi Susanti&#9;0812…&#9;Keluarga"
           />
@@ -146,11 +146,11 @@ async function commitImport() {
         <p v-if="importError" class="error m-0" role="alert">{{ importError }}</p>
 
         <div v-if="preview" class="grid gap-3 rounded-md border border-gold/40 bg-gold-soft p-4">
-          <p class="m-0 text-[0.9375rem]">
+          <p class="m-0 text-ui-lg">
             <strong class="text-ink">{{ preview.validCount }} baris siap diimpor.</strong>
             {{ preview.rows.length - preview.validCount }} baris perlu perhatian.
           </p>
-          <ul class="m-0 grid list-disc gap-1.5 pl-5 text-[0.875rem] text-ink-muted">
+          <ul class="m-0 grid list-disc gap-1.5 pl-5 text-ui text-ink-muted">
             <li v-for="row in preview.rows.slice(0, 10)" :key="row.row">
               <strong>Baris {{ row.row }}:</strong> {{ row.displayName || 'Nama kosong' }}
               <span v-if="row.errors.length" class="text-danger">— {{ row.errors.join(', ') }}</span>

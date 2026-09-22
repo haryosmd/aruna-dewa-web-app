@@ -46,6 +46,26 @@ const icons: Record<string, Component> = {
 
 const labelOf = (type: string) => props.labels[type] ?? type
 
+/*
+ * Rail mengikuti sorot (fase 76).
+ *
+ * Sejak panggung bisa menyorot balik bagian yang sedang digulir, sorotan bisa mendarat di bawah
+ * lipatan rail — tanda aktif yang tidak terlihat sama saja tidak ada. `block: 'nearest'` supaya
+ * rail tidak melompat saat item yang dituju memang sudah tampak.
+ *
+ * `behavior` dibaca dari `prefers-reduced-motion`, dan bukan hanya demi aturan motion: gulir halus
+ * membuat pengukuran e2e mendarat di tengah animasi, cacat yang sudah pernah memakan satu fase.
+ */
+const daftar = ref<HTMLElement | null>(null)
+watch(() => props.selectedId, async (id) => {
+  if (!id) return
+  await nextTick()
+  const item = daftar.value?.querySelector<HTMLElement>(`#editor-section-${CSS.escape(id)}`)
+  if (!item) return
+  const halus = typeof matchMedia === 'function' && !matchMedia('(prefers-reduced-motion: reduce)').matches
+  item.scrollIntoView({ block: 'nearest', behavior: halus ? 'smooth' : 'instant' })
+})
+
 /* ── Drag-and-drop ──────────────────────────────────────────────────────────── */
 const dragging = ref<number | null>(null)
 const over = ref<number | null>(null)
@@ -78,21 +98,35 @@ function onHandleKey(index: number, event: KeyboardEvent) {
 </script>
 
 <template>
+  <!--
+    Dua baris di `lg`, bukan satu penggulung (fase 77).
+
+    Sebelumnya `<aside>` ini satu-satunya yang menggulung dan judul, lencana, serta kotak cari
+    adalah saudara kandung daftarnya — jadi menggulir ke bagian ke-14 berarti kehilangan kotak
+    cari. `sticky` bisa menutupinya, tapi ia menuntut latar buram dan z-index sendiri dan tetap
+    bisa tertindih cincin fokus; dua baris tidak punya keadaan yang salah.
+
+    Hanya di `lg`: di bawah itu halaman yang menggulung dan panel-panel bertumpuk, dan `overflow`
+    di sini justru akan memotong daftarnya.
+  -->
   <aside
     :class="cn(
-      'grid min-w-0 content-start gap-3 border-b border-border bg-surface-2 px-4 py-4 lg:min-h-0 lg:overflow-y-auto lg:border-b-0 lg:border-r',
+      'grid min-w-0 content-start gap-3 border-b border-border bg-surface-2 px-4 py-4',
+      'lg:min-h-0 lg:grid-rows-[auto_minmax(0,1fr)] lg:content-stretch lg:gap-0 lg:overflow-hidden lg:border-b-0 lg:border-r lg:pb-0',
       collapsed && 'lg:px-2',
     )"
     aria-label="Struktur undangan"
   >
+    <div class="grid content-start gap-3 lg:pb-3">
     <div :class="cn('flex items-start justify-between gap-2', collapsed && 'lg:justify-center')">
       <div :class="cn('grid gap-0.5', collapsed && 'lg:hidden')">
-        <p class="m-0 text-[0.9375rem] font-bold text-ink">Struktur Undangan</p>
+        <!-- `0.06em`, bukan `0.12em`: pada rail 17rem, tracking penuh membuat labelnya pecah dua baris. -->
+        <p class="m-0 text-ui-label font-bold uppercase tracking-[0.06em] text-ink-muted">Struktur Undangan</p>
         <p class="m-0 text-caption text-ink-muted">Geser section untuk mengatur urutan.</p>
         <p id="editor-section-count" class="sr-only" aria-live="polite">{{ visible }} dari {{ total }} tampil</p>
       </div>
       <div class="flex shrink-0 items-center gap-1">
-        <span :class="cn('rounded-full bg-success-soft px-2 py-0.5 text-caption font-bold text-success', collapsed && 'lg:hidden')" aria-hidden="true">{{ total }}</span>
+        <span :class="cn('rounded-full bg-success-soft px-2 py-0.5 text-ui-label font-bold text-success', collapsed && 'lg:hidden')" aria-hidden="true">{{ total }}</span>
         <UiTooltip :content="collapsed ? 'Lebarkan struktur' : 'Tutup sidebar struktur (Zen Mode)'" side="right" :side-offset="10">
           <button
             id="editor-rail-toggle"
@@ -118,7 +152,7 @@ function onHandleKey(index: number, event: KeyboardEvent) {
           type="search"
           autocomplete="off"
           placeholder="Cari section (Akad, Galeri…)"
-          class="min-h-11 w-full rounded-md border border-border-input bg-surface pl-9 pr-10 text-[0.875rem] text-ink placeholder:text-ink-subtle/80 transition-[border-color,box-shadow] duration-200 hover:border-ink/60 focus:border-primary focus:shadow-[0_0_0_3px_var(--color-primary-soft)] focus:outline-none"
+          class="min-h-11 w-full rounded-md border border-border-input bg-surface pl-9 pr-10 text-body text-ink placeholder:text-ink-subtle/80 transition-[border-color,box-shadow] duration-200 hover:border-ink/60 focus:border-primary focus:shadow-[0_0_0_3px_var(--color-primary-soft)] focus:outline-none"
         >
         <button v-if="filtering" id="editor-section-search-clear" type="button" class="absolute right-1 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-md text-ink-subtle hover:bg-surface-3 hover:text-ink" aria-label="Hapus pencarian" @click="query = ''">
           <X :size="15" aria-hidden="true" />
@@ -132,7 +166,10 @@ function onHandleKey(index: number, event: KeyboardEvent) {
     </p>
 
     <p v-if="filtering" class="sr-only" aria-live="polite">{{ entries.length }} bagian cocok</p>
+    </div>
 
+    <!-- Baris kedua: hanya daftarnya yang menggulung. -->
+    <div ref="daftar" class="grid content-start gap-3 lg:min-h-0 lg:overflow-y-auto lg:pb-4">
     <ul class="m-0 grid gap-1.5 p-0 list-none">
       <li
         v-for="{ section, index } in entries"
@@ -174,8 +211,8 @@ function onHandleKey(index: number, event: KeyboardEvent) {
             <component :is="icons[section.type] ?? Image" :size="17" :class="cn('shrink-0', section.enabled ? 'text-ink-muted' : 'text-border-strong')" aria-hidden="true" />
             <span :class="cn('grid min-w-0 gap-px', collapsed && 'lg:hidden')">
               <!-- `ink-muted`, bukan `ink-subtle`: dicoret di atas kartu putus-putus, ink-subtle hanya 4,4:1 (axe, fase 72). -->
-              <span :class="cn('text-[0.9375rem] font-semibold leading-snug', section.enabled ? 'text-ink' : 'text-ink-muted line-through')">{{ labelOf(section.type) }}</span>
-              <span class="text-[0.75rem] text-ink-muted">{{ sectionRequirement(section.type) === 'wajib' ? 'Wajib' : 'Opsional' }}</span>
+              <span :class="cn('text-ui font-semibold leading-snug', section.enabled ? 'text-ink' : 'text-ink-muted line-through')">{{ labelOf(section.type) }}</span>
+              <span class="text-ui-label text-ink-muted">{{ sectionRequirement(section.type) === 'wajib' ? 'Wajib' : 'Opsional' }}</span>
             </span>
           </button>
         </UiTooltip>
@@ -204,6 +241,8 @@ function onHandleKey(index: number, event: KeyboardEvent) {
     </ul>
 
     <p v-if="filtering && !entries.length" class="m-0 text-caption text-ink-muted">Tidak ada bagian bernama “{{ query.trim() }}”.</p>
+    </div>
+
     <p id="editor-section-drag-hint" class="sr-only">Seret untuk mengubah urutan, atau tekan panah atas dan bawah.</p>
     <p id="editor-section-wajib" class="sr-only">Bagian inti selalu tampil di undangan.</p>
   </aside>

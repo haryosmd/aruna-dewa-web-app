@@ -238,15 +238,15 @@ test('device preview renders each width for real, without overflowing its rail',
   const stage = await openPreview(page)
 
   const ukur = async (panggung: typeof stage) => {
-    const heights: Record<string, number> = {}
+    const heights: Record<string, { isi: number, bagian: number }> = {}
 
     /*
-     * Fase 72.2: Ponsel/Tablet/Laptop jadi iPhone (390) · Android (412) · Desktop (1280), plus
-     * "Clean" yang lebarnya sama dengan iPhone tanpa bezel — tidak ada lebar baru untuk diukur
-     * di sana. Tombolnya dipilih lewat id, bukan label: labelnya kini bahasa Inggris meniru
-     * referensi, sedangkan `aria-label`-nya kalimat panjang.
+     * Fase 76 membuang bezel bergambar dan menyisakan apa yang benar-benar mengubah tata letak:
+     * Ponsel (390) · Ponsel besar (412) · Desktop (1280). "Clean" ikut hilang karena ia dulu
+     * hanya "iPhone tanpa bezel" — tanpa bezel, ia tidak lagi berbeda dari apa pun. Tombolnya
+     * dipilih lewat id, bukan label, karena `aria-label`-nya kalimat panjang.
      */
-    for (const [device, width] of [['iphone', 390], ['android', 412], ['laptop', 1280]] as const) {
+    for (const [device, width] of [['ponsel', 390], ['tablet', 768], ['laptop', 1280]] as const) {
       await page.locator(`#editor-preview-${device}`).click()
       await expect(page.locator(`#editor-preview-${device}`)).toHaveAttribute('aria-pressed', 'true')
       await expect(page.getByText(`Selebar ${width}px`, { exact: true })).toBeVisible()
@@ -272,7 +272,33 @@ test('device preview renders each width for real, without overflowing its rail',
       })
 
       await fontsUsedBy(panggung)
-      heights[device] = await panggung.evaluate(el => (el as HTMLElement).offsetHeight)
+      /*
+       * Dua angka, dan keduanya punya tugas berbeda.
+       *
+       * `isi` = `scrollHeight`, bukan `offsetHeight`: sejak fase 76 layar ponsel setinggi viewport
+       * perangkatnya (844/915/800) dan menggulung isinya sendiri, jadi `offsetHeight` menjawab
+       * tinggi LAYAR — angka yang sama di lebar jendela mana pun. Yang harus diukur adalah tinggi
+       * isi yang digulungnya.
+       *
+       * `bagian` = tinggi "Ucapan", satu section yang tingginya benar-benar ditentukan lebar.
+       * `isi` tidak bisa dipakai untuk perbandingan 390↔412, dan itu bukan kelalaian: ia memuat
+       * dua blok setinggi `--iv-layar-h` (gerbang amplop dan hero), dan tinggi itu datang dari
+       * VIEWPORT perangkat, bukan dari lebarnya. Terukur: 8.378 di 390×844 lawan 8.449 di
+       * 412×915 — lebih lapang tapi lebih panjang, semata karena layarnya 71px lebih tinggi.
+       *
+       * "Ucapan" dipilih sesudah ketiganya diukur, bukan ditebak: ia satu-satunya yang mengikuti
+       * lebar dengan rapi. "Mempelai" justru NAIK bersama lebar (815 · 819 · 833 di fase 76)
+       * karena tata letaknya bertukar, dan memakainya sebagai probe berarti menguji hal lain
+       * sambil mengira sedang menguji lebar.
+       *
+       * **Yang dibandingkan lebar KOLOM, bukan lebar perangkat** (fase 77): undangan dirender di
+       * `.iv-column`, dan kolom itu 390 di ponsel, 640 di tablet, dan 480 di desktop — desktop
+       * lebih sempit daripada tablet karena di sana kolomnya berbagi layar dengan panel foto.
+       */
+      heights[device] = await panggung.evaluate(el => ({
+        isi: (el as HTMLElement).scrollHeight,
+        bagian: el.querySelector<HTMLElement>('#iv-wishes')!.offsetHeight,
+      }))
 
       /*
        * Render yang diperkecil tidak boleh melebihi viewport yang menggulungnya: selisih
@@ -300,10 +326,9 @@ test('device preview renders each width for real, without overflowing its rail',
   }
 
   const heights = await ukur(stage)
-  // Selisih 390↔412 bisa nol kalau tidak ada baris yang kebetulan membungkus; yang pasti hanya
-  // bahwa lebar ponsel tidak pernah lebih pendek dari lebar yang lebih lapang.
-  expect(heights.iphone, 'render 390px harus lebih tinggi dari render 1280px').toBeGreaterThan(heights.laptop)
-  expect(heights.iphone, 'render 390px tidak boleh lebih pendek dari render 412px').toBeGreaterThanOrEqual(heights.android)
+  // Kolom 390 (ponsel) < 480 (desktop) < 640 (tablet), jadi tingginya berurut terbalik dari itu.
+  expect(heights.ponsel.bagian, 'kolom 390px harus lebih tinggi dari kolom 480px desktop').toBeGreaterThan(heights.laptop.bagian)
+  expect(heights.laptop.bagian, 'kolom 480px desktop harus lebih tinggi dari kolom 640px tablet').toBeGreaterThan(heights.tablet.bagian)
 
   /*
    * Lintasan kedua di lebar jendela yang berseberangan: di sinilah kemandirian dari viewport
@@ -663,28 +688,53 @@ test('studio editor: rail, inspektor, dan preferensi yang bertahan', async ({ pa
   await expect(page.locator('#editor-save-state')).toHaveText('Semua perubahan tersimpan')
 
   /*
-   * Rail → panggung (fase 70): memilih bagian menggulir viewport pratinjau sampai bagian itu
-   * berdiri di bawah pemilih perangkat. Di ponsel gulirnya ditahan sampai tab Pratinjau dibuka.
+   * Rail → panggung (fase 70, wadahnya berpindah di fase 76): memilih bagian menggulir LAYAR
+   * PONSEL sampai bagian itu berdiri di tepi atasnya. Di ponsel gulirnya ditahan sampai tab
+   * Pratinjau dibuka, dan amplopnya harus dibuka dulu karena selama tertutup layarnya terkunci.
    *
-   * Diukur pada "Clean": bezel iPhone/Android memotong layarnya di 780px (`DeviceBezel`,
-   * `overflow-hidden`), jadi di sana bagian di bawah lipatan memang tidak pernah bisa digulir
-   * ke bawah pil — dan amplopnya harus dibuka dulu, karena selama tertutup panggung terkunci.
+   * Dulu tes ini hanya bisa hijau di "Clean", dan komentarnya menuliskan sebabnya sebagai
+   * keterangan: bezel iPhone/Android memotong layarnya dengan `overflow-hidden` tanpa gulir di
+   * dalamnya, jadi bagian di bawah lipatan memang tidak pernah bisa dicapai. Itu cacat, bukan
+   * keterangan — dan sejak fase 76 kedua mode diukur, justru supaya cacat itu tidak bisa pulang.
+   *
+   * `atas` dibagi skalanya: rect menjawab piksel layar sedangkan `stageScrollOffset` hidup di
+   * koordinat render 390px, dan membandingkan keduanya mentah-mentah berarti membandingkan dua
+   * satuan yang berbeda.
    */
   const posisiBagian = (type: string) => page.evaluate((t) => {
-    const stage = document.querySelector('[data-preview-stage]')!
-    const viewport = stage.closest('section[aria-label="Pratinjau draft"]')!.querySelector(':scope > div:last-child')!
+    const stage = document.querySelector('[data-preview-stage]') as HTMLElement
     const el = document.getElementById(`iv-${t}`)!
-    return { atas: el.getBoundingClientRect().top - viewport.getBoundingClientRect().top, gulir: viewport.scrollTop }
+    const kotak = stage.getBoundingClientRect()
+    const skala = kotak.width / stage.offsetWidth || 1
+    return { atas: (el.getBoundingClientRect().top - kotak.top) / skala, gulir: stage.scrollTop }
   }, type)
   const panggung = await openPreview(page)
-  await page.locator('#editor-preview-bersih').click()
+  await page.locator('#editor-preview-ponsel').click()
   await expect(panggung).toHaveCSS('width', '390px')
   await bukaAmplop(panggung)
   if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
   await openSection(page, 'wishes')
   if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pratinjau', exact: true }).click()
   await expect.poll(async () => (await posisiBagian('wishes')).gulir).toBeGreaterThan(0)
-  await expect.poll(async () => Math.abs((await posisiBagian('wishes')).atas - 96)).toBeLessThan(24)
+  await expect.poll(async () => Math.abs((await posisiBagian('wishes')).atas - 8)).toBeLessThan(24)
+
+  /*
+   * Lebar yang lain, yang selama empat fase tidak pernah bisa digulir sama sekali karena bezelnya
+   * memotong layar tanpa memberi gulir.
+   *
+   * Digulir dengan tangan, bukan lewat rail: yang diuji bukan "apakah rail bisa memerintah",
+   * melainkan "apakah layarnya sungguh menggulung" — dan itu hanya bisa dijawab oleh gulir yang
+   * datang dari luar Vue.
+   */
+  await page.locator('#editor-preview-tablet').click()
+  await expect(page.locator('#editor-preview-tablet')).toHaveAttribute('aria-pressed', 'true')
+  await expect.poll(() => panggung.evaluate((el) => {
+    el.scrollTop = 600
+    return el.scrollTop
+  })).toBeGreaterThan(0)
+  await expect.poll(() => panggung.evaluate(el => el.scrollHeight > el.clientHeight)).toBe(true)
+  await page.locator('#editor-preview-ponsel').click()
+
   if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
   await openSection(page, 'opening-envelope')
 
@@ -728,13 +778,13 @@ test('studio editor: rail, inspektor, dan preferensi yang bertahan', async ({ pa
     .toMatchObject({ device: 'laptop', inspectorTab: 'global', railCollapsed: railBisaCiut, zoom: 90 })
 
   // Kembalikan bawaannya supaya tes lain di konteks ini tidak mewarisi Desktop + Global + rail ciut.
-  await page.locator('#editor-preview-iphone').click()
+  await page.locator('#editor-preview-ponsel').click()
   await page.locator('#editor-zoom-reset').click()
   if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
   if (railBisaCiut) await railToggle.click()
   await page.locator('#editor-inspector-bagian').click()
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('aruna:editor:prefs') ?? '{}')))
-    .toMatchObject({ device: 'iphone', inspectorTab: 'bagian', railCollapsed: false, zoom: 100 })
+    .toMatchObject({ device: 'ponsel', inspectorTab: 'bagian', railCollapsed: false, zoom: 100 })
 })
 
 /*
@@ -887,9 +937,12 @@ test('background music reaches the guest only after the gate, and stays refused 
   await terbitkan(page)
 
   await page.goto(`/i/${account!.slug}`)
-  // Diumumkan lebih dulu: tamu yang dikejutkan suara menutup tab, bukan mengecilkan volume.
-  // Kalimatnya milik amplop Elegance (fase 72), bukan lagi `copy` gerbang v1.
-  await expect(page.getByText('Undangan ini memutar musik saat dibuka.')).toBeVisible()
+  /*
+   * Kalimat "Undangan ini memutar musik saat dibuka." dicabut di fase 77 atas permintaan pemilik.
+   * Yang mengumumkan musik sekarang tombolnya sendiri, yang memang terlihat sejak gerbang berdiri —
+   * dan tombol yang bisa ditekan mengatakannya lebih baik daripada kalimat yang tidak bisa.
+   */
+  await expect(page.locator('[aria-label="Putar musik"], [aria-label="Jeda musik"]')).toHaveCount(1)
   /*
    * Elemennya memang sudah ada sebelum gerbang dibuka — harus, karena `arm()` dipanggil
    * sinkron di dalam klik gerbang dan butuh sasaran yang sudah ter-mount. Yang ditahan adalah
@@ -1614,4 +1667,257 @@ test('tautan tema sendiri membuka /order di langkah Tema dengan add-on Desain', 
   await expect(page.locator('input[name="tema"]').first()).toBeAttached()
   await expect.poll(async () => (await page.evaluate(() => JSON.parse(localStorage.getItem('aruna-order-draft') ?? '{}'))).addonIds).toContain('design')
   await page.evaluate(() => localStorage.removeItem('aruna-order-draft'))
+})
+
+/**
+ * Panggung yang bisa disentuh (fase 76).
+ *
+ * Tiga keluhan pemilik yang semuanya berbentuk sama: sesuatu yang terlihat bisa dipakai tapi
+ * tidak menjawab saat disentuh. Ketiganya hanya bisa dibuktikan di browser sungguhan — yang
+ * diuji bukan nilai di dalam komponen melainkan apakah klik dan gulir benar-benar mendarat.
+ */
+test.describe('panggung editor bisa disentuh', () => {
+  test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
+
+  test('amplop terbuka dari badannya, bukan cuma dari segel seluas 4,75rem', async ({ page }) => {
+    await signIn(page)
+    await page.goto(`/dashboard/${account!.invitationId}/editor`)
+    await expect(page.locator('#editor-save')).toBeVisible()
+    const panggung = await openPreview(page)
+
+    /*
+     * Sudut kiri atas amplop, jauh dari segel. Posisinya ditulis eksplisit karena titik tengah
+     * kotak amplop justru mendarat DI ATAS segel (segelnya duduk di 58% tinggi dengan tinggi
+     * 6,3rem), jadi klik bawaan Playwright akan lulus lewat jalur lama dan tidak membuktikan apa-apa.
+     */
+    const amplop = panggung.locator('[data-gate-envelope]')
+    await expect(amplop).toBeVisible()
+    await amplop.click({ position: { x: 16, y: 16 } })
+    await expect(panggung.locator('.iv-gate')).toHaveCount(0, { timeout: 10_000 })
+  })
+
+  test('callout "Klik di sini untuk membuka" akhirnya menepati kalimatnya', async ({ page }) => {
+    await signIn(page)
+    await page.goto(`/dashboard/${account!.invitationId}/editor`)
+    await expect(page.locator('#editor-save')).toBeVisible()
+    const panggung = await openPreview(page)
+
+    const callout = panggung.locator('[data-gate-callout]')
+    await expect(callout).toBeVisible()
+    /*
+     * `force`, dan alasannya diukur bukan ditebak: callout berdenyut lewat `iv-gate-pulse` yang
+     * `infinite`, jadi pemeriksaan "elemen stabil" milik Playwright tidak akan pernah lulus —
+     * bukan karena halamannya belum tenang, melainkan karena memang tidak dirancang tenang.
+     * Denyut itu ditegaskan di baris berikutnya supaya `force` tidak diam-diam menutupi
+     * ketidakstabilan jenis lain kalau kelak animasinya dicabut.
+     */
+    expect(await callout.evaluate(el => getComputedStyle(el).animationIterationCount)).toBe('infinite')
+    await callout.click({ force: true })
+    await expect(panggung.locator('.iv-gate')).toHaveCount(0, { timeout: 10_000 })
+  })
+
+  test('gulir panggung menyorot bagiannya di rail, dan rail tetap bisa memerintah balik', async ({ page }) => {
+    await signIn(page)
+    await page.goto(`/dashboard/${account!.invitationId}/editor`)
+    await expect(page.locator('#editor-save')).toBeVisible()
+    const berdampingan = () => page.evaluate(() => matchMedia('(min-width: 80rem)').matches)
+    const panggung = await openPreview(page)
+    await bukaAmplop(panggung)
+
+    /*
+     * Gulir datang dari luar Vue — persis seperti roda tetikus pasangan, bukan lewat rail.
+     *
+     * Selisih rect dibagi skalanya dulu, dengan alasan yang sama seperti `stageScrollTop()`:
+     * wadah gulirnya adalah elemen yang di-`scale()` itu sendiri, jadi rect menjawab piksel layar
+     * sedangkan `scrollTop` hidup di koordinat render. Versi pertama tes ini lupa membaginya dan
+     * mendarat 648px terlalu tinggi — lalu menuduh scroll-spy-nya yang salah.
+     */
+    await panggung.evaluate((el) => {
+      const target = el.querySelector<HTMLElement>('#iv-wishes')!
+      const skala = el.getBoundingClientRect().width / el.offsetWidth || 1
+      el.scrollTop += (target.getBoundingClientRect().top - el.getBoundingClientRect().top) / skala
+    })
+    if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
+    await expect(page.locator('#editor-section-wishes')).toHaveAttribute('aria-current', 'true')
+
+    /*
+     * Arah lama tidak boleh rusak. Sorot balik dan perintah rail memakai `selectedId` yang sama,
+     * jadi penjaga anti-pantul yang terlalu rakus akan membunuh justru fitur yang sudah ada.
+     */
+    await page.locator('#editor-section-hero').click()
+    if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pratinjau', exact: true }).click()
+    await expect.poll(() => panggung.evaluate((el) => {
+      const kotak = el.getBoundingClientRect()
+      const skala = kotak.width / (el as HTMLElement).offsetWidth || 1
+      return Math.abs((el.querySelector('#iv-hero')!.getBoundingClientRect().top - kotak.top) / skala)
+    })).toBeLessThan(32)
+  })
+
+  test('klik ornamen di kanvas membuka tab Ornamen pada slotnya', async ({ page }) => {
+    await signIn(page)
+    await page.goto(`/dashboard/${account!.invitationId}/editor`)
+    await expect(page.locator('#editor-save')).toBeVisible()
+    const berdampingan = () => page.evaluate(() => matchMedia('(min-width: 80rem)').matches)
+    const panggung = await openPreview(page)
+    await bukaAmplop(panggung)
+
+    const keping = panggung.locator('#iv-countdown [data-iv-slot="divider"]').first()
+    await keping.scrollIntoViewIfNeeded()
+    await expect(keping).toBeVisible()
+    await keping.click()
+
+    if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
+    await expect(page.locator('#editor-inspector-ornamen')).toHaveAttribute('aria-selected', 'true')
+    await expect(page.locator('#editor-inspector-panel-ornamen')).toBeVisible()
+    await expect(page.locator('#ornament-ganti-divider').first()).toBeVisible()
+  })
+
+  test('segel tetap membuka amplop, bukan pemilih ornamen', async ({ page }) => {
+    await signIn(page)
+    await page.goto(`/dashboard/${account!.invitationId}/editor`)
+    await expect(page.locator('#editor-save')).toBeVisible()
+    const panggung = await openPreview(page)
+
+    /*
+     * Segel berisi glyph slot `seal`, jadi tanpa penjaga "kontrol menang atas ornamen" di
+     * `Stage.vue` satu-satunya cara membuka amplop malah akan membuka tab Ornamen — dan
+     * amplopnya tidak akan pernah terbuka lagi di panggung.
+     */
+    await panggung.locator('[data-gate-seal]').click()
+    await expect(panggung.locator('.iv-gate')).toHaveCount(0, { timeout: 10_000 })
+    await expect(page.locator('#editor-inspector-ornamen')).toHaveAttribute('aria-selected', 'false')
+  })
+
+  /*
+   * Keluhan pemilik yang paling mahal di fase 76, dan yang paling mudah pulang.
+   *
+   * Gerbang amplop dulu `absolute inset-0` menindih seluruh undangan, jadi satu-satunya cara agar
+   * gulir tidak menampakkan gerbang tanpa ujung adalah menguncinya — `overflow-y: hidden` pada
+   * layar panggung selama amplop belum dibuka. Akibatnya roda tetikus di panggung tidak melakukan
+   * apa pun, dan tidak ada satu pun isyarat bahwa amplopnya harus dibuka lebih dulu. Pemilik
+   * membacanya, dengan benar, sebagai pratinjau yang rusak.
+   */
+  test('panggung bisa digulir sebelum amplopnya dibuka', async ({ page }) => {
+    await signIn(page)
+    await page.goto(`/dashboard/${account!.invitationId}/editor`)
+    await expect(page.locator('#editor-save')).toBeVisible()
+    const panggung = await openPreview(page)
+
+    // Gerbangnya masih berdiri — inilah keadaan yang dulu mengunci.
+    await expect(panggung.locator('.iv-gate')).toHaveCount(1)
+    expect(await panggung.evaluate(el => getComputedStyle(el).overflowY)).toBe('auto')
+
+    await panggung.hover()
+    await page.mouse.wheel(0, 600)
+    await expect.poll(() => panggung.evaluate(el => el.scrollTop)).toBeGreaterThan(0)
+
+    // Dan gerbangnya cuma setinggi satu layar, bukan sepanjang undangan: di bawahnya ada isinya.
+    expect(await panggung.evaluate(el => el.querySelector('.iv-gate')!.getBoundingClientRect().height
+      <= el.getBoundingClientRect().height + 1)).toBe(true)
+  })
+
+  test('kembali ke puncak menyorot Opening Envelope, yang tidak punya section sendiri', async ({ page }) => {
+    await signIn(page)
+    await page.goto(`/dashboard/${account!.invitationId}/editor`)
+    await expect(page.locator('#editor-save')).toBeVisible()
+    const berdampingan = () => page.evaluate(() => matchMedia('(min-width: 80rem)').matches)
+    const panggung = await openPreview(page)
+
+    /*
+     * `opening-envelope` headless — ia gerbang, bukan bagian di aliran — jadi sampai fase 76 ia
+     * satu-satunya entri rail yang tidak punya elemen untuk dituju maupun disorot. Gerbangnya kini
+     * membawa `id="iv-opening-envelope"`, jadi ia ikut dihitung persis seperti bagian lain.
+     */
+    await panggung.evaluate((el) => { el.scrollTop = el.scrollHeight * 0.5 })
+    await page.waitForTimeout(400)
+    await panggung.evaluate((el) => { el.scrollTop = 0 })
+    if (!(await berdampingan())) await page.getByRole('tab', { name: 'Pengaturan', exact: true }).click()
+    await expect(page.locator('#editor-section-opening-envelope')).toHaveAttribute('aria-current', 'true')
+  })
+
+  /*
+   * Pemutar musik di PANGGUNG, jalur yang sampai fase 77 tidak punya satu pun tes.
+   *
+   * Dua tes musik yang ada semuanya menguji halaman tamu, dan keduanya memanggil `pilihLagu()`
+   * lebih dulu — jadi tidak ada satu pun yang pernah menanyakan apa yang dilihat pasangan pada
+   * undangan yang baru dibuat. Jawabannya, selama ini: tidak ada tombol sama sekali, karena
+   * `settings.musicUrl` lahir kosong dan `Renderer` tidak merender pemutar tanpa lagu.
+   */
+  test('pemutar musik berdiri di panggung dan tombolnya berpindah', async ({ page }) => {
+    await signIn(page)
+    await page.goto(`/dashboard/${account!.invitationId}/editor`)
+    await expect(page.locator('#editor-save')).toBeVisible()
+    const panggung = await openPreview(page)
+
+    /*
+     * Pemutarnya sudah berdiri sebelum amplop dibuka — harus, karena `arm()` dipanggil sinkron di
+     * dalam klik gerbang dan butuh sasaran yang sudah ter-mount.
+     */
+    const putar = panggung.locator('[aria-label="Putar musik"]')
+    await expect(putar).toBeVisible()
+
+    /*
+     * Tapi belum bisa DITEKAN, dan itu benar: sejak fase 77 gerbang ikut aliran setinggi satu
+     * layar dengan `z-50`, sementara pemutar `sticky z-30` di bawahnya. Amplop dibuka dulu, persis
+     * seperti tamu. Ketahuan di WebKit — flap amplopnya yang menangkap klik, dan Chromium
+     * kebetulan meloloskannya karena posisi keduanya sedikit berbeda di sana.
+     */
+    await bukaAmplop(panggung)
+
+    /*
+     * Sesudah gerbang dibuka, label tombolnya **tidak bisa ditebak**: `onGateOpen` memanggil
+     * `arm()` sinkron di dalam klik, dan apakah pemutarnya benar-benar berbunyi tergantung
+     * kebijakan autoplay mesinnya — WebKit mengizinkannya, Chromium headless tidak. Menuntut
+     * "Putar musik" di sini membuat tes hijau di satu project dan merah di project lain tanpa ada
+     * yang rusak. Yang diuji seharusnya bukan labelnya, melainkan bahwa menekannya **membalik**.
+     */
+    const tombol = panggung.locator('button[aria-label="Putar musik"], button[aria-label="Jeda musik"]')
+    await expect(tombol).toHaveCount(1)
+    const sebelum = await tombol.getAttribute('aria-label')
+    await tombol.click()
+    await expect(panggung.locator(`button[aria-label="${sebelum === 'Jeda musik' ? 'Putar musik' : 'Jeda musik'}"]`)).toBeVisible()
+
+    // Dan kalimat yang dulu menggantikannya sudah tidak ada.
+    await expect(panggung.getByText('Undangan ini memutar musik saat dibuka.')).toHaveCount(0)
+  })
+
+  /*
+   * Tiga lebar, tiga tata letak — bukan tiga angka (fase 77).
+   *
+   * Sebelum fase ini `tokens.layout: 'kartu'` mengunci undangan jadi kartu 480px di tiap container
+   * ≥48rem, jadi ketiga pilihan perangkat menampilkan hal yang sama dan pemilik membacanya, dengan
+   * benar, sebagai pratinjau yang tidak responsif.
+   */
+  test('tiap lebar perangkat menyalakan tata letak yang berbeda', async ({ page }) => {
+    await signIn(page)
+    await page.goto(`/dashboard/${account!.invitationId}/editor`)
+    await expect(page.locator('#editor-save')).toBeVisible()
+    const panggung = await openPreview(page)
+
+    const ukur = async () => panggung.evaluate((el) => {
+      const kolom = el.querySelector('.iv-column') as HTMLElement
+      const sisi = el.querySelector('.iv-aside') as HTMLElement | null
+      const skala = el.getBoundingClientRect().width / (el as HTMLElement).offsetWidth || 1
+      return {
+        kolom: Math.round(kolom.getBoundingClientRect().width / skala),
+        sisi: sisi ? getComputedStyle(sisi).display : 'absen',
+      }
+    })
+
+    await page.locator('#editor-preview-ponsel').click()
+    await expect.poll(ukur).toEqual({ kolom: 390, sisi: 'none' })
+    await page.locator('#editor-preview-tablet').click()
+    await expect.poll(ukur).toEqual({ kolom: 640, sisi: 'none' })
+    await page.locator('#editor-preview-laptop').click()
+    await expect.poll(ukur).toEqual({ kolom: 480, sisi: 'block' })
+    await page.locator('#editor-preview-ponsel').click()
+  })
+
+  test('afordansnya tidak ikut menyeberang ke halaman tamu', async ({ page }) => {
+    await page.goto(`/i/${account!.slug}`)
+    await expect(page.locator('.iv-root')).toBeVisible()
+    // `.iv-root--stage` yang menggerbangi seluruh CSS kotak putus-putus; absennya = absennya afordans.
+    expect(await page.locator('.iv-root--stage').count()).toBe(0)
+    expect(await page.evaluate(() => getComputedStyle(document.querySelector('.iv-field')!).pointerEvents)).toBe('none')
+  })
 })
