@@ -155,6 +155,26 @@ Tidak ada berkas data mentah — seluruh hasil bedah hidup sebagai prosa di `FAS
   undang kolaborator (`Toolbar.vue:86`), riwayat versi (`editor.vue:466`), dan `WishCard.vue:13`
   yang masih menangani dua ejaan kehadiran.
 
+  Ditelusuri ulang 2026-09-22 sebagai fase 75, dan keempatnya ternyata berbeda-beda beratnya:
+
+  - [x] **Dua ejaan kehadiran** SELESAI `75.5`. Cabang `yes`/`no` terbukti **tidak pernah bisa
+    lahir**: `Wish.attendance` dibuat `20260920000000_wish_attendance` tanpa backfill, penulisnya
+    hanya `public.service.ts:102`, dan yang ditulisnya sudah lolos `z.enum(wishAttendances)`.
+    Tapi yang diperbaiki bukan cabang matinya — melainkan penampung di ujung keduanya, yang
+    mengembalikan "Belum pasti" untuk nilai **apa pun** yang tidak dikenal. Satu ejaan asing
+    karena itu tampil sebagai jawaban yang tamunya tidak pernah pilih. Sekarang
+    `wishAttendanceLabel` di kontrak, dipakai `WishCard.vue` dan `rsvps.vue`, dan nilai tak
+    dikenal tidak dapat lencana sama sekali.
+  - [ ] **Riwayat versi** — dikerjakan fase 75; substratnya ternyata sudah ada seluruhnya
+    (`PublishedRevision`, snapshot per terbit, tidak pernah dihapus).
+  - [ ] **Impor Google Sheets** — backend **sudah selesai** sejak awal; yang kurang hanya Google
+    Picker di web, dan itu menuntut konfigurasi Google Cloud milik pemilik. Dipasang di belakang
+    env supaya tidak ada tombol yang terlihat hidup lalu gagal.
+  - [-] **Undang kolaborator** — tetap ditunda, keputusan pemilik 2026-09-22. `InvitationMember`
+    dan `requireInvitationRole` sudah dipakai di seluruh API, tapi `EDITOR`/`VIEWER` tidak bisa
+    dicapai sama sekali: nol endpoint, tidak ada `TokenPurpose` untuk undangan, tidak ada email,
+    tidak ada UI. Satu fase sendiri, bukan sisa.
+
 ## 6. Enam commit fase 72
 
 `git add -p` untuk `invitations.service.ts` dan `contracts/src/api.ts` — isinya terpecah antar-irisan.

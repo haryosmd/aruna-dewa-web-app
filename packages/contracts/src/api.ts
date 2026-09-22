@@ -215,6 +215,30 @@ export const wishAttendances = ['hadir', 'belum-pasti', 'berhalangan'] as const
 export type WishAttendance = (typeof wishAttendances)[number]
 
 /**
+ * Label satu pilihan kehadiran, untuk dasbor. `null` berarti **jangan tampilkan lencana**.
+ *
+ * Dulu pemetaan ini hidup dua kali di `apps/web` dan keduanya menangani ejaan `yes`/`no`/`maybe`
+ * di samping ejaan v2. Ejaan itu tidak pernah bisa lahir: kolom `Wish.attendance` dibuat
+ * 2026-09-20 tanpa backfill, penulisnya cuma `public.service.ts`, dan yang ditulisnya sudah lolos
+ * `z.enum(wishAttendances)` di atas. Cabang lamanya ditulis berjaga-jaga, bukan menanggapi baris
+ * yang pernah ada (fase 75).
+ *
+ * Yang justru berbahaya bukan cabang mati itu melainkan penampung di ujungnya: keduanya
+ * mengembalikan "Belum pasti" untuk nilai APA PUN yang tidak dikenal, jadi satu ejaan asing
+ * tampil sebagai jawaban yang tamunya tidak pernah pilih. Peta eksplisit di bawah lebih memilih
+ * diam — tidak ada lencana lebih jujur daripada lencana yang salah.
+ *
+ * `yes`/`no`/`maybe` **tetap** ejaan `RSVPAttendance`, dan itu tabel yang berbeda
+ * (`apps/api/src/rsvp/attendance.ts`). Fungsi ini bukan untuk ia.
+ */
+export function wishAttendanceLabel(value: string | null | undefined): { label: string; tone: 'sage' | 'gold' | 'neutral' } | null {
+  if (value === 'hadir') return { label: 'Hadir', tone: 'sage' }
+  if (value === 'belum-pasti') return { label: 'Belum pasti', tone: 'gold' }
+  if (value === 'berhalangan') return { label: 'Berhalangan', tone: 'neutral' }
+  return null
+}
+
+/**
  * Ucapan v2 menggabungkan buku tamu dan kehadiran, dan formnya terbuka untuk tamu tanpa
  * tautan personal (seperti referensi): `token` opsional, dan tanpa token `name` wajib —
  * dijaga di service, bukan di skema, supaya pesannya menyebut kolomnya. Tamu bertoken tetap

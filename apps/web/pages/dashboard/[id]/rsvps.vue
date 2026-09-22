@@ -45,7 +45,7 @@ async function moderate(wish: Wish, approved: boolean) {
 const attending = computed(() => rsvps.value.filter(rsvp => rsvp.attendance === 'yes').reduce((sum, rsvp) => sum + (rsvp.count ?? 1), 0))
 const declined = computed(() => rsvps.value.filter(rsvp => rsvp.attendance === 'no').length)
 const pendingWishes = computed(() => wishes.value.filter(wish => !wish.approved).length)
-const wishAttending = computed(() => wishes.value.filter(wish => wish.attendance === 'hadir' || wish.attendance === 'yes').length)
+const wishAttending = computed(() => wishes.value.filter(wish => wish.attendance === 'hadir').length)
 
 /* Empat halaman dasbor sempat tidak punya `<title>` sama sekali — axe menandainya
    `document-title`. Reaktif karena undangannya dimuat setelah mount. */

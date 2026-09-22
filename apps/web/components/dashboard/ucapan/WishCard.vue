@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Check, EyeOff } from 'lucide-vue-next'
+import { wishAttendanceLabel } from '@aruna/contracts/api'
 import type { Wish } from '~/types/aruna'
 
 /**
@@ -10,14 +11,8 @@ import type { Wish } from '~/types/aruna'
 const props = defineProps<{ wish: Wish }>()
 const emit = defineEmits<{ moderate: [Wish, boolean] }>()
 
-/** Ejaan v2 (`hadir`/`belum-pasti`/`berhalangan`) dan lama (`yes`/`no`/`maybe`) dipetakan ke satu label. */
-const attendance = computed(() => {
-  const value = props.wish.attendance
-  if (!value) return null
-  if (value === 'hadir' || value === 'yes') return { label: 'Hadir', tone: 'sage' as const }
-  if (value === 'berhalangan' || value === 'no') return { label: 'Berhalangan', tone: 'neutral' as const }
-  return { label: 'Belum pasti', tone: 'gold' as const }
-})
+/** Nilai tak dikenal tidak dapat lencana sama sekali — lihat `wishAttendanceLabel` (fase 75). */
+const attendance = computed(() => wishAttendanceLabel(props.wish.attendance))
 
 const time = computed(() => {
   if (!props.wish.createdAt) return ''
