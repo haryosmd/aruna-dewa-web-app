@@ -31,26 +31,46 @@ jobs:
       - id: meta
         run: echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
-      - uses: docker/setup-buildx-action@v3
-
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Dibangun di sini, bukan di VPS: server minimum 2 vCPU / 4 GB tidak punya ruang untuk
-      # `nuxt build` dengan `typeCheck` menyala, dan build yang gagal di server berarti server
-      # yang sibuk, bukan pipeline yang merah.
-      - uses: docker/build-push-action@v6
+      # Image-nya sudah dibangun berbarengan dengan e2e oleh job `image` di ci.yml, jadi jalur
+      # normal di sini tidak membangun apa pun — ia hanya memastikan tag-nya benar-benar ada.
+      # Dulu build 3 menit 56 detik ini berdiri berurutan di belakang 15 menit Verify.
+      #
+      # Tetap dibangun di runner, bukan di VPS: server minimum 2 vCPU / 4 GB tidak punya ruang
+      # untuk `nuxt build` dengan `typeCheck` menyala, dan build yang gagal di server berarti
+      # server yang sibuk, bukan pipeline yang merah.
+      - id: image
+        name: Image untuk sha ini sudah ada?
+        env:
+          REF: ${{ env.IMAGE }}:${{ steps.meta.outputs.sha }}
+        run: |
+          set -eu
+          if docker buildx imagetools inspect "$REF" > /dev/null 2>&1; then
+            echo "Sudah ada: $REF"
+            echo "ada=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Belum ada: $REF — dibangun di sini."
+            echo "ada=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Jalur cadangan, dan ia bukan hiasan: `workflow_dispatch` tidak lewat Verify sama sekali,
+      # jadi tidak ada job `image` yang pernah berjalan untuk sha itu. Tanpa dua langkah ini,
+      # rilis manual akan menarik tag yang tidak pernah ada dan gagal di `compose pull`.
+      - if: steps.image.outputs.ada != 'true'
+        uses: docker/setup-buildx-action@v3
+      - if: steps.image.outputs.ada != 'true'
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: |
-            ${{ env.IMAGE }}:${{ steps.meta.outputs.sha }}
-            ${{ env.IMAGE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          provenance: false
+          tags: ${{ env.IMAGE }}:${{ steps.meta.outputs.sha }}
+          cache-from: type=gha,scope=prod-deps
 
       # Caddyfile hidup di /srv/aruna sebagai bind mount dan dikecualikan dari image
       # (.dockerignore:24), jadi sampai sekarang tidak ada satu pun jalur yang membawanya ke
@@ -166,6 +186,21 @@ jobs:
           echo "Aman selama migrasi rilis ini aditif; migrasi Prisma maju-saja. Kalau rilis ini"
           echo "menghapus atau mengubah kolom, yang kamu butuhkan restore — ops/backup/README.md."
           exit 1
+
+      # `latest` dipindahkan ke SINI, setelah gerbang /ready. Sebelumnya ia didorong bersamaan
+      # dengan tag sha saat build, yang berarti `latest` menunjuk image yang terakhir DIBANGUN,
+      # bukan yang terakhir terbukti hidup. Sekarang job `image` di ci.yml hanya mendorong sha —
+      # dan karena ia jalan berbarengan dengan e2e, sha bisa saja milik commit yang tesnya merah.
+      #
+      # Yang membaca `latest` adalah bawaan `${ARUNA_IMAGE:-...:latest}` di compose.prod.yaml,
+      # yaitu justru jalur darurat saat .image.env hilang. Nilai bawaan yang menunjuk build yang
+      # belum pernah lulus adalah bentuk jebakan yang paling tidak enak.
+      #
+      # `imagetools create` menyalin manifest di sisi registry — tidak ada yang diunduh.
+      - name: Tandai latest pada rilis yang terbukti hidup
+        env:
+          REF: ${{ env.IMAGE }}:${{ steps.meta.outputs.sha }}
+        run: docker buildx imagetools create -t "${{ env.IMAGE }}:latest" "$REF"
 
       # Setelah gerbang /ready, bukan di dalam langkah "Terapkan di server". `up -d` kembali saat
       # container dijadwalkan, belum tentu sehat — memangkas di baris berikutnya berarti menghapus
