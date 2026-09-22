@@ -146,6 +146,62 @@ kedua yang menyembunyikan cacatnya. Hasil bedah referensi akhirnya punya folder 
 `FASE-72.md:2`: `docs/features/invitation-builder/referensi/undang-site/`, sebagai teks karena
 `.gitignore` menjaga biner `docs/` di luar git.
 
+**Fase 75 selesai 2026-09-22.** Terukur: `pnpm test` 1323 → **1377 hijau** (89 berkas), typecheck
+dan lint bersih, `pnpm test:integration` **49 hijau**, dan seluruh suite e2e di empat project
+**207 lulus · 0 merah · 9 dilewati** dalam 12,5 menit — termasuk `[mobile] guest management` yang
+merah sejak fase 72. Sembilan yang dilewati: enam bawaan, plus tiga project non-desktop pada tes
+kartu bagikan yang memang sengaja hanya mengambil PNG-nya sekali.
+
+**Cacat terbesar fase ini tidak ada di rencananya.** "Share-card tidak pernah dirender di tes"
+dicatat fase 73 sebagai utang tes; ia ternyata menyembunyikan kartu yang terbit tanpa fotonya.
+resvg tidak punya dekoder WebP dan tidak melempar — ia menggambar kosong — sementara
+`normalizePhoto` mengubah tiap unggahan jadi WebP. Diukur di stack sungguhan dengan foto WebP
+unggahan: **sebelum 57.190 byte rata-rata kanal 31,3, sesudah 375.388 byte rata-rata 60,6**, dan
+kedua PNG-nya dilihat. Angkanya bukan 0,0 karena lapisan gelap, ornamen, dan teks tetap tergambar —
+dan itu justru yang membuatnya bertahan lama: hasilnya terlihat seperti kartu bertema gelap yang
+disengaja.
+
+**Penjaganya sempat lahir tidak bisa merah, dan itu ditulis di komentarnya.** Versi pertama hanya
+menuntut `mean > 20`; kartu yang fotonya gagal tetap lolos ambang itu. Dibuktikan dengan mencabut
+transkodenya — kasusnya tetap hijau. Bentuk yang benar membandingkan dua sisi: harus jauh dari
+kartu tanpa foto **dan** dekat dengan kartu berfoto PNG. Dengan itu, mencabut transkode membuat dua
+kasus merah dan mengembalikannya membuat sebelas hijau.
+
+**Tersangka yang dicatat penjejak untuk e2e mobile meleset, dan peringatannya tepat.** Bukan
+kelompok pil filter (min-content 302,77, di bawah jatah 320) melainkan `section.card` Composer
+(347,13), rantainya `#share-live-banner` 305,13 → `+ p-5` → kolom grid `auto` → `scrollWidth` 367
+lawan 360. Dan peringatan "mengubah tata letak tanpa melihat layarnya adalah cara membuat cacat
+kedua" hampir kena: `minmax(0,1fr)` di `DashboardShell` **membuat tesnya hijau** sambil membuat
+kartunya memotong isinya sendiri, 325 lawan 318. Obat sebenarnya `grid-cols-[minmax(0,1fr)]` pada
+kartu Composer, yang mengembalikan pekerjaan memotong ke `truncate`; perbaikan di `DashboardShell`
+tetap dipasang tapi perannya ditulis apa adanya — penjaga kelas, bukan penyembuh kasus ini.
+
+**Lembar tamu pemilik yang sungguhan tidak bisa diimpor sama sekali sebelum fase ini**, dan bukan
+dengan galat melainkan dengan sampah yang terlihat berhasil: spanduk judulnya terbaca sebagai baris
+header. Parser dibuat mengalah pada empat titik, template XLSX dibuat meniru bentuk lembar itu, dan
+templatnya sekaligus jadi fixture parsernya — bulatan yang langsung menangkap dua cacat ("Orang"
+belum jadi sinonim kuota, dan `safeSpreadsheetCell` yang keliru dibubuhkan pada literal sendiri).
+Diverifikasi dua arah di stack: template diunduh dari API lalu diurai kembali utuh, dan ekspor
+lembar pemilik (kolom A kosong, header baris 15, 190 baris `FALSE`) lewat preview → commit → dua
+tamu tersimpan dengan keempat kolom barunya.
+
+**Satu ketidakpastian yang ditulis apa adanya.** Putaran empat-project pertama malam itu melaporkan
+dua merah di `[safari]` — `studio ornamen` dan `kartu bagikan` — keduanya gagal pada simpan draft.
+Tidak satu pun bisa diulang: `--project=safari` sendirian **51/51**, tes ornamennya sendirian
+lulus, dan putaran empat-project berikutnya **207/207**. Putaran pertama itu dimulai tepat sesudah
+`nuxt.config.ts` dikembalikan, jadi server dev-nya masih memulai ulang — bentuk kegagalan yang
+sudah kena sekali di fase ini juga, saat e2e riwayat lulus sendirian lalu merah dalam rombongan
+karena kliknya mendarat sebelum Vue terpasang. Dicatat sebagai **tidak bisa diulang**, bukan
+sebagai "sudah diperbaiki".
+
+**Satu butir sengaja tidak dikerjakan:** undang kolaborator. `InvitationMember` dan
+`requireInvitationRole` sudah dipakai di seluruh API, tapi `EDITOR`/`VIEWER` tidak bisa dicapai
+sama sekali — nol endpoint, tidak ada `TokenPurpose` untuk undangan, tidak ada email, tidak ada UI.
+Satu fase sendiri, bukan sisa. Keputusan pemilik.
+
+Sesudah fase ini `docs/features/invitation-builder/FASE-72-SISA.md` **tidak punya satu butir pun
+yang belum tercentang**.
+
 **Fase 74 selesai 2026-09-22.** Terukur: `pnpm test` 1241 → **1323 hijau**, typecheck dan lint
 bersih, `pnpm test:integration` **49 hijau** dan fixture QA tertulis untuk pertama kalinya sejak
 fase 72, `playwright --project=desktop` **51/51**, dan seluruh suite di empat project **197 lulus · 1

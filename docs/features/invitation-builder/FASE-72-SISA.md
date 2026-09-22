@@ -338,3 +338,43 @@ pnpm test:integration && pnpm test:e2e --project=desktop
 - §3.2: `POST /invitations` di akun paket Mula → Publikasikan → 200.
 - Tanpa `pnpm test:integration`, 21 tes dasbor **lolos tanpa pernah berjalan** (`test.skip(!account)`),
   termasuk kedua penjaga cacat kemarin.
+
+---
+
+## 8. Fase 75 — angka terukurnya, dan satu ketidakpastian
+
+`pnpm test` 1323 → **1377 hijau** (89 berkas) · typecheck dan lint bersih · `pnpm test:integration`
+**49 hijau** · e2e empat project **207 lulus · 0 merah · 9 dilewati** (12,5 menit).
+
+Sembilan yang dilewati: enam bawaan, plus tiga project non-desktop pada tes kartu bagikan yang
+sengaja hanya mengambil PNG-nya sekali — yang diuji jawaban server, bukan tata letak.
+
+**Penjaga yang dibuktikan bisa merah, lalu dikembalikan:**
+
+- Cabut transkode WebP di `fetchPhoto` → `share-card-render.spec.ts` dua kasus merah.
+- Versi PERTAMA penjaga itu justru **tidak** merah, dan itu temuannya sendiri: `mean > 20` lolos
+  bahkan tanpa foto, karena kartunya tetap menggambar latar tema dan teks.
+
+**Yang tidak bisa dibuktikan merah, dan dicatat apa adanya:** mengembalikan `DashboardShell` ke
+grid tanpa `minmax(0,1fr)` **tidak** membuat e2e mobile merah lagi — perbaikan di kartu Composer
+sendirian sudah cukup. Jadi baris di `DashboardShell` itu penjaga kelas, bukan penyembuh kasus ini,
+dan penjejak ini menolak menuliskannya sebagai yang menyembuhkan.
+
+**Dua merah yang tidak bisa diulang.** Putaran empat-project pertama melaporkan `[safari] studio
+ornamen` dan `[safari] kartu bagikan` gagal, keduanya pada simpan draft. Tiga upaya mengulangnya
+gagal: `--project=safari` sendirian 51/51, tes ornamennya sendirian lulus, putaran empat-project
+berikutnya 207/207. Putaran pertama dimulai tepat sesudah `nuxt.config.ts` dikembalikan, jadi server
+dev-nya masih memulai ulang — dan bentuk kegagalan itu sudah kena sekali di fase yang sama, saat
+e2e riwayat lulus sendirian lalu merah dalam rombongan karena kliknya mendarat sebelum Vue
+terpasang (`hydrated()` yang hilang). **Kalau ia kembali, mulailah dari sana**, bukan dari WebKit.
+
+## 9. Yang masih terbuka sesudah fase 75
+
+- **Undang kolaborator.** Satu fase sendiri; lihat §5.
+- **Dua nilai Google Cloud** (`NUXT_PUBLIC_GOOGLE_PICKER_API_KEY`, `_CLIENT_ID`) belum diisi, jadi
+  impor Google Sheets masih gelap di semua lingkungan. Backend dan UI-nya sudah siap; yang kurang
+  pekerjaan konsol, bukan kode. Langkahnya di `apps/web/.env.example`.
+- **`sharp` di image produksi belum dibuktikan.** `pnpm prune --prod` seharusnya menyisakannya
+  karena ia dependensi produksi `apps/api`, tapi itu kesimpulan dari membaca `Dockerfile`, bukan
+  dari menjalankan image-nya. Kelas bug fase 20 justru yang lolos typecheck dan tes lalu mati di
+  container — `docker build` lalu panggil satu kartu bagikan sebelum rilis berikutnya.
