@@ -374,7 +374,17 @@ terpasang (`hydrated()` yang hilang). **Kalau ia kembali, mulailah dari sana**, 
 - **Dua nilai Google Cloud** (`NUXT_PUBLIC_GOOGLE_PICKER_API_KEY`, `_CLIENT_ID`) belum diisi, jadi
   impor Google Sheets masih gelap di semua lingkungan. Backend dan UI-nya sudah siap; yang kurang
   pekerjaan konsol, bukan kode. Langkahnya di `apps/web/.env.example`.
-- **`sharp` di image produksi belum dibuktikan.** `pnpm prune --prod` seharusnya menyisakannya
-  karena ia dependensi produksi `apps/api`, tapi itu kesimpulan dari membaca `Dockerfile`, bukan
-  dari menjalankan image-nya. Kelas bug fase 20 justru yang lolos typecheck dan tes lalu mati di
-  container — `docker build` lalu panggil satu kartu bagikan sebelum rilis berikutnya.
+- **`sharp` di image produksi: separuh dibuktikan.** Yang SUDAH diperiksa, dan ini kegagalan yang
+  paling mungkin karena ia menjatuhkan seluruh build: `pnpm install --frozen-lockfile` — perintah
+  persis yang dipakai tahap `deps` di `Dockerfile` — **lulus**, dan `pnpm-lock.yaml` memang memuat
+  `sharp: specifier 0.32.6` di bawah `apps/api`. Lockfile yang lupa diperbarui akan membuat
+  `docker build` gagal di tahap pertama.
+
+  Yang BELUM: bahwa `pnpm prune --prod` benar-benar menyisakannya dan binary linux-nya terpasang.
+  Keduanya seharusnya benar — ia dependensi produksi dan `sharp` ada di `onlyBuiltDependencies`,
+  jadi skrip `prebuild-install`-nya boleh berjalan di pnpm 10 — tapi itu kesimpulan dari membaca
+  `Dockerfile`, bukan dari menjalankan image-nya. Docker tidak hidup di laptop ini saat fase 75
+  ditulis (`docker info` → soketnya tidak ada). Kelas bug fase 20 justru yang lolos typecheck dan
+  tes lalu mati di container, jadi: `docker build` lalu panggil satu kartu bagikan
+  ber-`backgroundMode: 'foto'` sebelum rilis berikutnya. Kalau fotonya hilang lagi di produksi
+  padahal lokal benar, `sharp` yang tidak ikut ke image adalah tersangka pertama.
