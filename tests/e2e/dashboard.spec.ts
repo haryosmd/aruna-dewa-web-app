@@ -1,5 +1,5 @@
 import { deflateSync } from 'node:zlib'
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 import AxeBuilder from '@axe-core/playwright'
 import { readFileSync, existsSync } from 'node:fs'
 
