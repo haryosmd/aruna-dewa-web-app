@@ -1,11 +1,11 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { canEditDesign, createDefaultDocument, documentStructureId, documentThemeId, isLiveStructureId, isLiveTemplateId, migrateLegacyDocument, restructureDocument, sectionFeature, type InvitationDocument } from '@aruna/contracts';
+import { canEditDesign, createDefaultDocument, documentStructureId, documentThemeId, galleryPhotoLimitFor, isLiveStructureId, isLiveTemplateId, migrateLegacyDocument, restructureDocument, sectionFeature, type InvitationDocument } from '@aruna/contracts';
 import { shareSettingsSchema, type CreateInvitationBody, type ShareSettings } from '@aruna/contracts/api';
 import { PrismaService } from '../database/prisma.service.js';
 import { Prisma } from '@aruna/database';
 import { MembershipService } from '../common/membership.service.js';
 import { isOperator, type AuthenticatedUser } from '../common/auth.js';
-import { validatePublishableDocument } from './document-validation.js';
+import { assertGalleryQuota, validatePublishableDocument } from './document-validation.js';
 import { orphanAssetIds } from '../media/asset-usage.js';
 import { storageForAsset } from '../media/storage.js';
 
@@ -53,7 +53,7 @@ export class InvitationsService {
     const invitation = await this.prisma.invitation.findUniqueOrThrow({ where: { id: invitationId }, include: { entitlements: { where: { revokedAt: null, OR: [{ activeUntil: null }, { activeUntil: { gt: new Date() } }] }, include: { feature: true } } } });
     // Draft v1 dikirim apa adanya — editor yang memigrasinya di klien (fase 72), supaya server
     // tidak pernah menulis ulang dokumen yang belum disentuh pasangan.
-    return { id: invitation.id, slug: invitation.slug, title: invitation.title, status: invitation.status, document: invitation.draftDocument, revision: invitation.draftRevision, features: invitation.entitlements.map((item) => item.featureId), activeUntil: invitation.entitlements.reduce<Date | null>((latest, item) => !latest || (item.activeUntil && item.activeUntil > latest) ? item.activeUntil : latest, null), publishedAt: invitation.publishedAt, shareSettings: readShareSettings(invitation.shareSettings) };
+    return { id: invitation.id, slug: invitation.slug, title: invitation.title, status: invitation.status, document: invitation.draftDocument, revision: invitation.draftRevision, features: invitation.entitlements.map((item) => item.featureId), activeUntil: invitation.entitlements.reduce<Date | null>((latest, item) => !latest || (item.activeUntil && item.activeUntil > latest) ? item.activeUntil : latest, null), publishedAt: invitation.publishedAt, shareSettings: readShareSettings(invitation.shareSettings), photoLimit: galleryPhotoLimitFor(invitation.packageId) };
   }
 
   /** Template WhatsApp (fase 72.6). Di luar dokumen dan revisinya: menyunting pesan tidak boleh membuat draft "belum terbit". */
@@ -91,6 +91,10 @@ export class InvitationsService {
         if (active?.revision === invitation.draftRevision) return { slug: invitation.slug, publishedAt: invitation.publishedAt };
       }
       const document = validatePublishableDocument(invitation.draftDocument);
+      // Kuota foto per paket. Pembandingnya revisi yang SEDANG aktif, supaya batas yang turun
+      // tidak pernah mengunci undangan yang sudah terbit — lihat `assertGalleryQuota` (fase 75).
+      const aktif = invitation.activeRevisionId ? await tx.publishedRevision.findUnique({ where: { id: invitation.activeRevisionId }, select: { document: true } }) : null;
+      assertGalleryQuota(document, invitation.packageId, aktif?.document ?? undefined);
       // Lewat `sectionFeature`, bukan `type` mentah: bagian v2 (`hero`, `event`, `map`, …) menumpang
       // fitur lama di katalog, jadi entitlement di basis data tidak perlu tahu tipe baru.
       const enabledFeatures = document.sections.filter((section) => section.enabled).map((section) => sectionFeature[section.type] ?? section.type);

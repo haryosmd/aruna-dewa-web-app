@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { FolderOpen, Trash2 } from 'lucide-vue-next'
 import type { FieldMeta, FontChoice, InvitationSection, SectionBackground, SectionMotion, TextStyle, V2SectionType } from '@aruna/contracts'
-import { isRequiredSection, sectionFields, sectionMeta, sectionMotions, selectableFonts } from '@aruna/contracts'
+import { isRequiredSection, maxGalleryPhotoLimit, sectionFields, sectionMeta, sectionMotions, selectableFonts } from '@aruna/contracts'
 import { bodyFontOf } from '~/utils/theme'
 import type { InvitationDocument } from '~/types/aruna'
 
@@ -21,6 +21,13 @@ const props = defineProps<{
   invitationId: string
   canEditDesign: boolean
   lockedBy?: string
+  /**
+   * Kuota foto galeri paket ini, dari `GET /invitations/:id` (fase 75) — bukan dihitung ulang di
+   * sini. `field.limit` di kontrak adalah PLAFON katalog (paket teratas), karena skema dokumen
+   * tidak tahu paketnya; yang mengikat pasangan ini angka di bawah. Diambil yang terkecil supaya
+   * tombolnya tidak pernah menjanjikan lebih dari yang API terima.
+   */
+  photoLimit?: number
 }>()
 
 const emit = defineEmits<{
@@ -70,13 +77,19 @@ const gerakLabels: Record<SectionMotion, { label: string; hint: string }> = {
 
 const { pilih } = useMediaLibrary()
 
+/** Batas efektif satu kolom foto: plafon skema dan kuota paket, yang mana pun lebih kecil. */
+function batasFoto(field: FieldMeta): number {
+  return Math.min(field.limit ?? maxGalleryPhotoLimit, props.photoLimit ?? maxGalleryPhotoLimit)
+}
+
 async function tambahFotoGaleri(field: FieldMeta) {
   const ada = list(field.key)
-  const sisa = Math.max(0, (field.limit ?? 15) - ada.length)
+  const batas = batasFoto(field)
+  const sisa = Math.max(0, batas - ada.length)
   if (!sisa) return
   const hasil = await pilih({ multiple: true, remaining: sisa, judul: `${field.label} · ${meta.value.label}` })
   if (!hasil?.length) return
-  emit('tulis', field.key, [...ada, ...hasil.filter(url => !ada.includes(url))].slice(0, field.limit ?? 15))
+  emit('tulis', field.key, [...ada, ...hasil.filter(url => !ada.includes(url))].slice(0, batas))
 }
 
 function hapusFotoGaleri(field: FieldMeta, index: number) {
@@ -155,8 +168,8 @@ const idKolom = (key: string) => `editor-field-${type.value}-${key}`
 
       <div v-else-if="field.kind === 'foto[]'" class="grid gap-2.5 rounded-md border border-border bg-surface p-3.5">
         <div class="grid gap-0.5">
-          <p class="m-0 text-[0.75rem] font-bold uppercase tracking-[0.1em] text-ink">{{ field.label }} (Maks {{ field.limit ?? 15 }})</p>
-          <p class="m-0 text-caption text-ink-muted">{{ list(field.key).length }} dari {{ field.limit ?? 15 }} foto. Foto tampil publik setelah undangan diterbitkan.</p>
+          <p class="m-0 text-[0.75rem] font-bold uppercase tracking-[0.1em] text-ink">{{ field.label }} (Maks {{ batasFoto(field) }})</p>
+          <p class="m-0 text-caption text-ink-muted">{{ list(field.key).length }} dari {{ batasFoto(field) }} foto. Foto tampil publik setelah undangan diterbitkan.</p>
         </div>
         <ul v-if="list(field.key).length" class="m-0 grid list-none grid-cols-3 gap-2 p-0">
           <li v-for="(url, index) in list(field.key)" :key="url" class="relative overflow-hidden rounded-md bg-surface-2">
@@ -177,7 +190,7 @@ const idKolom = (key: string) => `editor-field-${type.value}-${key}`
           :id="`${idKolom(field.key)}-pilih`"
           tone="outline"
           class="border-primary/40 bg-primary-soft/40 text-primary hover:bg-primary-soft"
-          :disabled="list(field.key).length >= (field.limit ?? 15)"
+          :disabled="list(field.key).length >= batasFoto(field)"
           @click="tambahFotoGaleri(field)"
         >
           <FolderOpen :size="16" aria-hidden="true" />

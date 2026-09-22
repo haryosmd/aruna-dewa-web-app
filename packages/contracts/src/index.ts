@@ -15,8 +15,10 @@ export function buildGuestUrl(base: string, slug: string, displayName: string, t
 }
 
 export * from './sections'
+export * from './photo-quota'
 export * from './structures'
 import { createLegacySections, structureIds, structures, type StructureId } from './structures'
+import { packagePhotoLimits } from './photo-quota'
 import { sectionTypes, isV2SectionType, sectionDataSchema, invitationSettingsSchema, shareCardSchema, layoutFocuses, type DefaultDocumentInput } from './sections'
 export { sectionTypes }
 
@@ -423,8 +425,7 @@ export const mediaKinds = Object.keys(mediaRules) as MediaKind[]
 /** Ornamen unggahan per undangan. Pagar, bukan fitur — sama seperti `audioAssetLimit`. */
 export const ornamentAssetLimit = 12
 
-/** Batas foto galeri. Paket menjanjikan 15/30/60, tapi `Invitation` belum menyimpan paketnya — sampai itu ada, satu angka untuk semua, ditulis sekali. */
-export const galleryPhotoLimit = 15
+/** Batas foto galeri per paket hidup di `photo-quota.ts` — lihat berkas itu untuk alasannya. */
 
 /** Aset audio per undangan. Bukan fitur, cuma pagar: tanpa ini unggah ulang lagu menumpuk tanpa batas. */
 export const audioAssetLimit = 5
@@ -578,9 +579,9 @@ const growthFeatures = ['story', 'gift', 'rundown', 'dresscode']
 export const catalog = {
   sandbox: true,
   packages: [
-    { id: 'mula', name: 'Mula', price: 279000, features: [...baseFeatures], durationMonths: 12, photoLimit: 15 },
-    { id: 'mekar', name: 'Mekar', price: 449000, features: [...baseFeatures, ...growthFeatures], durationMonths: 12, photoLimit: 30 },
-    { id: 'purnama', name: 'Purnama', price: 699000, features: [...baseFeatures, ...premiumFeatures], durationMonths: 12, photoLimit: 60 },
+    { id: 'mula', name: 'Mula', price: 279000, features: [...baseFeatures], durationMonths: 12, photoLimit: packagePhotoLimits.mula },
+    { id: 'mekar', name: 'Mekar', price: 449000, features: [...baseFeatures, ...growthFeatures], durationMonths: 12, photoLimit: packagePhotoLimits.mekar },
+    { id: 'purnama', name: 'Purnama', price: 699000, features: [...baseFeatures, ...premiumFeatures], durationMonths: 12, photoLimit: packagePhotoLimits.purnama },
   ],
   addons: premiumFeatures.map(id => ({ id, name: ({ story: 'Cerita cinta', gift: 'Hadiah', rundown: 'Rundown', dresscode: 'Dresscode', video: 'Video & live stream', design: 'Warna, font & urutan' } as Record<string, string>)[id]!, price: 25000 })),
   templates: templates.map(({ id, name, version, tagline, accent, tokens }) => ({ id, name, version, tagline, accent, tokens })),
@@ -596,6 +597,7 @@ export function priceOrder(packageId: string, addonIds: string[]) {
   })
   return { total: pack.price + addons.reduce((sum, a) => sum + a.price, 0), features: [...pack.features, ...addonIds], packageId, addonIds }
 }
+
 
 export type ImportRow = { row: number; displayName: string; phone?: string; group?: string; quota?: number; errors: string[]; warnings: string[] }
 export function parseGuestText(text: string, format: 'csv' | 'tsv'): ImportRow[] {

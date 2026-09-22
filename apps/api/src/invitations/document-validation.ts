@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { bankIds, giftAccountLimit, invitationDocumentSchema, type InvitationDocument } from '@aruna/contracts';
+import { bankIds, galleryPhotoLimitFor, giftAccountLimit, invitationDocumentSchema, type InvitationDocument } from '@aruna/contracts';
 
 type Section = InvitationDocument['sections'][number];
 
@@ -111,3 +111,38 @@ function isSafeUrl(value: string): boolean {
 
 function isRecord(value: unknown): value is Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value); }
 function isNonEmptyString(value: unknown): value is string { return typeof value === 'string' && value.trim().length > 0; }
+
+/** Menghitung foto galeri sebuah dokumen — sumber tunggal supaya "sebelum" dan "sesudah" dihitung sama. */
+export function countGalleryPhotos(document: unknown): number {
+  const sections = isRecord(document) && Array.isArray(document.sections) ? document.sections : [];
+  let total = 0;
+  for (const section of sections) {
+    if (!isRecord(section) || !isRecord(section.data)) continue;
+    const urls = section.data.imageUrls ?? section.data.images;
+    if (Array.isArray(urls)) total += urls.length;
+  }
+  return total;
+}
+
+/**
+ * Kuota foto per paket, ditegakkan saat terbit (fase 75).
+ *
+ * **Yang dijaga pertumbuhannya, bukan keberadaannya.** Sebuah dokumen yang sudah memegang lebih
+ * banyak foto daripada jatah paketnya tetap boleh terbit selama jumlahnya tidak bertambah — kalau
+ * tidak, satu pasangan bisa terjebak: paketnya turun (atau baru diselesaikan di paket termurah
+ * sesudah menimbun foto sebagai draft), lalu undangannya tidak bisa diterbitkan sama sekali dan
+ * satu-satunya jalan keluar adalah menghapus foto yang sudah dipilih. Menolak terbit adalah
+ * hukuman yang jauh lebih berat daripada menolak unggahan, dan gerbang unggah di
+ * `media.service.ts` sudah menahan pertumbuhannya di hulu.
+ *
+ * `sebelumnya` adalah revisi yang sedang aktif; `undefined` berarti belum pernah terbit, dan di
+ * situ batasnya berlaku penuh — tidak ada yang bisa terjebak oleh sesuatu yang belum ada.
+ */
+export function assertGalleryQuota(document: InvitationDocument, packageId: string | null | undefined, sebelumnya?: unknown): void {
+  const batas = galleryPhotoLimitFor(packageId);
+  const sekarang = countGalleryPhotos(document);
+  if (sekarang <= batas) return;
+  const dulu = sebelumnya === undefined ? 0 : countGalleryPhotos(sebelumnya);
+  if (sekarang <= dulu) return;
+  throw new BadRequestException(`Paket ini memuat ${batas} foto galeri; dokumen ini memakai ${sekarang}. Hapus kelebihannya atau naikkan paket sebelum publish.`);
+}

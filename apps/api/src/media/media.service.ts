@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { allowedMediaTypes, audioAssetLimit, formatBytes, galleryPhotoLimit, mediaKindOf, mediaRules, ornamentAssetLimit, type MediaKind } from '@aruna/contracts';
+import { allowedMediaTypes, audioAssetLimit, formatBytes, galleryPhotoLimitFor, mediaKindOf, mediaRules, ornamentAssetLimit, type MediaKind } from '@aruna/contracts';
 import { intakeOrnament } from './ornament-intake.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { MembershipService } from '../common/membership.service.js';
@@ -41,7 +41,15 @@ export class MediaService {
       // sebabnya menghapus foto wajib ikut menghapus asetnya, kalau tidak kuotanya bocor.
       // Dihitung per `kind`, bukan awalan contentType: ornamen PNG tidak boleh memakan kuota galeri.
       const kept = await this.prisma.mediaAsset.count({ where: { invitationId, kind: kind === 'image' ? 'IMAGE' : 'AUDIO' } });
-      if (kind === 'image' && kept >= galleryPhotoLimit) throw new BadRequestException(`Batas foto per undangan adalah ${galleryPhotoLimit}. Hapus foto yang tidak dipakai lebih dulu.`);
+      if (kind === 'image') {
+        // Batasnya mengikuti paket sejak fase 75, dan paketnya dibaca DI SINI, bukan diturunkan
+        // dari entitlement: entitlement cuma daftar fitur, dan dua paket bisa membuka fitur yang
+        // sama dengan kuota berbeda. Undangan tanpa pesanan lunas (`packageId` null) memakai
+        // angka paket termurah — `galleryPhotoLimitFor` yang memutuskan, bukan baris ini.
+        const undangan = await this.prisma.invitation.findUnique({ where: { id: invitationId }, select: { packageId: true } });
+        const batas = galleryPhotoLimitFor(undangan?.packageId);
+        if (kept >= batas) throw new BadRequestException(`Batas foto per undangan adalah ${batas}. Hapus foto yang tidak dipakai lebih dulu, atau naikkan paket.`);
+      }
       if (kind === 'audio' && kept >= audioAssetLimit) throw new BadRequestException(`Batas lagu terunggah adalah ${audioAssetLimit}. Hapus lagu lama lebih dulu.`);
     }
     const extension = extensionFor(file.mimetype);

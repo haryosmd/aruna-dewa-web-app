@@ -276,6 +276,12 @@ export interface InvitationDetail extends InvitationSummary {
   publishedAt?: string | null
   /** Fase 72.6: template WhatsApp; null sampai pasangan menyunting satu gaya. */
   shareSettings?: ShareSettings | null
+  /**
+   * Kuota foto galeri paket ini (fase 75). Dikirim server, bukan dihitung ulang editor: angka
+   * yang dilihat pasangan dan angka yang ditolak API harus berasal dari satu jawaban yang sama.
+   * `packageId` sendiri sengaja tidak ikut — editor tidak punya urusan dengan nama paketnya.
+   */
+  photoLimit: number
 }
 
 export interface SavedDraft {

@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { catalog } from '@aruna/contracts';
 import type { CreateOrderBody, MidtransWebhookBody } from '@aruna/contracts/api';
 import { Prisma } from '@aruna/database';
 import { PrismaService } from '../database/prisma.service.js';
@@ -6,10 +7,11 @@ import { MembershipService } from '../common/membership.service.js';
 import { assertOperator, isOperator, type AuthenticatedUser } from '../common/auth.js';
 import { MidtransService } from './midtrans.service.js';
 import { decideCheckoutRecovery } from './checkout-recovery.js';
-import { entitlementGrants, featuresFromSnapshot, paymentStatusFor, shouldActivate } from './payment-activation.js';
+import { entitlementGrants, featuresFromSnapshot, packageFromSnapshot, paymentStatusFor, shouldActivate } from './payment-activation.js';
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
   constructor(private readonly prisma: PrismaService, private readonly memberships: MembershipService, private readonly midtrans: MidtransService) {}
 
   async create(user: AuthenticatedUser, invitationId: string, input: CreateOrderBody) {
@@ -60,6 +62,7 @@ export class OrdersService {
     await this.prisma.$transaction(async (tx) => {
       await tx.entitlement.createMany({ data: grants, skipDuplicates: true });
       await tx.order.update({ where: { id: order.id }, data: { status: 'PAID', activatedAt: new Date() } });
+      await this.capPaket(tx, order.invitationId, packageFromSnapshot(order.priceSnapshot));
       await tx.auditEvent.create({ data: { actorId: operator.sub, invitationId: order.invitationId, action: 'OPERATOR_CHECKOUT_BYPASS', targetType: 'Order', targetId: order.id, metadata: { features: grants.map((grant) => grant.featureId) } } });
     });
     return { paid: true as const, alreadyActive: false };
@@ -97,6 +100,7 @@ export class OrdersService {
       const grants = entitlementGrants({ invitationId: order.invitationId, orderId: order.id, features: featuresFromSnapshot(order.priceSnapshot) });
       await tx.entitlement.createMany({ data: grants, skipDuplicates: true });
       await tx.order.update({ where: { id: order.id }, data: { status: 'PAID', activatedAt: new Date() } });
+      await this.capPaket(tx, order.invitationId, packageFromSnapshot(order.priceSnapshot));
       await tx.auditEvent.create({ data: { invitationId: order.invitationId, action: 'PAYMENT_ACTIVATED', targetType: 'Order', targetId: order.id, metadata: { providerEventId } } });
       return { accepted: true, duplicate: false };
     });
@@ -110,10 +114,35 @@ export class OrdersService {
     const features = await this.prisma.feature.findMany({ where: { active: true }, select: { id: true } });
     await this.prisma.$transaction(async (tx) => {
       await tx.entitlement.createMany({ data: features.map((feature) => ({ invitationId, featureId: feature.id })), skipDuplicates: true });
+      // Aktivasi operator memberi SELURUH fitur tanpa pesanan, jadi tidak ada snapshot harga yang
+      // bisa ditanya paketnya. Dicap paket teratas supaya kuotanya sejalan dengan fiturnya:
+      // membuka semua fitur lalu menahan foto di angka paket termurah adalah janji yang saling
+      // bertentangan, dan gejalanya muncul jauh dari sini (fase 75).
+      await this.capPaket(tx, invitationId, paketTertinggi());
       await tx.auditEvent.create({ data: { actorId: operator.sub, invitationId, action: 'OPERATOR_ACTIVATION', targetType: 'Invitation', targetId: invitationId } });
     });
     return { activated: true };
   }
+
+  /**
+   * Mencap paket ke undangan, hanya bila paketnya memang dikenali dan ada di katalog basis data.
+   *
+   * `updateMany` tanpa `where` tambahan: mencapnya ulang saat pesanan kedua diaktifkan memang
+   * yang diinginkan — yang terakhir dibayar adalah yang berlaku. Paket yang tidak ada di tabel
+   * `Package` dilewati diam-diam alih-alih melempar: gagal mencap berarti kuota jatuh ke bawaan,
+   * sementara melempar di sini akan **membatalkan aktivasi pembayaran yang sudah sah**.
+   */
+  private async capPaket(tx: Prisma.TransactionClient, invitationId: string, packageId: string | null) {
+    if (!packageId) return;
+    const ada = await tx.package.findUnique({ where: { id: packageId }, select: { id: true } });
+    if (!ada) { this.logger.warn(`Paket ${packageId} tidak ada di katalog; undangan ${invitationId} tidak dicap paket.`); return; }
+    await tx.invitation.updateMany({ where: { id: invitationId }, data: { packageId } });
+  }
+}
+
+/** Paket dengan kuota foto tertinggi di katalog — bukan id yang ditulis tangan, supaya ikut bergerak. */
+function paketTertinggi(): string | null {
+  return [...catalog.packages].sort((a, b) => b.photoLimit - a.photoLimit)[0]?.id ?? null;
 }
 
 function packageNameFromSnapshot(snapshot: unknown): string | undefined {

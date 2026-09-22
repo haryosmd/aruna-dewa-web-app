@@ -6,7 +6,7 @@ import type {
 } from '@aruna/contracts'
 import {
   canEditDesign as designUnlocked, createDefaultDocument, designFeatureId, documentStructureId, documentThemeId,
-  invitationDocumentSchema, isLiveTemplateId, liveStructureIds, restructureDocument, sectionMeta, structures, type StructureId,
+  invitationDocumentSchema, isLiveTemplateId, liveStructureIds, maxGalleryPhotoLimit, restructureDocument, sectionMeta, structures, type StructureId,
   isV2SectionType, migrateLegacyDocument, templateById,
 } from '@aruna/contracts'
 import { toOrnamentOverrides } from '~/utils/invitation-options'
@@ -78,6 +78,13 @@ const publicUrl = computed(() => `${origin}/i/${invitation.value?.slug ?? ''}`)
 const pngUrl = computed(() => `${config.public.apiBase}/public/share-card/${invitation.value?.slug ?? ''}.png?v=${revision.value}`)
 
 const canEditDesign = computed(() => designUnlocked({ isOperator: auth.isOperator, features: invitation.value?.features ?? [] }))
+/**
+ * Kuota foto galeri, DARI SERVER (fase 75). Tidak dihitung ulang di sini dan tidak diturunkan dari
+ * `features`: entitlement cuma daftar fitur, dan dua paket bisa membuka fitur yang sama dengan
+ * kuota berbeda. Sebelum jawaban pertama datang, plafon katalog dipakai supaya form tidak sempat
+ * menampilkan angka yang lebih kecil lalu melompat.
+ */
+const photoLimit = computed(() => invitation.value?.photoLimit ?? maxGalleryPhotoLimit)
 const lockedBy = computed(() => designAddon.value ? `Add-on ${designAddon.value.name} (${formatRupiah(designAddon.value.price)}) membukanya.` : undefined)
 const templatePensiun = computed(() => {
   const id = document.value?.templateId
@@ -651,6 +658,7 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
               :invitation-id="invitation.id"
               :can-edit-design="canEditDesign"
               :locked-by="lockedBy"
+              :photo-limit="photoLimit"
               @tulis="tulis"
               @tulis-gaya="tulisGaya"
               @tulis-latar="tulisLatar"

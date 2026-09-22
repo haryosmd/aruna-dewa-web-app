@@ -52,6 +52,25 @@ export function featuresFromSnapshot(priceSnapshot: unknown): string[] {
   return snapshot.features.filter((feature): feature is string => typeof feature === 'string');
 }
 
+/**
+ * Id paket yang dibayar, dari snapshot harga yang sama (fase 75).
+ *
+ * `featuresFromSnapshot` di atas sengaja **membuang** bagian ini sejak dulu, dan itu masuk akal
+ * selama yang dituju cuma entitlement — entitlement memang per fitur. Yang tidak bisa dijawabnya
+ * adalah kuota: dua paket boleh membuka fitur yang sama persis dengan batas foto berbeda, jadi
+ * "paket mana" tidak pernah bisa disimpulkan dari daftar fiturnya.
+ *
+ * Snapshot ditulis `orders.service.ts` saat pesanan dibuat dan tidak pernah berubah sesudahnya,
+ * jadi ia sumber yang benar untuk "apa yang dibayar", bukan katalog hari ini. Bentuk yang tidak
+ * dikenali (snapshot versi lama, JSON rusak) mengembalikan `null` — bukan menebak paket termurah,
+ * karena pemanggilnya yang memutuskan arti "tidak tahu".
+ */
+export function packageFromSnapshot(priceSnapshot: unknown): string | null {
+  if (!priceSnapshot || typeof priceSnapshot !== 'object') return null;
+  const plan = (priceSnapshot as { package?: { id?: unknown } }).package;
+  return typeof plan?.id === 'string' && plan.id.trim() ? plan.id : null;
+}
+
 export interface PaymentActivationState {
   order: { id: string; total: number; status: 'PENDING' | 'PAID'; activatedAt: Date | null };
   processedEventIds: Set<string>;

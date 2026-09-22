@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { fontChoices } from './fonts'
+import { maxGalleryPhotoLimit } from './photo-quota'
 
 /*
  * Struktur bagian "Elegance" (fase 72) — template utama Aruna Dewa.
@@ -233,7 +234,7 @@ export const sectionFields: Record<V2SectionType, FieldMeta[]> = {
     teks('viewLabel', 'Label preview foto', 40),
     teks('subtitle', 'Caption'),
     teks('lightboxTitle', 'Judul saat foto dibuka besar'),
-    { key: 'imageUrls', label: 'Foto komponen', kind: 'foto[]', limit: 15 },
+    { key: 'imageUrls', label: 'Foto komponen', kind: 'foto[]', limit: maxGalleryPhotoLimit },
   ],
   'gift': [
     teks('eyebrow', 'Label section'),
@@ -345,7 +346,7 @@ const kindSchema = (field: FieldMeta): z.ZodTypeAny => {
     case 'tanggal': return z.string().max(40)
     case 'url': return z.string().max(field.max ?? 2048)
     case 'foto': return z.string().max(2048)
-    case 'foto[]': return z.array(z.string().max(2048)).max(field.limit ?? 15)
+    case 'foto[]': return z.array(z.string().max(2048)).max(field.limit ?? maxGalleryPhotoLimit)
     case 'boolean': return z.boolean()
   }
 }

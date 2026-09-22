@@ -163,12 +163,21 @@ model Invitation {
   draftRevision   Int                 @default(1)
   /// Fase 72.6: template pesan WhatsApp per gaya bahasa (`{ preset, templates }`), diatur di halaman Generator.
   shareSettings   Json?
+  /// Paket yang dibayar untuk undangan ini (fase 75). Null = belum ada pesanan lunas.
+  ///
+  /// Entitlement hanya menyimpan daftar FITUR, dan paket tidak bisa disimpulkan darinya: dua paket
+  /// bisa membuka fitur yang sama tapi berbeda kuota. Identitasnya sebelumnya hanya bisa dicapai
+  /// dengan menjejak balik `Order.priceSnapshot.package.id`, dan jalur unggah media tidak pernah
+  /// memuat order sama sekali — jadi kuota foto per paket tidak punya tempat bertanya.
+  /// Dicap sekali, di detik yang sama entitlement ditulis.
+  packageId       String?
   activeRevisionId String?            @unique @db.Uuid
   createdById     String              @db.Uuid
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
   publishedAt     DateTime?
   createdBy       User                @relation("InvitationCreator", fields: [createdById], references: [id])
+  package         Package?            @relation(fields: [packageId], references: [id])
   members         InvitationMember[]
   revisions       PublishedRevision[]
   activeRevision  PublishedRevision?  @relation("ActiveRevision", fields: [activeRevisionId], references: [id])
@@ -224,6 +233,7 @@ model Package {
   createdAt   DateTime         @default(now())
   features    PackageFeature[]
   orderItems  OrderItem[]
+  invitations Invitation[]
 }
 
 model Feature {
