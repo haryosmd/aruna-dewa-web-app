@@ -99,9 +99,33 @@ async function fontsUsedBy(locator: import('@playwright/test').Locator) {
  * wajib melewati tombol ini. Yang ditunggu penanda di header, bukan toast — toast menghilang
  * sendiri setelah beberapa detik dan membuat tesnya bergantung pada waktu.
  */
+/**
+ * Menyimpan draft, dan menunggu HASILNYA — bukan tombolnya.
+ *
+ * `#editor-save` mati begitu `dirty` padam (Inspector.vue: `:disabled="!dirty"`), dan itu memang
+ * benar. Yang salah adalah menganggap tombol itu bertahan hidup selama satu aksi Playwright.
+ * Di WebKit CI yang lambat, klik mendarat, `save()` berhasil, `savedSnapshot` disamakan, tombolnya
+ * mati — lalu pemeriksaan aksionabilitas Playwright mengulang aksinya dan menunggu 30 detik penuh
+ * untuk tombol yang sengaja tidak akan pernah hidup lagi. Simpanannya sukses; tesnya tetap merah.
+ *
+ * Terukur di run 35706702896: hanya project `safari` yang merah, dan snapshot kegagalannya memuat
+ * toast `Draft tersimpan.` berdampingan dengan `button "Simpan perubahan" [disabled]` — dua hal
+ * yang hanya bisa muncul bersamaan kalau simpanannya sudah selesai dengan benar.
+ *
+ * Tidak ada cakupan yang hilang: kalau simpanannya benar-benar gagal, `dirty` tetap menyala,
+ * tombolnya tetap hidup, kliknya berjalan seperti biasa, dan baris terakhir tetap yang memutuskan.
+ */
 async function saveDraft(page: import('@playwright/test').Page) {
-  await page.locator('#editor-save').click()
-  await expect(page.locator('#editor-save-state')).toHaveText('Semua perubahan tersimpan')
+  const status = page.locator('#editor-save-state')
+  const tombol = page.locator('#editor-save')
+  if (await tombol.isEnabled()) {
+    await tombol.click({ timeout: 10_000 }).catch(async (cause: unknown) => {
+      // Hanya dimaafkan kalau simpanannya memang sudah mendarat. Selain itu, lempar apa adanya.
+      if ((await status.textContent())?.trim() === 'Semua perubahan tersimpan') return
+      throw cause
+    })
+  }
+  await expect(status).toHaveText('Semua perubahan tersimpan')
 }
 
 /**
@@ -793,9 +817,11 @@ test('studio editor: rail, inspektor, dan preferensi yang bertahan', async ({ pa
  * mendarat di koordinat dokumen dan `scrollHeight` ikut ke sana — terukur 2168px pada viewport 900.
  * Diukur di desktop saja: di bawah `lg` halaman memang menggulung.
  */
-test('studio tidak menarik gulir dokumen', async ({ page }, testInfo) => {
+// `@desktop`, bukan `test.skip(project !== 'desktop')`: di bawah lg halaman memang menggulung,
+// jadi tes ini tidak berlaku di sana. Ditandai supaya ia tidak IKUT DIJALANKAN lalu dibuang —
+// eksekusi yang di-skip membuat `skipped` bukan nol, dan gerbang e2e kehilangan artinya.
+test('studio tidak menarik gulir dokumen', { tag: '@desktop' }, async ({ page }) => {
   test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
-  test.skip(testInfo.project.name !== 'desktop', 'Di bawah lg halaman memang menggulung.')
   await page.setViewportSize({ width: 1440, height: 900 })
   await signIn(page)
   await page.goto(`/dashboard/${account!.invitationId}/editor`)
@@ -824,9 +850,9 @@ test('studio tidak menarik gulir dokumen', async ({ page }, testInfo) => {
  * dock bawah yang memegang navigasi. Tooltip dicari lewat `[data-tooltip]`, bukan
  * `getByRole('tooltip')` — reka merender salinan tersembunyi ber-role yang sama.
  */
-test('rail dasbor ciut jadi ikon, bertahan setelah muat ulang, dan tetap bisa dinavigasi', async ({ page }, testInfo) => {
+// `@desktop`: rail samping hanya ada di >=1024px. Alasan yang sama dengan di atas.
+test('rail dasbor ciut jadi ikon, bertahan setelah muat ulang, dan tetap bisa dinavigasi', { tag: '@desktop' }, async ({ page }) => {
   test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
-  test.skip(testInfo.project.name !== 'desktop', 'Rail samping hanya ada di ≥1024px.')
   await signIn(page)
   await page.goto(`/dashboard/${account!.invitationId}/guests`)
   await hydrated(page)
@@ -1640,9 +1666,9 @@ test.describe('kartu bagikan', () => {
    * Hanya `desktop`: yang diuji jawaban server, dan mengulangnya di empat project berarti empat
    * render 1200x630 untuk satu jawaban yang sama.
    */
-  test('URL kartu bagikan benar-benar menjawab PNG', async ({ request, baseURL }) => {
+  // `@desktop`: yang diuji jawaban server, bukan tata letak — cukup satu project.
+  test('URL kartu bagikan benar-benar menjawab PNG', { tag: '@desktop' }, async ({ request, baseURL }) => {
     test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
-    test.skip(test.info().project.name !== 'desktop', 'Jawaban server, bukan tata letak — cukup satu project.')
     test.skip(!kartuUnduhUrl, 'Tes tab Kartu belum sempat mengambil href-nya.')
 
     const response = await request.get(new URL(kartuUnduhUrl, baseURL ?? undefined).toString())

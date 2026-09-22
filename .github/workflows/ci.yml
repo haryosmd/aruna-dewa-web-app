@@ -332,6 +332,12 @@ jobs:
   # empat tes dari fase 59-60 yang baru diikutkan gerbang, setelah sebab satu-satunya skip
   # dihapus lebih dulu). Rincian alasan tiap kenaikan ada di riwayat git berkas ini.
   #
+  # 172 -> 247: kerja fase 72-77 menambah tes tanpa menaikkan angkanya, dan itu tidak pernah
+  # ketahuan karena Playwright selalu keluar non-zero lebih dulu sehingga langkah pemeriksa
+  # angkanya tidak pernah sempat jalan. Angka barunya BUKAN 4 x jumlah tes: tiga tes bertanda
+  # `@desktop` hanya berlaku di satu project (lihat playwright.config.ts), jadi susunannya
+  # desktop 64 + mobile 61 + tablet 61 + safari 61. Keempatnya diukur, bukan dihitung di kepala.
+  #
   # `needs: e2e` menunggu keempat matrix job. TANPA `if: always()`: kalau ada yang merah,
   # workflow-nya sudah merah dan job ini tidak perlu menambah kebisingan.
   e2e-gate:
@@ -360,7 +366,7 @@ jobs:
             if (per.length !== 4) { console.error(`::error::${per.length} project melapor, seharusnya 4. Ada job e2e yang tidak pernah sampai menulis laporannya.`); process.exit(1); }
 
             const total = per.reduce((n, p) => n + p.expected, 0);
-            const seharusnya = 172;
+            const seharusnya = 247;
             if (total !== seharusnya) { console.error(`::error::${total} lulus, seharusnya ${seharusnya}. Perbarui angkanya dengan sadar kalau memang ada tes baru.`); process.exit(1); }
             console.log(`${total} eksekusi lulus di empat project.`);
           '
