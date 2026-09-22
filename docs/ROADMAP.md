@@ -43,6 +43,59 @@ alasannya.
 
 ## Sisa
 
+**Fase 75 — sisa yang tertunda ditutup, dan satu kartu hitam yang tidak pernah ketahuan.** Ditulis
+2026-09-22, sesudah keenam butir yang belum tercentang di `FASE-72-SISA.md:142-151` ditelusuri sampai
+ke kodenya untuk menjawab satu pertanyaan: mana yang benar-benar perlu dikerjakan.
+
+Jawabannya tidak seragam, dan satu penelusuran membalik urutannya.
+
+**Butir "share-card tidak pernah benar-benar dirender di tes" ternyata bukan utang kebersihan.**
+`fetchPhoto` (`share-card.service.ts:86`) menerima `image/webp`, tapi `@resvg/resvg-js` tidak punya
+dekoder WebP. Diukur langsung lewat satori + resvg yang sudah terpasang: latar WebP menghasilkan PNG
+4.411 byte dengan rata-rata kanal 0,0 dan stdev 0,0 — **kanvas kosong seluruhnya** — sementara sumber
+PNG yang sama menghasilkan 466.044 byte, rata-rata 102,6, stdev 51,5. Dan `normalizePhoto` mengubah
+tiap foto unggahan jadi WebP, jadi setiap pasangan yang memilih `backgroundMode: 'foto'` selama ini
+mengirim kartu hitam ke WhatsApp dan Facebook. Tes elemen yang ada tidak bisa menangkapnya karena
+tidak pernah memanggil satori; e2e tidak bisa karena hanya memeriksa `href`. Persis bentuk kegagalan
+yang dijanjikan tertangkap oleh "dirender sungguhan". `sharp` masuk `apps/api` untuk mendekode satu
+salinan sementara di memori; WebP tetap format simpan dan halaman undangan tidak berubah sedikit pun.
+
+**Tiga butir lain jauh lebih murah dari dugaan, karena substratnya sudah ada.** `PublishedRevision`
+sudah menyimpan snapshot dokumen tiap terbit dan tidak pernah dihapus — riwayat versi tinggal dua
+endpoint dan satu panel. Backend impor Google Sheets **sudah selesai** sejak fase awal
+(`google-sheets.client.ts` + endpointnya); yang kurang cuma Google Picker di web, dan itu menuntut
+konfigurasi Google Cloud milik pemilik, jadi tombolnya dipasang di belakang env dan tidak dirender
+selama env-nya kosong. `catalog.packages` sudah membawa `photoLimit: 15/30/60` dengan **nol pembaca** —
+datanya mati, bukan tidak ada; yang belum ada cuma `Invitation.packageId`.
+
+**Satu butir terbukti mati dan dibuang.** `WishCard.vue:13` menangani ejaan `yes`/`no` yang tidak
+pernah bisa lahir: `Wish.attendance` lahir 2026-09-20 tanpa backfill, penulisnya satu, dan divalidasi
+`z.enum(['hadir','belum-pasti','berhalangan'])`. Yang justru berbahaya bukan cabang matinya melainkan
+penampung di ujungnya, yang menampilkan setiap nilai asing sebagai "Belum pasti" diam-diam.
+
+**Satu butir tetap ditunda, dan alasannya ditulis supaya tidak ditanya ulang.** Undang kolaborator:
+`InvitationMember` + `requireInvitationRole` sudah dipakai di seluruh API, tapi `EDITOR`/`VIEWER` tidak
+bisa dicapai sama sekali — nol endpoint, tidak ada `TokenPurpose` untuk undangan, tidak ada email,
+tidak ada UI. Itu satu fase sendiri, bukan sisa fase 74. Keputusan pemilik.
+
+**Impor tamu mengikuti sheet pemilik, bukan sebaliknya.** Sheet tamu pernikahan yang sungguhan
+berspanduk, berblok ringkasan, berkolom A kosong, dan datanya mulai baris 16 — dan karena
+`parseGuestText` hanya melihat record pertama untuk mencari header, sheet itu **tidak bisa diimpor
+hari ini**: spanduknya dibaca sebagai header dan seluruh kolom jatuh ke pemetaan posisi. Hasilnya
+bukan galat melainkan sampah yang terlihat berhasil. Jadi templatnya meniru bentuk sheet (lengkap
+dengan kolom Anak yang murni pendataan dan tidak pernah wajib, dan kolom nomor WhatsApp), dan
+**parsernya yang mengalah**: preamble dilewati, kolom kiri kosong dibuang, nomor baris yang dilaporkan
+tetap nomor baris spreadsheet aslinya, dan ±190 baris kosong berisi `FALSE` dilewati diam-diam alih-alih
+jadi 190 galat. Empat kolom baru (`guestFrom`, `childCount`, `invitationKind`, `notes`) disimpan
+sungguhan; `Status` sengaja **tidak** — ia sudah diturunkan dari `sentAt` + RSVP, dan kolom kedua yang
+mengklaim hal sama pasti menyimpang.
+
+**Dan satu e2e merah yang bukan utang fase mana pun** akhirnya diperbaiki: `[mobile] guest management`
+364 vs 360, sudah dilokalisasi di `FASE-72-SISA.md:221-244` sampai `grid-template-columns: 343.781px`.
+Dua lapis, karena satu lapis tidak cukup — `DashboardShell` mendapat `minmax(0,1fr)` yang menutup
+seluruh kelas bug itu untuk tiap halaman dasbor, dan kelompok pil filter yang min-content-nya ±345px
+dibuat boleh membungkus. Diukur di antara keduanya, bukan sekali di akhir.
+
 **Fase 74 — template jadi struktural, dan sisa fase 73 ditutup.** Ditulis 2026-09-22. Dua
 bagian, dan bagian keduanya yang jadi judul.
 

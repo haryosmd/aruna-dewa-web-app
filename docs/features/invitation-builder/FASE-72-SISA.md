@@ -13,6 +13,11 @@ Status: `[ ]` belum · `[~]` sedang dikerjakan · `[x]` selesai · `[-]` diputus
 pemisahan `templateId` jadi dua sumbu (`structureId` + `themeId`). Nomor commit `74.x` ditulis
 di belakang tiap butir yang ditutup.
 
+**2026-09-22 (kedua):** yang masih tersisa sesudah fase 74 — termasuk yang ditulis sebagai
+"ditunda resmi" di §5 — ditelusuri ulang dan dikerjakan sebagai **fase 75**. Nomor commit `75.x`.
+Satu butir tetap tidak dikerjakan dan alasannya ditulis di tempatnya, bukan dihapus: undang
+kolaborator. Penelusuran fase 75 juga membalik satu prioritas — lihat §5 butir share-card.
+
 ---
 
 ## 0. Keadaan saat berkas ini ditulis
