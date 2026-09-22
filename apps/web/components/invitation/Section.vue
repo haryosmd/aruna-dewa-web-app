@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import type { OrnamentIntensity, OrnamentSet } from '~/utils/ornaments'
+import type { SectionBackground, SectionMotion } from '@aruna/contracts'
+import type { OrnamentIntensity, ResolvedOrnamentSet } from '~/utils/ornaments'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     id?: string
     tone?: 'base' | 'paper' | 'tint' | 'ink' | 'primary'
@@ -9,20 +10,43 @@ withDefaults(
     title?: string
     compact?: boolean
     /**
+     * Latar per bagian (fase 72): warna solid menimpa latar tone-nya, gambar dipasang sebagai
+     * lapisan absolut di bawah isi dengan lapisan warna sekepekatan `overlay` di atasnya.
+     * Warna tinta tetap milik tone — pasangan yang memilih latar gelap memilih tone gelap.
+     */
+    background?: SectionBackground | null
+    /**
+     * Gerak masuk per bagian (fase 72). Dipancarkan sebagai `data-iv-entrance` dan dibaca
+     * pemain partitur; `tema`/absen berarti ikut partitur, jadi tidak ada atributnya.
+     */
+    motion?: SectionMotion | null
+    /**
      * Set ornamen milik tema. Dulu section hanya menerima satu `frame` yang dipasang di
      * tengah pada `opacity-[0.18]`; sekarang `OrnamentField` yang memasang 2–6 keping
      * bermassa di jangkar tepi. Null mematikan ladangnya (dipakai pratinjau compact).
      */
-    ornaments?: OrnamentSet | null
+    ornaments?: ResolvedOrnamentSet | null
     intensity?: OrnamentIntensity
     /** Membedakan resep jangkar antar section. Cukup indeks section-nya. */
     seed?: number
   }>(),
   {
     id: undefined, tone: 'base', kicker: '', title: '', compact: false,
-    ornaments: null, intensity: 'seimbang', seed: 0,
+    ornaments: null, intensity: 'seimbang', seed: 0, background: null, motion: null,
   },
 )
+
+const latarWarna = computed(() => {
+  const warna = props.background?.color
+  return typeof warna === 'string' && /^#[0-9a-fA-F]{6}$/.test(warna) ? warna : ''
+})
+const latarGambar = computed(() => (typeof props.background?.imageUrl === 'string' ? props.background.imageUrl.trim() : ''))
+/** Kepekatan lapisan warna di atas gambar; bawaan 0,35 supaya teks tetap terbaca di atas foto apa pun. */
+const overlay = computed(() => {
+  const nilai = props.background?.overlay
+  return typeof nilai === 'number' && Number.isFinite(nilai) ? Math.min(1, Math.max(0, nilai)) : 0.35
+})
+const entrance = computed(() => (props.motion && props.motion !== 'tema' ? props.motion : undefined))
 </script>
 
 <template>
@@ -30,8 +54,19 @@ withDefaults(
     :id="id"
     :data-tone="tone"
     data-iv-section
-    :class="cn('iv-section relative overflow-hidden px-5 text-center', compact ? 'py-12' : 'py-20 @min-[48rem]:py-28')"
+    :data-iv-entrance="entrance"
+    :class="cn('iv-section relative overflow-hidden px-5 text-center', compact ? 'py-12' : 'py-20 @min-[48rem]:py-28', latarWarna && 'iv-section--latar')"
+    :style="latarWarna ? { '--iv-section-latar': latarWarna } : undefined"
   >
+    <!--
+      Latar gambar pasangan di bawah ladang ornamen dan isi, di atas motif tema. Lapisan
+      warnanya memakai warna latar yang dipilih (atau latar tema) supaya foto yang terlalu
+      ramai tetap mundur di belakang teks.
+    -->
+    <template v-if="latarGambar">
+      <img :src="latarGambar" alt="" aria-hidden="true" loading="lazy" class="iv-section-latar-gambar">
+      <div class="iv-section-latar-tabir" :style="{ opacity: overlay, background: latarWarna || 'var(--iv-bg)' }" />
+    </template>
     <InvitationOrnamentField
       v-if="ornaments"
       :set="ornaments"
@@ -54,6 +89,27 @@ withDefaults(
 
 <style>
 .iv-section[data-tone='base'] { background: var(--iv-bg); color: var(--iv-fg); }
+/*
+ * Warna latar per bagian (fase 72) menimpa latar tone mana pun, termasuk gradasinya —
+ * pasangan yang memilih #FFF7F0 mengharapkan #FFF7F0, bukan #FFF7F0 di balik vignette.
+ * Ditulis sesudah kelima tone supaya menang tanpa `!important`.
+ */
+.iv-section.iv-section--latar { background: var(--iv-section-latar); }
+.iv-section-latar-gambar {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+.iv-section-latar-tabir {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
 .iv-section[data-tone='paper'] {
   color: var(--iv-fg);
   /* Cahaya lembut dari atas, supaya bidang ini tidak terbaca sebagai satu lapis cat. */
@@ -144,13 +200,18 @@ withDefaults(
   letter-spacing: 0;
 }
 
+/*
+ * 0,8 — bukan 0,7. Pada 11px tebal, 0,7 menjatuhkan kicker cover ke 4,20:1 di atas latar tema
+ * (fg tema Aruna Bloom yang hangat, bukan hitam), diukur axe di editor fase 62 begitu panggung
+ * menampilkan cover pada skala 100%. 0,8 memberi ±5,6:1 pada pasangan yang sama.
+ */
 .iv-kicker {
   font-family: var(--iv-body);
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
 .iv-body {

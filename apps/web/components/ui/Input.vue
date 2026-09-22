@@ -9,7 +9,7 @@ const model = defineModel<string>({ default: '' })
   <div class="relative flex items-stretch">
     <span
       v-if="props.prefix"
-      class="flex items-center rounded-l-md border border-r-0 border-border-input bg-surface-3 px-3 text-[0.875rem] text-ink-muted"
+      class="flex items-center rounded-l-md border border-r-0 border-border-input bg-surface-3 px-3 text-ui text-ink-muted"
     >{{ props.prefix }}</span>
 
     <input

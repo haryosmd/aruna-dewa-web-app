@@ -1,7 +1,7 @@
 import { sectionTypes } from '@aruna/contracts'
 import { describe, expect, it } from 'vitest'
 
-import {
+import { terapkanMotionDokumen,
   groupActs,
   resolveAct,
   resolveScore,
@@ -145,5 +145,22 @@ describe('partitur satu halaman', () => {
   it('mengikuti urutan yang dipilih pasangan, bukan urutan bawaan', () => {
     const acts = resolveScore(dasar, (['gallery', 'cover', 'closing'] as const).map(t => sectionRole[t]))
     expect(acts.map(a => a.role)).toEqual(['showcase', 'overture', 'coda'])
+  })
+})
+
+describe('terapkanMotionDokumen (fase 69)', () => {
+  const tema = { entrance: 'sweep', ornament: 'drift', density: 'crescendo', segue: { kind: 'dissolve' } } as const
+
+  it('tanpa pilihan mengembalikan partitur tema apa adanya — termasuk undefined', () => {
+    expect(terapkanMotionDokumen(tema, undefined)).toBe(tema)
+    expect(terapkanMotionDokumen(undefined, undefined)).toBeUndefined()
+  })
+
+  it('menimpa hanya tata bahasa masuk, sisanya milik tema', () => {
+    expect(terapkanMotionDokumen(tema, 'iris')).toEqual({ ...tema, entrance: 'iris' })
+  })
+
+  it('memberi tema lama partitur minimal hanya saat pasangan memilih', () => {
+    expect(terapkanMotionDokumen(undefined, 'rise')).toEqual({ entrance: 'rise', ornament: 'bloom', density: 'steady', segue: { kind: 'none' } })
   })
 })

@@ -1,9 +1,20 @@
 name: Verify
-on: [push, pull_request]
+# `on: [push, pull_request]` dulu menjalankan workflow ini DUA KALI untuk tiap push ke branch
+# yang punya PR terbuka, dan `concurrency` tidak menolongnya: grup untuk event push adalah
+# `verify-refs/heads/<branch>` sedangkan untuk event pull_request adalah `verify-<nomor>`, jadi
+# keduanya tidak pernah saling membatalkan. Terukur di run 35373368739 dan 35373374073 — dua
+# Verify penuh, berjarak 3 detik, ~14 menit masing-masing.
+#
+# `push` sekarang dibatasi ke main, yang memang satu-satunya branch yang memicu rilis. Branch
+# kerja diverifikasi lewat event pull_request-nya. Konsekuensinya disebut terang-terangan:
+# push ke branch yang BELUM punya PR tidak menjalankan apa pun. Bukalah PR-nya sebagai draft
+# kalau butuh CI lebih awal.
+on:
+  push:
+    branches: [main]
+  pull_request:
 
-# `on: [push, pull_request]` menjalankan workflow ini dua kali untuk tiap push ke branch yang
-# punya PR terbuka. Dengan job e2e yang ~15 menit, itu setengah jam runner terbuang per push.
-# Dikelompokkan supaya push berikutnya membatalkan yang sedang jalan, bukan mengantre di
+# Tetap dikelompokkan supaya push berikutnya membatalkan yang sedang jalan, bukan mengantre di
 # belakangnya. Aman terhadap deploy.yml: run yang dibatalkan berakhir `cancelled`, bukan
 # `success`, jadi commit yang sudah tersalip memang tidak dirilis.
 concurrency:
@@ -73,10 +84,38 @@ jobs:
   # Ketiganya adalah cara job merah tetap menghasilkan `workflow_run.conclusion: success` — dan
   # deploy.yml digerbangi tepat oleh nilai itu. Sebelum ini, 148 eksekusi Playwright tidak pernah
   # jalan di CI sama sekali: investasi terbesar repo ini tidak menjaga jalur rilisnya.
+  # Dipecah per project, dan alasannya bukan sekadar "biar paralel".
+  #
+  # `playwright.config.ts` memaku `workers: 1`, dan itu MENAHAN BEBAN: seluruh 56 tes berbagi
+  # satu akun QA dan satu undangan dari `.data/qa-account.json` yang ditulis sekali oleh
+  # scripts/api-smoke.ts. Banyak di antaranya menulis ke state yang sama — simpan preferensi,
+  # unggah lalu hapus media, terbitkan versi. Menaikkan `workers` akan membuat tes saling
+  # menimpa, dan gejalanya adalah kegagalan yang berpindah-pindah.
+  #
+  # Yang dipakai di sini bukan `workers`, melainkan JOB terpisah: tiap project dapat runner
+  # sendiri, service Postgres sendiri, dan karena itu fixture QA-nya sendiri. Isolasinya datang
+  # dari database yang memang terpisah, bukan dari janji bahwa tesnya rukun. `workers: 1` tetap
+  # berlaku di dalam tiap job, dan tidak ada satu baris tes pun yang berubah.
+  #
+  # Terukur: 12 menit 08 detik berurutan (run 35374936253) menjadi ~3 menit.
   e2e:
     runs-on: ubuntu-latest
     # Bukan 360 menit bawaan: suite yang menggantung tidak boleh membakar enam jam runner.
     timeout-minutes: 30
+    strategy:
+      # Satu project merah tidak boleh membatalkan tiga yang lain: yang paling ingin kamu baca
+      # justru apakah kegagalannya khas satu lebar layar atau merata di semuanya.
+      fail-fast: false
+      matrix:
+        include:
+          - project: mobile
+            browser: chromium
+          - project: tablet
+            browser: chromium
+          - project: desktop
+            browser: chromium
+          - project: safari
+            browser: webkit
     services:
       postgres:
         image: postgres:17-alpine
@@ -126,16 +165,18 @@ jobs:
         id: pw-cache
         with:
           path: ${{ github.workspace }}/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
-      # Hanya chromium dan webkit: tiga project pertama tidak menyebut browserName (bawaannya
-      # chromium) dan hanya `safari` yang webkit. Firefox tidak pernah dipakai.
+          # Browser ikut kunci: tiga job chromium berbagi satu cache, `safari` punya cache webkit
+          # sendiri. Tanpa itu keempatnya berebut satu kunci dengan isi yang berbeda-beda.
+          key: playwright-${{ runner.os }}-${{ matrix.browser }}-${{ steps.pw.outputs.version }}
+      # Satu browser per job, bukan dua: tiga project pertama tidak menyebut browserName
+      # (bawaannya chromium) dan hanya `safari` yang webkit. Firefox tidak pernah dipakai.
       # Dua langkah, bukan satu: `--with-deps` mengunduh browser DAN memasang pustaka sistem,
       # tapi yang di-cache hanya yang pertama. Melewatinya saat cache hit membuat WebKit gagal
       # menyala dengan galat pustaka bersama yang tidak menyebut sebabnya.
       - if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --with-deps chromium webkit
+        run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
       - if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: pnpm exec playwright install-deps chromium webkit
+        run: pnpm exec playwright install-deps ${{ matrix.browser }}
 
       - run: pnpm db:generate
       - run: pnpm db:deploy
@@ -181,7 +222,7 @@ jobs:
         run: test -s .data/qa-account.json
 
       - name: Playwright
-        run: pnpm exec playwright test --reporter=list,html,json
+        run: pnpm exec playwright test --project=${{ matrix.project }} --reporter=list,html,json
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: ${{ runner.temp }}/pw.json
 
@@ -214,18 +255,34 @@ jobs:
       # merah saat diarahkan ke undangan operator. Menaikkan angkanya lebih dulu akan membuat
       # gerbang ini hijau justru dengan menyembunyikan tes yang tidak pernah jalan.
       #
+      # Sejak suite dipecah per project, angka 172 tidak bisa lagi diperiksa di sini: job ini cuma
+      # melihat seperempatnya. Yang tinggal di sini adalah yang memang lokal — skip dan flaky —
+      # dan angka totalnya dijumlahkan di job `e2e-gate` di bawah. Memecahnya begini disengaja:
+      # kalau `expected` diperiksa per project, menambah satu tes berarti mengarang empat angka
+      # baru alih-alih satu.
       - name: Tidak boleh ada yang skip
         run: |
           node -e '
             const { expected, skipped, unexpected, flaky } = require(process.env.REPORT).stats;
-            console.log({ expected, skipped, unexpected, flaky });
-            const seharusnya = 172;
+            console.log({ project: process.env.PROJECT, expected, skipped, unexpected, flaky });
             if (skipped) { console.error(`::error::${skipped} eksekusi di-skip; gerbang e2e hanya berguna kalau semuanya jalan.`); process.exit(1); }
             if (flaky) { console.error(`::error::${flaky} eksekusi lulus hanya setelah diulang; itu bukan hijau.`); process.exit(1); }
-            if (expected !== seharusnya) { console.error(`::error::${expected} lulus, seharusnya ${seharusnya}. Perbarui angkanya dengan sadar kalau memang ada tes baru.`); process.exit(1); }
           '
         env:
           REPORT: ${{ runner.temp }}/pw.json
+          PROJECT: ${{ matrix.project }}
+
+      # `if: always()` dan BUKAN hanya saat sukses: `e2e-gate` harus bisa membedakan "project ini
+      # menghasilkan 40 lulus" dari "project ini tidak pernah melapor". Tanpa berkasnya, yang
+      # kedua menyamar jadi yang pertama.
+      - name: Angka project ini
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pw-stats-${{ matrix.project }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/pw.json
+          retention-days: 7
+          if-no-files-found: error
 
       # run_attempt di nama artifact: tanpa itu "Re-run failed jobs" gagal dengan konflik nama,
       # dan laporannya hilang justru pada percobaan yang paling ingin kamu baca.
@@ -233,7 +290,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-${{ github.run_attempt }}
+          name: playwright-report-${{ matrix.project }}-${{ github.run_attempt }}
           # Keduanya perlu: playwright-report/ adalah HTML-nya, test-results/ memuat trace dan
           # screenshot yang ditautkannya lewat path relatif.
           path: |
@@ -247,7 +304,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: server-logs-${{ github.run_attempt }}
+          name: server-logs-${{ matrix.project }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/*.log
           retention-days: 7
           if-no-files-found: warn
@@ -258,7 +315,136 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: verification-${{ github.run_attempt }}
+          name: verification-${{ matrix.project }}-${{ github.run_attempt }}
           path: docs/features/**/verification/
           retention-days: 7
           if-no-files-found: ignore
+
+  # Angka 172 hidup di sini sekarang, satu tempat, dijumlahkan dari keempat project.
+  #
+  # Exit code keempat job e2e saja tidak cukup, dan itu sebabnya job ini ada: `test.skip`
+  # menandai eksekusi sebagai skipped, bukan failed, dan Playwright tetap keluar 0. Angkanya
+  # sengaja dipaku dan sengaja rapuh — menambah tes berarti mengubahnya dengan sadar, dan itulah
+  # momen seseorang harus memutuskan apakah tes barunya ikut menjaga jalur rilis.
+  #
+  # Riwayat angkanya: 148 -> 152 (Fase 25, "only the hero image is on the landing critical path"),
+  # 152 -> 156 (Fase 26, "account menu carries the way out of the account"), 156 -> 172 (Fase 61,
+  # empat tes dari fase 59-60 yang baru diikutkan gerbang, setelah sebab satu-satunya skip
+  # dihapus lebih dulu). Rincian alasan tiap kenaikan ada di riwayat git berkas ini.
+  #
+  # 172 -> 247: kerja fase 72-77 menambah tes tanpa menaikkan angkanya, dan itu tidak pernah
+  # ketahuan karena Playwright selalu keluar non-zero lebih dulu sehingga langkah pemeriksa
+  # angkanya tidak pernah sempat jalan. Angka barunya BUKAN 4 x jumlah tes: tiga tes bertanda
+  # `@desktop` hanya berlaku di satu project (lihat playwright.config.ts), jadi susunannya
+  # desktop 64 + mobile 61 + tablet 61 + safari 61. Keempatnya diukur, bukan dihitung di kepala.
+  #
+  # `needs: e2e` menunggu keempat matrix job. TANPA `if: always()`: kalau ada yang merah,
+  # workflow-nya sudah merah dan job ini tidak perlu menambah kebisingan.
+  e2e-gate:
+    needs: e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pw-stats-*-${{ github.run_attempt }}
+          path: stats
+
+      - name: Jumlah eksekusi keempat project
+        run: |
+          node -e '
+            const { readdirSync, readFileSync } = require("node:fs");
+            const dirs = readdirSync("stats", { withFileTypes: true }).filter((d) => d.isDirectory());
+            const per = dirs.map((d) => {
+              const { expected, skipped, unexpected, flaky } = JSON.parse(readFileSync(`stats/${d.name}/pw.json`, "utf8")).stats;
+              return { project: d.name, expected, skipped, unexpected, flaky };
+            });
+            console.table(per);
+
+            // Empat, tidak kurang: satu project yang gagal SEBELUM Playwright menulis laporannya
+            // tidak meninggalkan berkas, dan jumlah dari tiga project tidak boleh pernah lolos
+            // hanya karena kebetulan angkanya pas.
+            if (per.length !== 4) { console.error(`::error::${per.length} project melapor, seharusnya 4. Ada job e2e yang tidak pernah sampai menulis laporannya.`); process.exit(1); }
+
+            const total = per.reduce((n, p) => n + p.expected, 0);
+            const seharusnya = 247;
+            if (total !== seharusnya) { console.error(`::error::${total} lulus, seharusnya ${seharusnya}. Perbarui angkanya dengan sadar kalau memang ada tes baru.`); process.exit(1); }
+            console.log(`${total} eksekusi lulus di empat project.`);
+          '
+
+  # Image dibangun DI SINI, berbarengan dengan e2e, bukan di deploy.yml setelah semuanya hijau.
+  #
+  # Membangun image tidak butuh tes lulus; yang butuh gerbang hijau hanyalah penerapannya ke
+  # server. Selama ini keduanya disamakan, dan akibatnya 3 menit 56 detik build ditumpuk di
+  # belakang 15 menit Verify secara berurutan. Sekarang keduanya jalan bersamaan dan deploy.yml
+  # tinggal menarik tag-nya.
+  #
+  # Ya, ini berarti commit yang tesnya merah pun bisa punya image di GHCR. Itu tidak membuka
+  # jalur rilis apa pun: tag-nya sha, gerbang deploy.yml tetap `workflow_run.conclusion ==
+  # success`, dan tidak ada satu pun yang merujuk image itu. Tag `latest` sengaja TIDAK didorong
+  # dari sini — lihat alasannya di deploy.yml.
+  #
+  # Job ini berjalan di PR juga, dan itu bukan pemborosan: sampai sebelum ini, Dockerfile tidak
+  # pernah dibangun oleh satu pun gerbang PR — build pertamanya selalu terjadi di deploy.yml,
+  # yaitu saat rilis. Dockerfile yang rusak baru ketahuan ketika ia menjatuhkan rilis, persis
+  # bentuk kegagalan yang sudah ditutup untuk Caddyfile dan compose.prod.yaml di job `verify`.
+  # Di PR ia dibangun tanpa didorong; hanya main yang mendorong.
+  image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # Sha PENDEK, persis seperti deploy.yml menghitungnya. Keduanya harus sepakat: deploy.yml
+      # mencari tag ini di GHCR dan membangun sendiri kalau tidak ketemu, jadi format yang
+      # meleset tidak akan merah — ia hanya diam-diam membangun ulang tiap rilis dan menghapus
+      # seluruh penghematannya.
+      - id: meta
+        run: echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Hanya di main: PR tidak mendorong apa pun, dan PR dari fork tidak punya izin
+      # packages:write sehingga login-nya akan gagal sebelum sempat membangun.
+      - if: github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Dua build, dan pembagiannya adalah inti penghematannya.
+      #
+      # `cache-to: type=gha,mode=max` pada build penuh menghabiskan 1 menit 53 detik (run
+      # 35376471340, langkah #28) untuk menyimpan 43 detik kerja — rugi bersih, dan rugi di
+      # jalur kritis. Sebabnya: mode=max mengekspor SEMUA lapisan antara, termasuk lapisan stage
+      # `build` yang dibatalkan `COPY . .` di tiap commit dan karena itu tidak akan pernah
+      # dipakai ulang. Kita membayar untuk menyimpan sesuatu yang dijamin basi.
+      #
+      # Yang benar-benar layak di-cache hanyalah `prod-deps`: pnpm install, prisma generate, dan
+      # prune, yang hanya berubah saat lockfile atau schema.prisma berubah. Build pertama
+      # mengekspor persis itu dan tidak lebih.
+      - name: Cache dependensi (pnpm install + prisma generate + prune)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: prod-deps
+          push: false
+          cache-from: type=gha,scope=prod-deps
+          cache-to: type=gha,mode=max,scope=prod-deps
+
+      # Build kedua TANPA `cache-to`. Lapisan `prod-deps` sudah ada di builder lokal dari langkah
+      # di atas, jadi ia gratis di sini; sisanya tidak akan pernah dipakai ulang, jadi menyimpannya
+      # hanya menambah menit tanpa menghemat apa pun nanti.
+      #
+      # `provenance: false`: attestation bawaan build-push-action v6 menambah manifest kedua dan
+      # ikut diekspor tiap rilis. Repo ini tidak memverifikasinya di mana pun.
+      - name: Bangun dan dorong image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.ref == 'refs/heads/main' }}
+          provenance: false
+          tags: ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.sha }}
+          cache-from: type=gha,scope=prod-deps

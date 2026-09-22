@@ -1,5 +1,18 @@
 <script setup lang="ts">
-const props = defineProps<{ date: string }>()
+const props = withDefaults(defineProps<{
+  date: string
+  arrived?: string
+  tba?: string
+  /** Label satuan (fase 72: pasangan menulisnya sendiri di bagian Hitung Mundur). Bawaan = v1. */
+  labels?: { days?: string; hours?: string; minutes?: string; seconds?: string }
+}>(), {
+  arrived: 'Hari bahagia telah tiba.', tba: 'Tanggal akan segera diumumkan.', labels: () => ({}),
+})
+
+const label = computed(() => ({
+  days: props.labels.days || 'Hari', hours: props.labels.hours || 'Jam',
+  minutes: props.labels.minutes || 'Menit', seconds: props.labels.seconds || 'Detik',
+}))
 
 const now = ref(0)
 /** Server and browser clocks differ by seconds, so the ticking numbers only start after hydration. */
@@ -18,14 +31,15 @@ const valid = computed(() => Number.isFinite(target.value))
 
 const units = computed(() => {
   if (!valid.value) return null
-  if (!live.value) return [{ value: 0, label: 'Hari' }, { value: 0, label: 'Jam' }, { value: 0, label: 'Menit' }, { value: 0, label: 'Detik' }]
+  const l = label.value
+  if (!live.value) return [{ value: 0, label: l.days }, { value: 0, label: l.hours }, { value: 0, label: l.minutes }, { value: 0, label: l.seconds }]
   const remaining = Math.max(0, target.value - now.value)
   const seconds = Math.floor(remaining / 1000)
   return [
-    { value: Math.floor(seconds / 86400), label: 'Hari' },
-    { value: Math.floor(seconds / 3600) % 24, label: 'Jam' },
-    { value: Math.floor(seconds / 60) % 60, label: 'Menit' },
-    { value: seconds % 60, label: 'Detik' },
+    { value: Math.floor(seconds / 86400), label: l.days },
+    { value: Math.floor(seconds / 3600) % 24, label: l.hours },
+    { value: Math.floor(seconds / 60) % 60, label: l.minutes },
+    { value: seconds % 60, label: l.seconds },
   ]
 })
 
@@ -35,7 +49,7 @@ const pad = (value: number) => String(value).padStart(2, '0')
 
 <template>
   <div v-if="units" class="grid w-full gap-4">
-    <p v-if="passed" class="iv-display m-0 text-[1.75rem]">Hari bahagia telah tiba.</p>
+    <p v-if="passed" class="iv-display m-0 text-[1.75rem]">{{ arrived }}</p>
 
     <ul v-else class="m-0 grid grid-cols-4 gap-2 p-0 list-none @min-[40rem]:gap-3">
       <li
@@ -54,5 +68,5 @@ const pad = (value: number) => String(value).padStart(2, '0')
     </p>
   </div>
 
-  <p v-else class="iv-display m-0 text-[1.75rem]">Tanggal akan segera diumumkan.</p>
+  <p v-else class="iv-display m-0 text-[1.75rem]">{{ tba }}</p>
 </template>

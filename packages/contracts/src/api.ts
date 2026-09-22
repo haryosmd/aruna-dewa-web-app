@@ -11,8 +11,9 @@
  * sama persis alih-alih tipe ad-hoc per halaman yang boleh menyimpang diam-diam.
  */
 
+import type { MediaKind } from './index'
 import { z } from 'zod'
-import { invitationDocumentSchema, templateIds, type ImportRow, type InvitationDocument } from './index.js'
+import { guestChildMax, guestFieldMaxLength, guestNotesMaxLength, invitationDocumentSchema, structureIds, templateIds, type ImportRow, type InvitationDocument } from './index.js'
 
 /** Angka revisi optimistik. Harus ada — ketiadaannya persis yang dulu menghilangkan data. */
 const revision = z.number().int().nonnegative()
@@ -83,6 +84,12 @@ export const createInvitationBodySchema = z.object({
   address: z.string().trim().max(300).optional(),
   // String kosong berarti "pakai bawaan"; itu yang dikirim wizard `/order` saat tema belum dipilih.
   templateId: z.union([z.literal(''), z.enum(templateIds)]).optional(),
+  /*
+   * Struktur undangan (fase 74.9). Bentuknya sengaja meniru `templateId` di atas — termasuk
+   * string kosongnya — supaya wizard bisa mengirim keduanya dengan cara yang sama. Hari ini
+   * hanya `elegance` yang hidup, jadi pemilihnya belum tampil; plumbingnya lebih dulu.
+   */
+  structureId: z.union([z.literal(''), z.enum(structureIds)]).optional(),
 })
 export type CreateInvitationBody = z.infer<typeof createInvitationBodySchema>
 
@@ -97,7 +104,19 @@ const guestFields = {
   displayName: z.string().trim().min(1).max(200).refine(value => !/[\p{Cc}\p{Zl}\p{Zp}]/u.test(value), 'Nama harus satu baris, tanpa karakter kontrol.'),
   phone: z.string().trim().max(40).optional(),
   group: z.string().trim().max(80).optional(),
+  /** Fase 72.6: kategori tamu di halaman Generator ("Keluarga", "Teman CPP"). Sinonim `group` — API menyimpan keduanya ke satu kolom, `category` menang bila keduanya dikirim. */
+  category: z.string().trim().max(80).optional(),
   quota: z.number().int().min(1).max(20).optional(),
+  /**
+   * Empat kolom lembar tamu (fase 75). Semuanya opsional, dan `childCount` sengaja **tanpa
+   * minimum selain 1**: kolom anak murni pendataan, kosong sama sahnya dengan terisi, dan tidak
+   * boleh pernah memblokir satu baris pun. Impor menormalkan nilainya lebih dulu, jadi yang
+   * sampai ke sini sudah berbentuk; skema ini menjaga jalur form yang mengetik langsung.
+   */
+  guestFrom: z.string().trim().max(guestFieldMaxLength).optional(),
+  childCount: z.number().int().min(1).max(guestChildMax).nullish(),
+  invitationKind: z.string().trim().max(guestFieldMaxLength).optional(),
+  notes: z.string().trim().max(guestNotesMaxLength).optional(),
 }
 
 export const createGuestBodySchema = z.object(guestFields)
@@ -105,6 +124,35 @@ export type CreateGuestBody = z.infer<typeof createGuestBodySchema>
 
 export const updateGuestBodySchema = z.object({ ...guestFields, revision })
 export type UpdateGuestBody = z.infer<typeof updateGuestBodySchema>
+
+/** Filter daftar tamu di halaman Generator: status kirim WhatsApp dan kategori. */
+export const guestListQuerySchema = z.object({
+  q: z.string().trim().max(200).optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  pageSize: z.coerce.number().int().min(1).max(100).optional(),
+  status: z.enum(['semua', 'belum', 'terkirim']).optional(),
+  category: z.string().trim().max(80).optional(),
+})
+export type GuestListQuery = z.infer<typeof guestListQuerySchema>
+
+// — Berbagi (fase 72.6) ——————————————————————————————————————————————————————
+
+/** Lima gaya bahasa template WhatsApp di halaman Generator, urut seperti kartunya. */
+export const sharePresets = ['formal', 'islami', 'nonmuslim', 'santai', 'bilingual'] as const
+export type SharePreset = (typeof sharePresets)[number]
+
+/**
+ * `templates` hanya menyimpan gaya yang **pernah disunting**; gaya yang absen dirakit ulang dari
+ * dokumen oleh web setiap kali dibuka, jadi perubahan tanggal acara otomatis ikut ke pesan yang
+ * belum pernah disentuh pasangan.
+ */
+export const shareSettingsSchema = z.object({
+  preset: z.enum(sharePresets),
+  templates: z.object(Object.fromEntries(sharePresets.map(preset => [preset, z.string().max(4000).optional()])) as Record<SharePreset, z.ZodOptional<z.ZodString>>).strict(),
+}).strict()
+export type ShareSettings = z.infer<typeof shareSettingsSchema>
+export const updateShareSettingsBodySchema = shareSettingsSchema
+export type UpdateShareSettingsBody = ShareSettings
 
 /** Sepadan dengan batas 10 MB pada unggahan berkas; teks tempel tidak boleh jadi jalan pintas. */
 export const MAX_IMPORT_TEXT_LENGTH = 10 * 1024 * 1024
@@ -169,8 +217,47 @@ export const publicRsvpBodySchema = z.object({
 })
 export type PublicRsvpBody = z.infer<typeof publicRsvpBodySchema>
 
+/**
+ * Pilihan kehadiran di form ucapan v2 (fase 72). Ejaannya milik undangan — `hadir`, bukan `yes` —
+ * karena inilah yang ditulis pasangan di label formnya; API yang menerjemahkannya ke enum RSVP.
+ */
+export const wishAttendances = ['hadir', 'belum-pasti', 'berhalangan'] as const
+export type WishAttendance = (typeof wishAttendances)[number]
+
+/**
+ * Label satu pilihan kehadiran, untuk dasbor. `null` berarti **jangan tampilkan lencana**.
+ *
+ * Dulu pemetaan ini hidup dua kali di `apps/web` dan keduanya menangani ejaan `yes`/`no`/`maybe`
+ * di samping ejaan v2. Ejaan itu tidak pernah bisa lahir: kolom `Wish.attendance` dibuat
+ * 2026-09-20 tanpa backfill, penulisnya cuma `public.service.ts`, dan yang ditulisnya sudah lolos
+ * `z.enum(wishAttendances)` di atas. Cabang lamanya ditulis berjaga-jaga, bukan menanggapi baris
+ * yang pernah ada (fase 75).
+ *
+ * Yang justru berbahaya bukan cabang mati itu melainkan penampung di ujungnya: keduanya
+ * mengembalikan "Belum pasti" untuk nilai APA PUN yang tidak dikenal, jadi satu ejaan asing
+ * tampil sebagai jawaban yang tamunya tidak pernah pilih. Peta eksplisit di bawah lebih memilih
+ * diam — tidak ada lencana lebih jujur daripada lencana yang salah.
+ *
+ * `yes`/`no`/`maybe` **tetap** ejaan `RSVPAttendance`, dan itu tabel yang berbeda
+ * (`apps/api/src/rsvp/attendance.ts`). Fungsi ini bukan untuk ia.
+ */
+export function wishAttendanceLabel(value: string | null | undefined): { label: string; tone: 'sage' | 'gold' | 'neutral' } | null {
+  if (value === 'hadir') return { label: 'Hadir', tone: 'sage' }
+  if (value === 'belum-pasti') return { label: 'Belum pasti', tone: 'gold' }
+  if (value === 'berhalangan') return { label: 'Berhalangan', tone: 'neutral' }
+  return null
+}
+
+/**
+ * Ucapan v2 menggabungkan buku tamu dan kehadiran, dan formnya terbuka untuk tamu tanpa
+ * tautan personal (seperti referensi): `token` opsional, dan tanpa token `name` wajib —
+ * dijaga di service, bukan di skema, supaya pesannya menyebut kolomnya. Tamu bertoken tetap
+ * tercatat lewat `guestId` seperti sebelumnya.
+ */
 export const publicWishBodySchema = z.object({
-  token: opaqueToken,
+  token: opaqueToken.optional(),
+  name: z.string().trim().max(80).optional(),
+  attendance: z.enum(wishAttendances).optional(),
   message: z.string().trim().min(1).max(1000),
 })
 export type PublicWishBody = z.infer<typeof publicWishBodySchema>
@@ -197,7 +284,37 @@ export interface InvitationDetail extends InvitationSummary {
   features: string[]
   activeUntil?: string | null
   publishedAt?: string | null
+  /** Fase 72.6: template WhatsApp; null sampai pasangan menyunting satu gaya. */
+  shareSettings?: ShareSettings | null
+  /**
+   * Kuota foto galeri paket ini (fase 75). Dikirim server, bukan dihitung ulang editor: angka
+   * yang dilihat pasangan dan angka yang ditolak API harus berasal dari satu jawaban yang sama.
+   * `packageId` sendiri sengaja tidak ikut — editor tidak punya urusan dengan nama paketnya.
+   */
+  photoLimit: number
 }
+
+/**
+ * Satu baris riwayat terbit (fase 75). **Tanpa `document`** — daftar 50 revisi berisi dokumen
+ * penuh adalah muatan yang tidak punya pembaca; isinya baru diambil saat satu revisi dipulihkan.
+ */
+export interface RevisionSummary {
+  revision: number
+  /** ISO; waktu snapshot dibuat, yaitu waktu terbitnya. */
+  publishedAt: string
+  /** Revisi yang sedang dilihat tamu. */
+  isActive: boolean
+}
+
+/**
+ * `draftRevision` ikut supaya pemulihan tunduk pada penjaga konflik yang sama dengan
+ * `PUT /draft`: memulihkan versi lama tidak boleh menimpa draft yang baru disunting di tab lain.
+ */
+export const restoreRevisionBodySchema = z.object({
+  revision: z.number().int().min(1),
+  draftRevision: z.number().int().min(0),
+})
+export type RestoreRevisionBody = z.infer<typeof restoreRevisionBodySchema>
 
 export interface SavedDraft {
   document: InvitationDocument
@@ -234,8 +351,20 @@ export interface Guest {
   revision: number
   phone?: string
   group?: string
+  /** Sama dengan `group`; ejaan halaman Generator. */
+  category?: string
   quota: number
   rsvp?: GuestRsvp | null
+  /** ISO; ada setelah "Kirim WA" ditekan untuk tamu ini. */
+  sentAt?: string | null
+  /**
+   * Empat kolom lembar tamu (fase 75). Absen berarti tidak diisi, dan itu keadaan yang sah.
+   * `Status` tidak ada di sini dengan sengaja: ia diturunkan dari `sentAt` dan `rsvp`.
+   */
+  guestFrom?: string
+  childCount?: number
+  invitationKind?: string
+  notes?: string
 }
 
 export interface GuestPage {
@@ -243,6 +372,10 @@ export interface GuestPage {
   total: number
   page: number
   pageSize: number
+  /** Jumlah tamu yang sudah dikirimi WhatsApp, dihitung di seluruh undangan (bukan halaman ini saja). */
+  sent: number
+  /** Kategori yang dipakai tamu undangan ini, untuk dropdown filter. */
+  categories: string[]
 }
 
 export interface ImportPreviewResult {
@@ -326,6 +459,8 @@ export interface Wish {
   createdAt?: string
   /** Baris optimistik milik penulisnya sendiri; belum terlihat tamu lain. */
   approved?: boolean
+  /** Kehadiran yang dipilih di form ucapan v2 (fase 72); ucapan lama tidak punya. */
+  attendance?: WishAttendance | string | null
 }
 
 export interface PublicInvitation {
@@ -356,6 +491,13 @@ export interface MediaUploadResult {
   draftUrl: string
   publicUrl: string
   contentType: string
+  /** `image` | `audio` | `ornament` (fase 69). */
+  kind: MediaKind
+  /** Piksel asli; diisi server untuk raster supaya `<img>` punya dimensi intrinsik. */
+  width?: number | null
+  height?: number | null
+  originalName?: string
+  bytes?: number
 }
 
 export interface SignedInUser {

@@ -1,4 +1,6 @@
 import type { MediaKind } from '@aruna/contracts'
+import type { MediaUploadResult } from '@aruna/contracts/api'
+import { validateMediaFile } from '~/utils/media-file'
 
 /**
  * Antrean unggah media untuk editor.
@@ -20,20 +22,39 @@ export function useMediaUploads(invitationId: MaybeRefOrGetter<string>) {
   const total = ref(0)
 
   async function upload(files: File[], kind: MediaKind = 'image'): Promise<string[]> {
+    return (await uploadDetailed(files, kind)).map(result => result.publicUrl)
+  }
+
+  /**
+   * Sama seperti `upload`, tapi mengembalikan hasil lengkap — ornamen unggahan (fase 69) butuh
+   * `width`/`height` yang diukur server. Ornamen **tidak** dinormalisasi: `normalizePhoto`
+   * memaksa WebP lossy tanpa alpha, yang justru menghapus transparansinya.
+   */
+  async function uploadDetailed(files: File[], kind: MediaKind = 'image'): Promise<MediaUploadResult[]> {
     if (!files.length) return []
     pending.value = true
     failures.value = []
     done.value = 0
     total.value = files.length
 
-    const urls: string[] = []
+    const hasil: MediaUploadResult[] = []
     for (const file of files) {
+      /*
+       * Penolakan di klien lebih dulu (fase 16), di sini dan bukan hanya di `UiDropzone`: modal
+       * Pustaka (fase 72.8) memakai `<input type="file">` polos, dan `accept` tidak menahan apa
+       * pun — GIF dan berkas 12 MB sempat naik penuh lewat data seluler hanya untuk ditolak server.
+       */
+      const ditolak = validateMediaFile(file, kind)
+      if (ditolak) {
+        failures.value.push(ditolak)
+        done.value += 1
+        continue
+      }
       try {
         const prepared = kind === 'image' ? await normalizePhoto(file) : file
         const body = new FormData()
         body.append('file', prepared, prepared.name)
-        const result = await uploadMedia(toValue(invitationId), body)
-        urls.push(result.publicUrl)
+        hasil.push(await uploadMedia(toValue(invitationId), body, kind === 'ornament' ? kind : undefined))
       } catch (cause) {
         failures.value.push(`${file.name} — ${apiErrorMessage(cause)}`)
       } finally {
@@ -42,7 +63,7 @@ export function useMediaUploads(invitationId: MaybeRefOrGetter<string>) {
     }
 
     pending.value = false
-    return urls
+    return hasil
   }
 
   /**
@@ -57,5 +78,5 @@ export function useMediaUploads(invitationId: MaybeRefOrGetter<string>) {
     catch { /* Dokumen sudah tidak menunjuknya; sisanya urusan retensi. */ }
   }
 
-  return { pending, failures, done, total, upload, release }
+  return { pending, failures, done, total, upload, uploadDetailed, release }
 }

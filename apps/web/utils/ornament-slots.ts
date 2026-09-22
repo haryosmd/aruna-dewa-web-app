@@ -1,4 +1,5 @@
-import type { LayerSlot, OrnamentCategory, OrnamentId, OrnamentSet } from './ornaments'
+import type { sectionTypes } from '@aruna/contracts'
+import type { LayerSlot, OrnamentCategory, OrnamentId, OrnamentSet, ResolvedOrnamentSet, UploadedOrnament } from './ornaments'
 import { layerSlot, ornament } from './ornaments'
 
 /**
@@ -15,7 +16,8 @@ import { layerSlot, ornament } from './ornaments'
  */
 
 /**
- * Slot skalar yang bisa ditukar. **Sembilan, bukan sepuluh** — `motif` sengaja tidak ada.
+ * Slot skalar yang bisa ditukar. **Sebelas sejak fase 69** (sembilan + dua bentuk amplop);
+ * `motif` sengaja tidak ada.
  *
  * `OrnamentSet.motif` terdaftar, dijaga gerbang keunikan, dan **tidak pernah dirender di
  * undangan**: diukur pada seluruh `components/invitation/`, satu-satunya pembacanya adalah
@@ -29,8 +31,66 @@ import { layerSlot, ornament } from './ornaments'
  */
 export const ornamentSlots = [
   'frame', 'divider', 'corner', 'floral', 'floralAlt', 'monogram', 'symbol', 'garland', 'seal',
+  // Fase 69: dua bentuk amplop gerbang, dulu path inline di CoverGate.vue.
+  'envelopePocket', 'envelopeFlap',
 ] as const
 export type OrnamentSlotKey = (typeof ornamentSlots)[number]
+
+/**
+ * Slot skalar yang benar-benar **dirender** tiap section (fase 71).
+ *
+ * Nilai ornamen tetap global — satu keping `divider` dipakai amplop, hitung mundur, mempelai,
+ * galeri, dan rundown sekaligus — tapi pasangan yang sedang menyunting "Mempelai" tidak perlu
+ * melihat sebelas slot untuk menemukan tiga yang mengubah bagian itu. Tabel ini yang menentukan
+ * kartu "Ornamen di bagian ini" di form tiap bagian; cover memegang ringkasan penuh dan karena
+ * itu membawa juga slot amplop yang dirender `CoverGate.vue` di depannya.
+ *
+ * Ditulis dari pembacaan `components/invitation/sections/*.vue` dan `CoverGate.vue`, dan
+ * **dijaga vitest yang membaca sumbernya** (`ornament-slots.spec.ts`): section yang mulai atau
+ * berhenti memakai satu slot akan memerahkan tes sampai tabel ini ikut diubah.
+ */
+export const sectionOrnamentSlots: Record<(typeof sectionTypes)[number], readonly OrnamentSlotKey[]> = {
+  cover: ['frame', 'corner', 'garland', 'symbol', 'divider', 'seal', 'envelopePocket', 'envelopeFlap'],
+  couple: ['floral', 'corner', 'divider'],
+  events: ['corner'],
+  countdown: ['divider'],
+  gallery: ['divider'],
+  story: ['floralAlt', 'monogram'],
+  rundown: ['divider', 'symbol'],
+  dresscode: ['floralAlt'],
+  video: ['symbol'],
+  gift: [],
+  rsvp: ['floral', 'seal'],
+  wishes: [],
+  closing: ['garland', 'monogram'],
+  music: [],
+  // Struktur Elegance (fase 72): dirender `components/invitation/elegance/*.vue`.
+  'opening-envelope': ['divider', 'seal', 'envelopePocket', 'envelopeFlap', 'corner'],
+  hero: ['monogram', 'symbol', 'corner'],
+  event: ['divider', 'corner'],
+  map: ['symbol'],
+  'unduh-mantu': ['symbol'],
+  quote: ['divider'],
+}
+
+/**
+ * Glyph yang **tidak ditawarkan** Studio Ornamen, meski tetap sah dipasang.
+ *
+ * Keputusan pemilik 2026-09-19 (fase 70), dari tangkapan layar tab "Semua" slot Bingkai:
+ * sembilan bingkai koleksi inti ini diminta berhenti tayang. Fase 58 sudah pernah
+ * memensiunkan bingkai forge dengan mencabut keanggotaannya dari `themeOrnaments` dan
+ * `themeVariants` — dan fase 59, yang membuka seluruh bank lewat `kandidat()`, diam-diam
+ * membatalkan pensiun itu. Set ini adalah mekanisme yang seharusnya ada sejak saat itu.
+ *
+ * Berkas dan entri banknya **tidak dihapus**: enam di antaranya bawaan tema pensiun di
+ * `ornamenPensiun` (daftar beku yang dipindai `bacaTema()` supaya gerbang keunikan tetap
+ * mengukur 54 slot). `muatSlot()` juga sengaja tidak membacanya — dokumen yang sudah
+ * memilih salah satunya tetap tervalidasi dan terrender; ia hanya tidak ditawarkan lagi.
+ */
+export const ornamenDisembunyikan: ReadonlySet<OrnamentId> = new Set<OrnamentId>([
+  'frame-bentar', 'frame-kenanga', 'frame-mendung', 'frame-gonjong', 'frame-gunungan',
+  'frame-hening', 'frame-line', 'frame-pelita', 'frame-wastra',
+])
 
 /**
  * Kategori bank yang boleh mengisi sebuah slot.
@@ -50,6 +110,8 @@ export const slotCategories: Record<OrnamentSlotKey, readonly OrnamentCategory[]
   symbol: ['symbol'],
   garland: ['floral'],
   seal: ['seal', 'monogram'],
+  envelopePocket: ['envelopePocket'],
+  envelopeFlap: ['envelopeFlap'],
 }
 
 /**
@@ -60,7 +122,20 @@ export const slotCategories: Record<OrnamentSlotKey, readonly OrnamentCategory[]
  */
 export interface OrnamentOverrides extends Partial<Record<OrnamentSlotKey, OrnamentId>> {
   layers?: Partial<Record<LayerSlot, OrnamentId>>
+  /** Ornamen unggahan per slot (fase 69). Bila ada, ia menang atas id bank di slot yang sama. */
+  unggahan?: Partial<Record<UploadableSlot, UploadedOrnament>>
 }
+
+/**
+ * Slot yang menerima unggahan: sembilan slot skalar lama. Bukan dua slot amplop — mereka
+ * harus melar (`preserveAspectRatio="none"`) dan mewarnai diri dari palet, dua hal yang raster
+ * tidak bisa. Bukan pula `layers`, dengan alasan berat yang sama dengan aset referensi.
+ */
+export const uploadableSlots = [
+  'frame', 'divider', 'corner', 'floral', 'floralAlt', 'monogram', 'symbol', 'garland', 'seal',
+] as const
+export type UploadableSlot = (typeof uploadableSlots)[number]
+export const bolehUnggah = (slot: OrnamentSlotKey): slot is UploadableSlot => (uploadableSlots as readonly string[]).includes(slot)
 
 /** Urutan dan nama kelima jangkar ladang ornamen, untuk rel slot di Studio. */
 export const layerSlots = ['bloom', 'cascade', 'crown', 'cluster', 'swag'] as const
@@ -95,6 +170,8 @@ export const slotLabels: Record<OrnamentSlotKey, SlotLabel> = {
   symbol: { label: 'Simbol', hint: 'Lambang kecil di cover, rundown, dan bagian video.' },
   garland: { label: 'Karangan', hint: 'Untaian melintang di cover dan penutup.' },
   seal: { label: 'Segel', hint: 'Lilin penutup amplop yang terbelah saat dibuka, dan cap pada kartu RSVP.' },
+  envelopePocket: { label: 'Kantong amplop', hint: 'Bagian depan amplop yang menutupi surat sebelum dibuka.' },
+  envelopeFlap: { label: 'Flap amplop', hint: 'Tutup amplop yang terbuka setelah segel terbelah.' },
 }
 
 export const layerSlotLabels: Record<LayerSlot, SlotLabel> = {
@@ -124,7 +201,12 @@ export function muatLayer(slot: LayerSlot, glyph: OrnamentId): boolean {
  * pasangan tidak bisa memilih bentuk yang tidak bisa ia bedakan.
  */
 export function tileWidth(glyph: OrnamentId, tinggi = 56, batas = 168): string {
-  return `${Math.round(Math.min(batas, Math.max(64, tinggi * ornament(glyph).ratio)))}px`
+  return tileWidthRasio(ornament(glyph).ratio, tinggi, batas)
+}
+
+/** Versi yang menerima rasio langsung — untuk unggahan, yang rasionya dari `width/height`. */
+export function tileWidthRasio(ratio: number, tinggi = 56, batas = 168): string {
+  return `${Math.round(Math.min(batas, Math.max(64, tinggi * (ratio || 1))))}px`
 }
 
 /**
@@ -136,8 +218,8 @@ export function tileWidth(glyph: OrnamentId, tinggi = 56, batas = 168): string {
  * yang dijaga `theme-identity.spec.ts` (lima layer, satu per jangkar) tidak bisa dilanggar
  * lewat pemilih.
  */
-export function terapkanOverrides(set: OrnamentSet, overrides: OrnamentOverrides): OrnamentSet {
-  const { layers: tukarLayer, ...skalar } = overrides
+export function terapkanOverrides(set: OrnamentSet, overrides: OrnamentOverrides): ResolvedOrnamentSet {
+  const { layers: tukarLayer, unggahan, ...skalar } = overrides
   const layers = tukarLayer
     ? set.layers.map(glyph => {
       const jangkar = layerSlot(glyph)
@@ -146,11 +228,12 @@ export function terapkanOverrides(set: OrnamentSet, overrides: OrnamentOverrides
     })
     : set.layers
 
-  return { ...set, ...skalar, layers }
+  // Unggahan disebar TERAKHIR: ia menang atas id bank di slot yang sama (fase 69).
+  return { ...set, ...skalar, ...(unggahan ?? {}), layers }
 }
 
 /** Berapa slot yang sedang menyimpang dari bawaan tema. Dipakai penanda "n diganti". */
 export function jumlahDiganti(overrides: OrnamentOverrides): number {
-  const { layers, ...skalar } = overrides
-  return Object.keys(skalar).length + Object.keys(layers ?? {}).length
+  const { layers, unggahan, ...skalar } = overrides
+  return Object.keys(skalar).length + Object.keys(layers ?? {}).length + Object.keys(unggahan ?? {}).length
 }

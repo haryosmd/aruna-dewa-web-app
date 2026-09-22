@@ -9,7 +9,7 @@ defineProps<{ href: string; label?: string }>()
 <template>
   <a
     :href="href"
-    class="inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-md border border-border-strong bg-surface px-5 text-[0.9375rem] font-semibold text-ink no-underline shadow-[var(--shadow-hairline)] transition-[background-color,border-color,box-shadow] duration-200 hover:border-ink/40 hover:bg-surface-2 hover:shadow-[var(--shadow-lift)]"
+    class="inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-md border border-border-strong bg-surface px-5 text-ui-lg font-semibold text-ink no-underline shadow-[var(--shadow-hairline)] transition-[background-color,border-color,box-shadow] duration-200 hover:border-ink/40 hover:bg-surface-2 hover:shadow-[var(--shadow-lift)]"
   >
     <svg viewBox="0 0 18 18" class="h-[18px] w-[18px] shrink-0" aria-hidden="true">
       <path fill="#4285F4" d="M17.64 9.2045c0-.6381-.0573-1.2518-.1636-1.8409H9v3.4814h4.8436c-.2086 1.125-.8427 2.0782-1.7959 2.7164v2.2581h2.9086c1.7018-1.5668 2.6837-3.874 2.6837-6.615z" />

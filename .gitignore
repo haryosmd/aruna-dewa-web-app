@@ -78,3 +78,12 @@ worker.env
 # — seperti `DESIGN.md` sebagai sumber kebenaran visual — tempatnya bukan lagi di sini.
 AGENTS.md
 .forge/
+
+# Sampah lokal di akar yang tidak tertutup baris mana pun di atas (2026-09-21). `.env` dan
+# `.env.*` tidak menutup `env` TANPA titik — dan berkas itu ada di laptop ini dengan sebelas
+# nilai terisi. Satu `git add -A` menerbitkannya permanen, jadi barisnya dipasang sebelum
+# fase 72 di-commit. `.DS_Store` dan zip unduhan ikut, dengan alasan yang lebih membosankan.
+/env
+/env.example *.example
+/*.zip
+.DS_Store

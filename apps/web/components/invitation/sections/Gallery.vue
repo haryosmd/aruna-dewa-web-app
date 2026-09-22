@@ -28,13 +28,13 @@ const layout = computed<GalleryLayout | 'spotlight'>(() => {
     id="iv-gallery"
     tone="paper"
     :compact="compact"
-    kicker="Potret bahagia"
-    title="Momen yang kami simpan"
+    :kicker="invitation.t('gallery.kicker')"
+    :title="invitation.t('gallery.title')"
     :ornaments="compact ? null : orn"
     :intensity="intensity"
     :seed="props.seed"
   >
     <InvitationGallery :images="images" :layout="layout" :compact="compact" />
-    <OrnamentGlyph :glyph="orn.divider" data-iv-ornament class="h-7 w-48 opacity-70" :style="{ color: 'var(--iv-primary)' }" />
+    <OrnamentGlyph :glyph="orn.divider" data-iv-ornament data-iv-slot="divider" class="h-7 w-48 opacity-70" :style="{ color: 'var(--iv-primary)' }" />
   </InvitationSection>
 </template>

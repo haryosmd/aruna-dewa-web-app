@@ -2,7 +2,7 @@
 import type { Section } from '~/types/aruna'
 
 const props = defineProps<{ section: Section; seed: number }>()
-const { orn, intensity, compact, coupleNames, galleryImages } = useInvitation()
+const { orn, intensity, compact, coupleNames, galleryImages, t } = useInvitation()
 
 const photo = computed(() => text(props.section, 'image') || galleryImages.value[0] || '')
 
@@ -19,12 +19,12 @@ const entrance = computed(() => ['rise', 'sweep-left', 'sweep-right', 'iris'][Ma
     id="iv-couple"
     tone="paper"
     :compact="compact"
-    kicker="Dengan penuh sukacita"
+    :kicker="t('couple.kicker')"
     :ornaments="compact ? null : orn"
     :intensity="intensity"
     :seed="props.seed"
   >
-    <OrnamentGlyph :glyph="orn.floral" data-iv-ornament class="h-24 w-20 opacity-80" :style="{ color: 'var(--iv-primary)' }" />
+    <OrnamentGlyph :glyph="orn.floral" data-iv-ornament data-iv-slot="floral" class="h-24 w-20 opacity-80" :style="{ color: 'var(--iv-primary)' }" />
 
     <!--
       Ornamen menempel pada fotonya, bukan berdiri sendiri: gerakannya dijalankan dalam
@@ -33,8 +33,8 @@ const entrance = computed(() => ['rise', 'sweep-left', 'sweep-right', 'iris'][Ma
     -->
     <div v-if="photo" data-iv-reveal class="iv-portrait" :data-entrance="entrance">
       <img :src="photo" :alt="`Potret ${coupleNames}`" data-iv-photo loading="lazy" class="h-full w-full object-cover">
-      <OrnamentGlyph :glyph="orn.corner" data-iv-ornament class="iv-portrait-corner iv-portrait-corner--tl" aria-hidden="true" />
-      <OrnamentGlyph :glyph="orn.corner" data-iv-ornament class="iv-portrait-corner iv-portrait-corner--br" aria-hidden="true" />
+      <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" class="iv-portrait-corner iv-portrait-corner--tl" aria-hidden="true" />
+      <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" class="iv-portrait-corner iv-portrait-corner--br" aria-hidden="true" />
     </div>
 
     <h2 data-iv-reveal class="iv-display iv-script m-0" :class="'text-[clamp(2.4rem,9cqw,4rem)]'">
@@ -43,6 +43,6 @@ const entrance = computed(() => ['rise', 'sweep-left', 'sweep-right', 'iris'][Ma
     <p data-iv-reveal class="iv-body m-0">
       {{ text(props.section, 'description', 'Untuk hadir dan menjadi bagian dari hari bahagia kami.') }}
     </p>
-    <OrnamentGlyph :glyph="orn.divider" data-iv-ornament class="h-7 w-52 opacity-75" :style="{ color: 'var(--iv-primary)' }" />
+    <OrnamentGlyph :glyph="orn.divider" data-iv-ornament data-iv-slot="divider" class="h-7 w-52 opacity-75" :style="{ color: 'var(--iv-primary)' }" />
   </InvitationSection>
 </template>

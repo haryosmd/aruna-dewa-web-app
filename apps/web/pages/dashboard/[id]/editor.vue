@@ -1,287 +1,427 @@
 <script setup lang="ts">
-import { canEditDesign as designUnlocked, createDefaultDocument, designFeatureId, galleryPhotoLimit, giftAccountLimit, invitationDocumentSchema, isLiveTemplateId, normalizeGift, selectableBodyFonts, selectableFonts, templateById, type BackdropChoice, type BackdropWeight, type FontChoice, type LiveTemplateId } from '@aruna/contracts'
+import { Copy, ExternalLink, Lock, RotateCcw } from 'lucide-vue-next'
+import type {
+  BackdropChoice, BackdropWeight, EntranceStyle, EnvelopeSpeed, FontChoice, LayoutFocus, LiveTemplateId,
+  SectionBackground, SectionMotion, ShareCardStyle, TextStyle,
+} from '@aruna/contracts'
+import type { RevisionSummary } from '@aruna/contracts/api'
 import {
-  selectableAttire, selectableCoverLayouts, selectableGalleryMotions, selectableVenues,
-  toAttire, toCoverLayout, toGalleryMotion, toOrnamentOverrides,
-} from '~/utils/invitation-options'
-import { selectableIntensities, toIntensity, type OrnamentId } from '~/utils/ornaments'
-import { terapkanOverrides, type OrnamentOverrides, type OrnamentSlotKey } from '~/utils/ornament-slots'
+  canEditDesign as designUnlocked, createDefaultDocument, designFeatureId, documentStructureId, documentThemeId,
+  invitationDocumentSchema, isLiveTemplateId, liveStructureIds, maxGalleryPhotoLimit, restructureDocument, sectionMeta, structures, type StructureId,
+  isV2SectionType, migrateLegacyDocument, templateById,
+} from '@aruna/contracts'
+import { toOrnamentOverrides } from '~/utils/invitation-options'
+import { ornament, type LayerSlot, type OrnamentId, type UploadedOrnament } from '~/utils/ornaments'
+import { bolehUnggah, sectionOrnamentSlots, terapkanOverrides, type OrnamentOverrides, type OrnamentSlotKey } from '~/utils/ornament-slots'
 import { bawaanSlot } from '~/utils/ornament-search'
-import { toBackdrop, toBackdropWeight } from '~/utils/backdrops'
-import { themeOrnaments } from '~/utils/theme'
-import type { LayerSlot } from '~/utils/ornaments'
+import { invitationThemes, themeOrnaments } from '~/utils/theme'
+import type { ThemePalette } from '~/utils/theme-palettes'
+import { filterSections, pindahkan, sectionLabels, visibleCount } from '~/utils/editor-sections'
+import { releasableUrls, stillQueued } from '~/utils/asset-release'
+import { mediaAssetIdFromUrl } from '~/utils/media-file'
+import { checkPalette, repairPalette } from '~/utils/contrast'
 import type { Invitation, InvitationDocument } from '~/types/aruna'
-import type { MusicTrack } from '~/utils/music-library'
-import { AlertCircle, ArrowDown, ArrowUp, Check, Eye, Laptop, Lock, Pause, Play, Plus, Redo2, RotateCcw, Save, Send, Smartphone, Tablet, Trash2, Undo2, Wand2 } from 'lucide-vue-next'
 
+/*
+ * Studio editor (fase 72): header referensi (Editor | Generator | Ucapan), rail struktur,
+ * panggung hidup, inspektor empat tab. Form bagian **digenerate dari kontrak** (`SectionForm`),
+ * jadi berkas ini tinggal memegang state, alur simpan/publish, dan penulisan dokumen lewat
+ * `checkpoint()` — bukan lagi 1.700 baris cabang form per tipe.
+ *
+ * Dokumen v1 (struktur lama) dimigrasi **di sini saat dimuat** (`migrateLegacyDocument`), bukan
+ * di server: versi terbit tamu tetap v1 sampai pasangan menekan Simpan lalu Publikasikan, dan
+ * status "belum tersimpan" jujur mengatakan bahwa strukturnya sudah berubah di layar.
+ */
 const toast = useToast()
-
 definePageMeta({ middleware: 'auth', layout: false })
 
 const route = useRoute()
+const config = useRuntimeConfig()
 const invitationsApi = useInvitations()
 const { fetchCatalog } = useCatalog()
 const auth = useAuthStore()
-const { label: featureLabel } = useFeatureLabels()
+const { confirm, alert } = usePopup()
+const { pilih: bukaPustaka } = useMediaLibrary()
 
 const invitation = ref<Invitation | null>(null)
 const document = ref<InvitationDocument>(createDefaultDocument())
 const revision = ref(0)
-const selectedId = ref('cover')
+const selectedId = ref('opening-envelope')
 const loading = ref(true)
 const saving = ref(false)
 const publishing = ref(false)
 const error = ref('')
 const conflict = ref(false)
 const mobilePanel = ref<'settings' | 'preview'>('settings')
-
-/*
- * Pratinjau perangkat.
- *
- * Pertanyaan yang sebenarnya dipegang pasangan saat menyunting bukan "apa yang saya lihat",
- * melainkan "apa yang dilihat tamu saya". Tamu hampir selalu membuka dari ponsel, jadi
- * bawaannya ponsel — bukan lebar rel yang kebetulan tersedia.
- *
- * Lebarnya dirender sungguhan lalu diperkecil, bukan diperkecil lalu dirender: undangannya
- * memakai container query di seluruh badannya (`.iv-root`), jadi render selebar 390px
- * berperilaku persis seperti ponsel selebar 390px. Skalanya tidak pernah melebihi 1 —
- * memperbesar render hanya akan mengaburkan gambar dan berbohong soal ukuran huruf.
- */
-const previewDevices = [
-  { id: 'ponsel', label: 'Ponsel', width: 390, icon: Smartphone },
-  { id: 'tablet', label: 'Tablet', width: 834, icon: Tablet },
-  { id: 'laptop', label: 'Laptop', width: 1280, icon: Laptop },
-] as const
-type PreviewDevice = (typeof previewDevices)[number]['id']
-
-const previewDevice = ref<PreviewDevice>('ponsel')
-const previewWidth = computed(() => previewDevices.find(d => d.id === previewDevice.value)!.width)
-
-/*
- * Diukur pada viewport yang menggulung, bukan pada rel di luarnya.
- *
- * Selisihnya selebar scrollbar, dan itu cukup: skala yang dihitung dari lebar rel membuat
- * render Tablet dan Laptop persis selebar rel, lalu tergunting belasan piksel di kanan oleh
- * scrollbar-nya sendiri. `scrollbar-gutter: stable` memastikan lebar itu tidak lagi berubah
- * saat isinya cukup pendek untuk tidak menggulung — tanpa itu, tinggi mengubah lebar,
- * lebar mengubah skala, dan skala mengubah tinggi lagi.
- */
-const previewViewport = ref<HTMLElement | null>(null)
-const previewStage = ref<HTMLElement | null>(null)
-const { width: viewportWidth } = useElementSize(previewViewport)
-const { height: stageHeight } = useElementSize(previewStage)
-
-const previewScale = computed(() =>
-  viewportWidth.value ? Math.min(1, viewportWidth.value / previewWidth.value) : 1,
-)
-const previewScalePct = computed(() => Math.round(previewScale.value * 100))
-const galleryUrl = ref('')
-const watchReady = ref(false)
+const prefs = useEditorPrefs()
+const sectionQuery = ref('')
 const designAddon = ref<{ name: string; price: number } | null>(null)
-const undoStack = ref<InvitationDocument[]>([])
-const redoStack = ref<InvitationDocument[]>([])
-
-const { confirm } = usePopup()
+const { canUndo, canRedo, checkpoint, undo, redo, reset: resetRiwayat } = useDocumentHistory(document)
 
 /*
- * Autosave dicabut di fase 18, dan ini yang menggantikannya.
- *
- * Yang lama menyimpan sendiri 900ms setelah tiap perubahan, lalu menimpa dokumen lokal dengan
- * jawaban server. Jawaban itu nol informasi — `saveDraft` cuma menggemakan dokumen yang baru
- * dikirim — tapi penugasannya mengubah identitas ref, memicu watcher yang sama, dan penjaganya
- * selalu lolos karena `saving` sudah `false` sebelum antrean watcher Vue di-flush. Terukur:
- * satu suntingan menghasilkan 13 revisi dalam 12 detik, lalu terus begitu selamanya, sambil
- * menghidupkan kembali foto yang baru dihapus.
- *
- * Sekarang simpan hanya berangkat lewat tombol, dan keadaannya dibaca dari cuplikan ini.
- * Cuplikannya diambil **sebelum** permintaan berangkat dan baru dipasang setelah berhasil,
- * jadi suntingan yang datang selagi permintaan terbang tetap terhitung belum tersimpan.
+ * Autosave dicabut di fase 18: simpan hanya berangkat lewat tombol, dan keadaannya dibaca dari
+ * cuplikan ini — diambil **sebelum** permintaan berangkat dan dipasang setelah berhasil, jadi
+ * suntingan yang datang selagi permintaan terbang tetap terhitung belum tersimpan.
  */
 const savedSnapshot = ref('')
 const dirty = computed(() => JSON.stringify(document.value) !== savedSnapshot.value)
-
-/**
- * URL aset yang sudah lepas dari dokumen tapi berkasnya belum dihapus.
- *
- * Penghapusan menunggu simpan berhasil; alasannya di `utils/asset-release.ts`.
- */
 const pendingReleases = ref<string[]>([])
 
 const selected = computed(() => document.value.sections.find(section => section.id === selectedId.value) ?? document.value.sections[0])
+const sectionEntries = computed(() => filterSections(document.value.sections, sectionQuery.value, sectionLabels))
+const sectionsVisible = computed(() => visibleCount(document.value.sections))
+const themeName = computed(() => templateById(document.value.templateId)?.name ?? 'Aruna')
+const themeAccent = computed(() => templateById(document.value.templateId)?.accent ?? '#7A8B6F')
+const published = computed(() => Boolean(invitation.value?.publishedAt))
+// `useRequestURL()` sama di server dan klien — `window.location` di sini memicu ketidakcocokan hidrasi.
+const origin = useRequestURL().origin
+const publicUrl = computed(() => `${origin}/i/${invitation.value?.slug ?? ''}`)
+const pngUrl = computed(() => `${config.public.apiBase}/public/share-card/${invitation.value?.slug ?? ''}.png?v=${revision.value}`)
 
-const sectionLabels: Record<string, string> = {
-  cover: 'Cover pembuka', couple: 'Mempelai', events: 'Acara', countdown: 'Hitung mundur',
-  gallery: 'Galeri', story: 'Cerita cinta', rundown: 'Rundown', dresscode: 'Dresscode',
-  video: 'Video & live stream', gift: 'Hadiah', rsvp: 'RSVP', wishes: 'Ucapan',
-  closing: 'Penutup', music: 'Musik',
-}
-const fieldLabels: Record<string, string> = {
-  title: 'Judul', subtitle: 'Subjudul', image: 'URL foto', partner1: 'Nama pasangan 1',
-  partner2: 'Nama pasangan 2', description: 'Deskripsi', text: 'Teks', date: 'Tanggal',
-  bank: 'Nama bank', account: 'Nomor rekening', holder: 'Atas nama', address: 'Alamat',
-  note: 'Kalimat pengantar',
-  url: 'URL', deadline: 'Batas konfirmasi',
-}
-const label = (key: string) => fieldLabels[key] ?? key
-
-/* ── Kunci desain ───────────────────────────────────────────────── */
-
+const canEditDesign = computed(() => designUnlocked({ isOperator: auth.isOperator, features: invitation.value?.features ?? [] }))
 /**
- * Aturan yang sama dengan penjaga di `saveDraft`, diambil dari paket contracts supaya
- * keduanya tidak bisa menyimpang. Sebelumnya kontrol warna, font, dan panah urutan selalu
- * hidup: pasangan menggesernya, pratinjau ikut berubah, lalu autosave gagal dengan pesan
- * yang tidak menunjuk kontrol mana pun.
+ * Kuota foto galeri, DARI SERVER (fase 75). Tidak dihitung ulang di sini dan tidak diturunkan dari
+ * `features`: entitlement cuma daftar fitur, dan dua paket bisa membuka fitur yang sama dengan
+ * kuota berbeda. Sebelum jawaban pertama datang, plafon katalog dipakai supaya form tidak sempat
+ * menampilkan angka yang lebih kecil lalu melompat.
  */
-const canEditDesign = computed(() => designUnlocked({
-  isOperator: auth.isOperator,
-  features: invitation.value?.features ?? [],
-}))
-
-/**
- * Preset yang sedang menggantikan tema pensiun, atau `null` kalau temanya masih hidup.
- *
- * Pasangan yang temanya dipensiunkan harus tahu kenapa wajah undangannya berubah — dan harus
- * bisa keluar dari sana. `hasDesignChange()` di API membebaskan perpindahan yang berasal dari
- * id pensiun, jadi tombolnya tidak dikunci `canEditDesign` seperti perpindahan biasa.
- */
+const photoLimit = computed(() => invitation.value?.photoLimit ?? maxGalleryPhotoLimit)
+const lockedBy = computed(() => designAddon.value ? `Add-on ${designAddon.value.name} (${formatRupiah(designAddon.value.price)}) membukanya.` : undefined)
 const templatePensiun = computed(() => {
   const id = document.value?.templateId
   if (!id || isLiveTemplateId(id)) return null
   return templateById(id) ?? null
 })
 
-/** Nama dan harga add-on diambil dari katalog, bukan ditulis ulang di sini. */
 async function loadDesignAddon() {
   if (canEditDesign.value || designAddon.value) return
   try {
     const catalog = await fetchCatalog()
     designAddon.value = catalog.addons.find(addon => addon.id === designFeatureId) ?? null
-  } catch {
-    // Harga hanya pelengkap; panel tetap menjelaskan kuncinya tanpa katalog.
-    designAddon.value = null
-  }
+  } catch { designAddon.value = null }
 }
 
 async function load() {
   loading.value = true
   error.value = ''
-  watchReady.value = false
   try {
     const result = await invitationsApi.get(String(route.params.id))
     invitation.value = result
-    document.value = result.document ?? createDefaultDocument()
+    const asli = (result.document as InvitationDocument | undefined) ?? createDefaultDocument()
+    const dimigrasi = migrateLegacyDocument(asli)
+    document.value = dimigrasi
     revision.value = result.revision ?? 0
-    selectedId.value = document.value.sections[0]?.id ?? 'cover'
+    selectedId.value = document.value.sections[0]?.id ?? 'opening-envelope'
     conflict.value = false
-    undoStack.value = []
-    redoStack.value = []
-    // Ditunggu, bukan dilepas: `load()` ikut jalan saat SSR, dan promise yang dilepas
-    // di sana selesai setelah HTML terkirim — harganya tidak pernah sampai ke klien.
+    resetRiwayat()
     await loadDesignAddon()
+    // Cuplikan dari dokumen SERVER: draft v1 yang baru dimigrasi jujur terbaca "belum tersimpan".
+    savedSnapshot.value = JSON.stringify(asli)
+    if (dimigrasi !== asli) toast.message('Undangan diperbarui ke struktur Elegance. Simpan untuk menerapkannya.')
   } catch (cause) {
     error.value = apiErrorMessage(cause)
   } finally {
     loading.value = false
-    /*
-     * Cuplikan "tersimpan" diambil di sini, bukan tepat setelah `document.value` diisi.
-     * `watch(selected, …, { immediate: true })` di bawah menulis ulang `section.data` hadiah
-     * berbentuk lama begitu section-nya terpilih; cuplikan yang diambil lebih dini membuat
-     * editor lahir dalam keadaan "belum tersimpan", dan tiap perpindahan halaman memunculkan
-     * popup yang tidak dimengerti siapa pun.
-     */
-    nextTick(() => {
-      watchReady.value = true
-      savedSnapshot.value = JSON.stringify(document.value)
-    })
   }
 }
 await load()
 
-function checkpoint() {
-  undoStack.value.push(structuredClone(toRaw(document.value)))
-  if (undoStack.value.length > 30) undoStack.value.shift()
-  redoStack.value = []
+useHead({ title: () => `${invitation.value?.title ?? 'Editor undangan'} — Aruna Dewa` })
+
+/* ── Rail ───────────────────────────────────────────────────────────────────── */
+const fokusPanggung = ref<{ type: string, nonce: number } | null>(null)
+function fokuskanPanggung(id: string) {
+  const type = document.value.sections.find(section => section.id === id)?.type
+  if (!type) return
+  fokusPanggung.value = { type, nonce: (fokusPanggung.value?.nonce ?? 0) + 1 }
+}
+function selectSection(id: string) {
+  selectedId.value = id
+  mobilePanel.value = 'settings'
+  if (prefs.value.inspectorTab === 'kartu') prefs.value.inspectorTab = 'bagian'
+  fokuskanPanggung(id)
+}
+watch(mobilePanel, (panel) => { if (panel === 'preview') fokuskanPanggung(selectedId.value) })
+
+/**
+ * Panggung → rail (fase 76): bagian yang sedang berdiri di tengah layar ikut menyorot railnya.
+ *
+ * Sengaja **bukan** `selectSection`. Yang itu memanggil `fokuskanPanggung()`, dan panggilan itu
+ * akan menggulir panggung ke bagian yang baru saja digulir sendiri oleh pasangan — pantulan yang
+ * terbaca sebagai panggung yang menolak digulir. Di sini hanya sorotannya yang berpindah.
+ */
+function sorotSection(type: string) {
+  const id = document.value.sections.find(section => section.type === type)?.id
+  if (!id || id === selectedId.value) return
+  selectedId.value = id
 }
 
-function updateValue(key: string, value: string) {
+function toggleSection(id: string, enabled: boolean) {
+  const section = document.value.sections.find(candidate => candidate.id === id)
+  if (!section || section.enabled === enabled) return
+  checkpoint()
+  section.enabled = enabled
+}
+function move(index: number, direction: -1 | 1) {
+  reorder(index, index + direction)
+}
+/**
+ * Urutan baru disusun dari **`toRaw`**, bukan dari `document.value.sections` langsung.
+ *
+ * `document.value.sections.slice()` menghasilkan larik berisi PROXY tiap bagian, dan menugaskannya
+ * kembali menanam proxy itu di dalam dokumen mentah — dulu itu cukup untuk membuat `undo()`
+ * melempar dan riwayat habis tanpa mengembalikan apa pun.
+ *
+ * Reorder BUKAN satu-satunya penanam, dan itu yang membuat perbaikan 2026-09-20 terbaca lebih
+ * lengkap dari yang sebenarnya. Enam situs menanam proxy sampai fase 74.1: keempat penulis larik
+ * di `ExtrasForm`, `tulisGaya()` yang menyalin dangkal `textStyles` berisi objek, dan ketiga
+ * penulis `tokens` yang membawa `tokens.motion` by-reference. Semuanya kini lewat `bersihkan()`,
+ * dan `salinDokumen` di `useDocumentHistory` tinggal jaring terakhir.
+ */
+function reorder(from: number, to: number) {
+  if (!canEditDesign.value) return
+  const urutan = pindahkan(toRaw(document.value).sections, from, to)
+  if (!urutan) return
+  checkpoint()
+  document.value.sections = urutan.map(section => toRaw(section))
+}
+
+/* ── Tulisan bagian ─────────────────────────────────────────────────────────── */
+/**
+ * Gerbang tunggal yang dilewati setiap form bagian, termasuk `ExtrasForm`.
+ *
+ * `bersihkan()` bukan kehati-hatian berlebih: `ExtrasForm` menyusun larik barunya dari
+ * `props.section.data[key]`, jadi `[...rows('steps'), {…}]` membawa SELURUH baris lama sebagai
+ * proxy Vue. Dibersihkan di sini sekali, keempat penulis di sana ikut tertutup.
+ */
+function tulis(key: string, value: unknown) {
   const section = selected.value
   if (!section) return
   checkpoint()
-  section.data[key] = value
+  section.data[key] = bersihkan(value)
 }
-
-function move(index: number, direction: -1 | 1) {
-  if (!canEditDesign.value) return
-  const next = index + direction
-  if (next < 0 || next >= document.value.sections.length) return
+function tulisGaya(key: string, style: TextStyle | null) {
+  const section = selected.value
+  if (!section || !canEditDesign.value) return
   checkpoint()
-  const copy = document.value.sections.slice()
-  ;[copy[index], copy[next]] = [copy[next]!, copy[index]!]
-  document.value.sections = copy
+  // Salinan dangkal: tiap nilai `textStyles` adalah OBJEK, jadi tanpa `bersihkan` gaya yang
+  // sudah ada masuk kembali ke dokumen sebagai proxy.
+  const styles = bersihkan({ ...((section.data.textStyles as Record<string, TextStyle> | undefined) ?? {}) })
+  if (style) styles[key] = bersihkan(style)
+  else delete styles[key]
+  if (Object.keys(styles).length) section.data.textStyles = styles
+  else delete section.data.textStyles
+}
+function tulisLatar(patch: Partial<SectionBackground> | null) {
+  const section = selected.value
+  if (!section) return
+  checkpoint()
+  const latar: SectionBackground = { ...((section.data.background as SectionBackground | undefined) ?? {}), ...(patch ?? {}) }
+  for (const key of Object.keys(latar) as (keyof SectionBackground)[]) if (latar[key] === undefined || latar[key] === '') delete latar[key]
+  if (!patch || !Object.keys(latar).length) delete section.data.background
+  else section.data.background = latar
+}
+function tulisGerak(motion: SectionMotion) {
+  const section = selected.value
+  if (!section) return
+  checkpoint()
+  if (motion === 'tema') delete section.data.motion
+  else section.data.motion = motion
 }
 
-/** Swapping template also swaps the curated palette, unless the couple already recoloured it. */
+/* ── Global ─────────────────────────────────────────────────────────────────── */
+function tulisMusik(patch: { url?: string; title?: string; volume?: number }) {
+  checkpoint()
+  const settings = { ...(document.value.settings ?? {}) }
+  if (patch.url !== undefined) { if (patch.url) settings.musicUrl = patch.url; else { delete settings.musicUrl; delete settings.musicTitle } }
+  if (patch.title !== undefined) { if (patch.title && settings.musicUrl) settings.musicTitle = patch.title; else delete settings.musicTitle }
+  if (patch.volume !== undefined) settings.musicVolume = patch.volume
+  if (Object.keys(settings).length) document.value.settings = settings
+  else delete document.value.settings
+}
+function tulisLayout(layout: LayoutFocus) {
+  if (!canEditDesign.value) return
+  checkpoint()
+  if (layout === 'kartu') delete document.value.tokens.layout
+  else document.value.tokens.layout = layout
+}
+function terapkanPalet(palette: ThemePalette) {
+  if (!canEditDesign.value) return
+  checkpoint()
+  // `tokens.motion` (fase 69) adalah objek: sebaran dangkal membawanya by-reference, jadi
+  // proxy-nya ditanam kembali ke dokumen mentah. Sama untuk dua penulis `tokens` di bawah.
+  document.value.tokens = bersihkan({ ...document.value.tokens, ...palette.tokens })
+}
+function tulisWarna(key: 'background' | 'foreground' | 'primary', value: string) {
+  if (!canEditDesign.value) return
+  checkpoint()
+  document.value.tokens[key] = value
+}
+const paletteIssues = computed(() => checkPalette(document.value.tokens).filter(check => !check.passes))
+function repairPaletteColors() {
+  if (!canEditDesign.value) return
+  checkpoint()
+  document.value.tokens = bersihkan({ ...document.value.tokens, ...repairPalette(document.value.tokens) })
+  if (paletteIssues.value.length) toast.warning('Warna sudah didekatkan sebisanya. Latar yang sangat gelap masih menyisakan pasangan yang kurang terbaca.')
+  else toast.success('Warna disetel ke versi terdekat yang terbaca.')
+}
 function applyTemplate(id: LiveTemplateId) {
-  // Pasangan bertema pensiun boleh pindah sekali tanpa add-on — aturan yang sama persis
-  // dengan `hasDesignChange()` di API, supaya kontrol yang terlihat hidup tidak pernah
-  // berujung pada simpan yang ditolak.
   if (!canEditDesign.value && !templatePensiun.value) return
   const preset = invitationThemes.find(theme => theme.id === id)
   if (!preset) return
   checkpoint()
   document.value.templateId = id
-  document.value.tokens = { ...preset.tokens }
+  document.value.tokens = bersihkan({ ...document.value.tokens, ...preset.tokens })
 }
-
-// Halaman ini satu-satunya di web yang tidak pernah menyetel judul, jadi tab-nya
-// menampilkan URL mentah dan axe melaporkan `document-title`.
-useHead({ title: () => `${invitation.value?.title ?? 'Editor undangan'} — Aruna Dewa` })
-
-/* ── Penjaga keterbacaan palet ──────────────────────────────────────────────── */
-
-/**
- * Empat pasangan yang sama dengan audit tema di DESIGN.md, dihitung ulang setiap kali
- * pasangan menggeser color picker. Peringatannya hidup terus supaya mereka melihat
- * akibatnya saat memilih, bukan setelah undangan terlanjur dibagikan ke tamu.
- */
-const paletteChecks = computed(() => checkPalette(document.value.tokens))
-const paletteIssues = computed(() => paletteChecks.value.filter(check => !check.passes))
-
-function repairPaletteColors() {
+function tulisFont(key: 'font' | 'bodyFont', value: FontChoice | '') {
   if (!canEditDesign.value) return
   checkpoint()
-  document.value.tokens = { ...document.value.tokens, ...repairPalette(document.value.tokens) }
-  const remaining = paletteIssues.value.length
-  if (remaining) {
-    // Latar yang sangat gelap membuat aksen dan tinta tombol saling tarik; jujur saja.
-    toast.warning('Warna sudah didekatkan sebisanya. Latar yang sangat gelap masih menyisakan pasangan yang kurang terbaca — coba latar yang lebih terang.')
-    return
-  }
-  toast.success('Warna disetel ke versi terdekat yang terbaca.')
+  if (key === 'font') { if (value) document.value.tokens.font = value; return }
+  if (value) document.value.tokens.bodyFont = value
+  else delete document.value.tokens.bodyFont
+}
+function tulisBackdrop(pilihan: BackdropChoice) {
+  checkpoint()
+  if (pilihan === 'tema') delete document.value.tokens.backdrop
+  else document.value.tokens.backdrop = pilihan
+}
+function tulisBackdropWeight(bobot: BackdropWeight) {
+  checkpoint()
+  document.value.tokens.backdropWeight = bobot
+}
+function tulisMotion(patch: { amplop?: EnvelopeSpeed, masuk?: EntranceStyle | 'tema' }) {
+  if (!canEditDesign.value) return
+  checkpoint()
+  const motion = { ...(document.value.tokens.motion ?? {}) }
+  if ('amplop' in patch) { if (patch.amplop && patch.amplop !== 'sedang') motion.amplop = patch.amplop; else delete motion.amplop }
+  if ('masuk' in patch) { if (patch.masuk && patch.masuk !== 'tema') motion.masuk = patch.masuk; else delete motion.masuk }
+  if (Object.keys(motion).length) document.value.tokens.motion = motion
+  else delete document.value.tokens.motion
 }
 
+/* ── Kartu bagikan ──────────────────────────────────────────────────────────── */
+function tulisKartu(patch: Partial<ShareCardStyle> | null) {
+  checkpoint()
+  if (!patch) { delete document.value.shareCard; return }
+  const kartu = { ...(document.value.shareCard ?? {}), ...patch }
+  document.value.shareCard = kartu
+}
+
+/* ── Ornamen ────────────────────────────────────────────────────────────────── */
+/** Penukaran ornamen hidup di bagian pertama: `opening-envelope` (v2) atau `cover` (v1). */
+const ornamentHost = computed(() => document.value.sections.find(section => section.type === 'opening-envelope' || section.type === 'cover'))
+const ornamentOverrides = computed(() => toOrnamentOverrides(ornamentHost.value?.data.ornamentOverrides, document.value.templateId))
+const ornamentSet = computed(() => themeOrnaments(document.value.templateId))
+const slotBagianIni = computed(() => (selected.value ? sectionOrnamentSlots[selected.value.type] ?? [] : []))
+
+const studio = ref<{ slot?: OrnamentSlotKey, layer?: LayerSlot, semula: OrnamentOverrides } | null>(null)
+const studioAktif = computed(() => {
+  if (!studio.value) return null
+  const { slot, layer } = studio.value
+  const berlaku = terapkanOverrides(ornamentSet.value, ornamentOverrides.value)
+  const aktif = layer ? berlaku.layers.find(id => ornament(id).slot === layer)! : berlaku[slot!]
+  return { slot, layer, aktif, bawaan: bawaanSlot({ slot, layer, templateId: document.value.templateId })! }
+})
+function bukaStudio(target: { slot?: OrnamentSlotKey, layer?: LayerSlot }) {
+  if (!canEditDesign.value) return
+  checkpoint()
+  studio.value = { ...target, semula: salinOverrides() }
+}
+function tulisOverrides(berikut: OrnamentOverrides) {
+  const host = ornamentHost.value
+  if (!host) return
+  const bersih = toOrnamentOverrides(berikut, document.value.templateId)
+  if (Object.keys(bersih).length) host.data.ornamentOverrides = bersih
+  else delete host.data.ornamentOverrides
+}
+const salinOverrides = (): OrnamentOverrides => ({ ...ornamentOverrides.value, layers: { ...ornamentOverrides.value.layers }, unggahan: { ...ornamentOverrides.value.unggahan } })
+function pilihOrnamen(glyph: OrnamentId) {
+  const target = studio.value
+  if (!target) return
+  const berikut = salinOverrides()
+  if (target.layer) berikut.layers = { ...berikut.layers, [target.layer]: glyph }
+  else { berikut[target.slot!] = glyph; if (berikut.unggahan && bolehUnggah(target.slot!)) delete berikut.unggahan[target.slot!] }
+  tulisOverrides(berikut)
+}
+function pilihUnggahan(item: UploadedOrnament) {
+  const target = studio.value
+  if (!target?.slot || !bolehUnggah(target.slot)) return
+  const berikut = salinOverrides()
+  berikut.unggahan = { ...berikut.unggahan, [target.slot]: item }
+  delete berikut[target.slot]
+  tulisOverrides(berikut)
+}
+function kembalikanSlot() {
+  const target = studio.value
+  if (!target) return
+  const berikut = salinOverrides()
+  if (target.layer) delete berikut.layers?.[target.layer]
+  else { delete berikut[target.slot!]; if (bolehUnggah(target.slot!)) delete berikut.unggahan?.[target.slot!] }
+  tulisOverrides(berikut)
+}
+function batalkanStudio() { if (studio.value) tulisOverrides(studio.value.semula) }
+
+/**
+ * Klik ornamen di kanvas (fase 76) → tab Ornamen, kartu slotnya tersorot.
+ *
+ * Studio sengaja TIDAK dibuka langsung: keputusan pemilik. Sebelum memilih keping baru, pasangan
+ * perlu membaca slot apa yang barusan ia sentuh dan di mana lagi keping itu dipakai — nilai
+ * ornamen berlaku global, satu `divider` yang sama dipakai lima bagian sekaligus, dan itulah yang
+ * dikatakan kartu slotnya. `nonce` memakai pola `fokusPanggung`: menyentuh ornamen yang sama dua
+ * kali harus tetap menyorot, bukan diam karena nilainya tidak berubah.
+ */
+const sorotSlot = ref<{ slot?: OrnamentSlotKey, layer?: LayerSlot, nonce: number } | null>(null)
+function sorotkanSlot(target: { slot?: OrnamentSlotKey, layer?: LayerSlot }) {
+  if (!target.slot && !target.layer) return
+  prefs.value.inspectorTab = 'ornamen'
+  // Di bawah `xl` inspektor bersembunyi selagi tab Pratinjau terbuka — persis tab tempat klik itu
+  // terjadi. Tanpa baris ini, menyentuh ornamen di ponsel tidak memperlihatkan apa pun.
+  mobilePanel.value = 'settings'
+  sorotSlot.value = { ...target, nonce: (sorotSlot.value?.nonce ?? 0) + 1 }
+}
+/*
+ * Dua ringkasan berdiri di panel yang sama, dan keduanya bisa memuat slot yang dituju. Kalau
+ * dua kartu menyorot sekaligus, dua `scrollIntoView` saling menimpa dan yang terlihat justru
+ * kartu yang bukan konteksnya. Yang tersaring menang bila ia memuatnya — itu kartu yang
+ * menjelaskan bagian yang sedang disunting.
+ */
+const sorotBagian = computed(() => (sorotSlot.value?.slot && slotBagianIni.value.includes(sorotSlot.value.slot) ? sorotSlot.value : null))
+const sorotPenuh = computed(() => (sorotBagian.value ? null : sorotSlot.value))
+
+function kembalikanSemuaOrnamen() {
+  if (!canEditDesign.value) return
+  checkpoint()
+  tulisOverrides({})
+}
+
+/* ── Media ──────────────────────────────────────────────────────────────────── */
+const media = useMediaUploads(() => String(route.params.id))
+function queueRelease(url: string) {
+  if (!url || !mediaAssetIdFromUrl(url)) return
+  if (pendingReleases.value.includes(url)) return
+  pendingReleases.value = [...pendingReleases.value, url]
+}
+async function flushReleases(savedDocumentJson: string) {
+  const releasing = releasableUrls(pendingReleases.value, savedDocumentJson)
+  pendingReleases.value = stillQueued(pendingReleases.value, savedDocumentJson)
+  for (const url of releasing) await media.release(url)
+}
+
+/* ── Simpan & publikasi ─────────────────────────────────────────────────────── */
 async function save() {
-  // Tombolnya sudah ter-disable selagi `saving`, tapi `publish()` juga lewat sini: tanpa
-  // penjaga ini dua permintaan bisa berbarengan, dan yang kedua membawa `revision` basi.
   if (saving.value) return
   error.value = ''
   conflict.value = false
   const parsed = invitationDocumentSchema.safeParse(document.value)
   if (!parsed.success) {
-    error.value = parsed.error.issues[0]?.message ?? 'Rancangan belum valid.'
+    const issue = parsed.error.issues[0]
+    error.value = issue ? `${issue.message}${issue.path.length ? ` (${issue.path.join('.')})` : ''}` : 'Rancangan belum valid.'
     return
   }
-  // Diambil sebelum berangkat. Suntingan yang datang selagi permintaan terbang tidak ikut
-  // tertandai tersimpan — dan tidak pula ditimpa, karena dokumen lokal tidak disentuh.
   const snapshot = JSON.stringify(document.value)
   saving.value = true
   try {
     const result = await invitationsApi.saveDraft(String(route.params.id), { document: parsed.data, revision: revision.value })
-    /*
-     * Hanya `revision` yang diambil dari jawaban. `result.document` adalah gema dari dokumen
-     * yang baru saja dikirim — klien sudah mem-parse-nya dengan skema yang sama sebelum
-     * berangkat — jadi menugaskannya kembali bukan sinkronisasi, melainkan penimpaan.
-     */
     revision.value = result.revision
     savedSnapshot.value = snapshot
     toast.success('Draft tersimpan.')
@@ -296,14 +436,12 @@ async function save() {
 }
 
 async function publish() {
-  // Draft boleh disimpan dengan warna apa pun — pasangan sering berhenti di tengah
-  // penyetelan. Yang tidak boleh adalah versi publik yang tak terbaca oleh tamu.
   if (paletteIssues.value.length) {
-    error.value = `Warna undangan belum memenuhi ambang keterbacaan (${paletteIssues.value.length} dari 4 pasangan). Perbaiki di panel Tema & warna sebelum menerbitkan.`
+    error.value = `Warna undangan belum memenuhi ambang keterbacaan (${paletteIssues.value.length} dari 4 pasangan). Perbaiki di tab Global sebelum menerbitkan.`
     toast.error('Perbaiki kontras warna dulu sebelum menerbitkan.')
+    prefs.value.inspectorTab = 'global'
     return
   }
-  // Draf yang sudah bersih tidak perlu revisi baru hanya untuk diterbitkan.
   if (dirty.value) await save()
   if (error.value) return
   publishing.value = true
@@ -311,6 +449,7 @@ async function publish() {
     await invitationsApi.publish(String(route.params.id))
     toast.success('Versi publik diperbarui.')
     await load()
+    await dialogTerbit()
   } catch (cause) {
     error.value = apiErrorMessage(cause)
     toast.error(error.value)
@@ -319,444 +458,161 @@ async function publish() {
   }
 }
 
+async function dialogTerbit() {
+  const jawaban = await confirm({
+    title: 'Undangan telah published',
+    description: `Undangan Anda sudah aktif. Alamat undangan siap dibagikan kepada para tamu:\n${publicUrl.value}\n\nGunakan menu Generator untuk membuat tautan personal dengan nama setiap tamu.`,
+    actions: [
+      { id: 'salin', label: 'Salin URL' },
+      { id: 'buka', label: 'Buka undangan', tone: 'outline' },
+      { id: 'tutup', label: 'Tutup', tone: 'ghost' },
+    ],
+    dismissId: 'tutup',
+  })
+  if (jawaban === 'salin') {
+    try { await navigator.clipboard.writeText(publicUrl.value); toast.success('URL undangan disalin.') }
+    catch { toast.error('Tidak bisa menyalin. Salin manual dari bilah alamat.') }
+  }
+  if (jawaban === 'buka') window.open(publicUrl.value, '_blank', 'noopener')
+}
+
+/**
+ * Pindah struktur undangan (fase 74.11).
+ *
+ * BUKAN klik di grid tema, dengan sengaja: ia mengganti seluruh dokumen, bukan paletnya. Jadi
+ * tempatnya di sebelah `reset()`, dengan dialog yang MENYEBUTKAN apa yang terbawa dan apa yang
+ * hilang — pasangan yang menekan ini berhak tahu bahwa bagian yang tidak ada di struktur tujuan
+ * tidak akan kembali.
+ *
+ * Digerbangi `canEditDesign`: ia superset dari menggeser urutan, yang sudah digerbangi.
+ */
+/** Struktur hidup selain yang sedang dipakai. Kosong hari ini, dan kontrolnya ikut tidak tampil. */
+const strukturLain = computed(() => liveStructureIds.filter(id => id !== documentStructureId(document.value)))
+
+async function pindahStruktur(tujuan: StructureId) {
+  if (!canEditDesign.value) return
+  const sekarang = documentStructureId(document.value)
+  if (sekarang === tujuan) return
+  const hilang = [...new Set(document.value.sections.map(section => section.type))]
+    .filter(type => !structures[tujuan].sectionTypes.includes(type))
+    .map(type => sectionMeta[type as keyof typeof sectionMeta]?.label ?? type)
+  const jawaban = await confirm({
+    title: `Pindah ke ${structures[tujuan].name}?`,
+    description: hilang.length
+      ? `Isi yang sudah kalian tulis dibawa menurut jenis bagiannya, dan warna serta ornamen tetap. Yang tidak ada di tampilan ini akan hilang: ${hilang.join(', ')}.`
+      : 'Isi yang sudah kalian tulis dibawa menurut jenis bagiannya; warna, ornamen, dan musik tetap.',
+    tone: 'danger',
+    actions: [{ id: 'batal', label: 'Batal', tone: 'outline' }, { id: 'pindah', label: 'Ya, pindah', tone: 'ink' }],
+    dismissId: 'batal',
+  })
+  if (jawaban !== 'pindah') return
+  checkpoint()
+  document.value = bersihkan(restructureDocument(toRaw(document.value), tujuan))
+  toast.message('Tampilan diganti. Simpan untuk menerapkannya.')
+}
+
 async function reset() {
   const jawaban = await confirm({
     title: 'Kembalikan ke preset awal?',
-    description: 'Seluruh isi draft diganti preset tema ini. Perubahan yang belum tersimpan akan hilang.',
+    description: 'Seluruh isi draft diganti struktur Elegance bawaan tema ini. Perubahan yang belum tersimpan akan hilang.',
     tone: 'danger',
-    actions: [
-      { id: 'kembali', label: 'Kembali', tone: 'outline' },
-      { id: 'reset', label: 'Ya, kembalikan', tone: 'ink' },
-    ],
+    actions: [{ id: 'kembali', label: 'Kembali', tone: 'outline' }, { id: 'reset', label: 'Ya, kembalikan', tone: 'ink' }],
     dismissId: 'kembali',
   })
   if (jawaban !== 'reset') return
   checkpoint()
-  document.value = createDefaultDocument('Aruna', 'Dewa', document.value.templateId)
+  const couple = document.value.sections.find(section => section.type === 'couple')?.data ?? {}
+  const nama = (key: string, fallback: string) => (typeof couple[key] === 'string' && (couple[key] as string).trim()) ? (couple[key] as string) : fallback
+  /*
+   * Tema DAN struktur ikut terbawa. Barisnya sudah mengoper tema sejak dulu; strukturnya harus
+   * ikut sejak fase 74.9, kalau tidak pasangan yang menekan "kembalikan preset" diam-diam
+   * kehilangan strukturnya dan mendapat `elegance` bawaan.
+   */
+  document.value = createDefaultDocument(
+    nama('brideName', nama('partner1', 'Aruna')),
+    nama('groomName', nama('partner2', 'Dewa')),
+    documentThemeId(document.value),
+    {},
+    documentStructureId(document.value),
+  )
   toast.message('Preset dimuat kembali. Simpan untuk menerapkannya.')
 }
 
-/**
- * Key yang punya himpunan nilai tertutup.
- *
- * Fallback `textFields` di bawah merender kotak teks untuk **setiap** key bernilai string.
- * Tanpa daftar ini, pasangan akan melihat kolom bebas bertuliskan `arch-potret` dan bisa
- * mengetik apa saja ke dalamnya — `section.data` adalah `z.record(z.unknown())` dan tidak
- * divalidasi zod, jadi nilai ngawur akan tersimpan dengan senang hati dan section-nya
- * diam-diam jatuh ke bawaan.
- *
- * `image` dan `credit` ikut dikecualikan bukan karena tertutup, melainkan karena sudah punya
- * panel sendiri di atas — tanpa ini keduanya muncul dua kali di layar yang sama.
- */
-const enumKeys = new Set(['layout', 'ornamentIntensity', 'motion', 'venueIllustration', 'image', 'credit'])
-
-const textFields = computed(() => {
-  const data = selected.value?.data ?? {}
-  return Object.entries(data)
-    .filter(([key, value]) => typeof value === 'string' && !enumKeys.has(key)) as [string, string][]
-})
-
-/* ── Pilihan berbentuk enum ─────────────────────────────────────────────────── */
-function writeOption(key: string, value: string) {
-  const section = selected.value
-  if (!section) return
-  checkpoint()
-  section.data[key] = value
-}
-
-/* ── Varian ornamen ─────────────────────────────────────────────────────────── */
-
-/** Aksen tema yang sedang berlaku — pratinjau ornamen diwarnai ramp yang sama dengan undangan. */
-// `accent` hidup di preset kontrak, bukan di `ThemePresentation`; `templateById()` yang
-// menerjemahkan id pensiun, jadi pratinjau tetap berwarna untuk tema yang dipensiunkan.
-const themeAccent = computed(() => templateById(document.value?.templateId ?? '')?.accent ?? '#7A8B6F')
-
-
-/**
- * Penukaran ornamen yang sedang berlaku.
- *
- * `ornamentOverrides` bernilai objek, bukan string, jadi ia tidak perlu masuk `enumKeys` —
- * `textFields` sudah menyaring dengan `typeof value === 'string'`. Tapi ia juga karena itu
- * tidak bisa lewat `writeOption()`, yang hanya menerima string.
- */
-const ornamentOverrides = computed(() =>
-  toOrnamentOverrides(selected.value?.data.ornamentOverrides, document.value?.templateId ?? ''))
-
-/** Set tema sesudah penukaran, untuk ringkasan panel. */
-const ornamentSet = computed(() => themeOrnaments(document.value?.templateId ?? ''))
-
-/* ── Studio Ornamen ─────────────────────────────────────────────────────────── */
-
-/**
- * Slot yang sedang dibuka di Studio, beserta nilai semula.
- *
- * `checkpoint()` dipanggil **sekali** saat Studio dibuka, bukan tiap klik ubin. Satu sesi memilih
- * karena itu jadi satu langkah undo — orang yang mencoba enam bingkai sebelum memutuskan tidak
- * seharusnya menghabiskan enam dari tiga puluh langkah riwayatnya.
- */
-const studio = ref<{ slot?: OrnamentSlotKey, layer?: LayerSlot, semula: OrnamentOverrides } | null>(null)
-
-const studioAktif = computed(() => {
-  if (!studio.value) return null
-  const { slot, layer } = studio.value
-  const berlaku = terapkanOverrides(ornamentSet.value, ornamentOverrides.value)
-  const aktif = layer
-    ? berlaku.layers.find(id => ornament(id).slot === layer)!
-    : berlaku[slot!]
-  return { slot, layer, aktif, bawaan: bawaanSlot({ slot, layer, templateId: document.value.templateId })! }
-})
-
-function bukaStudio(target: { slot?: OrnamentSlotKey, layer?: LayerSlot }) {
-  if (!canEditDesign.value) return
-  checkpoint()
-  studio.value = { ...target, semula: { ...ornamentOverrides.value, layers: { ...ornamentOverrides.value.layers } } }
-}
-
-/** Menulis penukaran ke `cover.data`. Nilai yang sama dengan bawaan tema dibuang oleh sanitizer. */
-function tulisOverrides(berikut: OrnamentOverrides) {
-  const cover = document.value.sections.find(section => section.type === 'cover')
-  if (!cover) return
-  const bersih = toOrnamentOverrides(berikut, document.value.templateId)
-  if (Object.keys(bersih).length) cover.data.ornamentOverrides = bersih
-  else delete cover.data.ornamentOverrides
-}
-
-function pilihOrnamen(glyph: OrnamentId) {
-  const target = studio.value
-  if (!target) return
-  const berikut: OrnamentOverrides = { ...ornamentOverrides.value, layers: { ...ornamentOverrides.value.layers } }
-  if (target.layer) berikut.layers = { ...berikut.layers, [target.layer]: glyph }
-  else berikut[target.slot!] = glyph
-  tulisOverrides(berikut)
-}
-
-function kembalikanSlot() {
-  const target = studio.value
-  if (!target) return
-  const berikut: OrnamentOverrides = { ...ornamentOverrides.value, layers: { ...ornamentOverrides.value.layers } }
-  if (target.layer) delete berikut.layers?.[target.layer]
-  else delete berikut[target.slot!]
-  tulisOverrides(berikut)
-}
-
-/** Escape / Batal: kembalikan seluruh penukaran ke keadaan saat Studio dibuka. */
-function batalkanStudio() {
-  if (studio.value) tulisOverrides(studio.value.semula)
-}
-
-function kembalikanSemuaOrnamen() {
-  if (!canEditDesign.value) return
-  checkpoint()
-  tulisOverrides({})
-}
-
-/* ── Latar & huruf body ─────────────────────────────────────────────────────── */
-
-const backdrop = computed(() => toBackdrop(document.value?.tokens.backdrop) ?? 'tema')
-const backdropWeight = computed(() => toBackdropWeight(document.value?.tokens.backdropWeight) ?? 'sedang')
-
-function tulisBackdrop(pilihan: BackdropChoice) {
-  checkpoint()
-  // `'tema'` DIHAPUS, bukan disimpan: "ikut tema" berarti dokumen tidak membawa pendapat sendiri,
-  // jadi tema yang kelak mengganti latarnya tetap berlaku untuk pasangan ini.
-  if (pilihan === 'tema') delete document.value.tokens.backdrop
-  else document.value.tokens.backdrop = pilihan
-}
-
-function tulisBackdropWeight(bobot: BackdropWeight) {
-  checkpoint()
-  document.value.tokens.backdropWeight = bobot
-}
-
-const coverLayout = computed(() => toCoverLayout(selected.value?.data.layout))
-const coverIntensity = computed(() => toIntensity(selected.value?.data.ornamentIntensity))
-const galleryMotion = computed(() => toGalleryMotion(selected.value?.data.motion))
-const venueIllustration = computed(() => String(selected.value?.data.venueIllustration ?? ''))
-
-/* ── Dresscode ──────────────────────────────────────────────────────────────── */
-const attire = computed(() => toAttire(selected.value?.data.attire))
-
-function toggleAttire(id: string, on: boolean) {
-  const section = selected.value
-  if (!section) return
-  checkpoint()
-  const current = attire.value.filter(item => item !== id)
-  section.data.attire = on ? [...current, id] : current
-}
-
-const dresscodeColors = computed(() =>
-  (selected.value?.type === 'dresscode' && Array.isArray(selected.value.data.colors)
-    ? (selected.value.data.colors as Record<string, unknown>[])
-    : []))
-
-function addColor() {
-  const section = selected.value
-  if (!section) return
-  checkpoint()
-  if (!Array.isArray(section.data.colors)) section.data.colors = []
-  ;(section.data.colors as Record<string, unknown>[]).push({ hex: '#E8DCC8', name: '' })
-}
-
-/* ── Cerita kami ────────────────────────────────────────────────────────────── */
-const storySteps = computed(() =>
-  (selected.value?.type === 'story' && Array.isArray(selected.value.data.steps)
-    ? (selected.value.data.steps as Record<string, unknown>[])
-    : []))
-
-function addStoryStep() {
-  const section = selected.value
-  if (!section) return
-  checkpoint()
-  if (!Array.isArray(section.data.steps)) section.data.steps = []
-  const steps = section.data.steps as Record<string, unknown>[]
-  steps.push({
-    id: crypto.randomUUID(),
-    title: '',
-    text: '',
-    // Dinamai `image`, bukan `foto`: `assertSafeUrls` di API hanya memeriksa key yang
-    // berakhiran url/urls/image/images, jadi nama lain akan lolos tanpa diperiksa.
-    image: '',
-    side: steps.length % 2 === 0 ? 'kiri' : 'kanan',
+/* ── Dialog kecil di baris ikon ─────────────────────────────────────────────── */
+function pintasan() {
+  alert({
+    title: 'Pintasan keyboard',
+    description: 'Ctrl/⌘ + Z — undo · Ctrl/⌘ + Shift + Z atau Ctrl + Y — redo · Ctrl/⌘ + S — simpan draft · ↑/↓ pada pegangan bagian — geser urutan · Esc — tutup dialog.',
   })
 }
-const eventRows = computed(() => (selected.value?.type === 'events' && Array.isArray(selected.value.data.events) ? (selected.value.data.events as Record<string, unknown>[]) : []))
-const galleryImages = computed(() => (selected.value?.type === 'gallery' && Array.isArray(selected.value.data.images) ? (selected.value.data.images as string[]) : []))
-const rundownRows = computed(() => (selected.value?.type === 'rundown' && Array.isArray(selected.value.data.items) ? (selected.value.data.items as Record<string, unknown>[]) : []))
+/* ── Riwayat versi (fase 75) ────────────────────────────────────────────────── */
+const riwayatOpen = ref(false)
+const riwayatList = ref<RevisionSummary[]>([])
+const riwayatLoading = ref(false)
+const riwayatError = ref('')
+const riwayatRestoring = ref<number | null>(null)
 
-const giftAccounts = computed(() => (selected.value?.type === 'gift' && Array.isArray(selected.value.data.accounts) ? (selected.value.data.accounts as Record<string, unknown>[]) : []))
+async function riwayat() {
+  riwayatOpen.value = true
+  riwayatError.value = ''
+  riwayatLoading.value = true
+  try { riwayatList.value = await invitationsApi.listRevisions(String(route.params.id)) }
+  catch (cause) { riwayatError.value = apiErrorMessage(cause) }
+  finally { riwayatLoading.value = false }
+}
 
 /**
- * Bentuk data hadiah yang lama (satu rekening datar) diterjemahkan saat pasangan
- * membuka section-nya. Dokumen yang tidak pernah disentuh tetap dibaca renderer lewat
- * `normalizeGift`, jadi tidak ada migrasi basis data yang diperlukan.
+ * Memulihkan menulis ke draft lewat endpoint yang memakai jalur simpan yang sama, jadi gerbang
+ * desain dan penjaga konflik revisi tetap berlaku. Yang dikerjakan di sini cuma akibatnya di layar:
+ * dokumen lokal diganti, revisi lokal ikut naik, dan `checkpoint()` dipanggil LEBIH DULU supaya
+ * pemulihan bisa di-undo dalam sesi yang sama.
  */
-watch(selected, (section) => {
-  if (!section || section.type !== 'gift' || Array.isArray(section.data.accounts)) return
-  checkpoint()
-  const { title, note, address, accounts } = normalizeGift(section.data)
-  section.data = { title, note, address, accounts: accounts as unknown as Record<string, unknown>[] }
-}, { immediate: true })
-
-function addGiftAccount() {
-  if (giftAccounts.value.length >= giftAccountLimit) return
-  checkpoint()
-  giftAccounts.value.push({
-    id: crypto.randomUUID(),
-    bankId: 'bca',
-    bankLabel: '',
-    number: '',
-    holder: '',
-    owner: '',
+async function pulihkan(target: number) {
+  const jawaban = await confirm({
+    title: `Pulihkan versi ${target}?`,
+    description: 'Isi draft sekarang diganti isi versi itu, dan perubahan yang belum tersimpan hilang. Tamu belum melihatnya sampai kalian menekan Publikasikan lagi.',
+    tone: 'danger',
+    actions: [{ id: 'batal', label: 'Batal', tone: 'outline' }, { id: 'pulihkan', label: 'Ya, pulihkan', tone: 'ink' }],
+    dismissId: 'batal',
   })
-}
-
-/**
- * "Lokasi sama" sengaja tidak disimpan di dokumen. `data` tidak tervalidasi sehingga
- * sebuah flag tidak pernah bisa ditegakkan, dan dokumen yang sudah terbit lebih murah
- * kalau selalu lengkap. Nilai awalnya diturunkan dari datanya sendiri.
- */
-const sameVenueKeys = ['venue', 'address', 'mapUrl'] as const
-const sameVenue = ref(false)
-watch(eventRows, (rows) => {
-  if (rows.length < 2) { sameVenue.value = false; return }
-  const first = rows[0]!
-  sameVenue.value = rows.slice(1).every(row => sameVenueKeys.every(key => String(row[key] ?? '').trim() === String(first[key] ?? '').trim()))
-}, { immediate: true, deep: false })
-
-/** Acara pertama menjadi sumber; sisanya mengikuti selama kotaknya masih tercentang. */
-function writeVenue(index: number, key: (typeof sameVenueKeys)[number], value: string) {
-  const rows = eventRows.value
-  const row = rows[index]
-  if (!row) return
-  row[key] = value
-  if (!sameVenue.value) return
-  if (index === 0) {
-    for (const other of rows.slice(1)) other[key] = value
-  } else {
-    // Mengubah acara kedua berarti lokasinya memang berbeda. Lepaskan tautannya,
-    // jangan menimpa apa pun.
-    sameVenue.value = false
-  }
-}
-
-function toggleSameVenue(next: boolean) {
-  sameVenue.value = next
-  if (!next) return
-  checkpoint()
-  const rows = eventRows.value
-  const first = rows[0]
-  if (!first) return
-  for (const other of rows.slice(1)) for (const key of sameVenueKeys) other[key] = first[key] ?? ''
-}
-
-function addEvent() {
-  checkpoint()
-  const first = eventRows.value[0]
-  const shared = sameVenue.value && first
-    ? { venue: first.venue ?? '', address: first.address ?? '', mapUrl: first.mapUrl ?? '' }
-    : { venue: '', address: '', mapUrl: '' }
-  eventRows.value.push({ id: crypto.randomUUID(), name: 'Acara', date: '', time: '', ...shared, public: true })
-}
-function addRundown() {
-  checkpoint()
-  rundownRows.value.push({ id: crypto.randomUUID(), time: '', title: '', description: '' })
-}
-function removeRow(rows: unknown[], index: number) {
-  checkpoint()
-  rows.splice(index, 1)
-}
-function addGalleryUrl() {
-  if (!galleryUrl.value.trim()) return
-  checkpoint()
-  galleryImages.value.push(galleryUrl.value.trim())
-  galleryUrl.value = ''
-}
-
-/* ── Unggahan media ─────────────────────────────────────────────────────────── */
-
-const media = useMediaUploads(() => String(route.params.id))
-const gallerySlotsLeft = computed(() => Math.max(0, galleryPhotoLimit - galleryImages.value.length))
-
-/**
- * Satu jatuhan, satu langkah undo.
- *
- * `checkpoint()` dipanggil sekali untuk seluruh jatuhan, bukan per foto: menjatuhkan sepuluh
- * foto terasa seperti satu tindakan, dan undo yang mengembalikannya satu per satu akan
- * menghabiskan seluruh tumpukan 30-langkah untuk satu gerakan tangan.
- */
-async function onGalleryFiles(files: File[]) {
-  if (!selected.value || selected.value.type !== 'gallery') return
-  const urls = await media.upload(files)
-  if (!urls.length) return
-  checkpoint()
-  galleryImages.value.push(...urls)
-  toast.success(urls.length === 1
-    ? 'Foto ditambahkan. Foto tampil publik setelah undangan diterbitkan.'
-    : `${urls.length} foto ditambahkan. Foto tampil publik setelah undangan diterbitkan.`)
-}
-
-/**
- * Melepas berkasnya, bukan cuma tautannya — tapi menunggu gilirannya.
- *
- * Batas foto dihitung dari aset yang tersimpan di server, jadi tanpa penghapusan ini pasangan
- * yang mengunggah lalu berganti pikiran lima belas kali akan mentok selamanya tanpa punya satu
- * pun foto. Yang berubah di fase 18 adalah **kapan**: dulu berkasnya dihapus begitu URL-nya
- * lepas dari dokumen di layar, dan draf di server menyusul 900ms kemudian lewat autosave.
- * Tanpa autosave, urutan itu meninggalkan draf tersimpan yang menunjuk aset mati sampai
- * pasangan menekan Simpan. Jadi URL-nya mengantre di sini dan dilepas sesudah simpan berhasil.
- */
-function queueRelease(url: string) {
-  if (!url || !mediaAssetIdFromUrl(url)) return
-  if (pendingReleases.value.includes(url)) return
-  pendingReleases.value = [...pendingReleases.value, url]
-}
-
-/** Dipanggil hanya dari `save()` yang berhasil, dengan dokumen yang benar-benar tersimpan. */
-async function flushReleases(savedDocumentJson: string) {
-  const releasing = releasableUrls(pendingReleases.value, savedDocumentJson)
-  // Yang masih disebut dokumen tetap mengantre; pasangan boleh melepasnya lagi nanti.
-  pendingReleases.value = stillQueued(pendingReleases.value, savedDocumentJson)
-  for (const url of releasing) await media.release(url)
-}
-
-function removeGalleryImage(index: number) {
-  const url = String(galleryImages.value[index] ?? '')
-  removeRow(galleryImages.value, index)
-  queueRelease(url)
-}
-
-/* ── Musik latar ────────────────────────────────────────────────────────────── */
-
-/**
- * Tiga jalur masuk, berurutan dari yang paling ramah: pustaka, unggah, tempel URL.
- *
- * Pustakanya ada karena kebanyakan pasangan tidak punya berkas MP3 dan tidak tahu harus
- * mencarinya di mana. Sebelum ini section `music` jatuh ke kotak teks berlabel "URL" — fitur
- * yang backend-nya sudah menerima `audio/mpeg` sejak awal tapi tidak punya satu pun jalan masuk.
- */
-const musicUpload = useMediaUploads(() => String(route.params.id))
-const musicUrl = computed(() => String(selected.value?.data.url ?? ''))
-const musicCredit = computed(() => String(selected.value?.data.credit ?? ''))
-const musicTitle = computed(() => String(selected.value?.data.title ?? ''))
-const preview = ref<HTMLAudioElement | null>(null)
-const previewing = ref('')
-
-function writeMusic(url: string, title: string, credit: string) {
-  const section = selected.value
-  if (!section) return
-  const previous = String(section.data.url ?? '')
-  checkpoint()
-  section.data.url = url
-  section.data.title = title
-  section.data.credit = credit
-  // Memilih lagu lalu bertanya-tanya kenapa senyap adalah jebakan yang tidak perlu ada.
-  if (url) section.enabled = true
-  if (previous && previous !== url) queueRelease(previous)
-}
-
-function selectTrack(track: MusicTrack) {
-  writeMusic(track.url, track.title, track.credit)
-}
-
-async function onMusicFiles(files: File[]) {
-  const [url] = await musicUpload.upload(files, 'audio')
-  if (!url) return
-  writeMusic(url, files[0]?.name.replace(/\.[^.]+$/u, '') ?? 'Lagu pilihan kami', '')
-}
-
-function clearMusic() {
-  stopPreview()
-  writeMusic('', '', '')
-  const section = selected.value
-  if (section) section.enabled = false
-}
-
-function stopPreview() {
-  preview.value?.pause()
-  previewing.value = ''
-}
-
-async function togglePreview(url: string) {
-  const player = preview.value
-  if (!player) return
-  if (previewing.value === url) { stopPreview(); return }
-  player.src = url
+  if (jawaban !== 'pulihkan') return
+  riwayatRestoring.value = target
+  riwayatError.value = ''
   try {
-    await player.play()
-    previewing.value = url
-  } catch {
-    // Diblokir browser atau berkasnya tidak terjangkau; pasangan tetap bisa menyimpan pilihannya.
-    previewing.value = ''
+    checkpoint()
+    const hasil = await invitationsApi.restoreRevision(String(route.params.id), { revision: target, draftRevision: revision.value })
+    document.value = bersihkan(hasil.document as InvitationDocument)
+    revision.value = hasil.revision
+    // Server sudah menyimpannya, jadi draft ini BERSIH — `savedSnapshot` disamakan supaya
+    // `dirty` tidak menyala dan pasangan tidak diminta menyimpan sesuatu yang sudah tersimpan.
+    savedSnapshot.value = JSON.stringify(document.value)
+    riwayatOpen.value = false
+    toast.success(`Versi ${target} dipulihkan ke draft. Publikasikan untuk menayangkannya.`)
+  } catch (cause) {
+    riwayatError.value = apiErrorMessage(cause)
+  } finally {
+    riwayatRestoring.value = null
   }
 }
-
-// Berpindah bagian tidak boleh meninggalkan lagu yang masih berbunyi di latar.
-watch(selectedId, stopPreview)
-onBeforeUnmount(stopPreview)
-
-function undo() {
-  const previous = undoStack.value.pop()
-  if (!previous) return
-  redoStack.value.push(structuredClone(toRaw(document.value)))
-  document.value = previous
+function pustaka() { bukaPustaka({ judul: 'Kelola foto & musik' }) }
+async function salinUrl() {
+  try { await navigator.clipboard.writeText(publicUrl.value); toast.success('URL undangan disalin.') }
+  catch { toast.error('Tidak bisa menyalin. Salin manual dari bilah alamat.') }
 }
-function redo() {
-  const next = redoStack.value.pop()
-  if (!next) return
-  undoStack.value.push(structuredClone(toRaw(document.value)))
-  document.value = next
-}
+
+useEventListener(window, 'keydown', (event: KeyboardEvent) => {
+  const target = event.target as HTMLElement | null
+  const mengetik = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+  const mod = event.metaKey || event.ctrlKey
+  if (!mod) return
+  if (event.key.toLowerCase() === 's') { event.preventDefault(); if (dirty.value) save(); return }
+  if (mengetik) return
+  if (event.key.toLowerCase() === 'z' && event.shiftKey) { event.preventDefault(); redo(); return }
+  if (event.key.toLowerCase() === 'z') { event.preventDefault(); undo(); return }
+  if (event.key.toLowerCase() === 'y') { event.preventDefault(); redo() }
+})
 
 /* ── Perubahan yang belum tersimpan ─────────────────────────────────────────── */
-
-/**
- * Pengganti autosave: pasangan diberi tahu, bukan disimpankan diam-diam.
- *
- * Dua permukaan, karena dua kejadian yang berbeda. Berpindah halaman bisa kita tahan sendiri
- * dan tawarkan tiga jalan keluar. Menutup tab tidak bisa — dialognya milik browser, tanpa
- * kalimat kita dan tanpa tombol kita — tapi membiarkannya lewat tanpa peringatan sama sekali
- * berarti seluruh sore penyuntingan hilang tanpa satu pun kalimat.
- */
 onBeforeRouteLeave(async () => {
   if (!dirty.value) return true
   const jawaban = await confirm({
@@ -772,11 +628,8 @@ onBeforeRouteLeave(async () => {
   if (jawaban === 'tinggalkan') return true
   if (jawaban !== 'simpan') return false
   await save()
-  // Simpan yang ditolak server (revisi bentrok, dokumen tidak valid) tidak boleh berakhir
-  // sebagai kepindahan diam-diam: pesannya ada di halaman ini, jadi pasangan tetap di sini.
   return !error.value
 })
-
 useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
   if (!dirty.value) return
   event.preventDefault()
@@ -784,1009 +637,221 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
 </script>
 
 <template>
-  <DashboardShell v-if="invitation" :invitation-id="invitation.id" :title="invitation.title" width="wide">
-    <header class="flex flex-wrap items-start justify-between gap-4">
-      <div class="grid gap-1.5">
-        <p class="eyebrow">Editor undangan</p>
-        <h1 class="m-0 font-display text-h1 font-semibold text-ink">{{ invitation.title }}</h1>
-        <p class="m-0 text-caption text-ink-subtle">
-          Draft r{{ revision }} · versi publik hanya berubah saat kalian menerbitkan.
-        </p>
-        <!--
-          Tanpa autosave, keadaan "sudah tersimpan atau belum" tidak boleh ditebak-tebak.
-          Karena itu ia tertulis, bukan disiratkan lewat tombol yang aktif atau tidak.
-        -->
-        <p id="editor-save-state" class="m-0 flex items-center gap-1.5 text-caption" :class="dirty ? 'text-primary-strong' : 'text-ink-subtle'">
-          <AlertCircle v-if="dirty" :size="14" aria-hidden="true" />
-          <Check v-else :size="14" aria-hidden="true" />
-          {{ dirty ? 'Ada perubahan yang belum tersimpan' : 'Semua perubahan tersimpan' }}
-        </p>
-      </div>
+  <DashboardShell v-if="invitation" :invitation-id="invitation.id" :title="invitation.title" width="wide" variant="studio">
+    <div class="flex min-h-0 flex-col lg:h-full">
+      <DashboardEditorToolbar
+        :title="invitation.title"
+        :slug="invitation.slug"
+        :invitation-id="invitation.id"
+        :theme-name="themeName"
+        :revision="revision"
+        :dirty="dirty"
+        :saving="saving"
+        :publishing="publishing"
+        :published="published"
+        :error="error"
+        :conflict="conflict"
+        @publish="publish"
+        @reload="load"
+      />
 
-      <div class="flex flex-wrap items-center gap-2">
-        <UiButton id="editor-view-public" as="NuxtLink" :to="`/i/${invitation.slug}`" target="_blank" tone="outline" size="sm">
-          <Eye :size="16" aria-hidden="true" />
-          Lihat publik
-        </UiButton>
-        <UiButton id="editor-undo" tone="ghost" size="sm" :disabled="!undoStack.length" aria-label="Undo" @click="undo">
-          <Undo2 :size="16" aria-hidden="true" />
-        </UiButton>
-        <UiButton id="editor-redo" tone="ghost" size="sm" :disabled="!redoStack.length" aria-label="Redo" @click="redo">
-          <Redo2 :size="16" aria-hidden="true" />
-        </UiButton>
-        <UiButton id="editor-reset" tone="outline" size="sm" @click="reset">
-          <RotateCcw :size="16" aria-hidden="true" />
-          Reset
-        </UiButton>
-        <UiButton id="editor-save" size="sm" :loading="saving" :disabled="!dirty" @click="() => save()">
-          <Save v-if="!saving" :size="16" aria-hidden="true" />
-          {{ saving ? 'Menyimpan…' : 'Simpan draft' }}
-        </UiButton>
-        <UiButton id="editor-publish" tone="ink" size="sm" :loading="publishing" @click="publish">
-          <Send v-if="!publishing" :size="16" aria-hidden="true" />
-          {{ publishing ? 'Menerbitkan…' : 'Publikasikan' }}
-        </UiButton>
-      </div>
-    </header>
-
-    <p v-if="error" class="notice m-0" role="alert">
-      {{ error }}
-      <button v-if="conflict" id="editor-reload-server" class="button button-secondary ml-2" type="button" @click="load">Muat ulang versi server</button>
-    </p>
-
-    <!-- Mobile can only show one pane at a time. -->
-    <div class="flex gap-1 rounded-full bg-surface-3 p-1 xl:hidden" role="tablist" aria-label="Panel editor">
-      <button
-        v-for="tab in [{ id: 'settings', label: 'Pengaturan' }, { id: 'preview', label: 'Pratinjau' }]"
-        :id="`editor-panel-${tab.id}`"
-        :key="tab.id"
-        type="button"
-        role="tab"
-        :aria-selected="mobilePanel === tab.id"
-        :class="cn(
-          'min-h-11 flex-1 rounded-full text-[0.9375rem] font-semibold transition-colors duration-200',
-          mobilePanel === tab.id ? 'bg-surface text-ink shadow-hairline' : 'text-ink-muted',
-        )"
-        @click="mobilePanel = tab.id as 'settings' | 'preview'"
-      >
-{{ tab.label }}
-</button>
-    </div>
-
-    <!--
-      Tiga tingkat, bukan dua.
-
-      Sebelumnya lompatannya langsung dari tata letak ponsel ke tiga kolom di `xl` (1280px),
-      jadi laptop 13" — 1024 sampai 1280 — melihat satu panel bertab padahal ruangnya cukup
-      untuk dua. Jalur tengah memakai `minmax(0, 1fr)` supaya isinya benar-benar boleh
-      menyusut; `1fr` polos punya `min-width: auto` dan akan menolak menyempit di bawah lebar
-      isi terlebarnya.
-    -->
-    <div
-      class="grid gap-5 lg:grid-cols-[14.5rem_minmax(0,1fr)] lg:gap-x-8 xl:grid-cols-[14.5rem_minmax(0,1fr)_minmax(18rem,20rem)] lg:items-start"
-    >
-      <!-- Section list -->
-      <aside :class="cn('grid content-start gap-2', mobilePanel === 'preview' && 'hidden lg:grid')">
-        <p class="eyebrow">Bagian undangan</p>
-        <p v-if="!canEditDesign" id="design-locked-order" class="m-0 flex items-start gap-1.5 text-caption text-ink-muted">
-          <Lock :size="13" class="mt-0.5 shrink-0" aria-hidden="true" />
-          <span>Urutan bagian mengikuti tema. Lihat panel Tema &amp; warna.</span>
-        </p>
-        <ul class="m-0 grid gap-1 p-0 list-none">
-          <li
-            v-for="(section, index) in document.sections"
-            :key="section.id"
-            :class="cn(
-              'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-md border px-1.5 transition-colors duration-200',
-              selectedId === section.id ? 'border-primary bg-primary-soft' : 'border-transparent hover:bg-surface-2',
-            )"
+      <div class="border-b border-border bg-surface px-4 py-2 xl:hidden">
+        <div class="flex gap-1 rounded-full bg-surface-3 p-1" role="tablist" aria-label="Panel editor">
+          <button
+            v-for="tab in [{ id: 'settings', label: 'Pengaturan' }, { id: 'preview', label: 'Pratinjau' }]"
+            :id="`editor-panel-${tab.id}`"
+            :key="tab.id"
+            type="button"
+            role="tab"
+            :aria-selected="mobilePanel === tab.id"
+            :class="cn('min-h-11 flex-1 rounded-full text-ui-lg font-semibold transition-colors duration-200', mobilePanel === tab.id ? 'bg-surface text-ink shadow-hairline' : 'text-ink-muted')"
+            @click="mobilePanel = tab.id as 'settings' | 'preview'"
           >
-            <!--
-              `minmax(0, 1fr)` untuk label, `auto` untuk kluster kontrol. Dulu barisnya `flex`
-              dan muatnya kebetulan: centang 36px + dua panah 28px + jarak dan padding menyisakan
-              ~94px teks di jalur 240px, dan label yang lebih panjang mendorong panahnya keluar
-              jalur sampai menempel ke kolom sebelah. Dengan grid, kolom label yang menyusut —
-              berapa pun panjang namanya, `truncate` yang menanggungnya.
-            -->
-            <button
-              :id="`editor-section-${section.id}`"
-              type="button"
-              class="flex min-h-11 min-w-0 items-center gap-2 rounded-md px-1.5 text-left text-[0.875rem] font-medium text-ink"
-              @click="selectedId = section.id; mobilePanel = 'settings'"
-            >
-              <span
-                :class="cn('h-2 w-2 shrink-0 rounded-full', section.enabled ? 'bg-sage' : 'bg-border-strong')"
-                aria-hidden="true"
-              />
-              <!--
-                Membungkus, bukan dipotong. `truncate` memotong tiga dari tiga belas nama jadi
-                "Video & live str…" — persis nama bagian yang sedang dicari pasangan. Dua baris
-                pada `leading-snug` masih muat di dalam tinggi baris 44px yang sudah ada, jadi
-                nama utuh tidak menukar apa pun.
-              -->
-              <span class="leading-snug">{{ sectionLabels[section.type] ?? section.type }}</span>
-            </button>
+            {{ tab.label }}
+          </button>
+        </div>
+      </div>
 
-            <!-- Target sentuh tetap 44px tingginya; yang dirapikan lebarnya, bukan jangkauannya. -->
-            <div class="flex items-center">
-              <label class="grid h-11 w-9 shrink-0 cursor-pointer place-items-center">
-                <input :id="`editor-section-toggle-${section.id}`" v-model="section.enabled" type="checkbox" class="h-4 w-4 accent-[var(--color-primary)]">
-                <span class="sr-only">Tampilkan {{ sectionLabels[section.type] ?? section.type }}</span>
-              </label>
-
-              <button
-                :id="`editor-section-up-${section.id}`"
-                type="button"
-                class="grid h-11 w-7 shrink-0 place-items-center rounded-md text-ink-subtle hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
-                :disabled="!canEditDesign || index === 0"
-                :aria-label="`Naikkan ${sectionLabels[section.type] ?? section.type}`"
-                :aria-describedby="canEditDesign ? undefined : 'design-locked-order'"
-                @click="move(index, -1)"
-              >
-                <ArrowUp :size="15" aria-hidden="true" />
-              </button>
-              <button
-                :id="`editor-section-down-${section.id}`"
-                type="button"
-                class="grid h-11 w-7 shrink-0 place-items-center rounded-md text-ink-subtle hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
-                :disabled="!canEditDesign || index === document.sections.length - 1"
-                :aria-label="`Turunkan ${sectionLabels[section.type] ?? section.type}`"
-                :aria-describedby="canEditDesign ? undefined : 'design-locked-order'"
-                @click="move(index, 1)"
-              >
-                <ArrowDown :size="15" aria-hidden="true" />
-              </button>
-            </div>
-          </li>
-        </ul>
-      </aside>
-
-      <!-- Settings -->
       <!--
-        `@container`, bukan breakpoint viewport.
-
-        Lebar panel ini datang dari jalur grid di atas, bukan dari lebar layar. `sm:grid-cols-2`
-        di sini benar pada viewport 1440 sekalipun kolomnya cuma 312px — dan itulah yang dulu
-        terjadi: `input[type=date]` selebar 128px, kartu tema selebar 80px. Setiap varian di
-        dalam sini wajib bertanya pada wadahnya, tidak pernah pada layar.
-
-        Ambangnya `@xs` (320px), bukan `@sm` (384px). Diukur, bukan ditaksir: jalur pratinjau
-        mengambil lebar maksimumnya lebih dulu, jadi kolom ini justru lebih sempit di 1280
-        daripada di 1024. Dengan `@sm`, pasangan yang melebarkan jendelanya dari 1024 ke 1280
-        akan melihat kolomnya mundur jadi satu-up. Ambang yang dipilih dari satu lebar saja
-        selalu salah di lebar yang lain.
+        Tiga tingkat: satu kolom di bawah `lg`, rail + (panggung|inspektor) di `lg`, tiga kolom di
+        `xl`. `minmax(0,1fr)` di setiap tingkat — `auto` membuat panggung menolak menyusut.
+        Rail dan inspektor yang diciutkan menyusut ke 3.5rem.
       -->
-      <section :class="cn('@container grid content-start gap-5', mobilePanel === 'preview' && 'hidden xl:grid')">
-        <template v-if="selected">
-          <div class="grid gap-1">
-            <p class="eyebrow">Pengaturan bagian</p>
-            <!-- `text-h3`: ini judul panel. Judul halaman adalah nama undangan di atas, dan `text-h2` (40px di 1440) membuat keduanya berebut. -->
-            <h2 class="m-0 font-display text-h3 font-semibold text-ink">{{ sectionLabels[selected.type] ?? selected.type }}</h2>
-          </div>
+      <div
+        :class="cn(
+          'grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)]',
+          prefs.railCollapsed ? 'lg:grid-cols-[3.5rem_minmax(0,1fr)]' : 'lg:grid-cols-[17rem_minmax(0,1fr)]',
+          prefs.railCollapsed
+            ? (prefs.inspectorCollapsed ? 'xl:grid-cols-[3.5rem_minmax(0,1fr)_4rem]' : 'xl:grid-cols-[3.5rem_minmax(0,1fr)_24rem] 2xl:grid-cols-[3.5rem_minmax(0,1fr)_26rem]')
+            : (prefs.inspectorCollapsed ? 'xl:grid-cols-[17rem_minmax(0,1fr)_4rem]' : 'xl:grid-cols-[17rem_minmax(0,1fr)_24rem] 2xl:grid-cols-[17rem_minmax(0,1fr)_26rem]'),
+        )"
+      >
+        <DashboardEditorSectionRail
+          v-model:query="sectionQuery"
+          v-model:collapsed="prefs.railCollapsed"
+          :entries="sectionEntries"
+          :selected-id="selectedId"
+          :labels="sectionLabels"
+          :can-edit-design="canEditDesign"
+          :total="document.sections.length"
+          :visible="sectionsVisible"
+          :class="cn(mobilePanel === 'preview' && 'hidden lg:grid')"
+          @select="selectSection"
+          @move="move"
+          @reorder="reorder"
+          @toggle="toggleSection"
+        />
 
-          <!--
-            Pilihan berbentuk enum. Dipisah dari kolom teks di bawah karena masing-masing
-            punya himpunan nilai tertutup; dibiarkan jatuh ke fallback `textFields`,
-            pasangan akan mendapat kotak teks bebas berisi `arch-potret`.
-          -->
-          <div v-if="selected.type === 'cover'" class="card grid gap-4 p-5">
-            <div class="grid gap-1">
-              <p class="eyebrow">Tampilan pembuka</p>
-              <p class="m-0 text-caption text-ink-subtle">Menentukan bagaimana foto kalian dipajang, bukan sekadar warnanya.</p>
+        <section
+          v-if="prefs.inspectorTab === 'kartu'"
+          :class="cn('min-h-0 overflow-y-auto bg-surface [background-image:radial-gradient(var(--color-border)_1px,transparent_1px)] [background-size:16px_16px] p-5', mobilePanel === 'settings' && 'hidden xl:block')"
+          aria-label="Pratinjau kartu bagikan"
+        >
+          <DashboardEditorShareCardPreview :document="document" :slug="invitation.slug" :png-url="pngUrl" />
+        </section>
+        <DashboardEditorStage
+          v-else
+          v-model:device="prefs.device"
+          v-model:zoom="prefs.zoom"
+          :document="document"
+          :focus-section="fokusPanggung"
+          :class="cn(mobilePanel === 'settings' && 'hidden xl:flex')"
+          @section-in-view="sorotSection"
+          @pilih-slot="sorotkanSlot"
+        />
+
+        <DashboardEditorInspector
+          v-if="selected"
+          v-model:tab="prefs.inspectorTab"
+          v-model:collapsed="prefs.inspectorCollapsed"
+          :can-undo="canUndo"
+          :can-redo="canRedo"
+          :dirty="dirty"
+          :saving="saving"
+          :class="cn(mobilePanel === 'preview' && 'hidden xl:grid')"
+          @undo="undo"
+          @redo="redo"
+          @save="() => save()"
+          @pustaka="pustaka"
+          @riwayat="riwayat"
+          @pintasan="pintasan"
+        >
+          <template #bagian>
+            <DashboardEditorSectionForm
+              v-if="isV2SectionType(selected.type)"
+              :key="selected.id"
+              :section="selected"
+              :document="document"
+              :invitation-id="invitation.id"
+              :can-edit-design="canEditDesign"
+              :locked-by="lockedBy"
+              :photo-limit="photoLimit"
+              @tulis="tulis"
+              @tulis-gaya="tulisGaya"
+              @tulis-latar="tulisLatar"
+              @tulis-gerak="tulisGerak"
+              @release="queueRelease"
+            />
+            <p v-else class="notice m-0">Bagian {{ sectionLabels[selected.type] ?? selected.type }} berasal dari struktur lama. Simpan draft untuk memindahkannya ke struktur baru.</p>
+
+            <UiButton id="editor-reset" tone="quiet" size="sm" class="justify-self-start" @click="reset">
+              <RotateCcw :size="15" aria-hidden="true" />
+              Kembalikan ke preset tema
+            </UiButton>
+
+            <!--
+              Pindah struktur (fase 74.11). `v-if` sama seperti di `/order`: selama baru ada satu
+              struktur hidup, kontrolnya tidak tampil sama sekali dan muncul sendiri begitu
+              struktur kedua didaftarkan. Ia di sini, bukan di grid Tema, karena ia mengganti
+              seluruh dokumen — bukan warnanya.
+            -->
+            <div v-if="strukturLain.length && canEditDesign" class="grid gap-1.5 justify-self-start">
+              <p class="m-0 text-caption text-ink-muted">Ganti tampilan undangan — isi yang sudah ditulis dibawa menurut jenis bagiannya.</p>
+              <div class="flex flex-wrap gap-1.5">
+                <UiButton
+                  v-for="id in strukturLain"
+                  :id="`editor-struktur-${id}`"
+                  :key="id"
+                  tone="quiet"
+                  size="sm"
+                  @click="pindahStruktur(id)"
+                >
+                  {{ structures[id].name }}
+                </UiButton>
+              </div>
             </div>
+          </template>
 
-            <UiField id="editor-cover-layout" v-slot="{ id }" label="Komposisi cover" :hint="selectableCoverLayouts.find(option => option.id === coverLayout)?.hint">
-              <UiSelect :id="id" :model-value="coverLayout" @update:model-value="value => writeOption('layout', String(value))">
-                <option v-for="option in selectableCoverLayouts" :key="option.id" :value="option.id">{{ option.label }}</option>
-              </UiSelect>
-            </UiField>
+          <template #global>
+            <DashboardEditorGlobalPanel
+              :document="document"
+              :can-edit-design="canEditDesign"
+              :locked-by="lockedBy"
+              :template-pensiun="templatePensiun"
+              :accent="themeAccent"
+              @musik="tulisMusik"
+              @layout="tulisLayout"
+              @palet="terapkanPalet"
+              @warna="tulisWarna"
+              @perbaiki-warna="repairPaletteColors"
+              @tema="applyTemplate"
+              @font="tulisFont"
+              @backdrop="tulisBackdrop"
+              @backdrop-weight="tulisBackdropWeight"
+              @motion="tulisMotion"
+            />
+          </template>
 
-            <UiField id="editor-cover-intensity" v-slot="{ id }" label="Kepekatan ornamen" :hint="selectableIntensities.find(option => option.id === coverIntensity)?.hint">
-              <UiSelect :id="id" :model-value="coverIntensity" @update:model-value="value => writeOption('ornamentIntensity', String(value))">
-                <option v-for="option in selectableIntensities" :key="option.id" :value="option.id">{{ option.label }}</option>
-              </UiSelect>
-            </UiField>
-            <p class="m-0 text-caption text-ink-subtle">Berlaku untuk seluruh undangan, bukan hanya bagian pembuka.</p>
-
+          <template #ornamen>
+            <p v-if="!canEditDesign" class="m-0 flex items-start gap-2 rounded-md border border-border bg-surface-2 p-3.5 text-caption text-ink-muted">
+              <Lock :size="15" class="mt-0.5 shrink-0 text-ink-subtle" aria-hidden="true" />
+              <span>Mengganti ornamen terkunci pada preset undangan ini. <span v-if="lockedBy" class="text-ink">{{ lockedBy }}</span></span>
+            </p>
+            <DashboardOrnamentSlotSummary
+              v-if="slotBagianIni.length"
+              :set="ornamentSet"
+              :overrides="ornamentOverrides"
+              :slots="slotBagianIni"
+              :tokens="document.tokens"
+              :accent="themeAccent"
+              :terkunci="!canEditDesign"
+              :locked-by="lockedBy"
+              :sorot="sorotBagian"
+              @buka="bukaStudio"
+            />
+            <p v-else class="m-0 rounded-md border border-border bg-surface-2 p-3.5 text-caption text-ink-muted">
+              Bagian {{ sectionLabels[selected.type] ?? selected.type }} tidak memakai keping ornamen; latar ladangnya mengikuti tema.
+            </p>
             <DashboardOrnamentSlotSummary
               :set="ornamentSet"
               :overrides="ornamentOverrides"
               :tokens="document.tokens"
               :accent="themeAccent"
               :terkunci="!canEditDesign"
-              :locked-by="designAddon ? `Add-on ${designAddon.name} (${formatRupiah(designAddon.price)}) membukanya.` : undefined"
+              :locked-by="lockedBy"
+              :sorot="sorotPenuh"
               @buka="bukaStudio"
               @kembalikan-semua="kembalikanSemuaOrnamen"
             />
+          </template>
 
-            <DashboardPhotoField
-              id="editor-cover-image"
-              :invitation-id="invitation.id"
-              label="Foto cover"
-              hint="Gambar pertama yang dilihat tamu. Potret lebih aman daripada lanskap — hampir semua tamu membuka dari ponsel."
-              :model-value="String(selected.data.image || '')"
-              @update:model-value="next => updateValue('image', next)"
-              @release="queueRelease"
-            />
-          </div>
-
-          <div v-else-if="selected.type === 'couple'" class="card grid gap-4 p-5">
-            <div class="grid gap-1">
-              <p class="eyebrow">Potret mempelai</p>
-              <p class="m-0 text-caption text-ink-subtle">Opsional. Tanpa foto, bagian ini memakai ladang ornamen temanya.</p>
-            </div>
-
-            <DashboardPhotoField
-              id="editor-couple-image"
-              :invitation-id="invitation.id"
-              label="Foto mempelai"
-              :model-value="String(selected.data.image || '')"
-              @update:model-value="next => updateValue('image', next)"
-              @release="queueRelease"
-            />
-          </div>
-
-          <div v-else-if="selected.type === 'dresscode'" class="card grid gap-4 p-5">
-            <div class="grid gap-1">
-              <p class="eyebrow">Busana &amp; warna</p>
-              <p class="m-0 text-caption text-ink-subtle">Tamu memutuskan mau pakai apa jauh sebelum membaca nama warnanya.</p>
-            </div>
-
-            <fieldset class="grid gap-2 border-0 p-0">
-              <legend class="mb-1 text-[0.9375rem] font-semibold text-ink">Busana yang ditampilkan</legend>
-              <div class="flex flex-wrap gap-x-5 gap-y-2">
-                <label v-for="option in selectableAttire" :key="option.id" class="flex min-h-11 cursor-pointer items-center gap-2.5 text-[0.9375rem] text-ink">
-                  <input
-                    :id="`editor-dresscode-attire-${option.id}`"
-                    type="checkbox"
-                    class="h-4 w-4 accent-[var(--color-primary)]"
-                    :checked="attire.includes(option.id)"
-                    @change="toggleAttire(option.id, ($event.target as HTMLInputElement).checked)"
-                  >
-                  {{ option.label }}
-                </label>
-              </div>
-            </fieldset>
-
-            <div class="grid gap-2">
-              <p class="m-0 text-[0.9375rem] font-semibold text-ink">Bundaran warna</p>
-              <!--
-                Nama wajib diisi. Bundaran tanpa label tidak mengatakan apa pun kepada tamu
-                yang buta warna atau yang membaca lewat pembaca layar, dan warna saja tidak
-                pernah boleh jadi satu-satunya penanda.
-              -->
-              <article v-for="(color, index) in dresscodeColors" :key="index" class="card flex flex-wrap items-end gap-3 p-4">
-                <UiField :id="`editor-dresscode-color-${index + 1}`" v-slot="{ id }" label="Warna" class="basis-24">
-                  <input :id="id" class="control" type="color" :value="String(color.hex || '#E8DCC8')" @input="color.hex = ($event.target as HTMLInputElement).value">
-                </UiField>
-                <UiField :id="`editor-dresscode-name-${index + 1}`" v-slot="{ id }" label="Nama warna" hint="Wajib — tamu harus bisa membacanya, bukan hanya melihatnya." class="min-w-0 flex-1 basis-full @xs:basis-48">
-                  <UiInput :id="id" :model-value="String(color.name || '')" placeholder="Terakota" @update:model-value="value => color.name = value" />
-                </UiField>
-                <button
-                  :id="`editor-dresscode-remove-${index + 1}`"
-                  type="button"
-                  class="grid h-12 w-11 place-items-center rounded-md text-ink-subtle hover:bg-danger-soft hover:text-danger"
-                  :aria-label="`Hapus warna ${index + 1}`"
-                  @click="removeRow(dresscodeColors, index)"
-                >
-                  <Trash2 :size="16" aria-hidden="true" />
-                </button>
-              </article>
-
-              <UiButton id="editor-dresscode-add" tone="outline" class="justify-self-start" @click="addColor">
-                <Plus :size="16" aria-hidden="true" />
-                Tambah warna
-              </UiButton>
-            </div>
-          </div>
-
-          <div v-else-if="selected.type === 'story'" class="card grid gap-4 p-5">
-            <div class="grid gap-1">
-              <p class="eyebrow">Langkah cerita</p>
-              <p class="m-0 text-caption text-ink-subtle">
-                Tiap langkah muncul dari sisi berbeda dan memudar saat langkah berikutnya masuk.
-                Kosongkan semuanya kalau kalian lebih suka satu paragraf saja.
-              </p>
-            </div>
-
-            <article v-for="(step, index) in storySteps" :key="String(step.id)" class="card grid gap-3 p-4">
-              <div class="flex items-center justify-between gap-3">
-                <strong class="text-ink">Langkah {{ index + 1 }}</strong>
-                <button
-                  :id="`editor-story-remove-${index + 1}`"
-                  type="button"
-                  class="grid h-11 w-11 place-items-center rounded-md text-ink-subtle hover:bg-danger-soft hover:text-danger"
-                  :aria-label="`Hapus langkah ${index + 1}`"
-                  @click="removeRow(storySteps, index)"
-                >
-                  <Trash2 :size="16" aria-hidden="true" />
-                </button>
-              </div>
-
-              <div class="grid gap-3 @xs:grid-cols-2">
-                <UiField :id="`editor-story-title-${index + 1}`" v-slot="{ id }" label="Judul langkah">
-                  <UiInput :id="id" :model-value="String(step.title || '')" placeholder="Perpustakaan kecil, 2022" @update:model-value="value => step.title = value" />
-                </UiField>
-                <UiField :id="`editor-story-side-${index + 1}`" v-slot="{ id }" label="Sisi masuk">
-                  <UiSelect :id="id" :model-value="String(step.side || 'kiri')" @update:model-value="value => step.side = value">
-                    <option value="kiri">Kiri</option>
-                    <option value="kanan">Kanan</option>
-                  </UiSelect>
-                </UiField>
-              </div>
-
-              <UiField :id="`editor-story-text-${index + 1}`" v-slot="{ id }" label="Cerita">
-                <UiTextarea :id="id" rows="3" :model-value="String(step.text || '')" @update:model-value="value => step.text = value" />
-              </UiField>
-
-              <DashboardPhotoField
-                :id="`editor-story-image-${index + 1}`"
-                :invitation-id="invitation.id"
-                label="Foto langkah"
-                hint="Opsional. Kosongkan untuk memakai foto galeri."
-                :model-value="String(step.image || '')"
-                @update:model-value="value => step.image = value"
-                @release="queueRelease"
-              />
-            </article>
-
-            <UiButton id="editor-story-add" tone="outline" class="justify-self-start" @click="addStoryStep">
-              <Plus :size="16" aria-hidden="true" />
-              Tambah langkah
-            </UiButton>
-          </div>
-
-          <!-- Events -->
-          <div v-if="selected.type === 'events'" class="grid gap-4">
-            <UiField id="editor-events-venue" v-slot="{ id }" label="Ilustrasi gedung" hint="Ditampilkan di atas kartu acara, mengikuti warna tema.">
-              <UiSelect :id="id" :model-value="venueIllustration" @update:model-value="value => writeOption('venueIllustration', String(value))">
-                <option value="">Tanpa ilustrasi</option>
-                <option v-for="option in selectableVenues" :key="option.id" :value="option.id">{{ option.label }}</option>
-              </UiSelect>
-            </UiField>
-
-            <article v-for="(event, index) in eventRows" :key="String(event.id)" class="card grid gap-3 p-5">
-              <div class="flex items-center justify-between gap-3">
-                <strong class="text-ink">Acara {{ index + 1 }}</strong>
-                <button
-                  :id="`editor-event-remove-${index + 1}`"
-                  type="button"
-                  class="grid h-11 w-11 place-items-center rounded-md text-ink-subtle hover:bg-danger-soft hover:text-danger"
-                  :aria-label="`Hapus acara ${index + 1}`"
-                  @click="removeRow(eventRows, index)"
-                >
-                  <Trash2 :size="16" aria-hidden="true" />
-                </button>
-              </div>
-
-              <div class="grid gap-3 @xs:grid-cols-2">
-                <UiField :id="`editor-event-name-${index + 1}`" v-slot="{ id }" label="Nama acara">
-                  <UiInput :id="id" :model-value="String(event.name || '')" @update:model-value="value => event.name = value" />
-                </UiField>
-                <UiField :id="`editor-event-date-${index + 1}`" v-slot="{ id }" label="Tanggal">
-                  <UiInput :id="id" type="date" :model-value="String(event.date || '')" @update:model-value="value => event.date = value" />
-                </UiField>
-                <UiField :id="`editor-event-time-${index + 1}`" v-slot="{ id }" label="Waktu">
-                  <UiInput :id="id" :model-value="String(event.time || '')" placeholder="09.00 WIB" @update:model-value="value => event.time = value" />
-                </UiField>
-                <UiField :id="`editor-event-venue-${index + 1}`" v-slot="{ id }" label="Lokasi">
-                  <UiInput
-                    :id="id"
-                    :model-value="String(event.venue || '')"
-                    :disabled="sameVenue && index > 0"
-                    @update:model-value="value => writeVenue(index, 'venue', value ?? '')"
-                  />
-                </UiField>
-              </div>
-
-              <UiField :id="`editor-event-address-${index + 1}`" v-slot="{ id }" label="Alamat">
-                <UiTextarea
-                  :id="id"
-                  rows="2"
-                  :model-value="String(event.address || '')"
-                  :disabled="sameVenue && index > 0"
-                  @update:model-value="value => writeVenue(index, 'address', value ?? '')"
-                />
-              </UiField>
-              <UiField :id="`editor-event-map-${index + 1}`" v-slot="{ id }" label="Tautan peta" hint="Tempel tautan Google Maps lokasinya. Tamu akan melihat tombol “Buka peta”.">
-                <UiInput
-                  :id="id"
-                  type="url"
-                  :model-value="String(event.mapUrl || '')"
-                  placeholder="https://maps.google.com/…"
-                  :disabled="sameVenue && index > 0"
-                  @update:model-value="value => writeVenue(index, 'mapUrl', value ?? '')"
-                />
-              </UiField>
-              <p v-if="sameVenue && index > 0" class="m-0 text-caption text-ink-subtle">
-                Mengikuti lokasi acara pertama. Hilangkan centang “lokasi sama” untuk mengisinya sendiri.
-              </p>
-
-              <label class="flex min-h-11 cursor-pointer items-center gap-2.5 text-[0.9375rem] text-ink">
-                <input
-                  :id="`editor-event-public-${index + 1}`"
-                  type="checkbox"
-                  class="h-4 w-4 accent-[var(--color-primary)]"
-                  :checked="Boolean(event.public)"
-                  @change="event.public = ($event.target as HTMLInputElement).checked"
-                >
-                Tampilkan untuk semua tamu
-              </label>
-            </article>
-
-            <label v-if="eventRows.length > 1" class="flex min-h-11 cursor-pointer items-center gap-2.5 text-[0.9375rem] text-ink">
-              <input
-                id="editor-event-same-venue"
-                type="checkbox"
-                class="h-4 w-4 accent-[var(--color-primary)]"
-                :checked="sameVenue"
-                @change="toggleSameVenue(($event.target as HTMLInputElement).checked)"
-              >
-              Lokasi akad dan resepsi sama
-            </label>
-
-            <UiButton id="editor-event-add" tone="outline" class="justify-self-start" @click="addEvent">
-              <Plus :size="16" aria-hidden="true" />
-              Tambah acara
-            </UiButton>
-          </div>
-
-          <!-- Gallery -->
-          <div v-else-if="selected.type === 'gallery'" class="grid gap-4">
-            <UiField id="editor-gallery-motion" v-slot="{ id }" label="Gaya galeri" :hint="selectableGalleryMotions.find(option => option.id === galleryMotion)?.hint">
-              <UiSelect :id="id" :model-value="galleryMotion" @update:model-value="value => writeOption('motion', String(value))">
-                <option v-for="option in selectableGalleryMotions" :key="option.id" :value="option.id">{{ option.label }}</option>
-              </UiSelect>
-            </UiField>
-
-            <p class="m-0 text-[0.9375rem] text-ink-muted">
-              Maksimal {{ galleryPhotoLimit }} foto — terpakai {{ galleryImages.length }}.
-              Foto yang diunggah baru tampil publik setelah undangan diterbitkan.
-            </p>
-
-            <UiDropzone
-              id="editor-gallery-upload"
-              kind="image"
-              multiple
-              :pending="media.pending.value"
-              :remaining="gallerySlotsLeft"
-              @files="onGalleryFiles"
-            />
-
-            <p v-if="media.pending.value && media.total.value > 1" class="m-0 text-caption text-ink-muted">
-              Foto {{ media.done.value + 1 }} dari {{ media.total.value }}…
-            </p>
-
-            <ul v-if="media.failures.value.length" role="alert" class="m-0 grid gap-1 p-0 list-none">
-              <li v-for="message in media.failures.value" :key="message" class="text-caption font-medium text-danger">{{ message }}</li>
-            </ul>
-
-            <ul class="m-0 grid gap-2 p-0 list-none">
-              <li v-for="(image, index) in galleryImages" :key="image" class="card flex items-center gap-3 p-2.5">
-                <img :src="image" alt="" class="h-14 w-14 shrink-0 rounded-md object-cover">
-                <input :id="`editor-gallery-url-${index + 1}`" v-model="galleryImages[index]" class="control min-w-0 flex-1" aria-label="URL foto">
-                <button
-                  :id="`editor-gallery-remove-${index + 1}`"
-                  type="button"
-                  class="grid h-11 w-11 shrink-0 place-items-center rounded-md text-ink-subtle hover:bg-danger-soft hover:text-danger"
-                  :aria-label="`Hapus foto ${index + 1}`"
-                  @click="removeGalleryImage(index)"
-                >
-                  <Trash2 :size="16" aria-hidden="true" />
-                </button>
-              </li>
-            </ul>
-
-            <form class="flex flex-wrap gap-2" @submit.prevent="addGalleryUrl">
-              <label class="sr-only" for="editor-gallery-url">URL foto baru</label>
-              <input id="editor-gallery-url" v-model="galleryUrl" class="control min-w-0 flex-1 basis-56" type="url" placeholder="https://…">
-              <UiButton id="editor-gallery-add-url" type="submit" tone="outline">Tambah URL</UiButton>
-            </form>
-          </div>
-
-          <!-- Rundown -->
-          <div v-else-if="selected.type === 'rundown'" class="grid gap-3">
-            <article v-for="(item, index) in rundownRows" :key="String(item.id)" class="card flex flex-wrap items-end gap-3 p-4">
-              <UiField :id="`editor-rundown-time-${index + 1}`" v-slot="{ id }" label="Waktu" class="basis-28">
-                <UiInput :id="id" :model-value="String(item.time || '')" placeholder="09.00" @update:model-value="value => item.time = value" />
-              </UiField>
-              <UiField :id="`editor-rundown-title-${index + 1}`" v-slot="{ id }" label="Kegiatan" class="min-w-0 flex-1 basis-56">
-                <UiInput :id="id" :model-value="String(item.title || '')" @update:model-value="value => item.title = value" />
-              </UiField>
-              <UiField :id="`editor-rundown-note-${index + 1}`" v-slot="{ id }" label="Keterangan" class="min-w-0 basis-full">
-                <UiInput :id="id" :model-value="String(item.description || '')" placeholder="Opsional — mis. “Tamu dipersilakan menempati kursi”" @update:model-value="value => item.description = value" />
-              </UiField>
-              <button
-                :id="`editor-rundown-remove-${index + 1}`"
-                type="button"
-                class="grid h-12 w-11 place-items-center rounded-md text-ink-subtle hover:bg-danger-soft hover:text-danger"
-                :aria-label="`Hapus bagian ${index + 1}`"
-                @click="removeRow(rundownRows, index)"
-              >
-                <Trash2 :size="16" aria-hidden="true" />
+          <template #kartu>
+            <DashboardEditorKartuPanel :document="document" @tulis="tulisKartu" />
+            <div class="flex flex-wrap items-center gap-2 rounded-md border border-border bg-surface-2 p-3.5 text-caption text-ink-muted">
+              <span class="min-w-0 flex-1 truncate">{{ publicUrl }}</span>
+              <button id="editor-kartu-salin-url" type="button" class="flex items-center gap-1 text-ink underline-offset-2 hover:underline" @click="salinUrl">
+                <Copy :size="13" aria-hidden="true" /> Salin
               </button>
-            </article>
-
-            <UiButton id="editor-rundown-add" tone="outline" class="justify-self-start" @click="addRundown">
-              <Plus :size="16" aria-hidden="true" />
-              Tambah bagian
-            </UiButton>
-          </div>
-
-          <!-- Gift -->
-          <div v-else-if="selected.type === 'gift'" class="grid gap-4">
-            <p class="m-0 text-[0.9375rem] text-ink-muted">
-              Sampai {{ giftAccountLimit }} rekening — biasanya mempelai, orang tua, dan satu e-wallet.
-              Tamu melihat logo banknya dan tombol salin nomor rekening.
-            </p>
-
-            <UiField id="editor-gift-title" v-slot="{ id }" label="Judul bagian">
-              <UiInput :id="id" :model-value="String(selected.data.title || '')" placeholder="Hadiah untuk kami" @update:model-value="next => updateValue('title', next ?? '')" />
-            </UiField>
-            <UiField id="editor-gift-note" v-slot="{ id }" label="Kalimat pengantar" hint="Kosongkan untuk memakai kalimat bawaan.">
-              <UiTextarea :id="id" rows="3" :model-value="String(selected.data.note || '')" @update:model-value="next => updateValue('note', next ?? '')" />
-            </UiField>
-
-            <article v-for="(account, index) in giftAccounts" :key="String(account.id)" class="card grid gap-3 p-5">
-              <div class="flex items-center justify-between gap-3">
-                <strong class="text-ink">Rekening {{ index + 1 }}</strong>
-                <button
-                  :id="`editor-gift-remove-${index + 1}`"
-                  type="button"
-                  class="grid h-11 w-11 place-items-center rounded-md text-ink-subtle hover:bg-danger-soft hover:text-danger"
-                  :aria-label="`Hapus rekening ${index + 1}`"
-                  @click="removeRow(giftAccounts, index)"
-                >
-                  <Trash2 :size="16" aria-hidden="true" />
-                </button>
-              </div>
-
-              <!--
-                Dulu ada pilihan "Milik" (mempelai pria/wanita) di sini. Labelnya tidak
-                dirender lagi sejak batas rekening naik ke delapan, jadi kontrolnya tidak
-                mengubah apa pun yang dilihat tamu. Key `owner` tetap dibaca dan ditulis
-                ulang apa adanya supaya dokumen lama tidak rusak.
-              -->
-              <UiField :id="`editor-gift-bank-${index + 1}`" v-slot="{ id }" label="Bank">
-                <UiSelect :id="id" :model-value="String(account.bankId || 'bca')" @update:model-value="value => account.bankId = value">
-                  <option v-for="option in bankOptions" :key="option.id" :value="option.id">{{ option.label }}</option>
-                </UiSelect>
-              </UiField>
-
-              <UiField v-if="account.bankId === 'other'" :id="`editor-gift-bank-label-${index + 1}`" v-slot="{ id }" label="Nama bank" hint="Ditulis apa adanya pada kartu.">
-                <UiInput :id="id" :model-value="String(account.bankLabel || '')" @update:model-value="value => account.bankLabel = value" />
-              </UiField>
-
-              <div class="grid gap-3 @xs:grid-cols-2">
-                <UiField :id="`editor-gift-number-${index + 1}`" v-slot="{ id }" label="Nomor rekening">
-                  <UiInput :id="id" inputmode="numeric" :model-value="String(account.number || '')" @update:model-value="value => account.number = value" />
-                </UiField>
-                <UiField :id="`editor-gift-holder-${index + 1}`" v-slot="{ id }" label="Atas nama">
-                  <UiInput :id="id" :model-value="String(account.holder || '')" @update:model-value="value => account.holder = value" />
-                </UiField>
-              </div>
-            </article>
-
-            <UiButton v-if="giftAccounts.length < giftAccountLimit" id="editor-gift-add" tone="outline" class="justify-self-start" @click="addGiftAccount">
-              <Plus :size="16" aria-hidden="true" />
-              Tambah rekening
-            </UiButton>
-            <p v-else class="notice m-0">Sudah {{ giftAccountLimit }} rekening — batasnya di sini supaya bagian hadiah tidak berubah jadi daftar bank.</p>
-
-            <UiField id="editor-gift-address" v-slot="{ id }" label="Alamat kirim hadiah" hint="Opsional, untuk tamu yang ingin mengirim kado fisik.">
-              <UiTextarea :id="id" rows="2" :model-value="String(selected.data.address || '')" @update:model-value="next => updateValue('address', next ?? '')" />
-            </UiField>
-          </div>
-
-          <!-- Music -->
-          <div v-else-if="selected.type === 'music'" class="grid gap-5">
-            <p class="m-0 text-[0.9375rem] text-ink-muted">
-              Musik mulai setelah tamu menekan “Buka Undangan”, tidak pernah sebelum itu — browser
-              memang melarangnya, dan tamu yang dikejutkan suara akan menutup tab, bukan mengecilkan
-              volume. Tombol jeda selalu tersedia buat mereka.
-            </p>
-
-            <!-- Satu elemen audio dipakai bersama: memutar satu lagu menghentikan yang lain. -->
-            <audio ref="preview" preload="none" @ended="previewing = ''" />
-
-            <div v-if="musicUrl" class="card grid gap-2 p-4">
-              <div class="flex flex-wrap items-center justify-between gap-3">
-                <div class="grid min-w-0 gap-0.5">
-                  <strong class="truncate text-ink">{{ musicTitle || 'Lagu pilihan kalian' }}</strong>
-                  <span v-if="musicCredit" class="truncate text-caption text-ink-subtle">{{ musicCredit }}</span>
-                </div>
-                <div class="flex shrink-0 gap-2">
-                  <UiButton id="editor-music-preview" tone="outline" @click="togglePreview(musicUrl)">
-                    <Pause v-if="previewing === musicUrl" :size="16" aria-hidden="true" />
-                    <Play v-else :size="16" aria-hidden="true" />
-                    {{ previewing === musicUrl ? 'Hentikan' : 'Dengarkan' }}
-                  </UiButton>
-                  <button
-                    id="editor-music-clear"
-                    type="button"
-                    class="grid h-11 w-11 place-items-center rounded-md text-ink-subtle hover:bg-danger-soft hover:text-danger"
-                    aria-label="Hapus musik"
-                    @click="clearMusic"
-                  >
-                    <Trash2 :size="16" aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
+              <a :href="publicUrl" target="_blank" rel="noopener" class="flex items-center gap-1 text-ink underline-offset-2 hover:underline">
+                <ExternalLink :size="13" aria-hidden="true" /> Buka
+              </a>
             </div>
-            <p v-else class="notice m-0">Belum ada musik. Undangan tetap bisa diterbitkan tanpa lagu.</p>
-
-            <div class="grid gap-2.5">
-              <div class="grid gap-1">
-                <p class="eyebrow">Pustaka lagu</p>
-                <p class="m-0 text-caption text-ink-subtle">
-                  Semuanya domain publik atau CC0 — aman dipakai tanpa izin siapa pun, dan sudah
-                  dipotong jadi dua menit karena pemutarnya mengulang.
-                </p>
-              </div>
-
-              <article
-                v-for="track in musicLibrary"
-                :key="track.id"
-                :class="cn(
-                  'card flex flex-wrap items-center gap-3 p-4',
-                  musicUrl === track.url && 'border-primary bg-primary-soft/40',
-                )"
-              >
-                <div class="grid min-w-0 flex-1 basis-48 gap-0.5">
-                  <strong class="truncate text-ink">{{ track.title }}</strong>
-                  <span class="truncate text-caption text-ink-subtle">{{ track.mood }} · {{ trackLength(track.seconds) }}</span>
-                  <span class="truncate text-caption text-ink-subtle">{{ track.credit }}</span>
-                </div>
-                <div class="flex shrink-0 gap-2">
-                  <UiButton :id="`editor-music-listen-${track.id}`" tone="ghost" @click="togglePreview(track.url)">
-                    <Pause v-if="previewing === track.url" :size="16" aria-hidden="true" />
-                    <Play v-else :size="16" aria-hidden="true" />
-                    {{ previewing === track.url ? 'Hentikan' : 'Dengarkan' }}
-                  </UiButton>
-                  <UiButton
-                    :id="`editor-music-pick-${track.id}`"
-                    :tone="musicUrl === track.url ? 'primary' : 'outline'"
-                    @click="selectTrack(track)"
-                  >
-                    <Check v-if="musicUrl === track.url" :size="16" aria-hidden="true" />
-                    {{ musicUrl === track.url ? 'Dipakai' : 'Pakai lagu ini' }}
-                  </UiButton>
-                </div>
-              </article>
-            </div>
-
-            <div class="grid gap-2.5">
-              <div class="grid gap-1">
-                <p class="eyebrow">Atau pakai lagu sendiri</p>
-                <p class="m-0 text-caption text-ink-subtle">
-                  Pastikan kalian punya hak memakai lagunya. Lagu komersial yang diunggah ke undangan
-                  publik tetap tanggung jawab kalian, bukan kami.
-                </p>
-              </div>
-
-              <UiDropzone
-                id="editor-music-upload"
-                kind="audio"
-                label="Jatuhkan MP3 di sini, atau pilih berkas"
-                :pending="musicUpload.pending.value"
-                @files="onMusicFiles"
-              />
-
-              <ul v-if="musicUpload.failures.value.length" role="alert" class="m-0 grid gap-1 p-0 list-none">
-                <li v-for="message in musicUpload.failures.value" :key="message" class="text-caption font-medium text-danger">{{ message }}</li>
-              </ul>
-            </div>
-
-            <UiField id="editor-music-url" v-slot="{ id }" label="atau tempel URL lagu" hint="Harus berupa tautan langsung ke berkas audio, bukan tautan halaman pemutar.">
-              <UiInput
-                :id="id"
-                type="url"
-                placeholder="https://…"
-                :model-value="musicUrl"
-                @update:model-value="next => writeMusic(next ?? '', musicTitle, musicCredit)"
-              />
-            </UiField>
-          </div>
-
-          <!-- Plain text fields -->
-          <div v-else class="grid gap-4">
-            <UiField v-for="[key, value] in textFields" :id="`editor-text-${key}`" :key="key" v-slot="{ id }" :label="label(key)">
-              <UiTextarea
-                v-if="key === 'description' || key === 'text'"
-                :id="id"
-                rows="4"
-                :model-value="value"
-                @update:model-value="next => updateValue(key, next ?? '')"
-              />
-              <UiInput v-else :id="id" :model-value="value" @update:model-value="next => updateValue(key, next ?? '')" />
-            </UiField>
-
-            <p v-if="!textFields.length" class="notice m-0">Bagian ini tidak punya pengaturan teks.</p>
-          </div>
-
-          <!-- Theme -->
-          <section class="card grid gap-5 p-5">
-            <div class="grid gap-1">
-              <p class="eyebrow">Tema &amp; warna</p>
-              <p v-if="canEditDesign" class="m-0 text-caption text-ink-subtle">Mengganti tema memuat ulang palet kurasinya.</p>
-            </div>
-
-            <!--
-              Satu penjelasan yang tenang, di sebelah kontrolnya. Kontrol di bawah tetap
-              terlihat supaya pasangan tahu apa yang dibuka add-on ini, tapi tidak bisa
-              digeser lebih dulu lalu ditolak saat autosave.
-            -->
-            <p
-              v-if="!canEditDesign"
-              id="design-locked"
-              class="m-0 flex items-start gap-2 rounded-md border border-border bg-surface-2 p-3.5 text-[0.8125rem] text-ink-muted"
-            >
-              <Lock :size="15" class="mt-0.5 shrink-0 text-ink-subtle" aria-hidden="true" />
-              <span>
-                Tema, warna, font, dan urutan bagian terkunci pada preset undangan ini.
-                <span v-if="designAddon" class="text-ink">Add-on {{ designAddon.name }} ({{ formatRupiah(designAddon.price) }}) membukanya.</span>
-                <span v-else class="text-ink">Add-on {{ featureLabel(designFeatureId) }} membukanya.</span>
-              </span>
-            </p>
-
-            <p
-              v-if="templatePensiun"
-              id="template-pensiun"
-              class="m-0 flex items-start gap-2 rounded-md border border-border bg-surface-2 p-3.5 text-[0.8125rem] text-ink-muted"
-            >
-              <Lock :size="15" class="mt-0.5 shrink-0 text-ink-subtle" aria-hidden="true" />
-              <span>
-                Tema undangan ini sudah tidak tersedia lagi, dan sekarang ditampilkan memakai
-                <span class="text-ink">{{ templatePensiun.name }}</span>. Pilih penggantinya kapan saja —
-                undangan yang sudah terbit tetap tampil seperti semula sampai kamu menerbitkannya ulang.
-              </span>
-            </p>
-
-            <div class="grid gap-2 @xs:grid-cols-2 @md:grid-cols-3">
-              <button
-                v-for="theme in invitationThemes"
-                :id="`editor-theme-${theme.id}`"
-                :key="theme.id"
-                type="button"
-                :aria-pressed="document.templateId === theme.id"
-                :disabled="!canEditDesign && !templatePensiun"
-                :aria-describedby="canEditDesign || templatePensiun ? undefined : 'design-locked'"
-                :class="cn(
-                  'grid gap-2 rounded-md border p-2 text-left transition-[border-color,box-shadow] duration-200',
-                  document.templateId === theme.id ? 'border-primary shadow-lift' : 'border-border',
-                  canEditDesign || templatePensiun
-                    ? (document.templateId === theme.id ? '' : 'hover:border-border-strong')
-                    : 'cursor-not-allowed opacity-60',
-                )"
-                @click="applyTemplate(theme.id)"
-              >
-                <span class="flex h-8 overflow-hidden rounded-sm" aria-hidden="true">
-                  <span class="flex-1" :style="{ background: theme.tokens.background }" />
-                  <span class="flex-1" :style="{ background: theme.tokens.primary }" />
-                  <span class="flex-1" :style="{ background: theme.accent }" />
-                </span>
-                <span class="flex items-center gap-1 text-[0.8125rem] font-semibold text-ink">
-                  <Check v-if="document.templateId === theme.id" :size="13" class="text-primary" aria-hidden="true" />
-                  {{ theme.name }}
-                </span>
-              </button>
-            </div>
-
-            <div class="grid gap-3 @xs:grid-cols-3">
-              <UiField id="editor-color-background" v-slot="{ id }" label="Latar belakang">
-                <input :id="id" v-model="document.tokens.background" class="control disabled:cursor-not-allowed disabled:opacity-60" type="color" :disabled="!canEditDesign" :aria-describedby="canEditDesign ? undefined : 'design-locked'">
-              </UiField>
-              <UiField id="editor-color-foreground" v-slot="{ id }" label="Warna teks">
-                <input :id="id" v-model="document.tokens.foreground" class="control disabled:cursor-not-allowed disabled:opacity-60" type="color" :disabled="!canEditDesign" :aria-describedby="canEditDesign ? undefined : 'design-locked'">
-              </UiField>
-              <UiField id="editor-color-primary" v-slot="{ id }" label="Warna aksi">
-                <input :id="id" v-model="document.tokens.primary" class="control disabled:cursor-not-allowed disabled:opacity-60" type="color" :disabled="!canEditDesign" :aria-describedby="canEditDesign ? undefined : 'design-locked'">
-              </UiField>
-            </div>
-
-            <!--
-              Laporan keterbacaan. Rasio ditulis angkanya, bukan cuma ikon: pasangan yang
-              gagal perlu tahu seberapa jauh, dan warna saja tidak pernah cukup sebagai penanda.
-            -->
-            <div
-              :class="cn(
-                'grid gap-3 rounded-md border p-3.5 transition-colors duration-300',
-                paletteIssues.length ? 'border-warning/40 bg-gold-soft' : 'border-border bg-surface-2',
-              )"
-            >
-              <div class="flex items-start gap-2">
-                <component
-                  :is="paletteIssues.length ? AlertCircle : Check"
-                  :size="16"
-                  :class="cn('mt-0.5 shrink-0', paletteIssues.length ? 'text-warning' : 'text-success')"
-                  aria-hidden="true"
-                />
-                <p class="m-0 text-[0.8125rem] font-semibold text-ink" aria-live="polite">
-                  {{ paletteIssues.length
-                    ? `${paletteIssues.length} dari 4 pasangan warna sulit dibaca tamu`
-                    : 'Keempat pasangan warna terbaca jelas' }}
-                </p>
-              </div>
-
-              <ul class="m-0 grid list-none gap-1.5 p-0">
-                <li v-for="check in paletteChecks" :key="check.id" class="grid grid-cols-[1fr_auto] items-baseline gap-2">
-                  <span class="text-[0.8125rem] text-ink">
-                    {{ check.label }}
-                    <!-- `ink-subtle` hanya 4,40:1 di atas gold-soft; baris ini memakai `ink-muted` (5,82:1). -->
-                    <span class="block text-caption text-ink-muted">{{ check.where }}</span>
-                  </span>
-                  <span
-                    :class="cn(
-                      'rounded-full px-2 py-0.5 text-caption font-semibold tabular-nums',
-                      check.passes ? 'bg-surface text-ink-muted' : 'bg-danger-soft text-danger',
-                    )"
-                  >
-                    {{ formatRatio(check.ratio) }}:1
-                    <span class="sr-only">{{ check.passes ? 'memenuhi' : 'di bawah' }} ambang 4,5:1</span>
-                  </span>
-                </li>
-              </ul>
-
-              <button v-if="paletteIssues.length && canEditDesign" id="editor-repair-palette" type="button" class="button button-secondary justify-self-start" @click="repairPaletteColors">
-                <Wand2 :size="15" aria-hidden="true" />
-                Perbaiki warna otomatis
-              </button>
-            </div>
-
-            <div class="grid gap-3 @xs:grid-cols-2">
-              <UiField id="editor-font" v-slot="{ id }" label="Jenis huruf judul">
-                <UiSelect :id="id" v-model="(document.tokens.font as FontChoice)" :disabled="!canEditDesign" :aria-describedby="canEditDesign ? undefined : 'design-locked'">
-                  <option v-for="font in selectableFonts" :key="font.id" :value="font.id">{{ font.label }}</option>
-                </UiSelect>
-              </UiField>
-
-              <!--
-                Daftar body SENGAJA lebih pendek dari daftar judul.
-
-                `DESIGN.md` melarang script untuk paragraf, dan sampai fase 58 larangan itu
-                ditegakkan karena huruf body tidak bisa dipilih sama sekali. Membuka pemilihnya
-                tanpa menyaring akan mencabut aturannya diam-diam — paragraf 16px dalam Allura
-                tidak terbaca. `selectableBodyFonts` yang menyaringnya, dan `bodyFontOf()` di
-                `utils/theme.ts` menolak nilai script yang masuk lewat dokumen suntingan tangan.
-              -->
-              <UiField
-                id="editor-body-font"
-                v-slot="{ id }"
-                label="Jenis huruf paragraf"
-                hint="Kosong berarti ikut tema."
-              >
-                <UiSelect
-                  :id="id"
-                  :model-value="document.tokens.bodyFont ?? ''"
-                  :disabled="!canEditDesign"
-                  :aria-describedby="canEditDesign ? undefined : 'design-locked'"
-                  @update:model-value="value => { checkpoint(); if (value) document.tokens.bodyFont = value as FontChoice; else delete document.tokens.bodyFont }"
-                >
-                  <option value="">Ikut tema</option>
-                  <option v-for="font in selectableBodyFonts" :key="font.id" :value="font.id">{{ font.label }}</option>
-                </UiSelect>
-              </UiField>
-            </div>
-
-            <DashboardOrnamentBackdropPicker
-              :pilihan="backdrop"
-              :bobot="backdropWeight"
-              :accent="themeAccent"
-              :background="document.tokens.background"
-              :terkunci="!canEditDesign"
-              @update:pilihan="tulisBackdrop"
-              @update:bobot="tulisBackdropWeight"
-            />
-          </section>
-        </template>
-      </section>
-
-      <!-- Preview -->
-      <!--
-        `xl:col-start-3` wajib ada: tanpa itu `lg:col-start-2` ikut berlaku di `xl` dan
-        pratinjau mendarat menindih panel pengaturan.
-      -->
-      <aside
-        :class="cn(
-          'lg:col-start-2 lg:sticky lg:top-8 lg:self-start xl:col-start-3',
-          mobilePanel === 'settings' && 'hidden xl:block',
-        )"
-      >
-        <div class="grid gap-3">
-          <div class="grid gap-2">
-            <p class="eyebrow">Pratinjau draft</p>
-
-            <!--
-              Pemilih perangkat, bukan sakelar zoom. Labelnya nama benda yang dipegang tamu,
-              dan lebar sungguhannya ikut ditulis — tanpa angka itu, pratinjau yang diperkecil
-              jadi misteri: pasangan tidak tahu apakah hurufnya memang sekecil itu di ponsel
-              atau hanya kelihatan kecil di sini.
-            -->
-            <div
-              class="flex gap-1 rounded-full bg-surface-3 p-1"
-              role="group"
-              aria-label="Lebar pratinjau"
-            >
-              <button
-                v-for="device in previewDevices"
-                :id="`editor-preview-${device.id}`"
-                :key="device.id"
-                type="button"
-                :aria-pressed="previewDevice === device.id"
-                :class="cn(
-                  'flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-[0.8125rem] font-semibold transition-colors duration-200',
-                  previewDevice === device.id ? 'bg-surface text-ink shadow-hairline' : 'text-ink-muted hover:text-ink',
-                )"
-                @click="previewDevice = device.id"
-              >
-                <component :is="device.icon" :size="15" aria-hidden="true" />
-                {{ device.label }}
-              </button>
-            </div>
-
-            <p class="m-0 flex items-center justify-between gap-2 text-caption text-ink-subtle">
-              <span>Selebar {{ previewWidth }}px</span>
-              <span v-if="previewScalePct < 100" class="tabular-nums">diperkecil {{ previewScalePct }}%</span>
-            </p>
-          </div>
-
-          <!--
-            Tingginya mengikuti layar, bukan angka tetap. `36rem` dulu berarti panel ini
-            berhenti di 576px bahkan di layar 1000px — pasangan melihat 40% lebih sedikit
-            dari undangan yang justru jadi alasan mereka membuka editor.
-
-            Bayangan di tepi bawah ada karena panel ini memotong isinya di tengah huruf.
-            Scrollbar overlay macOS tidak terlihat sampai disentuh, jadi tanpa isyarat itu
-            potongannya terbaca sebagai render yang rusak, bukan sebagai "masih ada lagi".
-          -->
-          <div class="relative overflow-hidden rounded-xl border border-border shadow-float after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-10 after:bg-gradient-to-t after:from-ink/12 after:to-transparent">
-            <div
-              ref="previewViewport"
-              class="max-h-[36rem] overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] xl:max-h-[calc(100svh-14rem)]"
-            >
-              <!--
-                `transform` tidak mengubah tata letak, jadi pembungkus ini yang memegang ukuran
-                hasil perkecilan. Tanpa itu panel menyisakan ruang kosong setinggi undangan yang
-                belum diperkecil — di Laptop yang diperkecil ke 25%, tiga perempat panelnya jadi
-                kosong. Lebarnya ikut ditulis supaya render yang lebih sempit dari relnya —
-                Ponsel 390px di rel 424px — berdiri di tengah, bukan menempel ke kiri.
-              -->
-              <div
-                :style="{
-                  width: `${Math.round(previewWidth * previewScale)}px`,
-                  height: `${Math.round(stageHeight * previewScale)}px`,
-                  marginInline: 'auto',
-                }"
-              >
-                <div
-                  ref="previewStage"
-                  data-preview-stage
-                  :style="{
-                    width: `${previewWidth}px`,
-                    transform: `scale(${previewScale})`,
-                    transformOrigin: 'top left',
-                  }"
-                >
-                  <InvitationRenderer :document="document" compact />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
+          </template>
+        </DashboardEditorInspector>
+      </div>
     </div>
 
-    <!--
-      Studio Ornamen dipasang di dalam `DashboardShell`, bukan di akar halaman.
-
-      Ia dialog ber-portal, jadi tempat deklarasinya tidak menentukan tempat RENDER-nya — dan itu
-      yang membuat salah tempat begitu mudah dan begitu senyap. Versi pertama mendarat di cabang
-      `v-else` milik keadaan memuat/galat: markupnya benar, typecheck hijau, lint bersih, dan
-      tombol "Ganti" tidak melakukan apa pun sama sekali, karena cabang itu mati begitu editor
-      selesai memuat. Komponen di dalam `v-if` yang tidak aktif tidak pernah dipasang.
-
-      Bukan di dalam panel pengaturan juga: panel itu `hidden xl:grid` pada tata letak ponsel.
-    -->
+    <!-- Dialog ber-portal dipasang di dalam `DashboardShell`, bukan di cabang memuat/galat (lihat fase 59). -->
     <DashboardOrnamentStudio
       v-if="studioAktif"
       :open="Boolean(studio)"
@@ -1797,10 +862,23 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
       :bawaan="studioAktif.bawaan"
       :tokens="document.tokens"
       :accent="themeAccent"
+      :invitation-id="invitation.id"
       @update:open="terbuka => { if (!terbuka) studio = null }"
       @pilih="pilihOrnamen"
+      @pilih-unggahan="pilihUnggahan"
       @kembalikan="kembalikanSlot"
       @batal="batalkanStudio"
+    />
+    <DashboardMediaLibrary :invitation-id="invitation.id" />
+
+    <DashboardEditorRiwayatDialog
+      v-model:open="riwayatOpen"
+      :revisions="riwayatList"
+      :loading="riwayatLoading"
+      :error="riwayatError"
+      :draft-revision="revision"
+      :restoring="riwayatRestoring"
+      @restore="pulihkan"
     />
   </DashboardShell>
 
@@ -1810,5 +888,5 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
       {{ error }}
       <button id="editor-retry" class="button button-secondary ml-2" type="button" @click="load">Coba lagi</button>
     </p>
-</div>
+  </div>
 </template>

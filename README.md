@@ -57,6 +57,40 @@ fill one in; keep that value inside `WEB_ORIGIN` for every environment.
 
 Register an account through the web. Operator access is assigned explicitly through the API package CLI; no registration field grants that role. Payment credentials are Midtrans sandbox credentials. Without them checkout reports unavailable and does not activate invitations.
 
+### Demo mode (local only)
+
+To skip the login form and the payment gate on your own machine, one command does everything —
+database, mail sink, schema, demo account, API, and the web dev server:
+
+```sh
+pnpm demo
+```
+
+It is safe to re-run: services already listening are reused, never restarted, and never killed on
+exit. Ctrl+C stops everything the script itself started, grandchildren included. Logs land in
+`.data/logs/`; `DEMO_NO_OPEN=1` suppresses opening the browser. Port 3000 must be free — demo mode
+only works at `http://127.0.0.1:3000`, because `OriginGuard` rejects any other origin with 403 and
+the auto-login is gated on a loopback host.
+
+The same thing by hand, when you want the pieces in separate terminals:
+
+```sh
+pnpm demo:local                          # once: creates demo@aruna.local as an operator, with one sample invitation
+pnpm --filter @aruna/web dev:demo        # web with NUXT_DEV_DEMO=1 (or the `web-demo` entry in .claude/launch.json)
+```
+
+Then open http://127.0.0.1:3000/dashboard. The server plugin performs a real `POST /auth/login` as
+the demo account when no session cookie is present and relays the cookies to the browser; the API is
+untouched. Operators already bypass Midtrans, so "Buat undangan" activates immediately. The switch
+only works under `nuxt dev` on a loopback host, only for `/dashboard`, `/order` and `/account`, and
+never for guest pages. One session per account still applies: logging in as the demo account from
+another tab or script ends the browser session — clear cookies or use a private window. Run the e2e
+suite against `web-e2e`, never `web-demo`.
+
+If a login form does appear, the credentials are `demo@aruna.local` / `arunademo123`. The password
+is deliberately short and typeable: the auto-login never asks for it, but a private window, a second
+browser, or a session evicted by the e2e suite does.
+
 ## Verification
 
 ```sh

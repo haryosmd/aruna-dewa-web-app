@@ -38,6 +38,7 @@ useHead({ title: 'Undangan kalian — Aruna Dewa' })
         <p class="eyebrow">Ruang persiapan</p>
         <h1 class="m-0 font-display text-h1 font-semibold text-ink">Undangan kalian</h1>
         <p class="copy m-0">Pilih undangan untuk melanjutkan rancangan, daftar tamu, dan publikasi.</p>
+        <DemoBadge note="Buat undangan baru langsung aktif tanpa pembayaran." />
       </header>
 
       <div v-if="loading" class="grid gap-3 sm:grid-cols-2">
@@ -73,7 +74,7 @@ useHead({ title: 'Undangan kalian — Aruna Dewa' })
 
             <div class="grid gap-1.5">
               <h2 class="m-0 font-display text-h2 font-semibold text-ink">{{ invitation.title }}</h2>
-              <p class="m-0 text-[0.9375rem] text-ink-muted">/i/{{ invitation.slug }}</p>
+              <p class="m-0 text-ui-lg text-ink-muted">/i/{{ invitation.slug }}</p>
               <p class="m-0 text-caption text-ink-subtle">
                 {{ invitation.publishedAt ? 'Sudah dipublikasikan' : 'Belum dipublikasikan' }}
               </p>

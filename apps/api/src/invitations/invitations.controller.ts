@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
-import { createInvitationBodySchema, saveDraftBodySchema, type CreateInvitationBody, type SaveDraftBody } from '@aruna/contracts/api';
+import { Body, Controller, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
+import { createInvitationBodySchema, restoreRevisionBodySchema, saveDraftBodySchema, updateShareSettingsBodySchema, type CreateInvitationBody, type RestoreRevisionBody, type SaveDraftBody, type UpdateShareSettingsBody } from '@aruna/contracts/api';
 import { InvitationsService } from './invitations.service.js';
 import { CurrentUser, JwtAuthGuard, OriginGuard, type AuthenticatedUser } from '../common/auth.js';
 import { zodBody } from '../common/zod-validation.pipe.js';
@@ -12,5 +12,8 @@ export class InvitationsController {
   @Post() @UseGuards(OriginGuard) create(@CurrentUser() user: AuthenticatedUser, @Body(zodBody(createInvitationBodySchema)) body: CreateInvitationBody) { return this.invitations.create(user, body); }
   @Get(':id') get(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) { return this.invitations.get(user, id); }
   @Put(':id/draft') @UseGuards(OriginGuard) saveDraft(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body(zodBody(saveDraftBodySchema)) body: SaveDraftBody) { return this.invitations.saveDraft(user, id, body.document, body.revision); }
+  @Get(':id/revisions') listRevisions(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) { return this.invitations.listRevisions(user, id); }
+  @Post(':id/revisions/restore') @UseGuards(OriginGuard) restoreRevision(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body(zodBody(restoreRevisionBodySchema)) body: RestoreRevisionBody) { return this.invitations.restoreRevision(user, id, body.revision, body.draftRevision); }
   @Post(':id/publish') @UseGuards(OriginGuard) publish(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) { return this.invitations.publish(user, id); }
+  @Patch(':id/share-settings') @UseGuards(OriginGuard) updateShareSettings(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body(zodBody(updateShareSettingsBodySchema)) body: UpdateShareSettingsBody) { return this.invitations.updateShareSettings(user, id, body); }
 }

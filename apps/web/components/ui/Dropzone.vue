@@ -84,10 +84,17 @@ function onChange(event: Event) {
 
 <template>
   <div class="grid gap-2">
+    <!--
+      `relative` bukan hiasan. `<input class="sr-only">` di bawah ini `position: absolute`, dan
+      tanpa leluhur ber-posisi containing block-nya adalah viewport: kotak 1px-nya mendarat di
+      koordinat dokumen sesuai posisi statiknya, lolos dari `overflow: hidden` milik `<main>` studio,
+      dan menarik `scrollHeight` dokumen ke sana (terukur 2168px pada viewport 900 di editor, fase 71).
+      Kelas bug yang sama pernah kena di `.table-wrap` (main.css).
+    -->
     <label
       :for="props.id"
       :class="cn(
-        'grid justify-items-center gap-2 rounded-lg border border-dashed px-5 py-6 text-center transition-colors duration-200',
+        'relative grid justify-items-center gap-2 rounded-lg border border-dashed px-5 py-6 text-center transition-colors duration-200',
         blocked ? 'cursor-not-allowed border-border-input bg-surface-3 opacity-70' : 'cursor-pointer',
         !blocked && dragging
           ? 'border-primary bg-primary-soft/60'
@@ -113,7 +120,7 @@ function onChange(event: Event) {
       <Music4 v-else-if="props.kind === 'audio'" :size="22" class="text-ink-subtle" aria-hidden="true" />
       <ImagePlus v-else :size="22" class="text-ink-subtle" aria-hidden="true" />
 
-      <span class="text-[0.9375rem] font-semibold text-ink">
+      <span class="text-ui-lg font-semibold text-ink">
         {{ props.pending ? 'Mengunggah…' : headline }}
       </span>
 

@@ -63,12 +63,12 @@ useHead({ title: () => invitation.value?.title
         class="card flex flex-wrap items-center justify-between gap-4 p-5"
       >
         <div class="grid gap-1">
-          <span class="text-[1.0625rem] font-semibold text-ink">{{ order.packageName || 'Paket undangan' }}</span>
+          <span class="text-body-lg font-semibold text-ink">{{ order.packageName || 'Paket undangan' }}</span>
           <span class="text-caption text-ink-subtle">{{ order.id }}</span>
         </div>
 
         <div class="flex items-center gap-4">
-          <span class="font-display text-[1.5rem] font-semibold text-ink">{{ formatRupiah(order.total) }}</span>
+          <span class="font-display text-h3 font-semibold text-ink">{{ formatRupiah(order.total) }}</span>
           <UiBadge :tone="toneFor(order.status)">{{ order.status }}</UiBadge>
         </div>
       </li>

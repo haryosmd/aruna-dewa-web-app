@@ -32,6 +32,13 @@ export class PublicService {
     return { opened: exists > 0 };
   }
 
+  /*
+   * Jalur v1 saja. Dokumen Elegance (v2) tidak punya bagian `rsvp` — kehadiran naik lewat
+   * `POST /public/:slug/wishes`, dan batas RSVP yang dibaca di bawah adalah salah satu kehilangan
+   * yang diakui `migrateLegacyDocument`. Jadi undangan v2 selalu dijawab 400 di sini, dan itu
+   * benar: renderer v2 tidak pernah memanggilnya. Revisi terbit v1 yang lama tetap terlayani
+   * sampai pasangannya menerbitkan ulang.
+   */
   async rsvp(slug: string, input: PublicRsvpBody) {
     const invitation = await this.publishedInvitation(slug);
     const document = publicDocument(invitation.activeRevision!.document as never);
@@ -67,24 +74,53 @@ export class PublicService {
 
   async wishes(slug: string) {
     const invitation = await this.publishedInvitation(slug);
-    return this.prisma.wish.findMany({ where: { invitationId: invitation.id, approved: true }, select: { id: true, authorName: true, message: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: 100 });
+    return this.prisma.wish.findMany({ where: { invitationId: invitation.id, approved: true }, select: { id: true, authorName: true, message: true, attendance: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: 100 });
   }
 
+  /**
+   * Ucapan dari form undangan. Sejak fase 72 form Elegance menggabungkan buku tamu dan
+   * kehadiran, dan terbuka untuk tamu tanpa tautan personal seperti referensi: tanpa token
+   * nama wajib ditulis sendiri; dengan token tamu tetap tercatat lewat `guestId`, namanya
+   * boleh ditulis ulang, dan pilihan kehadirannya ikut memperbarui baris RSVP-nya.
+   */
   async createWish(slug: string, input: PublicWishBody) {
     const invitation = await this.publishedInvitation(slug);
-    const guest = await this.prisma.guest.findFirst({ where: { invitationId: invitation.id, tokenHash: hashGuestToken(input.token) } });
-    if (!guest) throw new BadRequestException('Tautan RSVP personal tidak valid');
-    // Endpoint ini menulis tanpa autentikasi selain token tamu; batas per tamu menahan
-    // satu tautan yang bocor dari membanjiri antrean moderasi pasangan.
-    const alreadySent = await this.prisma.wish.count({ where: { invitationId: invitation.id, guestId: guest.id } });
-    if (alreadySent >= 5) throw new BadRequestException('Ucapan dari tautan ini sudah mencapai batas');
+    const guest = input.token ? await this.prisma.guest.findFirst({ where: { invitationId: invitation.id, tokenHash: hashGuestToken(input.token) } }) : null;
+    if (input.token && !guest) throw new BadRequestException('Tautan RSVP personal tidak valid');
+    const authorName = input.name?.trim() || guest?.displayName || '';
+    if (!authorName) throw new BadRequestException({ code: 'INVALID_BODY', message: 'Nama wajib diisi', fieldErrors: { name: ['Nama wajib diisi'] } });
+    if (guest) {
+      // Endpoint ini menulis tanpa autentikasi selain token tamu; batas per tamu menahan
+      // satu tautan yang bocor dari membanjiri antrean moderasi pasangan. Ucapan tanpa token
+      // hanya dijaga throttle per IP — dan tetap menunggu moderasi sebelum terlihat tamu lain.
+      const alreadySent = await this.prisma.wish.count({ where: { invitationId: invitation.id, guestId: guest.id } });
+      if (alreadySent >= 5) throw new BadRequestException('Ucapan dari tautan ini sudah mencapai batas');
+      if (input.attendance) await this.recordAttendance(guest.id, input.attendance);
+    }
     // Baris yang dibuat dikembalikan supaya penulisnya langsung melihat ucapannya sendiri,
     // lengkap dengan penanda bahwa ia masih menunggu ditinjau. Tamu lain tetap tidak melihatnya.
     const wish = await this.prisma.wish.create({
-      data: { invitationId: invitation.id, guestId: guest.id, authorName: guest.displayName, message: input.message.trim(), approved: false },
-      select: { id: true, authorName: true, message: true, createdAt: true, approved: true },
+      data: { invitationId: invitation.id, guestId: guest?.id ?? null, authorName, message: input.message.trim(), attendance: input.attendance ?? null, approved: false },
+      select: { id: true, authorName: true, message: true, attendance: true, createdAt: true, approved: true },
     });
     return wish;
+  }
+
+  /**
+   * Kehadiran dari form ucapan ditulis ke baris RSVP umum (tanpa acara) supaya penghitung
+   * "hadir" di dasbor tetap satu sumber. Kuota dan tenggat tidak diperiksa di sini: form
+   * ucapan tidak menanyakan jumlah kursi (selalu 1), dan tenggat milik RSVP v1.
+   */
+  private async recordAttendance(guestId: string, attendance: PublicWishBody['attendance']) {
+    const enumOf = { 'hadir': 'YES', 'belum-pasti': 'MAYBE', 'berhalangan': 'NO' } as const;
+    const value = enumOf[attendance!];
+    const count = value === 'NO' ? 0 : 1;
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${`${guestId}:general`}))`);
+      const existing = await tx.rSVP.findFirst({ where: { guestId, eventId: null } });
+      if (existing) await tx.rSVP.update({ where: { id: existing.id }, data: { attendance: value, count } });
+      else await tx.rSVP.create({ data: { guestId, eventId: null, attendance: value, count } });
+    });
   }
 
   private async publishedInvitation(slug: string) {

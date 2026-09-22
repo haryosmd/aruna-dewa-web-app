@@ -20,6 +20,14 @@ export interface MusicTrack {
   mood: string
   seconds: number
   url: string
+  /**
+   * Metadata pemilih (fase 72.3), meniru struktur pustaka referensi: genre pendek untuk baris
+   * "Genre: …", kategori acara, dan ⭐ untuk lagu yang diurutkan lebih dulu. Isinya tetap trek
+   * CC0/PD milik kita — hanya bentuk kartunya yang ditiru.
+   */
+  genre: string
+  kategori: 'Pernikahan' | 'Khitanan' | 'Ulang Tahun' | 'Aqiqah' | 'Umum'
+  unggulan?: boolean
 }
 
 export const musicLibrary: MusicTrack[] = [
@@ -30,6 +38,9 @@ export const musicLibrary: MusicTrack[] = [
     mood: 'Tenang, melangkah pelan',
     seconds: 120,
     url: '/audio/gymnopedie-1.mp3',
+    genre: 'Piano Tenang',
+    kategori: 'Pernikahan',
+    unggulan: true,
   },
   {
     id: 'gymnopedie-3',
@@ -38,6 +49,8 @@ export const musicLibrary: MusicTrack[] = [
     mood: 'Tenang, sedikit sendu',
     seconds: 120,
     url: '/audio/gymnopedie-3.mp3',
+    genre: 'Piano Sendu',
+    kategori: 'Pernikahan',
   },
   {
     id: 'etude-harpa',
@@ -46,6 +59,9 @@ export const musicLibrary: MusicTrack[] = [
     mood: 'Mengalir, hangat',
     seconds: 120,
     url: '/audio/etude-harpa.mp3',
+    genre: 'Klasik Elegan',
+    kategori: 'Pernikahan',
+    unggulan: true,
   },
   {
     id: 'esta-tarde',
@@ -54,6 +70,9 @@ export const musicLibrary: MusicTrack[] = [
     mood: 'Romantis, lambat',
     seconds: 120,
     url: '/audio/esta-tarde.mp3',
+    genre: 'Piano Romantis',
+    kategori: 'Pernikahan',
+    unggulan: true,
   },
   {
     id: 'balletto',
@@ -62,6 +81,8 @@ export const musicLibrary: MusicTrack[] = [
     mood: 'Khidmat, kuno',
     seconds: 119,
     url: '/audio/balletto.mp3',
+    genre: 'Klasik Khidmat',
+    kategori: 'Pernikahan',
   },
   {
     id: 'invensi-8',
@@ -70,6 +91,8 @@ export const musicLibrary: MusicTrack[] = [
     mood: 'Riang, gesekan dawai',
     seconds: 61,
     url: '/audio/invensi-8.mp3',
+    genre: 'Dawai Riang',
+    kategori: 'Pernikahan',
   },
   {
     id: 'mazurka-g',
@@ -78,8 +101,18 @@ export const musicLibrary: MusicTrack[] = [
     mood: 'Riang, ringan',
     seconds: 81,
     url: '/audio/mazurka-g.mp3',
+    genre: 'Piano Ringan',
+    kategori: 'Pernikahan',
   },
 ]
+
+/** Lagu unggulan (⭐) dulu, lalu sisanya sesuai urutan pustaka — urutan yang dipakai pemilih Global. */
+export const musicLibrarySorted: MusicTrack[] = [...musicLibrary].sort((a, b) => Number(Boolean(b.unggulan)) - Number(Boolean(a.unggulan)))
+
+/** "3:44" — bentuk durasi di baris pemilih; `trackLength` tetap untuk kalimat panjang. */
+export function trackDuration(seconds: number): string {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+}
 
 export function trackByUrl(url: string): MusicTrack | undefined {
   return musicLibrary.find(track => track.url === url)

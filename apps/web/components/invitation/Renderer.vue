@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import type { CopyKey, LegacySectionType, StructureFamily, V2SectionType } from '@aruna/contracts'
+import { documentStructureId, structureById } from '@aruna/contracts'
+import { pilihCopy, resolveCopy } from '~/utils/invitation-copy'
 import type { Component } from 'vue'
-import type { GuestProfile, InvitationDocument, RsvpPayload, Section, Wish } from '~/types/aruna'
-import { toOrnamentOverrides } from '~/utils/invitation-options'
+import type { GuestProfile, InvitationDocument, RendererMode, RsvpPayload, Section, Wish, WishPayload } from '~/types/aruna'
+import { toEntrance, toOrnamentOverrides } from '~/utils/invitation-options'
 import { toIntensity } from '~/utils/ornaments'
 import { playLegacyScore, playScore } from '~/utils/motion-play'
-import { resolveScore, sectionRole } from '~/utils/motion-score'
+import { resolveScore, sectionRole, terapkanMotionDokumen } from '~/utils/motion-score'
+import { toEnvelopeSpeed } from '~/utils/motion-envelope'
 import { themeMotion, themeOrnaments } from '~/utils/theme'
 import { terapkanOverrides } from '~/utils/ornament-slots'
 
@@ -29,6 +33,17 @@ import SectionGift from './sections/Gift.vue'
 import SectionRsvp from './sections/Rsvp.vue'
 import SectionWishes from './sections/Wishes.vue'
 import SectionClosing from './sections/Closing.vue'
+import EleganceHero from './elegance/Hero.vue'
+import EleganceCouple from './elegance/Couple.vue'
+import EleganceCountdown from './elegance/Countdown.vue'
+import EleganceEvent from './elegance/Event.vue'
+import EleganceMap from './elegance/Map.vue'
+import EleganceUnduhMantu from './elegance/UnduhMantu.vue'
+import EleganceQuote from './elegance/Quote.vue'
+import EleganceGallery from './elegance/Gallery.vue'
+import EleganceGift from './elegance/Gift.vue'
+import EleganceWishes from './elegance/Wishes.vue'
+import EleganceClosing from './elegance/Closing.vue'
 
 export type { GuestProfile, Wish }
 
@@ -42,19 +57,53 @@ const props = withDefaults(
     wishes?: Wish[]
     rsvpPending?: boolean
     wishPending?: boolean
-    /** Renders a shrunken, gate-free preview for the editor and landing page. */
+    /**
+     * Cara renderer dipasang (fase 72). `live` = halaman tamu; `compact` = pratinjau tanpa
+     * gerbang, pemutar, dan dock; `stage` = panggung editor — gerbang dirender dan partitur
+     * dimainkan seperti `live`, tapi semuanya terkurung di dalam `.iv-root`.
+     */
+    mode?: RendererMode
+    /** Bentuk lama: `compact` = `mode: 'compact'`. Dipertahankan untuk pemanggil yang sudah ada. */
     compact?: boolean
   }>(),
-  { greeting: '', guest: null, guestError: '', hasToken: false, wishes: () => [], rsvpPending: false, wishPending: false, compact: false },
+  { greeting: '', guest: null, guestError: '', hasToken: false, wishes: () => [], rsvpPending: false, wishPending: false, mode: undefined, compact: false },
 )
 
 const emit = defineEmits<{
   coverOpen: []
   rsvp: [payload: RsvpPayload]
   wish: [message: string]
+  /** Form ucapan v2 (fase 72): nama + kehadiran + pesan. */
+  wishEntry: [payload: WishPayload]
+  /** Panggung editor: gerbang minta wadahnya dikunci (true) atau dilepas (false). */
+  gateLock: [locked: boolean]
 }>()
 
 const root = ref<HTMLElement | null>(null)
+
+const mode = computed<RendererMode>(() => props.mode ?? (props.compact ? 'compact' : 'live'))
+/** Bukan `compact` — nama itu milik prop lama; ini nilai yang sudah digabung dengan `mode`. */
+const ringkas = computed(() => mode.value === 'compact')
+const stage = computed(() => mode.value === 'stage')
+/**
+ * Struktur dokumen ini, dan dari sanalah keluarga komponennya dipilih (fase 74.10).
+ *
+ * Sebelumnya peta komponen dipilih dari `schemaVersion`, yang berarti "versi skema" dan "wajah
+ * undangan" adalah satu hal — dan itulah yang membuat template kedua tidak bisa dinyatakan.
+ * Sekarang `schemaVersion` kembali berarti bentuk data saja, dan strukturnya yang memutuskan
+ * siapa merender apa. Dokumen lama tanpa `structureId` diturunkan dari `schemaVersion`, jadi
+ * hasilnya sama persis dengan sebelum fase ini.
+ */
+const structure = computed(() => structureById(documentStructureId(props.document)))
+
+/**
+ * Tetap bernama `v2` karena delapan cabang lain di berkas ini membacanya, dan mengubah
+ * semuanya dalam satu irisan akan menyembunyikan perubahan yang sebenarnya di balik diff besar.
+ * Artinya kini "keluarga komponen Elegance", bukan "schemaVersion 2" — dan untuk seluruh dokumen
+ * yang ada hari ini keduanya bernilai sama. Yang benar-benar fakta struktur (`gateType`, nama
+ * kolom galeri, versi Dock) naik ke registry di irisan berikutnya.
+ */
+const v2 = computed(() => structure.value.family === 'elegance')
 
 const style = computed(() => themeStyle(props.document))
 const visible = computed(() => props.document.sections.filter(section => section.enabled))
@@ -62,15 +111,25 @@ const has = (type: string) => visible.value.some(section => section.type === typ
 const sectionOf = (type: string) => visible.value.find(section => section.type === type)
 
 /**
- * Peta tipe section ke komponennya.
+ * Peta tipe section ke komponennya, dipilih menurut `schemaVersion`.
  *
  * Sebelumnya urutan section dipaku di template ini dan `visible` hanya dipakai untuk
  * lookup — artinya tombol naik/turun di editor tidak berpengaruh sama sekali. Sekarang
  * renderer melakukan `v-for` atas `document.sections`, jadi urutan yang disimpan pasangan
- * adalah urutan yang dilihat tamu. `music` sengaja tidak ada di peta: ia pemutar
- * mengambang, bukan section.
+ * adalah urutan yang dilihat tamu. `music` (v1) dan `opening-envelope` (v2) sengaja tidak
+ * ada di peta: yang pertama pemutar mengambang, yang kedua gerbang di depan halaman —
+ * keduanya terdaftar di `headlessSectionTypes` (kontrak), bukan cuma di komentar ini.
+ *
+ * Tipe kedua peta DIKETATKAN sejak fase 74.4: `Record<Exclude<…>, Component>`, bukan
+ * `Record<string, Component>`. Dengan bentuk lama, menambah satu tipe ke `v2SectionTypes`
+ * lolos compiler, lolos skema, lolos form, lolos simpan, lolos terbit — lalu TIDAK MERENDER
+ * APA PUN untuk tamu, karena `rendered` di bawah membuangnya diam-diam. Sekarang compiler
+ * menuntut entrinya, dan `renderer-coverage.spec.ts` menjaga arah sebaliknya.
+ *
+ * Bagian ekstra v2 (`story`, `rundown`, `dresscode`, `video`) memakai komponen v1-nya:
+ * bentuk `data` mereka tidak berubah di fase 72, dan tidak ada wajah Elegance untuk mereka.
  */
-const sectionComponents: Record<string, Component> = {
+const legacyComponents: Record<Exclude<LegacySectionType, 'music'>, Component> = {
   cover: SectionCover,
   couple: SectionCouple,
   events: SectionEvents,
@@ -85,12 +144,40 @@ const sectionComponents: Record<string, Component> = {
   wishes: SectionWishes,
   closing: SectionClosing,
 }
+const eleganceComponents: Record<Exclude<V2SectionType, 'opening-envelope'>, Component> = {
+  hero: EleganceHero,
+  couple: EleganceCouple,
+  countdown: EleganceCountdown,
+  event: EleganceEvent,
+  map: EleganceMap,
+  'unduh-mantu': EleganceUnduhMantu,
+  quote: EleganceQuote,
+  gallery: EleganceGallery,
+  gift: EleganceGift,
+  wishes: EleganceWishes,
+  closing: EleganceClosing,
+  story: SectionStory,
+  rundown: SectionRundown,
+  dresscode: SectionDresscode,
+  video: SectionVideo,
+}
+const componentFamilies: Record<StructureFamily, Record<string, Component>> = {
+  elegance: eleganceComponents,
+  warisan: legacyComponents,
+}
+const sectionComponents = computed<Record<string, Component | undefined>>(() => componentFamilies[structure.value.family])
 
-const score = computed(() => themeMotion(props.document.templateId))
+/*
+ * Partitur tema, ditimpa pilihan dokumen bila ada (fase 69). Tanpa pilihan hasilnya persis
+ * `themeMotion()` — termasuk `undefined` yang membawa tema lama ke `playLegacyScore()`.
+ */
+const score = computed(() => terapkanMotionDokumen(themeMotion(props.document.templateId), toEntrance(props.document.tokens.motion?.masuk)))
+const kecepatanAmplop = computed(() => toEnvelopeSpeed(props.document.tokens.motion?.amplop))
 
 const rendered = computed(() => {
+  const peta = sectionComponents.value
   const entries = visible.value
-    .map((section, index) => ({ section, index, component: sectionComponents[section.type] }))
+    .map((section, index) => ({ section, index, component: peta[section.type] }))
     .filter((entry): entry is { section: Section; index: number; component: Component } => Boolean(entry.component))
     .map(entry => ({ ...entry, role: sectionRole[entry.section.type] }))
 
@@ -116,27 +203,49 @@ const rendered = computed(() => {
   return entries.map((entry, index) => ({ ...entry, segue: segueDiIndeks.get(index) ?? null }))
 })
 
-const coupleSection = computed(() => sectionOf('couple'))
+/*
+ * Dicari di seluruh dokumen, bukan hanya section yang tampil: nama pasangan adalah identitas
+ * undangan, bukan isi satu section. Di undangan terbit keduanya sama (`couple` wajib dan tidak
+ * bisa dimatikan), tapi pratinjau wizard `/order` menyalakan section per langkah, dan tautan
+ * kalender di langkah acara sempat berbunyi "Aruna & Dewa" untuk pasangan yang baru saja
+ * mengetik namanya sendiri.
+ *
+ * v2: nama ada di `couple.brideName`/`groomName`; bila salah satunya kosong, judul amplop.
+ */
+const coupleSection = computed(() => props.document.sections.find(section => section.type === 'couple'))
 const coupleNames = computed(() => {
   const section = coupleSection.value
+  if (v2.value) {
+    const bride = text(section, 'brideName').trim()
+    const groom = text(section, 'groomName').trim()
+    if (bride && groom) return `${bride} & ${groom}`
+    const amplop = props.document.sections.find(item => item.type === 'opening-envelope')
+    return text(amplop, 'title').trim() || 'Aruna & Dewa'
+  }
   if (!section) return 'Aruna & Dewa'
   return `${text(section, 'partner1', 'Aruna')} & ${text(section, 'partner2', 'Dewa')}`
 })
 const initials = computed(() => coupleNames.value.split('&').map(part => part.trim().charAt(0).toUpperCase()).join(''))
 
-const coverSection = computed(() => sectionOf('cover'))
-const coverImage = computed(() => text(coverSection.value, 'image') || themeOf(props.document.templateId).cover)
+/** Bagian yang memegang gerbang dan penukaran ornamen: `cover` (v1) atau `opening-envelope` (v2). */
+const gateType = computed(() => (v2.value ? 'opening-envelope' : 'cover'))
+const coverSection = computed(() => sectionOf(gateType.value))
+const coverImage = computed(() => {
+  const foto = v2.value ? text(sectionOf('hero'), 'imageUrl') : text(coverSection.value, 'image')
+  return foto || themeOf(props.document.templateId).cover
+})
 
 /**
  * Set ornamen milik tema — inilah yang membedakan wajah tiap tema, bukan hanya warnanya —
  * ditimpa penukaran yang dipilih pasangan di Studio Ornamen.
  *
- * Penukarannya hidup di `cover.data`, bukan di `tokens`. Alasannya bukan lagi entitlement:
- * sejak fase 59 `designFingerprint()` di API ikut membaca `ornamentOverrides`, jadi penukaran
- * ornamen **tergerbang `design`** persis seperti warna dan font. Yang membuatnya tetap di
- * `section.data` adalah bentuknya — `tokens` ada di `packages/contracts` dan menaruh id
- * ornamen di sana akan memaksa kontrak mengenal bank yang 328 keping, atau melemahkannya jadi
- * `z.record(z.string())` yang justru memvalidasi lebih sedikit daripada `toOrnamentOverrides()`.
+ * Penukarannya hidup di `cover.data` (v1) / `opening-envelope.data` (v2), bukan di `tokens`.
+ * Alasannya bukan lagi entitlement: sejak fase 59 `designFingerprint()` di API ikut membaca
+ * `ornamentOverrides`, jadi penukaran ornamen **tergerbang `design`** persis seperti warna dan
+ * font. Yang membuatnya tetap di `section.data` adalah bentuknya — `tokens` ada di
+ * `packages/contracts` dan menaruh id ornamen di sana akan memaksa kontrak mengenal bank yang
+ * 328 keping, atau melemahkannya jadi `z.record(z.string())` yang justru memvalidasi lebih
+ * sedikit daripada `toOrnamentOverrides()`.
  *
  * `toOrnamentOverrides()` menyaringnya terhadap kategori slot, jadi glyph yang salah tempat
  * tidak bisa masuk lewat dokumen yang disunting tangan. Ia **tidak lagi** melepas penukaran
@@ -158,11 +267,17 @@ const orn = computed(() => terapkanOverrides(
  */
 const intensity = computed(() => toIntensity(coverSection.value?.data.ornamentIntensity))
 
-const galleryImages = computed(() => list(sectionOf('gallery'), 'images'))
+const galleryImages = computed(() => list(sectionOf('gallery'), v2.value ? 'imageUrls' : 'images'))
 
 const firstEvent = computed(() => rows(sectionOf('events'), 'events')[0])
-const headlineDate = computed(() =>
-  String(firstEvent.value?.date ?? '') || formatLongDate(text(sectionOf('countdown'), 'date')))
+const headlineDate = computed(() => {
+  if (v2.value) {
+    const event = sectionOf('event')
+    const bagian = [text(event, 'day'), [text(event, 'date'), text(event, 'monthYear')].filter(Boolean).join(' ')].filter(Boolean)
+    return bagian.join(', ')
+  }
+  return String(firstEvent.value?.date ?? '') || formatLongDate(text(sectionOf('countdown'), 'date'))
+})
 
 function submitRsvp(payload: RsvpPayload) {
   emit('rsvp', payload)
@@ -172,9 +287,20 @@ function submitWish(message: string) {
   emit('wish', message)
 }
 
+function submitWishEntry(payload: WishPayload) {
+  emit('wishEntry', payload)
+}
+
 const player = ref<{ arm: () => void; pause: () => void } | null>(null)
 const musicSection = computed(() => sectionOf('music'))
-const musicUrl = computed(() => (has('music') ? text(musicSection.value, 'url') : ''))
+/** Musik: `settings` di dokumen v2 (fase 72), section `music` di v1. */
+const music = computed(() => {
+  if (v2.value) {
+    const settings = props.document.settings
+    return { url: settings?.musicUrl?.trim() ?? '', title: settings?.musicTitle ?? '', credit: '', volume: settings?.musicVolume ?? 0.6 }
+  }
+  return { url: has('music') ? text(musicSection.value, 'url') : '', title: text(musicSection.value, 'title'), credit: text(musicSection.value, 'credit'), volume: 0.6 }
+})
 
 function onGateOpen() {
   // Sinkron, di dalam tumpukan panggilan klik gerbang — itulah izin autoplay yang sesungguhnya.
@@ -182,16 +308,54 @@ function onGateOpen() {
   emit('coverOpen')
 }
 
+/**
+ * Fokus tata letak (fase 72): `kartu` = 480px di tengah pada layar lebar, `penuh` = selebar
+ * layar. Hanya dokumen v2 di halaman publik: v1 tidak pernah punya pilihan ini dan tidak boleh
+ * berubah, dan di panggung/pratinjau lebarnya sudah ditentukan bingkai ponselnya.
+ */
+/*
+ * "Fokuskan untuk Layar" ikut berlaku di panggung editor (`stage`), bukan hanya di halaman tamu.
+ * Pratinjau Desktop yang merender lebar penuh sementara tamu desktop melihat kartu 480px adalah
+ * pratinjau yang berbohong — dan itu persis yang diukur e2e "device preview": tanpa kartunya,
+ * render 1280 justru lebih tinggi daripada render 390. `compact` (kartu landing) tetap di luar.
+ */
+const kartu = computed(() => v2.value && mode.value !== 'compact' && props.document.tokens.layout !== 'penuh')
+
+/**
+ * Tata letak desktop dua kolom (fase 77) — dan syaratnya ada FOTO, bukan cuma lebar.
+ *
+ * Kelasnya dipasang di sini, bukan disimpulkan CSS lewat `:has()`, karena gridnya tidak boleh
+ * menyala tanpa penghuni kolom kiri: `.iv-aside` menyembunyikan dirinya sendiri saat galeri kosong,
+ * dan kalau gridnya tetap menyala, kolom undangan jatuh ke trek pertama dan melar jadi 800px.
+ * Terukur persis begitu pada undangan QA yang galerinya kosong.
+ */
+/**
+ * Foto panel kiri: galeri kalau ada, foto utama kalau tidak.
+ *
+ * Cadangan ini bukan kemewahan. Undangan yang belum mengunggah galeri — dan itu keadaan tiap
+ * undangan yang baru dibuat — akan kehilangan seluruh tata letak desktopnya dan kembali jadi
+ * kartu sendirian di tengah layar 1440. Foto utama selalu ada: `coverImage` jatuh ke foto bawaan
+ * tema kalau pasangan belum mengunggah apa pun, jadi kolom kiri tidak pernah kosong.
+ */
+const fotoSisi = computed(() => (galleryImages.value.length ? galleryImages.value : [coverImage.value].filter(Boolean)))
+
+const berpanelSisi = computed(() => kartu.value && !ringkas.value && fotoSisi.value.length > 0)
+
 
 /*
  * Konteks bersama, bukan tiga belas daftar prop. Setiap section mengambil potongan yang
  * dibutuhkannya lewat `useInvitation()`.
  */
+const copy = computed(() => resolveCopy(props.document.copy))
+const t = (key: CopyKey) => pilihCopy(copy.value, key)
+
 provideInvitation({
   document: computed(() => props.document),
   orn,
   intensity,
-  compact: computed(() => props.compact),
+  compact: ringkas,
+  mode,
+  t,
   coupleNames,
   initials,
   greeting: computed(() => props.greeting),
@@ -202,10 +366,12 @@ provideInvitation({
   rsvpPending: computed(() => props.rsvpPending),
   wishPending: computed(() => props.wishPending),
   galleryImages,
+  fotoSisi,
   headlineDate,
   sectionOf,
   submitRsvp,
   submitWish,
+  submitWishEntry,
   // Saat `compact`, pemutarnya memang tidak dirender — `?.` di sini bukan kemalasan.
   pauseMusic: () => player.value?.pause(),
 })
@@ -219,20 +385,61 @@ useArunaMotion(root, (api) => {
    */
   const partitur = score.value
   if (!partitur) return playLegacyScore(api)
-  playScore(api, { root: root.value!, score: partitur, compact: props.compact })
+  playScore(api, { root: root.value!, score: partitur, compact: ringkas.value })
 })
 </script>
 
 <template>
-  <div ref="root" class="iv-root" :style="style" :class="{ 'pb-24': !compact }">
+  <!--
+    Pembungkus pengukur. Aturan kartu 480px di bawah bertanya pada wadah ini, bukan pada jendela:
+    di panggung editor keduanya berbeda jauh (render 1280 di dalam jendela 420), dan aturan
+    ber-`@media` membuat pratinjau Desktop berbohong — terukur di e2e "device preview", tinggi
+    render 1280 berubah 7210 → 8148 hanya karena jendela editornya menyempit. `.iv-root` tidak
+    bisa menanyai dirinya sendiri, jadi wadahnya berdiri satu tingkat di luar.
+  -->
+  <div :class="['iv-frame', { 'iv-frame--kartu': kartu, 'iv-frame--sisi': berpanelSisi }]">
+    <div
+      ref="root"
+      class="iv-root"
+      :style="style"
+      :class="{ 'iv-root--kartu': kartu, 'iv-root--stage': stage }"
+      :data-iv-mode="mode"
+    >
+    <!--
+      Panel foto kiri (fase 77). Hanya dirender pada tata letak `kartu` dan hanya terlihat di
+      container ≥64rem; tanpa foto galeri ia menyembunyikan dirinya sendiri dan gridnya runtuh
+      jadi satu kolom.
+    -->
+    <InvitationDesktopAside v-if="berpanelSisi" />
+
+    <!--
+      Kolom undangan. **Ia yang membawa `container-type`, bukan `.iv-root` lagi.**
+
+      Seluruh container query di section membaca wadah terdekat, dan begitu `.iv-root` jadi grid
+      selebar 1280 ia akan menjawab 1280 — tiap section lalu menata diri untuk layar lebar padahal
+      duduk di kolom 480. Di bawah 64rem kolom ini selebar `.iv-root`, jadi tidak ada satu pun
+      section yang bergeser: itu yang membuat perubahan ini bisa dibuktikan, bukan cuma diyakini.
+    -->
+    <div :class="['iv-column', { 'pb-24': !ringkas }]">
     <!--
       Gerbang selalu ada pada undangan yang terbit, jadi musik selalu punya gestur untuk
       menumpang: `validatePublishableDocument` menolak publish kalau section `cover` mati.
       Sempat ada pendengar `pointerdown` di sini sebagai cadangan untuk undangan tanpa gerbang —
       dibuang setelah diuji, karena keadaan itu tidak bisa dicapai lewat publish.
     -->
+    <InvitationEleganceOpeningEnvelope
+      v-if="v2 && !ringkas && coverSection"
+      :section="coverSection"
+      :image="coverImage"
+      :speed="kecepatanAmplop"
+      :has-music="Boolean(music.url)"
+      :contained="stage"
+      @open="onGateOpen"
+      @lock="emit('gateLock', true)"
+      @unlock="emit('gateLock', false)"
+    />
     <InvitationCoverGate
-      v-if="!compact && has('cover')"
+      v-else-if="!v2 && !ringkas && has('cover')"
       :couple="coupleNames"
       :date="headlineDate"
       :greeting="greeting"
@@ -240,8 +447,12 @@ useArunaMotion(root, (api) => {
       :image="coverImage"
       :ornaments="orn"
       :intensity="intensity"
-      :has-music="Boolean(musicUrl)"
+      :speed="kecepatanAmplop"
+      :has-music="Boolean(music.url)"
+      :contained="stage"
       @open="onGateOpen"
+      @lock="emit('gateLock', true)"
+      @unlock="emit('gateLock', false)"
     />
 
     <!--
@@ -263,16 +474,20 @@ useArunaMotion(root, (api) => {
       />
     </template>
 
-    <template v-if="!compact">
+    <template v-if="!ringkas">
       <InvitationMusicPlayer
-        v-if="musicUrl"
+        v-if="music.url"
         ref="player"
-        :url="musicUrl"
-        :title="text(musicSection, 'title')"
-        :credit="text(musicSection, 'credit')"
+        :url="music.url"
+        :title="music.title"
+        :credit="music.credit"
+        :volume="music.volume"
+        :contained="stage"
       />
-      <InvitationDock :available="visible.map(section => section.type)" />
-    </template>
+      <InvitationDock :available="visible.map(section => section.type)" :version="v2 ? 2 : 1" :contained="stage" />
+      </template>
+    </div>
+    </div>
   </div>
 </template>
 
@@ -448,11 +663,122 @@ useArunaMotion(root, (api) => {
  * yang berubah hanya apa yang diukur, jadi yang dilihat tamu tidak bergeser sedikit pun.
  */
 .iv-root {
-  container-type: inline-size;
   background: var(--iv-bg);
   color: var(--iv-fg);
   font-family: var(--iv-body);
 }
+/*
+ * `container-type` pindah ke sini dari `.iv-root` (fase 77): di desktop `.iv-root` jadi grid dua
+ * kolom selebar layar, dan section yang menanyainya akan menjawab lebar layar padahal ia duduk di
+ * kolom 480. Yang harus diukur tiap section adalah kolomnya, bukan halamannya.
+ */
+.iv-column { container-type: inline-size; }
+
+/*
+ * Bingkai diberi NAMA (fase 77), dan itu bukan kerapian melainkan syarat.
+ *
+ * `@container` tanpa nama menanyai wadah TERDEKAT. Dock dan pemutar musik hidup di dalam
+ * `.iv-column`, yang juga sebuah container — jadi aturan desktop yang ditulis tanpa nama
+ * menanyai kolom 480px dan tidak pernah cocok, berapa pun lebar layarnya. Terukur: dock tetap
+ * dipusatkan ke layar dan menindih nama pasangan di panel foto meski aturannya sudah ditulis.
+ *
+ * Nama tidak menutup pertanyaan tanpa nama: section di dalam `.iv-column` tetap menanyai
+ * kolomnya seperti sebelumnya.
+ */
+.iv-frame {
+  container-type: inline-size;
+  container-name: iv-frame;
+}
+
+/*
+ * Tablet (fase 77): tetap satu kolom seperti ponsel, hanya melapang.
+ *
+ * Sebelumnya rentang ini sudah mengunci kartu 480px — angka ponsel yang dipasang di layar
+ * tablet, jadi 768px menampilkan kolom 480 dengan dua bidang kosong selebar 144px di sisinya.
+ */
+@container iv-frame (min-width: 48rem) {
+  .iv-frame--kartu .iv-column {
+    max-width: 40rem;
+    margin-inline: auto;
+  }
+}
+
+/*
+ * Desktop (fase 77): panel foto galeri yang diam di kiri, undangan yang digulir di kanan.
+ *
+ * Bentuk lama — kartu 480px di tengah kanvas 1280 — adalah tata letak ponsel yang dipasang di
+ * layar lebar: dua per tiga layar kosong, dan tidak ada satu pun aturan yang membedakan desktop
+ * dari ponsel selain lebar kosongnya. `30rem` di kanan menjaga kolomnya tetap selebar kartu lama,
+ * jadi tiap section merender dirinya persis seperti yang sudah diuji.
+ */
+@container iv-frame (min-width: 64rem) {
+  /*
+   * Tanpa foto galeri tidak ada panel untuk didampingi, dan kolom yang melar sendirian sampai
+   * 1280 adalah tata letak yang tidak pernah dirancang siapa pun. Ia kembali ke kartu di tengah —
+   * bentuk fase 72, yang setidaknya sudah diuji.
+   */
+  .iv-frame--kartu .iv-column { max-width: 30rem; }
+
+  .iv-frame--sisi > .iv-root {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 30rem;
+    align-items: start;
+  }
+  .iv-frame--sisi .iv-aside {
+    display: block;
+    position: sticky;
+    top: 0;
+    height: var(--iv-layar-h, 100svh);
+  }
+  .iv-frame--sisi .iv-column {
+    max-width: none;
+    margin-inline: 0;
+    min-height: var(--iv-layar-h, 100svh);
+    box-shadow: -24px 0 70px -40px rgb(0 0 0 / 0.5);
+  }
+  /*
+   * Dock dan pemutar musik ikut kolomnya, bukan layarnya.
+   *
+   * Keduanya `fixed inset-x-0` — benar selama undangan memenuhi layar, salah begitu ia tinggal
+   * sepertiga kanannya: dock yang dipusatkan ke layar mendarat di tengah PANEL FOTO dan menindih
+   * nama pasangan di sana. Terlihat langsung pada tangkapan layar pertama tata letak ini.
+   */
+  .iv-frame--sisi .iv-dock,
+  .iv-frame--sisi .iv-player {
+    left: auto;
+    right: 0;
+    width: 30rem;
+  }
+}
+/* Panggung editor: gerbang, pemutar, dan dock terkurung di root ini, jadi ia harus jadi wadah posisinya. */
+.iv-root--stage { position: relative; }
+
+/*
+ * Afordans ornamen di panggung editor (fase 76).
+ *
+ * Ornamen di undangan tidak pernah punya isyarat bahwa ia bisa disentuh — pasangan harus tahu
+ * lebih dulu bahwa panel kanan punya tab Ornamen, lalu menebak keping mana yang mengisi slot
+ * mana. Kotak putus-putus tipis membalik arahnya: yang terlihat di kanvas yang ditunjuk.
+ *
+ * Seluruhnya digerbangi `.iv-root--stage`, dan itu bukan kehati-hatian melainkan syarat: kelas
+ * ini hanya ada di `mode="stage"`, jadi halaman tamu `/i/[slug]` tidak pernah melihat satu pun
+ * garis putus-putus dan ornamennya tetap tidak menangkap pointer.
+ *
+ * `outline`, bukan `border`: ia tidak ikut menghitung tata letak, jadi tidak ada satu piksel pun
+ * yang bergeser saat kursor lewat. 1px dan 65% supaya ia menandai, bukan meneriaki.
+ */
+.iv-root--stage [data-iv-slot]:hover,
+.iv-root--stage [data-layer-slot]:hover {
+  outline: 1px dashed color-mix(in srgb, var(--iv-primary) 65%, transparent);
+  outline-offset: 2px;
+  cursor: pointer;
+}
+
+/*
+ * Ladangnya tetap tembus pointer — ia menutupi seluruh section dan akan menelan klik ke isinya.
+ * Yang dihidupkan hanya kepingnya, yang persis seluas ornamen yang digambar.
+ */
+.iv-root--stage .iv-field-piece { pointer-events: auto; }
 
 /*
  * Ramp ornamen di bidang gelap, ditulis SEKALI.

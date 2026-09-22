@@ -3,17 +3,20 @@ import { Lock, RotateCcw } from 'lucide-vue-next'
 import type { LayerSlot, OrnamentId, OrnamentSet } from '~/utils/ornaments'
 import { ornament } from '~/utils/ornaments'
 import {
-  jumlahDiganti, layerSlotLabels, layerSlots, ornamentSlots, slotLabels, terapkanOverrides, tileWidth,
+  jumlahDiganti, layerSlotLabels, layerSlots, ornamentSlots, slotLabels, terapkanOverrides,
   type OrnamentOverrides, type OrnamentSlotKey,
 } from '~/utils/ornament-slots'
 import { ornamentRamp, rampStyle } from '~/utils/ornament-palette'
+import DashboardOrnamentSlotCard from './SlotCard.vue'
 
 /**
  * Ringkasan ornamen di panel pengaturan editor.
  *
- * Menggantikan empat grid ubin yang dulu dijejalkan ke kolom selebar 528px. Empat belas baris
- * ternyata **lebih ringkas** daripada empat grid: tiap baris satu pratinjau kecil, namanya, dan
- * satu tombol yang membuka Studio pada slot itu. Ruang untuk memilih pindah ke dialognya sendiri.
+ * Menggantikan empat grid ubin yang dulu dijejalkan ke kolom selebar 528px. Sejak fase 70
+ * bentuknya empat belas **ubin berlabel** dalam dua kolom (`SlotCard.vue`): pratinjau, nama
+ * slot, nama glyph, satu tombol yang membuka Studio pada slot itu. Hint dan syarat slot tidak
+ * lagi ditulis di sini — mereka menjelaskan slotnya, bukan pilihannya, dan sudah ada di header
+ * Studio saat slot itu dibuka. Ruang untuk memilih tetap di dialognya sendiri.
  *
  * Kelima jangkar ladang dilipat di balik `<details>`, karena mereka keping latar yang jarang
  * disentuh dan membuka semuanya sekaligus akan mengubur sembilan slot yang justru dilihat tamu
@@ -26,6 +29,18 @@ const props = defineProps<{
   accent: string
   terkunci: boolean
   lockedBy?: string
+  /**
+   * Fase 71: hanya slot yang dirender bagian yang sedang disunting (`sectionOrnamentSlots`).
+   * Bila diberi, kartu ini jadi "Ornamen di bagian ini": tanpa keping latar, tanpa tombol
+   * kembalikan-semua (keduanya milik ringkasan penuh di cover), dan kalimatnya mengatakan
+   * bahwa nilainya tetap berlaku di setiap bagian yang memakai keping yang sama.
+   */
+  slots?: readonly OrnamentSlotKey[]
+  /**
+   * Slot yang baru saja diklik di kanvas (fase 76). `nonce` yang naik, bukan boolean: menyentuh
+   * ornamen yang sama dua kali harus tetap menyorot ulang.
+   */
+  sorot?: { slot?: OrnamentSlotKey, layer?: LayerSlot, nonce: number } | null
 }>()
 
 const emit = defineEmits<{
@@ -37,14 +52,26 @@ const berlaku = computed(() => terapkanOverrides(props.set, props.overrides))
 const diganti = computed(() => jumlahDiganti(props.overrides))
 const ramp = computed(() => rampStyle(ornamentRamp(props.tokens, props.accent)))
 
-const baris = computed(() => ornamentSlots.map(slot => ({
+const tersaring = computed(() => props.slots !== undefined)
+const baris = computed(() => (props.slots ?? ornamentSlots).map(slot => ({
   kunci: slot as string,
   slot,
   layer: undefined as LayerSlot | undefined,
   glyph: berlaku.value[slot],
-  bawaan: !props.overrides[slot],
+  // Unggahan (fase 69) juga penukaran — kartu harus menandainya "Diganti".
+  bawaan: !props.overrides[slot] && !(props.overrides.unggahan && slot in props.overrides.unggahan),
   ...slotLabels[slot],
 })))
+
+/** Kunci baris yang sedang disorot, dalam kosakata `kunci` yang sama dengan kartunya. */
+const sorotKunci = computed(() => {
+  const target = props.sorot
+  if (!target) return ''
+  return target.layer ? `layer-${target.layer}` : (target.slot ?? '')
+})
+/** Jangkar ladang terlipat di balik `<details>`; menyorot yang tidak terlihat sama saja diam. */
+const layerTerbuka = ref(false)
+watch(() => props.sorot, (target) => { if (target?.layer) layerTerbuka.value = true })
 
 const barisLayer = computed(() => layerSlots.map(jangkar => {
   const glyph = berlaku.value.layers.find(id => ornament(id).slot === jangkar) as OrnamentId
@@ -63,16 +90,20 @@ const barisLayer = computed(() => layerSlots.map(jangkar => {
   <div class="grid gap-3 rounded-md border border-border bg-surface-2 p-3.5">
     <div class="grid gap-1">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 class="m-0 text-[0.9375rem] font-semibold text-ink">Ornamen</h3>
-        <span v-if="diganti" class="text-caption text-ink-muted">{{ diganti }} diganti dari bawaan tema</span>
+        <h3 class="m-0 text-ui-lg font-semibold text-ink">{{ tersaring ? 'Ornamen di bagian ini' : 'Ornamen' }}</h3>
+        <span v-if="diganti && !tersaring" class="text-caption text-ink-muted">{{ diganti }} diganti dari bawaan tema</span>
       </div>
-      <p class="m-0 text-caption text-ink-subtle">
+      <p v-if="tersaring" class="m-0 text-caption text-ink-subtle">
+        Keping yang dipakai bagian ini. Satu keping dipakai beberapa bagian sekaligus, jadi
+        mengganti di sini mengubah semuanya; ringkasan lengkapnya ada di Cover pembuka.
+      </p>
+      <p v-else class="m-0 text-caption text-ink-subtle">
         Seluruh bank terbuka. Yang disarankan tampil lebih dulu; yang tidak seresep dengan tema
         tetap bisa dipilih dan diberi tanda.
       </p>
     </div>
 
-    <p v-if="terkunci" id="ornament-locked" class="m-0 flex items-start gap-2 rounded-md border border-border bg-surface p-3 text-[0.8125rem] text-ink-muted">
+    <p v-if="terkunci" id="ornament-locked" class="m-0 flex items-start gap-2 rounded-md border border-border bg-surface p-3 text-caption text-ink-muted">
       <Lock :size="15" class="mt-0.5 shrink-0 text-ink-subtle" aria-hidden="true" />
       <span>
         Mengganti ornamen terkunci pada preset undangan ini.
@@ -80,63 +111,45 @@ const barisLayer = computed(() => layerSlots.map(jangkar => {
       </span>
     </p>
 
-    <ul class="m-0 grid list-none gap-1.5 p-0">
+    <ul class="m-0 grid list-none grid-cols-2 gap-2 p-0">
       <li v-for="row in baris" :key="row.kunci">
-        <div class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-border bg-surface p-2">
-          <span class="grid h-11 place-items-center" :style="{ ...ramp, width: tileWidth(row.glyph, 40, 96) }">
-            <OrnamentGlyph :glyph="row.glyph" ubin class="max-h-10 max-w-full text-[color:var(--iv-orn-body)]" aria-hidden="true" />
-          </span>
-          <span class="grid gap-0.5">
-            <span class="text-[0.8125rem] font-medium text-ink">
-              {{ row.label }}
-              <span v-if="!row.bawaan" class="ml-1 rounded-full bg-primary-soft px-1.5 py-0.5 text-caption font-semibold text-primary">Diganti</span>
-            </span>
-            <span class="text-caption text-ink-subtle">{{ ornament(row.glyph).name }} · {{ row.hint }}</span>
-            <span v-if="row.syarat" class="text-caption text-ink-muted">{{ row.syarat }}</span>
-          </span>
-          <UiButton
-            :id="`ornament-ganti-${row.kunci}`"
-            tone="outline"
-            size="sm"
-            :disabled="terkunci"
-            :aria-describedby="terkunci ? 'ornament-locked' : undefined"
-            @click="emit('buka', { slot: row.slot, layer: row.layer })"
-          >
-            Ganti<span class="sr-only"> {{ row.label.toLowerCase() }}</span>
-          </UiButton>
-        </div>
+        <DashboardOrnamentSlotCard
+          :kunci="row.kunci"
+          :label="row.label"
+          :glyph="row.glyph"
+          :bawaan="row.bawaan"
+          :ramp="ramp"
+          :terkunci="terkunci"
+          :sorot="row.kunci === sorotKunci ? (sorot?.nonce ?? 0) : 0"
+          @buka="emit('buka', { slot: row.slot, layer: row.layer })"
+        />
       </li>
     </ul>
 
-    <details class="rounded-md border border-border bg-surface">
-      <summary class="cursor-pointer list-none px-3 py-2.5 text-[0.8125rem] font-medium text-ink">
+    <!-- `@toggle` menjaga keadaannya tetap milik pasangan: membukanya dari kanvas tidak boleh
+         membuat `<details>` ini menolak ditutup lagi dengan tangan. -->
+    <details
+      v-if="!tersaring"
+      :open="layerTerbuka"
+      class="rounded-md border border-border bg-surface"
+      @toggle="layerTerbuka = ($event.target as HTMLDetailsElement).open"
+    >
+      <summary class="cursor-pointer list-none px-3 py-2.5 text-caption font-medium text-ink">
         Keping latar bagian
         <span class="ml-1 text-caption font-normal text-ink-subtle">lima jangkar ladang ornamen</span>
       </summary>
-      <ul class="m-0 grid list-none gap-1.5 p-2 pt-0">
+      <ul class="m-0 grid list-none grid-cols-2 gap-2 p-2 pt-0">
         <li v-for="row in barisLayer" :key="row.kunci">
-          <div class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-border bg-surface-2 p-2">
-            <span class="grid h-11 place-items-center" :style="{ ...ramp, width: tileWidth(row.glyph, 40, 96) }">
-              <OrnamentGlyph :glyph="row.glyph" ubin class="max-h-10 max-w-full text-[color:var(--iv-orn-body)]" aria-hidden="true" />
-            </span>
-            <span class="grid gap-0.5">
-              <span class="text-[0.8125rem] font-medium text-ink">
-                {{ row.label }}
-                <span v-if="!row.bawaan" class="ml-1 rounded-full bg-primary-soft px-1.5 py-0.5 text-caption font-semibold text-primary">Diganti</span>
-              </span>
-              <span class="text-caption text-ink-subtle">{{ ornament(row.glyph).name }} · {{ row.hint }}</span>
-            </span>
-            <UiButton
-              :id="`ornament-ganti-${row.kunci}`"
-              tone="outline"
-              size="sm"
-              :disabled="terkunci"
-              :aria-describedby="terkunci ? 'ornament-locked' : undefined"
-              @click="emit('buka', { slot: row.slot, layer: row.layer })"
-            >
-              Ganti<span class="sr-only"> {{ row.label.toLowerCase() }}</span>
-            </UiButton>
-          </div>
+          <DashboardOrnamentSlotCard
+            :kunci="row.kunci"
+            :label="row.label"
+            :glyph="row.glyph"
+            :bawaan="row.bawaan"
+            :ramp="ramp"
+            :terkunci="terkunci"
+            :sorot="row.kunci === sorotKunci ? (sorot?.nonce ?? 0) : 0"
+            @buka="emit('buka', { slot: row.slot, layer: row.layer })"
+          />
         </li>
       </ul>
     </details>
@@ -150,7 +163,7 @@ const barisLayer = computed(() => layerSlots.map(jangkar => {
       lain tidak punya cara kembali selain menukarnya satu per satu.
     -->
     <UiButton
-      v-if="diganti"
+      v-if="diganti && !tersaring"
       id="ornament-kembalikan-semua"
       tone="quiet"
       size="sm"

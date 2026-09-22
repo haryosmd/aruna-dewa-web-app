@@ -3,7 +3,7 @@ import { ExternalLink, PlayCircle } from 'lucide-vue-next'
 import type { Section } from '~/types/aruna'
 
 const props = defineProps<{ section: Section; seed: number }>()
-const { orn, intensity, compact, pauseMusic } = useInvitation()
+const { orn, intensity, compact, pauseMusic, t } = useInvitation()
 const url = computed(() => text(props.section, 'url'))
 </script>
 
@@ -13,19 +13,19 @@ const url = computed(() => text(props.section, 'url'))
     id="iv-video"
     tone="ink"
     :compact="compact"
-    kicker="Saksikan bersama"
+    :kicker="t('video.kicker')"
     :title="text(props.section, 'title', 'Live streaming')"
     :ornaments="compact ? null : orn"
     :intensity="intensity"
     :seed="props.seed"
   >
-    <OrnamentGlyph :glyph="orn.symbol" data-iv-ornament class="h-16 w-20 opacity-75" />
+    <OrnamentGlyph :glyph="orn.symbol" data-iv-ornament data-iv-slot="symbol" class="h-16 w-20 opacity-75" />
     <!--
       Musik dijeda di dalam klik, sebelum tab siaran terbuka. Tab undangan yang tersembunyi
       tetap berbunyi kalau tidak diminta berhenti — dan yang ditimpanya adalah ijab kabul.
     -->
     <a :href="url" target="_blank" rel="noreferrer" class="iv-chip" @click="pauseMusic">
-      <PlayCircle :size="16" aria-hidden="true" /> Buka siaran
+      <PlayCircle :size="16" aria-hidden="true" /> {{ t('video.open') }}
       <ExternalLink :size="13" aria-hidden="true" />
     </a>
   </InvitationSection>

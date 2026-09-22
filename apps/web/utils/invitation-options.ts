@@ -1,4 +1,7 @@
-import { layerSlots, muatLayer, muatSlot, ornamentSlots, type OrnamentOverrides } from './ornament-slots'
+import type { EntranceStyle } from '@aruna/contracts'
+import { mediaAssetIdFromUrl } from './media-file'
+import { entranceStyles, storySides, type StorySide } from '@aruna/contracts'
+import { uploadableSlots, layerSlots, muatLayer, muatSlot, ornamentSlots, type OrnamentOverrides } from './ornament-slots'
 import { isOrnamentId, ornament, ornamentsByCategory, type OrnamentId } from './ornaments'
 import { themeOrnaments } from './theme'
 
@@ -91,6 +94,29 @@ export function toOrnamentOverrides(value: unknown, templateId: string): Ornamen
     keluar[slot] = pilihan
   }
 
+  /*
+   * Unggahan (fase 69): hanya slot yang boleh, hanya URL aset media kita, hanya dimensi bulat
+   * yang masuk akal. Slot yang punya unggahan melepaskan id banknya — dua pendapat untuk satu
+   * slot hanya membingungkan penanda "Diganti".
+   */
+  const unggahan = masuk.unggahan
+  if (unggahan && typeof unggahan === 'object' && !Array.isArray(unggahan)) {
+    const masukUnggahan = unggahan as Record<string, unknown>
+    const keluarUnggahan: NonNullable<OrnamentOverrides['unggahan']> = {}
+    for (const slot of uploadableSlots) {
+      const item = masukUnggahan[slot]
+      if (!item || typeof item !== 'object' || Array.isArray(item)) continue
+      const { url, width, height } = item as Record<string, unknown>
+      if (typeof url !== 'string' || !mediaAssetIdFromUrl(url)) continue
+      if (!Number.isInteger(width) || !Number.isInteger(height)) continue
+      const w = width as number, h = height as number
+      if (w < 1 || h < 1 || w > 8192 || h > 8192) continue
+      keluarUnggahan[slot] = { url, width: w, height: h }
+      delete keluar[slot]
+    }
+    if (Object.keys(keluarUnggahan).length) keluar.unggahan = keluarUnggahan
+  }
+
   const layers = masuk.layers
   if (layers && typeof layers === 'object' && !Array.isArray(layers)) {
     const masukLayer = layers as Record<string, unknown>
@@ -147,8 +173,8 @@ export function toDresscodeColors(value: unknown): DresscodeColor[] {
 }
 
 /* ── Cerita kami ────────────────────────────────────────────────────────────── */
-export const storySides = ['kiri', 'kanan'] as const
-export type StorySide = (typeof storySides)[number]
+/** Sumbernya `@aruna/contracts` sejak fase 74.3 — skema `sectionExtraSchemas` membacanya juga. */
+export { storySides, type StorySide }
 
 export interface StoryStep {
   id: string
@@ -181,4 +207,17 @@ export function toStorySteps(value: unknown): StoryStep[] {
     })
   }
   return steps
+}
+
+/* ── Gerak per undangan (fase 69) ───────────────────────────────────────────── */
+export const selectableEntrances: { id: EntranceStyle | 'tema'; label: string; hint: string }[] = [
+  { id: 'tema', label: 'Ikut tema', hint: 'Bawaan. Gaya masuk ditentukan partitur tema.' },
+  { id: 'rise', label: 'Naik', hint: 'Unsur naik lembut dari bawah — paling tenang.' },
+  { id: 'sweep', label: 'Sapuan', hint: 'Masuk dari samping seperti disapu.' },
+  { id: 'iris', label: 'Iris', hint: 'Terbuka dari tengah seperti diafragma.' },
+  { id: 'silhouette', label: 'Siluet', hint: 'Bayangan dulu, lalu warnanya menyusul.' },
+]
+
+export function toEntrance(value: unknown): EntranceStyle | undefined {
+  return (entranceStyles as readonly string[]).includes(String(value)) ? (value as EntranceStyle) : undefined
 }

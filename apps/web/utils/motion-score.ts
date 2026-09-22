@@ -1,3 +1,4 @@
+import type { EntranceStyle } from '@aruna/contracts'
 import { sectionTypes } from '@aruna/contracts'
 
 import type { OrnamentId } from './ornaments'
@@ -18,8 +19,11 @@ type SectionType = (typeof sectionTypes)[number]
  * melainkan di pemainnya — data tidak boleh bisa melanggar aturan DESIGN.md.
  */
 
-/** Tata bahasa masuk: bagaimana sebuah unsur menyatakan dirinya ada. */
-export type Entrance = 'rise' | 'sweep' | 'iris' | 'silhouette'
+/**
+ * Tata bahasa masuk: bagaimana sebuah unsur menyatakan dirinya ada. Sejak fase 69 daftarnya
+ * milik kontrak (`entranceStyles`), karena dokumen boleh memilih salah satunya.
+ */
+export type Entrance = EntranceStyle
 
 /** Bagaimana keping `[data-iv-layer]` berperilaku di dalam sebuah babak. */
 export type OrnamentMotion = 'bloom' | 'cascade' | 'draw' | 'drift'
@@ -97,6 +101,14 @@ export const sectionRole: Record<SectionType, SectionRole> = {
   // `music` tidak pernah dirender sebagai section — ia pemutar mengambang. Ada di peta ini
   // hanya supaya `Record` lengkap dan tipe section baru tidak bisa lupa memberi peran.
   music: 'coda',
+  // Struktur Elegance (fase 72). Amplop = overture, hero + mempelai = introduction, kutipan =
+  // interlude, informasi acara/lokasi/hadiah = information, galeri = showcase, ucapan = response.
+  'opening-envelope': 'overture',
+  hero: 'introduction',
+  event: 'information',
+  map: 'information',
+  'unduh-mantu': 'information',
+  quote: 'interlude',
 }
 
 /**
@@ -179,4 +191,19 @@ export function resolveAct(score: ThemeMotion, act: Act): ResolvedAct {
 /** Partitur lengkap sebuah halaman: babak-babaknya, sudah terselesaikan dan berurutan. */
 export function resolveScore(score: ThemeMotion, roles: SectionRole[]): ResolvedAct[] {
   return groupActs(roles).map(act => resolveAct(score, act))
+}
+
+/**
+ * Menimpa tata bahasa masuk partitur tema dengan pilihan dokumen (fase 69).
+ *
+ * Tanpa pilihan, partitur tema dikembalikan apa adanya — termasuk `undefined` untuk tema yang
+ * masih memakai koreografi lama, supaya mereka tetap lewat `playLegacyScore()` persis seperti
+ * sebelumnya. Dengan pilihan, tema lama mendapat partitur minimal: hanya pilihan itu yang
+ * membawanya ke pemain partitur, bukan pembaruan diam-diam. Penimpaan per babak milik tema
+ * (`acts[role].entrance`) tetap menang untuk perannya — itu presedensi `resolveAct` yang ada.
+ */
+export function terapkanMotionDokumen(base: ThemeMotion | undefined, masuk: Entrance | undefined): ThemeMotion | undefined {
+  if (!masuk) return base
+  if (base) return { ...base, entrance: masuk }
+  return { entrance: masuk, ornament: 'bloom', density: 'steady', segue: { kind: 'none' } }
 }

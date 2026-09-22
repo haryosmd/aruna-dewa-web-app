@@ -31,7 +31,7 @@ void coverLayouts
     :data-cover-layout="layout"
     :class="cn(
       'iv-cover relative grid place-items-center overflow-hidden px-5 text-center',
-      compact ? 'min-h-[26rem]' : 'min-h-[92svh]',
+      compact ? 'min-h-[26rem]' : 'min-h-[var(--iv-layar-h,92svh)]',
     )"
     :style="onPhoto ? { color: '#fffdf7' } : { background: 'var(--iv-bg)', color: 'var(--iv-fg)' }"
   >
@@ -74,14 +74,14 @@ void coverLayouts
       -->
       <div v-if="layout === 'arch-potret'" data-iv-photo class="iv-cover-arch">
         <img :src="photo" :alt="`Foto ${coupleNames}`" class="h-full w-full object-cover">
-        <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-photo-frame class="iv-portrait-corner iv-portrait-corner--tl" aria-hidden="true" />
-        <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-photo-frame class="iv-portrait-corner iv-portrait-corner--br" aria-hidden="true" />
+        <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" data-iv-photo-frame class="iv-portrait-corner iv-portrait-corner--tl" aria-hidden="true" />
+        <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" data-iv-photo-frame class="iv-portrait-corner iv-portrait-corner--br" aria-hidden="true" />
       </div>
 
       <!-- Kayon: foto duduk di dalam siluet bingkai milik tema. -->
       <div v-else-if="layout === 'kayon-frame'" class="iv-cover-kayon">
         <img :src="photo" :alt="`Foto ${coupleNames}`" data-iv-photo class="iv-cover-kayon-photo">
-        <OrnamentGlyph :glyph="orn.frame" data-iv-ornament data-iv-photo-frame class="iv-cover-kayon-frame" aria-hidden="true" />
+        <OrnamentGlyph :glyph="orn.frame" data-iv-ornament data-iv-slot="frame" data-iv-photo-frame class="iv-cover-kayon-frame" aria-hidden="true" />
       </div>
 
       <!-- Kolase prewed: satu foto besar dan dua pendamping. -->
@@ -101,12 +101,18 @@ void coverLayouts
           v-if="layout !== 'split-editorial'"
           :glyph="orn.garland"
           data-iv-ornament
+          data-iv-slot="garland"
           data-iv-lead
           class="h-14 w-64"
           :class="onPhoto ? 'opacity-90' : 'opacity-80'"
           :style="onPhoto ? undefined : { color: 'var(--iv-primary)' }"
         />
-        <p data-iv-lead class="iv-kicker m-0 opacity-90">Undangan pernikahan</p>
+        <!--
+          Tanpa `opacity-90` tambahan: `.iv-kicker` sudah 0,7, dan 0,7 × 0,9 = 0,63 membuat
+          "Undangan pernikahan" 11px tebal jatuh ke 3,66:1 di atas latar tema (axe, fase 62 —
+          ketahuan begitu panggung editor menampilkan cover pada skala 100%).
+        -->
+        <p data-iv-lead class="iv-kicker m-0">{{ invitation.t('cover.kicker') }}</p>
         <component
           :is="compact ? 'h2' : 'h1'"
           data-iv-lead
@@ -117,11 +123,12 @@ void coverLayouts
         </component>
         <p v-if="headlineDate" class="iv-body m-0 text-[0.9375rem] opacity-90">{{ headlineDate }}</p>
         <p v-if="greeting" class="iv-body m-0 mt-6 text-[1.05rem] opacity-95">
-          Kepada Yth. {{ greeting }}
+          {{ invitation.t('gate.greeting') }} {{ greeting }}
         </p>
         <OrnamentGlyph
           :glyph="orn.symbol"
           data-iv-ornament
+          data-iv-slot="symbol"
           class="mt-4 h-16 w-20"
           :class="onPhoto ? 'opacity-80' : 'opacity-75'"
           :style="onPhoto ? undefined : { color: 'var(--iv-primary)' }"

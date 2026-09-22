@@ -232,14 +232,15 @@
       ]
     },
     {
-      "id": "bingkai-ukir",
-      "name": "Bingkai ukir",
-      "category": "frame",
+      "id": "bingkai-ukir-kiri",
+      "name": "Bingkai ukir kiri",
+      "category": "corner",
       "tags": [
-        "frame",
+        "corner",
         "raster",
         "impor-canva",
-        "canva-putih-cokelat"
+        "canva-putih-cokelat",
+        "pecahan"
       ],
       "culturalRole": "impor-pihak-ketiga",
       "provenance": {
@@ -252,7 +253,7 @@
         "redrawn": false,
         "checkedAt": "2026-09-18",
         "renderer": "librsvg",
-        "note": "Tidak dipecah — kedua separuhnya menyusun satu bingkai utuh."
+        "crop": "dipotong dari berkas yang sama pada x=0 y=0 w=405 h=405 (satuan viewBox sumber); piksel tidak disentuh"
       },
       "usage": "imported-local-demo",
       "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
@@ -264,11 +265,11 @@
       "layers": [
         "cutout"
       ],
-      "anchor": "section",
+      "anchor": "sudut",
       "motion": {
         "preset": "reveal",
         "amplitude": 14,
-        "rigid": true,
+        "rigid": false,
         "unit": "px",
         "duration": 0.9,
         "ease": "power1.out",
@@ -278,24 +279,95 @@
       },
       "variants": [
         {
-          "file": "raster/bingkai-ukir.png",
+          "file": "raster/bingkai-ukir-kiri.png",
           "format": "png",
-          "width": 1600,
+          "width": 800,
           "height": 800,
-          "ratio": 2,
-          "bytes": 392105,
-          "sha256": "33c3684df6b5557b7712a562dd6aa22c7efccc1c74fe87714a2b33c326de2f55",
+          "ratio": 1,
+          "bytes": 202661,
+          "sha256": "82db14f2aea8d05f7f2e7a21b988ddf2cee8e16133fefffa337cde1949e73114",
           "alpha": true,
           "renderer": "librsvg"
         },
         {
-          "file": "raster/bingkai-ukir.webp",
+          "file": "raster/bingkai-ukir-kiri.webp",
           "format": "webp",
-          "width": 1600,
+          "width": 800,
           "height": 800,
-          "ratio": 2,
-          "bytes": 166892,
-          "sha256": "d7e81d688a0b15c241a1753f1f6790cea73e21b469e6726acc61f9076b2b642a",
+          "ratio": 1,
+          "bytes": 83958,
+          "sha256": "dbec33cca9c07554c610217d8677a4166aa4825e6db193d5b4dbc6705c183165",
+          "alpha": true,
+          "renderer": "librsvg"
+        }
+      ]
+    },
+    {
+      "id": "bingkai-ukir-kanan",
+      "name": "Bingkai ukir kanan",
+      "category": "corner",
+      "tags": [
+        "corner",
+        "raster",
+        "impor-canva",
+        "canva-putih-cokelat",
+        "pecahan"
+      ],
+      "culturalRole": "impor-pihak-ketiga",
+      "provenance": {
+        "kind": "imported",
+        "method": "ekspor SVG Canva dipanggang jadi raster ber-alpha; gambarnya memang bitmap di dalam SVG sumbernya",
+        "sourceFile": "source/bingkai-ukir.svg",
+        "sourceTemplate": "Putih Cokelat Elegan Klasik Undangan Pernikahan Mobile Video",
+        "exportedBy": "pemilik, dari akun Canva Pro",
+        "tracedFrom": null,
+        "redrawn": false,
+        "checkedAt": "2026-09-18",
+        "renderer": "librsvg",
+        "crop": "dipotong dari berkas yang sama pada x=405 y=0 w=405 h=405 (satuan viewBox sumber); piksel tidak disentuh"
+      },
+      "usage": "imported-local-demo",
+      "license": "lihat PROVENANCE.md — bukan aset original, belum disetujui untuk produksi",
+      "style": {
+        "palette": "berwarna penuh",
+        "medium": "raster ber-alpha",
+        "inkFields": null
+      },
+      "layers": [
+        "cutout"
+      ],
+      "anchor": "sudut",
+      "motion": {
+        "preset": "reveal",
+        "amplitude": 14,
+        "rigid": false,
+        "unit": "px",
+        "duration": 0.9,
+        "ease": "power1.out",
+        "stagger": 0.5,
+        "reducedMotion": "langsung-ke-keadaan-akhir",
+        "amplitudeMeasured": false
+      },
+      "variants": [
+        {
+          "file": "raster/bingkai-ukir-kanan.png",
+          "format": "png",
+          "width": 800,
+          "height": 800,
+          "ratio": 1,
+          "bytes": 203364,
+          "sha256": "92fa6de793244f93cbdfcbca99c19d8b180df5fa170b259004ed4d1f1b62ab5a",
+          "alpha": true,
+          "renderer": "librsvg"
+        },
+        {
+          "file": "raster/bingkai-ukir-kanan.webp",
+          "format": "webp",
+          "width": 800,
+          "height": 800,
+          "ratio": 1,
+          "bytes": 83692,
+          "sha256": "dfab6e35a07d2f0901a03141c576f0d520a72bfe2fe0c92218b79384596f028b",
           "alpha": true,
           "renderer": "librsvg"
         }

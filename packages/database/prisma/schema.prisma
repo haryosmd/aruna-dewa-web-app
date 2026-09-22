@@ -60,6 +60,14 @@ enum MediaProvider {
   S3
 }
 
+/// Jenis aset (fase 69). Dulu diturunkan dari awalan `contentType`; PNG/WebP kini bisa foto
+/// galeri ATAU ornamen, dan kuotanya berbeda, jadi jenisnya harus tersimpan.
+enum MediaKind {
+  IMAGE
+  AUDIO
+  ORNAMENT
+}
+
 enum TokenPurpose {
   VERIFY_EMAIL
   RESET_PASSWORD
@@ -153,12 +161,23 @@ model Invitation {
   status          InvitationStatus    @default(DRAFT)
   draftDocument   Json
   draftRevision   Int                 @default(1)
+  /// Fase 72.6: template pesan WhatsApp per gaya bahasa (`{ preset, templates }`), diatur di halaman Generator.
+  shareSettings   Json?
+  /// Paket yang dibayar untuk undangan ini (fase 75). Null = belum ada pesanan lunas.
+  ///
+  /// Entitlement hanya menyimpan daftar FITUR, dan paket tidak bisa disimpulkan darinya: dua paket
+  /// bisa membuka fitur yang sama tapi berbeda kuota. Identitasnya sebelumnya hanya bisa dicapai
+  /// dengan menjejak balik `Order.priceSnapshot.package.id`, dan jalur unggah media tidak pernah
+  /// memuat order sama sekali — jadi kuota foto per paket tidak punya tempat bertanya.
+  /// Dicap sekali, di detik yang sama entitlement ditulis.
+  packageId       String?
   activeRevisionId String?            @unique @db.Uuid
   createdById     String              @db.Uuid
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
   publishedAt     DateTime?
   createdBy       User                @relation("InvitationCreator", fields: [createdById], references: [id])
+  package         Package?            @relation(fields: [packageId], references: [id])
   members         InvitationMember[]
   revisions       PublishedRevision[]
   activeRevision  PublishedRevision?  @relation("ActiveRevision", fields: [activeRevisionId], references: [id])
@@ -214,6 +233,7 @@ model Package {
   createdAt   DateTime         @default(now())
   features    PackageFeature[]
   orderItems  OrderItem[]
+  invitations Invitation[]
 }
 
 model Feature {
@@ -309,11 +329,28 @@ model Guest {
   groupName     String?
   category      String?
   quota         Int      @default(1)
+  /// Fase 75 — empat kolom yang meniru lembar tamu pemilik. Semuanya OPSIONAL dan tidak pernah
+  /// memblokir satu baris impor pun; kosong adalah keadaan yang sah, bukan data yang hilang.
+  ///
+  /// `String?` dan bukan enum Prisma, mengikuti `Wish.attendance` dan bukan `RSVPAttendance`:
+  /// daftar pilihannya milik pasangan dan memang diubah di spreadsheet mereka sendiri, jadi enum
+  /// basis data akan menolak nilai yang mereka tambahkan secara sah. Bentuk dan panjangnya dijaga
+  /// zod di batas controller; sinonim yang dikenal dinormalkan, sisanya disimpan apa adanya.
+  ///
+  /// `Status` sengaja TIDAK punya kolom di sini: ia sudah diturunkan dari `sentAt` + RSVP, dan
+  /// kolom kedua yang mengklaim hal yang sama pasti menyimpang dari yang pertama.
+  guestFrom     String?
+  /// Jumlah anak dalam satu undangan. Tanpa minimum dan tanpa wajib — murni pendataan.
+  childCount    Int?
+  invitationKind String?
+  notes         String?
   tokenHash     String   @unique
   tokenCiphertext String
   tokenVersion  Int      @default(1)
   revision      Int      @default(1)
   openedAt      DateTime?
+  /// Fase 72.6: kapan tombol "Kirim WA" ditekan untuk tamu ini; null = belum terkirim.
+  sentAt        DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   invitation    Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
@@ -351,6 +388,8 @@ model Wish {
   guestId      String?    @db.Uuid
   authorName   String
   message      String
+  /** Fase 72: pilihan kehadiran dari form ucapan (`hadir` | `belum-pasti` | `berhalangan`). */
+  attendance   String?
   approved     Boolean    @default(false)
   createdAt    DateTime   @default(now())
   invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
@@ -382,6 +421,10 @@ model MediaAsset {
   contentType  String
   bytes        Int
   originalName String
+  kind         MediaKind     @default(IMAGE)
+  /// Piksel asli raster; null untuk audio dan aset lama sebelum fase 69.
+  width        Int?
+  height       Int?
   createdAt    DateTime      @default(now())
   invitation   Invitation    @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 }

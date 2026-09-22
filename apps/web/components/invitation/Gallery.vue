@@ -5,9 +5,21 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-vue-next'
 import type { GalleryLayout } from '~/utils/theme'
 
 const props = withDefaults(
-  defineProps<{ images: string[]; layout?: GalleryLayout | 'spotlight'; compact?: boolean }>(),
-  { layout: 'masonry', compact: false },
+  defineProps<{
+    images: string[]
+    /** `grid` (fase 72): dua kolom sama besar bernomor 01–04 ala Elegance. */
+    layout?: GalleryLayout | 'spotlight' | 'grid'
+    compact?: boolean
+    /** Teks kecil di bawah nomor pada layout `grid` ("lihat foto"). */
+    viewLabel?: string
+    /** Judul lightbox (nama pasangan). Kosong = judul bawaan. */
+    lightboxTitle?: string
+  }>(),
+  { layout: 'masonry', compact: false, viewLabel: '', lightboxTitle: '' },
 )
+
+/** Nama kelas layout: `spotlight` tanpa JS runtuh ke masonry, dan `grid` punya kelasnya sendiri. */
+const gridClass = computed(() => `iv-gallery--${props.layout === 'spotlight' ? 'masonry' : props.layout}`)
 
 const root = ref<HTMLElement | null>(null)
 const open = ref(false)
@@ -94,7 +106,7 @@ function onKey(event: KeyboardEvent) {
       </button>
     </div>
 
-    <div v-else :class="['iv-gallery', `iv-gallery--${props.layout === 'spotlight' ? 'masonry' : props.layout}`]">
+    <div v-else :class="['iv-gallery', gridClass]">
       <button
         v-for="(image, at) in props.images"
         :id="`iv-gallery-tile-${at + 1}`"
@@ -107,6 +119,11 @@ function onKey(event: KeyboardEvent) {
         @click="show(at)"
       >
         <img :src="image" :alt="`Potret pasangan ${at + 1}`" loading="lazy" data-iv-photo class="iv-gallery-img">
+        <!-- Nomor 01–04 ala referensi: hanya pada layout `grid`, di atas tabir tipis di dasar foto. -->
+        <span v-if="props.layout === 'grid'" class="iv-gallery-num" aria-hidden="true">
+          <span class="iv-gallery-num-index">{{ String(at + 1).padStart(2, '0') }}</span>
+          <span v-if="props.viewLabel" class="iv-gallery-num-label">{{ props.viewLabel }}</span>
+        </span>
       </button>
     </div>
 
@@ -117,11 +134,19 @@ function onKey(event: KeyboardEvent) {
           class="fixed inset-0 z-50 grid place-items-center p-4 focus:outline-none"
           @keydown="onKey"
         >
-          <DialogTitle class="sr-only">Galeri foto</DialogTitle>
+          <DialogTitle class="sr-only">{{ props.lightboxTitle || 'Galeri foto' }}</DialogTitle>
           <DialogDescription class="sr-only">
             Gunakan tombol panah kiri dan kanan untuk berpindah foto, Escape untuk menutup.
           </DialogDescription>
 
+          <!--
+            `svh` DI SINI BENAR, dan sengaja tidak ikut `--iv-layar-h` (fase 74.2).
+
+            Lightbox adalah `DialogContent` reka-ui yang di-portal ke `body`: ia hidup di luar
+            bingkai pratinjau, jadi pembandingnya memang viewport sungguhan. Menukarnya dengan
+            tinggi layar perangkat akan membuat foto diperbesar melampaui jendela dan sisi
+            bawahnya terpotong. Jangan "diseragamkan".
+          -->
           <img
             :src="props.images[index]"
             :alt="`Potret pasangan ${index + 1}`"
@@ -212,6 +237,32 @@ function onKey(event: KeyboardEvent) {
   transition: transform 520ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
 }
 .iv-gallery-tile:hover .iv-gallery-img { transform: scale(1.03); }
+
+/*
+ * Grid (fase 72) — dua kolom sama besar 4:5, seperti referensi Elegance. Tetap dua kolom di
+ * wadah lebar: undangan v2 berlayout kartu 480px, dan empat foto memang dibaca berpasangan.
+ */
+.iv-gallery--grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.iv-gallery--grid .iv-gallery-tile { position: relative; aspect-ratio: 4 / 5; }
+.iv-gallery-num {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: grid;
+  justify-items: start;
+  gap: 0.1rem;
+  padding: 0.75rem 0.85rem;
+  text-align: left;
+  color: #fffdf7;
+  background: linear-gradient(to top, rgb(0 0 0 / 0.55), transparent);
+  font-family: var(--iv-body);
+  pointer-events: none;
+}
+.iv-gallery-num-index { font-family: var(--iv-display); font-size: 1.25rem; line-height: 1; }
+.iv-gallery-num-label { font-size: 0.625rem; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.85; }
 
 /* Masonry — proporsi asli tiap foto dipertahankan. */
 .iv-gallery--masonry { column-count: 2; column-gap: 0.75rem; }

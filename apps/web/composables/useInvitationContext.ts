@@ -1,6 +1,7 @@
 import type { InjectionKey, Ref } from 'vue'
-import type { GuestProfile, InvitationDocument, RsvpPayload, Section, Wish } from '~/types/aruna'
-import type { OrnamentIntensity, OrnamentSet } from '~/utils/ornaments'
+import { sectionMotions, type CopyKey, type SectionBackground, type SectionMotion } from '@aruna/contracts'
+import type { GuestProfile, InvitationDocument, RendererMode, RsvpPayload, Section, Wish, WishPayload } from '~/types/aruna'
+import type { OrnamentIntensity, ResolvedOrnamentSet } from '~/utils/ornaments'
 
 /**
  * Konteks bersama seluruh section undangan.
@@ -13,9 +14,18 @@ import type { OrnamentIntensity, OrnamentSet } from '~/utils/ornaments'
  */
 export interface InvitationContext {
   document: Ref<InvitationDocument>
-  orn: Ref<OrnamentSet>
+  orn: Ref<ResolvedOrnamentSet>
   intensity: Ref<OrnamentIntensity>
+  /** `mode === 'compact'`; dipertahankan karena tiga belas section v1 membacanya. */
   compact: Ref<boolean>
+  /** Fase 72. Section v2 membedakan `live` (memanggil API) dari `stage`/`compact` (lokal saja). */
+  mode: Ref<RendererMode>
+  /**
+   * Kata-kata yang berlaku untuk kunci di `copyKeys` (fase 69): milik pasangan bila ia menulis
+   * ulang, bawaan tema bila tidak. Fungsi, bukan objek, supaya section tidak perlu tahu di mana
+   * bawaannya disimpan — dan supaya pemanggilnya tetap reaktif lewat `document`.
+   */
+  t: (key: CopyKey) => string
   coupleNames: Ref<string>
   initials: Ref<string>
   greeting: Ref<string>
@@ -27,10 +37,14 @@ export interface InvitationContext {
   wishPending: Ref<boolean>
   /** Foto galeri, dipakai section lain sebagai cadangan saat tidak punya foto sendiri. */
   galleryImages: Ref<string[]>
+  /** Foto panel kiri desktop (fase 77): galeri kalau ada, foto utama kalau tidak. */
+  fotoSisi: Ref<string[]>
   headlineDate: Ref<string>
   sectionOf: (type: string) => Section | undefined
   submitRsvp: (payload: RsvpPayload) => void
   submitWish: (message: string) => void
+  /** Form ucapan v2 (fase 72): nama + kehadiran + pesan sekaligus. */
+  submitWishEntry: (payload: WishPayload) => void
   /**
    * Menjeda musik latar tanpa menandainya sebagai penolakan tamu.
    *
@@ -71,3 +85,17 @@ export const list = (section: Section | undefined, key: string): string[] =>
 
 export const rows = (section: Section | undefined, key: string): Record<string, unknown>[] =>
   Array.isArray(section?.data[key]) ? (section.data[key] as Record<string, unknown>[]) : []
+
+/* ── Pembaca bagian v2 (fase 72) ──────────────────────────────────────────── */
+
+/** `section.data.background`, hanya bila bentuknya objek. Validasi nilai ada di `InvitationSection`. */
+export const latarBagian = (section: Section | undefined): SectionBackground | null => {
+  const latar = section?.data.background
+  return latar && typeof latar === 'object' && !Array.isArray(latar) ? (latar as SectionBackground) : null
+}
+
+/** `section.data.motion` bila salah satu preset yang dikenal; selain itu ikut tema. */
+export const gerakBagian = (section: Section | undefined): SectionMotion | null => {
+  const gerak = section?.data.motion
+  return typeof gerak === 'string' && (sectionMotions as readonly string[]).includes(gerak) ? (gerak as SectionMotion) : null
+}

@@ -2,7 +2,7 @@
 import type { Section } from '~/types/aruna'
 
 const props = defineProps<{ section: Section; seed: number }>()
-const { orn, intensity, compact } = useInvitation()
+const { orn, intensity, compact, t } = useInvitation()
 </script>
 
 <template>
@@ -10,12 +10,12 @@ const { orn, intensity, compact } = useInvitation()
     id="iv-countdown"
     tone="base"
     :compact="compact"
-    kicker="Menuju hari bahagia"
+    :kicker="t('countdown.kicker')"
     :ornaments="compact ? null : orn"
     :intensity="intensity"
     :seed="props.seed"
   >
-    <OrnamentGlyph :glyph="orn.divider" data-iv-ornament class="h-7 w-48 opacity-70" :style="{ color: 'var(--iv-primary)' }" />
-    <InvitationCountdown :date="text(props.section, 'date')" />
+    <OrnamentGlyph :glyph="orn.divider" data-iv-ornament data-iv-slot="divider" class="h-7 w-48 opacity-70" :style="{ color: 'var(--iv-primary)' }" />
+    <InvitationCountdown :date="text(props.section, 'date')" :arrived="t('countdown.arrived')" :tba="t('countdown.tba')" />
   </InvitationSection>
 </template>

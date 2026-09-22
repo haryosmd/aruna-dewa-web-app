@@ -14,7 +14,15 @@ export function buildGuestUrl(base: string, slug: string, displayName: string, t
   return url.toString()
 }
 
-export const sectionTypes = ['cover', 'couple', 'events', 'countdown', 'gallery', 'story', 'rundown', 'dresscode', 'video', 'gift', 'rsvp', 'wishes', 'closing', 'music'] as const
+export * from './sections'
+export * from './photo-quota'
+export * from './guest-fields'
+export * from './structures'
+import { createLegacySections, structureIds, structures, type StructureId } from './structures'
+import { packagePhotoLimits } from './photo-quota'
+import { normalizeChildCount, normalizeGuestFrom, normalizeGuestNotes, normalizeInvitationKind } from './guest-fields'
+import { sectionTypes, isV2SectionType, sectionDataSchema, invitationSettingsSchema, shareCardSchema, layoutFocuses, type DefaultDocumentInput } from './sections'
+export { sectionTypes }
 
 /**
  * Setiap id yang pernah sah di dalam sebuah dokumen, termasuk yang temanya sudah pensiun.
@@ -73,6 +81,18 @@ export function isLiveTemplateId(id: string): id is LiveTemplateId {
 }
 
 /**
+ * Tema sebuah dokumen, sesudah id pensiun diterjemahkan.
+ *
+ * **Satu-satunya cara membaca tema dari dokumen.** Membaca `document.templateId` mentah akan
+ * salah begitu dokumen mulai membawa `themeId` (fase 74.9), dan salahnya diam: skrip migrasi
+ * tema pensiun menulis `templateId`, jadi dokumen yang kedua kuncinya berselisih akan merender
+ * tema yang sudah tidak punya wajah.
+ */
+export function documentThemeId(document: { templateId?: string; themeId?: string }): LiveTemplateId {
+  return resolveTemplateId(document.themeId ?? document.templateId ?? '')
+}
+
+/**
  * Terjemahkan id apa pun jadi tema yang benar-benar bisa dirender.
  *
  * Satu-satunya penerjemah: lapisan web memanggilnya di pintu masuk `themeOf()`,
@@ -85,9 +105,8 @@ export function resolveTemplateId(id: string): LiveTemplateId {
   return templateAliases[id as Exclude<TemplateId, LiveTemplateId>] ?? liveTemplateIds[0]
 }
 
-/** `dm-sans` is retained so documents written before the theme system still validate. */
-export const fontChoices = ['cormorant', 'italiana', 'fraunces', 'jost', 'jakarta', 'instrument', 'charm', 'great-vibes', 'parisienne', 'pinyon', 'allura', 'dm-sans'] as const
-export type FontChoice = (typeof fontChoices)[number]
+export { fontChoices, type FontChoice } from './fonts'
+import { fontChoices, type FontChoice } from './fonts'
 export const selectableFonts: { id: FontChoice; label: string }[] = [
   { id: 'cormorant', label: 'Cormorant Garamond' },
   { id: 'fraunces', label: 'Fraunces' },
@@ -188,9 +207,96 @@ export function templateById(id: string) {
   return templates.find(template => template.id === live)
 }
 
+/**
+ * Gerak per undangan (fase 69), terenumerasi — bukan angka bebas.
+ *
+ * `amplop` mengatur tempo gerbang amplop; `masuk` menimpa tata bahasa masuk section milik tema.
+ * Keduanya opsional dan **tidak pernah menyimpan nilai "ikut tema"**: editor menghapus kuncinya,
+ * dan `motion` yang kosong ikut dihapus, supaya preset tema tetap identik dengan dokumen baru dan
+ * `designFingerprint` tidak membedakan `{}` dari absen. Angkanya milik web (`motion-envelope.ts`);
+ * `motion-score.ts` tetap milik tema — dokumen hanya memilih dari yang tema sediakan.
+ */
+export const envelopeSpeeds = ['pelan', 'sedang', 'cepat'] as const
+export type EnvelopeSpeed = (typeof envelopeSpeeds)[number]
+export const entranceStyles = ['rise', 'sweep', 'iris', 'silhouette'] as const
+export type EntranceStyle = (typeof entranceStyles)[number]
+export const motionSchema = z.object({
+  amplop: z.enum(envelopeSpeeds).optional(),
+  masuk: z.enum(entranceStyles).optional(),
+}).strict()
+export type InvitationMotion = z.infer<typeof motionSchema>
+
+/**
+ * Kata-kata undangan yang boleh ditulis ulang pasangan (fase 69).
+ *
+ * Daftar kuncinya **tertutup** dan batas panjangnya per jenis, bukan `z.record(z.string())`:
+ * setiap kunci di sini punya satu tempat render yang pasti, dan renderer hanya membaca kunci yang
+ * ia kenal — kunci asing tidak pernah bisa "muncul" di undangan, jadi tidak ada gunanya
+ * menyimpannya. Nilai bawaan tiap kunci hidup di `apps/web/utils/invitation-copy.ts`, bukan di
+ * sini: kontrak menetapkan apa yang boleh diubah, wajah tema menetapkan bunyinya.
+ *
+ * String konten yang sudah lama bisa disunting lewat `section.data` (deskripsi mempelai, judul
+ * cerita, catatan hadiah, penutup) **tidak** dipindah ke sini. Yang masuk hanya kalimat sistem
+ * yang selama ini ditulis mati di komponen: kicker, judul bagian, label tombol, kalimat gerbang.
+ */
+export const copyKeys = [
+  'gate.kicker', 'gate.greeting', 'gate.noGuest', 'gate.open', 'gate.music',
+  'cover.kicker',
+  'couple.kicker',
+  'events.kicker', 'events.title', 'events.map', 'events.calendar',
+  'countdown.kicker', 'countdown.arrived', 'countdown.tba',
+  'gallery.kicker', 'gallery.title',
+  'story.kicker', 'story.closing',
+  'rundown.kicker', 'rundown.title',
+  'dresscode.kicker', 'dresscode.title', 'dresscode.note',
+  'video.kicker', 'video.open',
+  'gift.kicker', 'gift.fallbackNote',
+  'rsvp.kicker', 'rsvp.title', 'rsvp.thanks', 'rsvp.confirmed', 'rsvp.declined', 'rsvp.prayer',
+  'rsvp.yes', 'rsvp.yesHint', 'rsvp.no', 'rsvp.noHint', 'rsvp.seats', 'rsvp.message', 'rsvp.submit',
+  'wishes.kicker', 'wishes.title', 'wishes.add', 'wishes.submit',
+] as const
+export type CopyKey = (typeof copyKeys)[number]
+
+/** Batas panjang per jenis kunci: label dan tombol 40, judul 80, kalimat 240. */
+export function copyLimit(key: CopyKey): number {
+  if (/\.(kicker|open|map|calendar|yes|no|seats|submit|add|confirmed|declined)$/.test(key)) return 40
+  if (/\.title$/.test(key)) return 80
+  return 240
+}
+
+export const copySchema = z.object(
+  Object.fromEntries(copyKeys.map(key => [key, z.string().max(copyLimit(key))])) as Record<CopyKey, z.ZodString>,
+).partial().strict()
+export type InvitationCopy = z.infer<typeof copySchema>
+
 const color = z.string().regex(/^#[0-9a-fA-F]{6}$/)
 export const invitationDocumentSchema = z.object({
-  schemaVersion: z.literal(1), templateId: z.enum(templateIds), templateVersion: z.literal(1),
+  /** 1 = struktur lama (cover/events/rsvp…), 2 = struktur Elegance (fase 72). Lihat `sections.ts`. */
+  schemaVersion: z.union([z.literal(1), z.literal(2)]), templateId: z.enum(templateIds), templateVersion: z.literal(1),
+  /*
+   * Dua sumbu, fase 74.9 — dan keduanya OPSIONAL, dengan alasan yang sama seperti tiga kunci
+   * `tokens` di bawah: dokumen yang lahir sebelum fase ini tidak punya keduanya, dan tidak satu
+   * pun ditulis ulang (revisi terbit dibaca, tidak pernah disimpan ulang).
+   *
+   * `themeId` adalah penerus `templateId`. Namanya diganti karena `templateId` SELALU berarti
+   * tema di produk ini — langkah "Tema" `/order`, grid "Tema" editor, galeri tema landing —
+   * sementara kata "template" kini dipakai untuk struktur. `templateId` sendiri TIDAK disentuh
+   * dan tetap wajib: ia `z.enum(templateIds)` yang hanya tumbuh dan menyuapi tiap draft dan tiap
+   * revisi terbit; memakainya ulang untuk struktur berarti kolom itu boleh berisi id struktur
+   * ATAU id tema lama selamanya — ambiguitas yang justru melahirkan `resolveTemplateId`.
+   * Dokumen baru menulis keduanya dengan nilai yang sama.
+   *
+   * **Tidak ada `schemaVersion: 3`.** Tipe bagiannya tidak berubah — struktur pertama ADALAH
+   * himpunan Elegance yang sekarang — jadi versi ketiga hanya menambah cabang di tiap
+   * `schemaVersion === 2` yang ada, dan yang lebih berbahaya: `hasDesignChange` membebaskan
+   * migrasi lewat `oldDocument.schemaVersion !== 2 && next.schemaVersion === 2`, jadi versi
+   * ketiga menuntut jendela pembebasan kedua — persis mekanisme yang mengunci pasangan di 73.1.
+   *
+   * Keduanya di AKAR, bukan di dalam `tokens`: `tokens` digerbangi utuh oleh sidik jari desain,
+   * dan kedua sumbu ini perlu gerbang yang berbeda.
+   */
+  themeId: z.enum(templateIds).optional(),
+  structureId: z.enum(structureIds).optional(),
   /*
    * Ketiga key baru fase 59 **opsional dengan sengaja**, dan itu menyelesaikan tiga hal sekaligus.
    *
@@ -209,40 +315,85 @@ export const invitationDocumentSchema = z.object({
     bodyFont: z.enum(fontChoices).optional(),
     backdrop: z.enum(backdropChoices).optional(),
     backdropWeight: z.enum(backdropWeights).optional(),
+    /** Fase 69. Di `tokens` supaya otomatis ikut gerbang `design`, seperti tiga key di atasnya. */
+    motion: motionSchema.optional(),
+    /** Fase 72: fokus tata letak di layar lebar — `kartu` 480px di tengah atau `penuh`. Absen = ikut tema. */
+    layout: z.enum(layoutFocuses).optional(),
   }).strict(),
   sections: z.array(z.object({
     id: z.string().min(1).max(80), type: z.enum(sectionTypes), enabled: z.boolean(), data: z.record(z.unknown()),
   }).strict()).min(1).max(30),
+  /** Opsional, seperti key `tokens` fase 59: absen berarti ikut kata-kata tema. Lihat `copyKeys`. */
+  copy: copySchema.optional(),
+  /** Fase 72: musik undangan (dulu section `music`). */
+  settings: invitationSettingsSchema.optional(),
+  /** Fase 72.7: gaya kartu bagikan (og:image / WhatsApp). */
+  shareCard: shareCardSchema.optional(),
 }).strict().superRefine((document, ctx) => {
+  if (document.schemaVersion === 2) {
+    document.sections.forEach((section, index) => {
+      if (!isV2SectionType(section.type)) { ctx.addIssue({ code: 'custom', path: ['sections', index, 'type'], message: `Tipe bagian ${section.type} tidak dikenal pada dokumen v2.` }); return }
+      const hasil = sectionDataSchema(section.type).safeParse(section.data)
+      if (!hasil.success) for (const issue of hasil.error.issues) ctx.addIssue({ ...issue, path: ['sections', index, 'data', ...issue.path] })
+    })
+  }
   if (new Set(document.sections.map(s => s.id)).size !== document.sections.length) ctx.addIssue({ code: 'custom', path: ['sections'], message: 'ID section harus unik.' })
   if (JSON.stringify(document).length > 200_000) ctx.addIssue({ code: 'custom', message: 'Konten terlalu besar.' })
 })
 export type InvitationDocument = z.infer<typeof invitationDocumentSchema>
 export type InvitationSection = InvitationDocument['sections'][number]
 
-export function createDefaultDocument(partner1 = 'Aruna', partner2 = 'Dewa', templateId: TemplateId = 'aruna-bloom'): InvitationDocument {
+/**
+ * Lagu bawaan undangan baru (fase 77).
+ *
+ * Sampai fase ini `settings.musicUrl` lahir kosong, dan karena `Renderer` tidak merender pemutar
+ * tanpa lagu, tiap undangan baru berdiri tanpa satu pun tombol musik — pemilik membacanya sebagai
+ * tombol yang hilang, bukan sebagai lagu yang belum dipilih, dan ia benar: tidak ada apa pun di
+ * layar yang mengatakan bahwa ada yang harus diisi.
+ *
+ * Nilainya ditulis di sini, bukan diimpor dari `apps/web/utils/music-library.ts`: kontrak tidak
+ * boleh bergantung pada aplikasi web. Duplikasinya dijaga `music-default.spec.ts`, yang menuntut
+ * url ini benar-benar ada di pustaka — tanpa itu, merapikan pustaka suatu hari akan membuat tiap
+ * undangan baru menunjuk berkas yang tidak ada.
+ */
+export const defaultMusic = { url: '/audio/gymnopedie-1.mp3', title: 'Gymnopédie No. 1' } as const
+
+/**
+ * Dokumen baru = struktur Elegance (fase 72). Template `templateId` hanya menentukan palet,
+ * ornamen, dan partitur gerak; struktur bagian dan kata-katanya sama untuk semua tema.
+ */
+export function createDefaultDocument(
+  partner1 = 'Aruna',
+  partner2 = 'Dewa',
+  templateId: TemplateId = 'aruna-bloom',
+  input: Partial<DefaultDocumentInput> = {},
+  structureId: StructureId = 'elegance',
+): InvitationDocument {
+  const template = templateById(templateId) ?? templates[0]!
+  const structure = structures[structureId] ?? structures.elegance
+  return {
+    // `templateId` dan `themeId` lahir SAMA NILAINYA, dan kesetaraan itu dipatok tes: selama
+    // keduanya ditulis, pembaca mana pun — yang lama maupun yang baru — melihat tema yang sama.
+    schemaVersion: 2, templateId: template.id, themeId: template.id, templateVersion: 1,
+    structureId: structure.id,
+    tokens: { ...template.tokens },
+    settings: { musicUrl: defaultMusic.url, musicTitle: defaultMusic.title },
+    sections: structure.build({ partner1, partner2, ...input }),
+  }
+}
+
+/** Dokumen v1 — hanya untuk fixture tes dan migrasi. Undangan baru memakai `createDefaultDocument()`. */
+export function createLegacyDocument(partner1 = 'Aruna', partner2 = 'Dewa', templateId: TemplateId = 'aruna-bloom'): InvitationDocument {
   // Id pensiun ditulis ke dokumen baru sebagai penggantinya, bukan apa adanya: dokumen yang
   // baru lahir tidak punya alasan membawa id yang sudah tidak punya wajah.
   const template = templateById(templateId) ?? templates[0]!
   return {
-    schemaVersion: 1, templateId: template.id, templateVersion: 1,
+    schemaVersion: 1, templateId: template.id, themeId: template.id, templateVersion: 1,
+    structureId: 'warisan',
     tokens: { ...template.tokens },
-    sections: [
-      { id: 'cover', type: 'cover', enabled: true, data: { title: `${partner1} & ${partner2}`, subtitle: 'The wedding of', image: '/images/couple.webp', layout: 'arch-potret', ornamentIntensity: 'seimbang' } },
-      { id: 'couple', type: 'couple', enabled: true, data: { partner1, partner2, description: 'Dengan penuh kebahagiaan, kami mengundang Anda merayakan hari pernikahan kami.' } },
-      { id: 'events', type: 'events', enabled: true, data: { events: [{ id: 'ceremony', name: 'Akad nikah', date: '', time: '09:00', venue: 'Lokasi akan diumumkan', address: '', mapUrl: '', public: true }, { id: 'reception', name: 'Resepsi', date: '', time: '11:00', venue: 'Lokasi akan diumumkan', address: '', mapUrl: '', public: true }], venueIllustration: '' } },
-      { id: 'countdown', type: 'countdown', enabled: true, data: { date: '' } },
-      { id: 'gallery', type: 'gallery', enabled: true, data: { images: [], motion: 'tema' } },
-      { id: 'story', type: 'story', enabled: false, data: { title: 'Awal sebuah cerita', text: '', steps: [] as unknown[] } },
-      { id: 'rundown', type: 'rundown', enabled: false, data: { items: [] } },
-      { id: 'dresscode', type: 'dresscode', enabled: false, data: { text: '', attire: [] as string[], colors: [] as unknown[] } },
-      { id: 'video', type: 'video', enabled: false, data: { url: '', title: 'Saksikan kebahagiaan kami' } },
-      { id: 'gift', type: 'gift', enabled: false, data: { title: 'Hadiah untuk kami', note: '', accounts: [] as GiftAccount[], address: '' } },
-      { id: 'rsvp', type: 'rsvp', enabled: true, data: { deadline: '' } },
-      { id: 'wishes', type: 'wishes', enabled: true, data: {} },
-      { id: 'closing', type: 'closing', enabled: true, data: { text: 'Terima kasih telah menjadi bagian dari cerita kami.' } },
-      { id: 'music', type: 'music', enabled: false, data: { url: '' } },
-    ],
+    // Bagiannya hidup di `structures.ts` sebagai `warisan.build` sejak fase 74.8 — satu sumber,
+    // supaya struktur v1 punya pembangun seperti struktur lain dan tidak bisa berselisih.
+    sections: createLegacySections({ partner1, partner2 }),
   }
 }
 
@@ -273,12 +424,26 @@ export const mediaRules = {
     maxBytes: 10 * 1024 * 1024,
     label: 'MP3',
   },
+  /**
+   * Ornamen unggahan (fase 69): raster transparan saja. SVG **sengaja belum** — pemilik menunda
+   * jalur sanitasinya ke fase lain. Batasnya kecil karena tiap keping dipasang berulang di
+   * banyak section dan dikirim ke setiap tamu; foto galeri boleh 10 MB karena ia satu kali.
+   */
+  ornament: {
+    mimeTypes: ['image/png', 'image/webp'],
+    extensions: ['.png', '.webp'],
+    maxBytes: 300 * 1024,
+    label: 'PNG atau WebP transparan',
+  },
 } as const
 
 export type MediaKind = keyof typeof mediaRules
+export const mediaKinds = Object.keys(mediaRules) as MediaKind[]
 
-/** Batas foto galeri. Paket menjanjikan 15/30/60, tapi `Invitation` belum menyimpan paketnya — sampai itu ada, satu angka untuk semua, ditulis sekali. */
-export const galleryPhotoLimit = 15
+/** Ornamen unggahan per undangan. Pagar, bukan fitur — sama seperti `audioAssetLimit`. */
+export const ornamentAssetLimit = 12
+
+/** Batas foto galeri per paket hidup di `photo-quota.ts` — lihat berkas itu untuk alasannya. */
 
 /** Aset audio per undangan. Bukan fitur, cuma pagar: tanpa ini unggah ulang lagu menumpuk tanpa batas. */
 export const audioAssetLimit = 5
@@ -432,9 +597,9 @@ const growthFeatures = ['story', 'gift', 'rundown', 'dresscode']
 export const catalog = {
   sandbox: true,
   packages: [
-    { id: 'mula', name: 'Mula', price: 279000, features: [...baseFeatures], durationMonths: 12, photoLimit: 15 },
-    { id: 'mekar', name: 'Mekar', price: 449000, features: [...baseFeatures, ...growthFeatures], durationMonths: 12, photoLimit: 30 },
-    { id: 'purnama', name: 'Purnama', price: 699000, features: [...baseFeatures, ...premiumFeatures], durationMonths: 12, photoLimit: 60 },
+    { id: 'mula', name: 'Mula', price: 279000, features: [...baseFeatures], durationMonths: 12, photoLimit: packagePhotoLimits.mula },
+    { id: 'mekar', name: 'Mekar', price: 449000, features: [...baseFeatures, ...growthFeatures], durationMonths: 12, photoLimit: packagePhotoLimits.mekar },
+    { id: 'purnama', name: 'Purnama', price: 699000, features: [...baseFeatures, ...premiumFeatures], durationMonths: 12, photoLimit: packagePhotoLimits.purnama },
   ],
   addons: premiumFeatures.map(id => ({ id, name: ({ story: 'Cerita cinta', gift: 'Hadiah', rundown: 'Rundown', dresscode: 'Dresscode', video: 'Video & live stream', design: 'Warna, font & urutan' } as Record<string, string>)[id]!, price: 25000 })),
   templates: templates.map(({ id, name, version, tagline, accent, tokens }) => ({ id, name, version, tagline, accent, tokens })),
@@ -451,11 +616,77 @@ export function priceOrder(packageId: string, addonIds: string[]) {
   return { total: pack.price + addons.reduce((sum, a) => sum + a.price, 0), features: [...pack.features, ...addonIds], packageId, addonIds }
 }
 
-export type ImportRow = { row: number; displayName: string; phone?: string; group?: string; quota?: number; errors: string[]; warnings: string[] }
+
+export type ImportRow = {
+  /** Nomor baris **spreadsheet aslinya**, bukan indeks setelah preamble dibuang — lihat `parseGuestText`. */
+  row: number
+  displayName: string
+  phone?: string
+  group?: string
+  quota?: number
+  /** Fase 75, mengikuti lembar tamu pemilik. Semuanya opsional dan tidak pernah membuat baris gagal. */
+  guestFrom?: string
+  childCount?: number
+  invitationKind?: string
+  notes?: string
+  errors: string[]
+  warnings: string[]
+}
+
+/** Ejaan judul kolom yang diterima — bahasa Inggris (lembar pemilik) dan Indonesia, berdampingan. */
+const importAliases = {
+  name: ['nama', 'nama undangan', 'nama tamu', 'nama lengkap', 'name', 'guest name', 'displayname'],
+  phone: ['telepon', 'phone', 'no hp', 'nomor hp', 'whatsapp', 'no wa', 'nomor wa', 'nomor whatsapp', 'wa', 'kontak'],
+  group: ['grup', 'group', 'kategori', 'relationship', 'hubungan'],
+  quota: ['kuota', 'quota', 'person', 'pax', 'orang', 'jumlah', 'jumlah orang', 'jumlah tamu'],
+  guestFrom: ['guest from', 'dari', 'undangan dari', 'pihak'],
+  child: ['child', 'anak', 'jumlah anak', 'children'],
+  invitationKind: ['invitation', 'jenis undangan', 'bentuk undangan', 'media undangan'],
+  notes: ['notes', 'note', 'catatan', 'keterangan'],
+} as const
+
+/** Sel yang berarti "tidak diisi" pada lembar berkotak-centang — lihat penyaring baris kosong. */
+const selKosong = ['', 'false', '0', '-', 'no', 'tidak']
+
+const judul = (value: string) => value.replace(/^\uFEFF/, '').trim().toLowerCase().replace(/\s+/g, ' ')
+
+/**
+ * Membaca daftar tamu dari CSV/TSV, termasuk lembar kerja yang **tidak rapi**.
+ *
+ * Sampai fase 75 fungsi ini menuntut baris pertama sebagai header, dan itu membuat lembar tamu
+ * sungguhan tidak bisa diimpor sama sekali: lembar pemilik punya spanduk judul, blok ringkasan,
+ * dua baris petunjuk, satu kolom kiri yang kosong, dan datanya baru mulai di baris 16. Spanduknya
+ * terbaca sebagai header, `hasHeader` jadi salah, dan seluruh kolom jatuh ke pemetaan posisi —
+ * hasilnya bukan galat melainkan **sampah yang terlihat berhasil**.
+ *
+ * Empat hal yang membuatnya bertahan, dan masing-masing menutup satu cara gagal:
+ *
+ * 1. **Kolom kiri yang kosong di setiap baris dibuang.** Lembar yang rapi sering menyisakan satu
+ *    kolom margin.
+ * 2. **Header dicari di 20 baris pertama**, bukan di baris pertama saja. Yang di atasnya preamble.
+ *    Tidak ketemu → jatuh ke pemetaan posisi lama, persis seperti sebelumnya.
+ * 3. **Nomor baris yang dilaporkan adalah nomor baris spreadsheet aslinya.** "Baris 17" di
+ *    pratinjau harus baris 17 yang pemilik lihat di Sheets, kalau tidak pratinjau galat justru
+ *    menyesatkan. Karena itu nomornya dihitung saat parsing, bukan dari indeks larik sesudah
+ *    preamble dan baris kosong dibuang.
+ * 4. **Baris yang benar-benar kosong dilewati diam-diam.** Ekspor lembar berkotak-centang menulis
+ *    `FALSE` di ratusan baris kosong di bawah data — lembar pemilik punya ~190 — dan tanpa aturan
+ *    ini pratinjaunya jadi 190 galat "nama kosong" dan fiturnya tidak terpakai. Aturannya sempit:
+ *    dilewati hanya kalau **tidak satu pun** selnya berisi di luar penanda kosong. Baris bernomor
+ *    telepon tanpa nama tetap galat — itu kehilangan data sungguhan yang harus dilihat.
+ */
 export function parseGuestText(text: string, format: 'csv' | 'tsv'): ImportRow[] {
   if (text.length > 10_000_000) throw new Error('Batas impor 10 MB.')
   const delimiter = format === 'csv' ? ',' : '\t'
-  const records: string[][] = []; let record: string[] = []; let field = ''; let quoted = false
+  // `line` menghitung SETIAP baris berkas, termasuk yang dibuang, supaya nomornya tetap nomor
+  // baris spreadsheet.
+  const records: { cells: string[]; line: number }[] = []
+  let record: string[] = []; let field = ''; let quoted = false; let line = 1
+  const tutup = () => {
+    record.push(field)
+    if (record.some(v => v !== '')) records.push({ cells: record, line })
+    record = []; field = ''
+  }
   for (let i = 0; i < text.length; i++) {
     const c = text[i]
     if (c === '"') {
@@ -465,30 +696,66 @@ export function parseGuestText(text: string, format: 'csv' | 'tsv'): ImportRow[]
     } else if (!quoted && c === delimiter) { record.push(field); field = '' }
     else if (!quoted && (c === '\n' || c === '\r')) {
       if (c === '\r' && text[i + 1] === '\n') i++
-      record.push(field); if (record.some(v => v !== '')) records.push(record); record = []; field = ''
+      tutup(); line++
     } else field += c
   }
   if (quoted) throw new Error('Tanda kutip CSV tidak ditutup.')
-  record.push(field); if (record.some(v => v !== '')) records.push(record)
-  const first = records[0]?.map(v => v.replace(/^\uFEFF/, '').trim().toLowerCase()) ?? []
-  const nameKeys = ['nama', 'nama undangan', 'name', 'displayname', 'nama lengkap']
-  const hasHeader = first.some(v => nameKeys.includes(v))
-  const nameIndex = hasHeader ? first.findIndex(v => nameKeys.includes(v)) : 0
-  const phoneIndex = hasHeader ? first.findIndex(v => ['telepon', 'phone', 'no hp', 'whatsapp', 'kontak'].includes(v)) : 1
-  const groupIndex = hasHeader ? first.findIndex(v => ['grup', 'group', 'kategori'].includes(v)) : 2
-  const quotaIndex = hasHeader ? first.findIndex(v => ['kuota', 'quota'].includes(v)) : 3
-  const rows = hasHeader ? records.slice(1) : records
+  tutup()
+
+  // (1) Kolom terdepan yang kosong di SETIAP baris dibuang.
+  let potong = 0
+  while (records.length && records.every(r => (r.cells[potong] ?? '').trim() === '')
+    && records.some(r => r.cells.length > potong + 1)) potong++
+  const baris = records.map(r => ({ cells: r.cells.slice(potong), line: r.line }))
+
+  // (2) Header dicari di 20 baris pertama.
+  const headerAt = baris.slice(0, 20).findIndex(r => r.cells.some(v => importAliases.name.includes(judul(v) as never)))
+  const header = headerAt >= 0 ? baris[headerAt]!.cells.map(judul) : []
+  const kolom = (kunci: keyof typeof importAliases, bawaan: number) =>
+    headerAt >= 0 ? header.findIndex(v => (importAliases[kunci] as readonly string[]).includes(v)) : bawaan
+  const nameIndex = kolom('name', 0)
+  const phoneIndex = kolom('phone', 1)
+  const groupIndex = kolom('group', 2)
+  const quotaIndex = kolom('quota', 3)
+  const fromIndex = kolom('guestFrom', -1)
+  const childIndex = kolom('child', -1)
+  const kindIndex = kolom('invitationKind', -1)
+  const notesIndex = kolom('notes', -1)
+
+  const rows = headerAt >= 0 ? baris.slice(headerAt + 1) : baris
   if (rows.length > 5000) throw new Error('Maksimum 5.000 baris per impor.')
+
   const seen = new Set<string>()
-  return rows.map((columns, i) => {
-    const errors: string[] = [], warnings: string[] = []; let displayName = columns[nameIndex] ?? ''
+  const hasil: ImportRow[] = []
+  for (const { cells, line: nomor } of rows) {
+    const ambil = (index: number) => (index >= 0 ? cells[index]?.trim() : undefined)
+    // (4) Baris kosong dilewati diam-diam.
+    if (!ambil(nameIndex) && cells.every(v => selKosong.includes(v.trim().toLowerCase()))) continue
+
+    const errors: string[] = [], warnings: string[] = []
+    let displayName = cells[nameIndex] ?? ''
     try { displayName = normalizeDisplayName(displayName) } catch (error) { errors.push((error as Error).message) }
     if (seen.has(displayName)) warnings.push('Nama sama ditemukan; tetap dibuat sebagai tamu terpisah.')
     seen.add(displayName)
-    const rawQuota = columns[quotaIndex]?.trim(); const quota = rawQuota ? Number(rawQuota) : 1
+    const rawQuota = ambil(quotaIndex); const quota = rawQuota ? Number(rawQuota) : 1
     if (!Number.isInteger(quota) || quota < 1 || quota > 20) errors.push('Kuota harus 1–20 orang.')
-    return { row: i + (hasHeader ? 2 : 1), displayName, phone: columns[phoneIndex]?.trim(), group: columns[groupIndex]?.trim(), quota, errors, warnings }
-  })
+    hasil.push({
+      row: nomor,
+      displayName,
+      phone: ambil(phoneIndex),
+      group: ambil(groupIndex),
+      quota,
+      // Keempatnya lewat normalisasi yang tidak pernah melempar: kolom pendataan tidak boleh
+      // menggagalkan baris. Yang tidak dikenal disimpan apa adanya (fase 75).
+      guestFrom: normalizeGuestFrom(ambil(fromIndex)) ?? undefined,
+      childCount: normalizeChildCount(ambil(childIndex)) ?? undefined,
+      invitationKind: normalizeInvitationKind(ambil(kindIndex)) ?? undefined,
+      notes: normalizeGuestNotes(ambil(notesIndex)) ?? undefined,
+      errors,
+      warnings,
+    })
+  }
+  return hasil
 }
 
 export function safeSpreadsheetCell(value: string): string {

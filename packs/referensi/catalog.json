@@ -832,17 +832,17 @@
       "webBytes": 68058
     },
     {
-      "id": "ref-putih-cokelat-bingkai-ukir",
-      "name": "Bingkai ukir",
-      "category": "frame",
-      "file": "ref-putih-cokelat-bingkai-ukir.png",
+      "id": "ref-putih-cokelat-bingkai-ukir-kiri",
+      "name": "Bingkai ukir kiri",
+      "category": "corner",
+      "file": "ref-putih-cokelat-bingkai-ukir-kiri.png",
       "format": "png",
-      "width": 1600,
+      "width": 800,
       "height": 800,
-      "ratio": 2,
+      "ratio": 1,
       "palette": "fixed-reference",
-      "sha256": "33c3684df6b5557b7712a562dd6aa22c7efccc1c74fe87714a2b33c326de2f55",
-      "bytes": 392105,
+      "sha256": "82db14f2aea8d05f7f2e7a21b988ddf2cee8e16133fefffa337cde1949e73114",
+      "bytes": 202661,
       "sheet": 0,
       "cell": 23,
       "provenance": {
@@ -851,8 +851,8 @@
         "sourceTemplate": "Putih Cokelat Elegan Klasik Undangan Pernikahan Mobile Video",
         "authorship": "owner-provided Canva export; not claimed as newly drawn",
         "license": "source license not independently verified",
-        "inputFile": "docs/features/ornament-builder/imported/canva-putih-cokelat/raster/bingkai-ukir.png",
-        "sourceSha256": "33c3684df6b5557b7712a562dd6aa22c7efccc1c74fe87714a2b33c326de2f55",
+        "inputFile": "docs/features/ornament-builder/imported/canva-putih-cokelat/raster/bingkai-ukir-kiri.png",
+        "sourceSha256": "82db14f2aea8d05f7f2e7a21b988ddf2cee8e16133fefffa337cde1949e73114",
         "derivative": true,
         "editorMetadataRemoved": true,
         "geometry": "original raster pixels retained in lossless PNG",
@@ -862,10 +862,46 @@
         },
         "integrationRequestedAt": "2026-09-18"
       },
-      "thumb": "ubin/ref-putih-cokelat-bingkai-ukir.webp",
-      "thumbBytes": 7544,
-      "web": "web/ref-putih-cokelat-bingkai-ukir.webp",
-      "webBytes": 59258
+      "thumb": "ubin/ref-putih-cokelat-bingkai-ukir-kiri.webp",
+      "thumbBytes": 10324,
+      "web": "web/ref-putih-cokelat-bingkai-ukir-kiri.webp",
+      "webBytes": 58734
+    },
+    {
+      "id": "ref-putih-cokelat-bingkai-ukir-kanan",
+      "name": "Bingkai ukir kanan",
+      "category": "corner",
+      "file": "ref-putih-cokelat-bingkai-ukir-kanan.png",
+      "format": "png",
+      "width": 800,
+      "height": 800,
+      "ratio": 1,
+      "palette": "fixed-reference",
+      "sha256": "92fa6de793244f93cbdfcbca99c19d8b180df5fa170b259004ed4d1f1b62ab5a",
+      "bytes": 203364,
+      "sheet": 0,
+      "cell": 24,
+      "provenance": {
+        "sourcePack": "canva-putih-cokelat",
+        "sourceFile": "source/bingkai-ukir.svg",
+        "sourceTemplate": "Putih Cokelat Elegan Klasik Undangan Pernikahan Mobile Video",
+        "authorship": "owner-provided Canva export; not claimed as newly drawn",
+        "license": "source license not independently verified",
+        "inputFile": "docs/features/ornament-builder/imported/canva-putih-cokelat/raster/bingkai-ukir-kanan.png",
+        "sourceSha256": "92fa6de793244f93cbdfcbca99c19d8b180df5fa170b259004ed4d1f1b62ab5a",
+        "derivative": true,
+        "editorMetadataRemoved": true,
+        "geometry": "original raster pixels retained in lossless PNG",
+        "nativeRaster": false,
+        "color": {
+          "ink": "#3c2e24"
+        },
+        "integrationRequestedAt": "2026-09-18"
+      },
+      "thumb": "ubin/ref-putih-cokelat-bingkai-ukir-kanan.webp",
+      "thumbBytes": 10258,
+      "web": "web/ref-putih-cokelat-bingkai-ukir-kanan.webp",
+      "webBytes": 58478
     },
     {
       "id": "ref-putih-cokelat-cincin-kawin",
@@ -880,7 +916,7 @@
       "sha256": "b603fb7e3f41c2e751766b1fcf26df7b0df64419b8cd11c9c41b8b95fc164462",
       "bytes": 192738,
       "sheet": 0,
-      "cell": 24,
+      "cell": 25,
       "provenance": {
         "sourcePack": "canva-putih-cokelat",
         "sourceFile": "source/cincin-bunga.svg",
@@ -917,7 +953,7 @@
       "sha256": "6cce5d7553e342ad484b99f431d17bda4af25cb168d94a1f35c8577bbf5d0a9a",
       "bytes": 883069,
       "sheet": 0,
-      "cell": 25,
+      "cell": 26,
       "provenance": {
         "sourcePack": "canva-putih-cokelat",
         "sourceFile": "source/cincin-bunga.svg",
@@ -953,7 +989,7 @@
       "sha256": "d0709380e1a80034a4491e1e06615c15e6b79c3a4091df6652beade756120f82",
       "bytes": 41195,
       "sheet": 0,
-      "cell": 26,
+      "cell": 27,
       "provenance": {
         "sourcePack": "canva-putih-cokelat",
         "sourceFile": "source/motif-latar.svg",
@@ -989,7 +1025,7 @@
       "sha256": "a48e25fa339040493a6ce897eb944406dc6fb4f9a4ceddeaa2a9bcddba162c5b",
       "bytes": 263918,
       "sheet": 0,
-      "cell": 27,
+      "cell": 28,
       "provenance": {
         "sourcePack": "canva-emas-cokelat",
         "sourceFile": "source/sudut-gunungan-emas.svg",
@@ -1025,7 +1061,7 @@
       "sha256": "e01134f4f1224b8db411c3fcee7f08553b2b1b52af4d69c3d4a85cff9c328ffa",
       "bytes": 265889,
       "sheet": 0,
-      "cell": 28,
+      "cell": 29,
       "provenance": {
         "sourcePack": "canva-emas-cokelat",
         "sourceFile": "source/sudut-gunungan-emas.svg",
@@ -1061,7 +1097,7 @@
       "sha256": "65a85097389fbe33e73ae1c9fdd1cb504b2ffd488ef0379516ac35db5f0470f9",
       "bytes": 10939,
       "sheet": 0,
-      "cell": 29,
+      "cell": 30,
       "provenance": {
         "sourcePack": "canva-emas-cokelat",
         "sourceFile": "source/sulur-krem.svg",
@@ -1097,7 +1133,7 @@
       "sha256": "0caed1015fc2b7485574787d4e3e539bdfb8653932bf717c80c6ee7dc7265968",
       "bytes": 11061,
       "sheet": 0,
-      "cell": 30,
+      "cell": 31,
       "provenance": {
         "sourcePack": "canva-emas-cokelat",
         "sourceFile": "source/sulur-krem.svg",
@@ -1133,7 +1169,7 @@
       "sha256": "a7b2b947ad8f4e05025ae310c50090b2773ad7a84ada44171e2c037d644e8979",
       "bytes": 48526,
       "sheet": 0,
-      "cell": 31,
+      "cell": 32,
       "provenance": {
         "sourcePack": "canva-emas-cokelat",
         "sourceFile": "source/sulur-tipis.svg",
@@ -1169,7 +1205,7 @@
       "sha256": "cf933f0f37227edcedb0b9f4288262ea6eeab9732307670d6969eef6ad12d2f3",
       "bytes": 48664,
       "sheet": 0,
-      "cell": 32,
+      "cell": 33,
       "provenance": {
         "sourcePack": "canva-emas-cokelat",
         "sourceFile": "source/sulur-tipis.svg",
@@ -1205,7 +1241,7 @@
       "sha256": "e697bf574b6a6013282b51349a5541e0a5dc65eb59a5998946719a0f1c176294",
       "bytes": 342398,
       "sheet": 0,
-      "cell": 33,
+      "cell": 34,
       "provenance": {
         "sourcePack": "canva-emas-cokelat",
         "sourceFile": "source/lengkung-latar.svg",
@@ -1241,7 +1277,7 @@
       "sha256": "35c8c5351c6ec897d1a53d4d8289bf77fcfcaae1b736f127a65fb62c2e2186b8",
       "bytes": 38559,
       "sheet": 0,
-      "cell": 34,
+      "cell": 35,
       "provenance": {
         "sourcePack": "canva-emas-cokelat",
         "sourceFile": "source/cahaya-lembut.svg",
@@ -1277,7 +1313,7 @@
       "sha256": "1b86977e39adfa906a53326f25ee7f40a2d308606983d25eaa5772675878c59e",
       "bytes": 1248086,
       "sheet": 0,
-      "cell": 35,
+      "cell": 36,
       "provenance": {
         "sourcePack": "canva-emas-cokelat",
         "sourceFile": "source/pengantin-jawa.svg",
@@ -1313,7 +1349,7 @@
       "sha256": "090e3cb8b7763822f8af972054d813d81dac98ea0415a4245c238bc3f6ea3dbd",
       "bytes": 505470,
       "sheet": 0,
-      "cell": 36,
+      "cell": 37,
       "provenance": {
         "sourcePack": "canva-emas-cokelat",
         "sourceFile": "source/pengantin-jawa.svg",
@@ -1349,7 +1385,7 @@
       "sha256": "180e84e864393add2f7e059a2e558f6d4e8b93c86d9c5000ad8c89e22d15fb36",
       "bytes": 666924,
       "sheet": 0,
-      "cell": 37,
+      "cell": 38,
       "provenance": {
         "sourcePack": "canva-emas-cokelat",
         "sourceFile": "source/pengantin-jawa.svg",
@@ -1385,7 +1421,7 @@
       "sha256": "4e554b8c853e19de7d5e10aa682b8a3d2f9961a431dd7b873836616beb44525e",
       "bytes": 313558,
       "sheet": 0,
-      "cell": 38,
+      "cell": 39,
       "provenance": {
         "sourcePack": "canva-putih-hijau",
         "sourceFile": "source/sudut-bunga-putih.svg",
@@ -1421,7 +1457,7 @@
       "sha256": "5f775cd3b9a8f6ae3d80688326974c51e501f3cd55912c16033a7ce35d2afe1c",
       "bytes": 313807,
       "sheet": 0,
-      "cell": 39,
+      "cell": 40,
       "provenance": {
         "sourcePack": "canva-putih-hijau",
         "sourceFile": "source/sudut-bunga-putih.svg",
@@ -1457,7 +1493,7 @@
       "sha256": "8aa1d3b6314757b73e5b9ac2809d360597cfbc0b12fa0a85b884a0eb581df8d1",
       "bytes": 5645,
       "sheet": 0,
-      "cell": 40,
+      "cell": 41,
       "provenance": {
         "sourcePack": "canva-putih-hijau",
         "sourceFile": "source/hati-a.svg",
@@ -1493,7 +1529,7 @@
       "sha256": "ce1e3b76b5a327554c2567e354262e7db0d868630ac4afcd0c97bf9200b3b11a",
       "bytes": 5229,
       "sheet": 0,
-      "cell": 41,
+      "cell": 42,
       "provenance": {
         "sourcePack": "canva-putih-hijau",
         "sourceFile": "source/hati-b.svg",

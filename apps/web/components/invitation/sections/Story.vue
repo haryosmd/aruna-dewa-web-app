@@ -3,7 +3,7 @@ import type { Section } from '~/types/aruna'
 import { toStorySteps } from '~/utils/invitation-options'
 
 const props = defineProps<{ section: Section; seed: number }>()
-const { orn, intensity, compact, galleryImages, initials } = useInvitation()
+const { orn, intensity, compact, galleryImages, initials, t } = useInvitation()
 
 const root = ref<HTMLElement | null>(null)
 
@@ -125,7 +125,7 @@ useArunaMotion(root, ({ gsap, drawSvg, travelPath }) => {
       id="iv-story"
       tone="ink"
       :compact="compact"
-      kicker="Cerita kami"
+      :kicker="t('story.kicker')"
       :title="text(props.section, 'title', 'Dari satu percakapan')"
       :ornaments="compact ? null : orn"
       :intensity="intensity"
@@ -137,7 +137,7 @@ useArunaMotion(root, ({ gsap, drawSvg, travelPath }) => {
           <img :src="fallbackPhoto" alt="" data-iv-photo loading="lazy" class="h-full w-full object-cover">
         </div>
         <p v-if="prose" data-iv-reveal class="iv-body m-0">{{ prose }}</p>
-        <OrnamentGlyph :glyph="orn.floralAlt" data-iv-ornament class="h-20 w-16 opacity-70" />
+        <OrnamentGlyph :glyph="orn.floralAlt" data-iv-ornament data-iv-slot="floralAlt" class="h-20 w-16 opacity-70" />
       </template>
 
       <template v-else>
@@ -191,10 +191,11 @@ useArunaMotion(root, ({ gsap, drawSvg, travelPath }) => {
           :glyph="orn.monogram"
           data-story-finale
           data-iv-ornament
+          data-iv-slot="monogram"
           class="iv-story-finale"
           :initials="initials"
         />
-        <p data-iv-reveal class="iv-body m-0 text-caption opacity-80">…dan sampailah kami di hari ini.</p>
+        <p data-iv-reveal class="iv-body m-0 text-caption opacity-80">{{ t('story.closing') }}</p>
       </template>
     </InvitationSection>
   </div>

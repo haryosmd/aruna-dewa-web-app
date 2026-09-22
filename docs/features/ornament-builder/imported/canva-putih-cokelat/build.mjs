@@ -24,17 +24,12 @@ await buildPack(HERE, {
     // Sepasang sudut dengan celah bersih di x 324–405.
     { id: 'sudut-ukir-kiri', name: 'Sudut ukir kiri', file: 'sudut-ukir.svg', category: 'corner', anchor: 'sudut', raster: true, crop: { x: 0, y: 0, w: 364, h: 324 } },
     { id: 'sudut-ukir-kanan', name: 'Sudut ukir kanan', file: 'sudut-ukir.svg', category: 'corner', anchor: 'sudut', raster: true, crop: { x: 365, y: 0, w: 364, h: 324 } },
-    {
-      id: 'bingkai-ukir',
-      name: 'Bingkai ukir',
-      file: 'bingkai-ukir.svg',
-      category: 'frame',
-      anchor: 'section',
-      raster: true,
-      // Tidak dipecah: kedua separuhnya **membentuk satu bingkai tertutup**. Dipisah, yang
-      // didapat dua setengah-bingkai yang tidak berguna sendiri-sendiri.
-      note: 'Tidak dipecah — kedua separuhnya menyusun satu bingkai utuh.',
-    },
+    // Dua paruh bercermin yang bertemu di puncak x=405 (satuan viewBox 810×405). Fase 59
+    // sengaja tidak memecahnya; pemilik memutuskan sebaliknya pada 2026-09-19 (fase 70):
+    // sebagai keping sudut kiri/kanan ia bisa dipasang di slot Sudut, sedangkan sebagai
+    // bingkai utuh ia bersaing di slot Bingkai yang tidak pernah ia menangkan.
+    { id: 'bingkai-ukir-kiri', name: 'Bingkai ukir kiri', file: 'bingkai-ukir.svg', category: 'corner', anchor: 'sudut', raster: true, crop: { x: 0, y: 0, w: 405, h: 405 } },
+    { id: 'bingkai-ukir-kanan', name: 'Bingkai ukir kanan', file: 'bingkai-ukir.svg', category: 'corner', anchor: 'sudut', raster: true, crop: { x: 405, y: 0, w: 405, h: 405 } },
     // Dua benda terpisah dalam satu berkas, dengan celah bersih di y 82–126.
     { id: 'cincin-kawin', name: 'Cincin kawin', file: 'cincin-bunga.svg', category: 'symbol', anchor: 'kepala', raster: true, crop: { x: 0, y: 0, w: 465, h: 100 } },
     { id: 'rangkai-bunga', name: 'Rangkai bunga', file: 'cincin-bunga.svg', category: 'layer', anchor: 'crown', raster: true, crop: { x: 0, y: 110, w: 465, h: 240 } },

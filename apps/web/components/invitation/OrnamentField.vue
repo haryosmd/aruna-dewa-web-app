@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { intensityScale, layerSlot, ornamentBank, type LayerSlot, type OrnamentId, type OrnamentIntensity, type OrnamentSet } from '~/utils/ornaments'
+import { intensityScale, layerSlot, ornamentBank, type LayerSlot, type OrnamentId, type OrnamentIntensity, type ResolvedOrnamentSet } from '~/utils/ornaments'
 
 /**
  * Ladang ornamen satu section.
@@ -99,7 +99,7 @@ const slotOpacity: Record<LayerSlot, number> = {
 
 const props = withDefaults(
   defineProps<{
-    set: OrnamentSet
+    set: ResolvedOrnamentSet
     intensity?: OrnamentIntensity
     /** Nada section induk. Di atas bidang gelap ornamen jadi kertas dan jauh lebih redup. */
     tone?: 'base' | 'paper' | 'tint' | 'ink' | 'primary'

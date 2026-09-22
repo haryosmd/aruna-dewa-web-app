@@ -71,7 +71,14 @@ async function main(): Promise<void> {
     const row = await prisma.invitation.findUnique({ where: { id: item.id }, select: { draftDocument: true } });
     const doc = bacaDokumen(row?.draftDocument ?? null);
     if (!doc) continue;
-    const berikut = { ...doc, templateId: preset.id, tokens: { ...preset.tokens } };
+    /*
+     * `themeId` WAJIB ikut ditulis sejak fase 74.9, dan melewatkannya adalah bug paling
+     * berbahaya di seluruh pemisahan dua sumbu itu: `documentThemeId` membaca `themeId` LEBIH
+     * DULU, jadi dokumen yang kedua kuncinya berselisih akan merender tema PENSIUN — persis
+     * kebalikan dari yang skrip ini kerjakan. Tanpa baris ini skrip ini "berhasil" dan tidak
+     * mengubah apa pun yang terlihat.
+     */
+    const berikut = { ...doc, templateId: preset.id, themeId: preset.id, tokens: { ...preset.tokens } };
     /*
      * Difilter `draftRevision` yang dibaca di atas: kalau pasangan menyimpan draft di antara
      * pembacaan dan penulisan, baris ini dilewati alih-alih menimpa pekerjaannya. Bentuk

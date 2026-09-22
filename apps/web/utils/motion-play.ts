@@ -1,6 +1,6 @@
 import type { MotionApi } from '~/composables/useArunaMotion'
 
-import { resolveScore, type SectionRole, type ThemeMotion } from './motion-score'
+import { resolveScore, type Entrance, type SectionRole, type ThemeMotion } from './motion-score'
 
 /**
  * Koreografi undangan sebelum partitur ada.
@@ -19,7 +19,11 @@ export function playLegacyScore(
 
   // 70px terasa menyentak di layar pendek; 40 cukup untuk membuat foto terbaca sebagai jendela.
   parallax('[data-iv-parallax]', { distance: 40 })
-  revealUp('[data-iv-reveal]', { y: 26, stagger: 0.07 })
+  /*
+   * Bagian ber-`data-iv-entrance="tanpa"` (fase 72) dilewati. Dokumen v1 tidak pernah punya
+   * atribut itu, jadi untuk mereka pemilih ini identik dengan `[data-iv-reveal]` polos.
+   */
+  revealUp(`[data-iv-reveal]:not(${DIAM} [data-iv-reveal])`, { y: 26, stagger: 0.07 })
 
   /*
    * DrawSVG hanya bisa menggambar stroke. Sejak ornamen digambar bermassa, yang tersisa
@@ -37,7 +41,8 @@ export function playLegacyScore(
    * melainkan urutan dan jeda antar unsurnya.
    */
   gsap.utils.toArray<HTMLElement>('[data-iv-section]').forEach((section) => {
-    orchestrate(section, { stagger: 0.16, duration: 1.4 })
+    if (section.dataset.ivEntrance === 'tanpa') return
+    orchestrate(section, { stagger: 0.16, duration: 1.4, grammar: entranceOverride(section) })
   })
 
   // Rel timeline rundown tumbuh mengikuti scroll. Keadaan diam-nya scaleY(1) di CSS.
@@ -49,6 +54,20 @@ export function playLegacyScore(
       scrollTrigger: { trigger: node.parentElement ?? node, start: 'top 80%', end: 'bottom 70%', scrub: 0.5 },
     })
   })
+}
+
+/** Pemilih bagian yang memilih diam (fase 72). */
+const DIAM = '[data-iv-entrance="tanpa"]'
+
+/**
+ * Penimpa tata bahasa masuk per bagian (fase 72): `section.data.motion` dipancarkan
+ * `InvitationSection` sebagai `data-iv-entrance`. Nilai preset menimpa babak untuk bagian
+ * itu saja; `tanpa` ditangani pemanggil (bagiannya dilewati sama sekali); yang lain
+ * (`tema`, absen, nilai asing) mengembalikan `undefined` = ikut partitur.
+ */
+function entranceOverride(section: HTMLElement): Entrance | undefined {
+  const nilai = section.dataset.ivEntrance
+  return nilai === 'rise' || nilai === 'sweep' || nilai === 'iris' || nilai === 'silhouette' ? nilai : undefined
 }
 
 /**
@@ -107,8 +126,16 @@ export function playScore(api: MotionApi, plan: { root: HTMLElement, score: Them
       const section = sectionDari(node)
       if (!section) continue
 
+      /*
+       * Bagian yang memilih diam (fase 72) tidak mendapat gerakan masuk sama sekali: bukan
+       * orchestrate, bukan reveal sisa di bawah — `revealUp` di bawah mengecualikannya lewat
+       * pemilih. Drift dan segue tetap milik partitur tema, karena keduanya bukan "masuk".
+       */
+      if (section.dataset.ivEntrance === 'tanpa') continue
+      const entrance = entranceOverride(section) ?? act.entrance
+
       orchestrate(section, {
-        grammar: act.entrance,
+        grammar: entrance,
         ornament: act.ornament,
         weight: act.weight,
         reveal: true,
@@ -124,14 +151,14 @@ export function playScore(api: MotionApi, plan: { root: HTMLElement, score: Them
         drift(gsap.utils.toArray<HTMLElement>(section.querySelectorAll('[data-iv-layer]')), { amount: act.drift })
       }
 
-      if (act.entrance === 'silhouette') {
+      if (entrance === 'silhouette') {
         silhouette(gsap.utils.toArray<HTMLElement>(section.querySelectorAll('[data-iv-photo]')), { weight: act.weight })
       }
     }
   }
 
   // Sisa reveal yang tidak terlipat — isi jauh di bawah tepi section panjang.
-  revealUp('[data-iv-reveal]:not([data-iv-reveal-folded])', { y: 26, stagger: 0.07 })
+  revealUp(`[data-iv-reveal]:not([data-iv-reveal-folded]):not(${DIAM} [data-iv-reveal])`, { y: 26, stagger: 0.07 })
 
   /*
    * Jarak parallax dipatok di sini, bukan di data tema: DESIGN.md mematoknya 40 untuk

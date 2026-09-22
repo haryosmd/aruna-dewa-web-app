@@ -88,3 +88,88 @@ export async function normalizePhoto(file: File): Promise<File> {
     bitmap?.close()
   }
 }
+
+/* ── Pangkas (fase 74.6) ─────────────────────────────────────────────────────── */
+
+/**
+ * Kotak pangkas dalam koordinat **ternormalisasi** 0–1, bukan piksel.
+ *
+ * Alasannya praktis: pemilih kotaknya menggambar di atas `<img>` yang lebarnya ditentukan
+ * tata letak dialog, bukan ukuran asli foto. Menyimpan piksel berarti setiap perubahan lebar
+ * dialog harus dikonversi ulang, dan satu pembulatan yang meleset menggeser hasil pangkas.
+ */
+export interface CropRect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/**
+ * Menerjemahkan kotak ternormalisasi ke piksel foto aslinya, dan **menjinakkan** nilai yang
+ * tidak masuk akal alih-alih mempercayainya.
+ *
+ * Dipisah dari canvas supaya bisa diuji tanpa browser — pola yang sama dengan `targetSize`.
+ * Kotak yang keluar batas dipotong ke dalam, bukan ditolak: pointer event bisa mendarat satu
+ * piksel di luar gambar, dan menolak seluruh pangkasan karena itu akan terasa seperti bug.
+ * Kotak yang menyusut jadi nol dikembalikan sebagai foto utuh — hasil 0x0 melempar di canvas.
+ */
+export function cropRect(natural: { width: number; height: number }, rect: CropRect): { x: number; y: number; width: number; height: number } {
+  const utuh = { x: 0, y: 0, width: natural.width, height: natural.height }
+  if (!natural.width || !natural.height) return utuh
+  const batas = (nilai: number) => (Number.isFinite(nilai) ? Math.min(1, Math.max(0, nilai)) : 0)
+  const x = batas(rect.x)
+  const y = batas(rect.y)
+  const width = Math.min(batas(rect.width), 1 - x)
+  const height = Math.min(batas(rect.height), 1 - y)
+  const piksel = {
+    x: Math.round(x * natural.width),
+    y: Math.round(y * natural.height),
+    width: Math.round(width * natural.width),
+    height: Math.round(height * natural.height),
+  }
+  if (piksel.width < 1 || piksel.height < 1) return utuh
+  return piksel
+}
+
+/**
+ * Memangkas foto lalu mengembalikannya sebagai `File` baru, siap diunggah.
+ *
+ * Memakai jalur yang sama persis dengan `normalizePhoto` — `createImageBitmap` ber-EXIF,
+ * canvas, `toBlob`, jenis dibaca dari blob-nya — jadi pangkas tidak memperkenalkan cara kedua
+ * untuk salah. Termasuk dua jebakan yang sudah dibayar di sana: EXIF potret, dan browser yang
+ * mengembalikan PNG saat diminta WebP.
+ *
+ * Bedanya satu: di sini kegagalan **mengembalikan `null`**, bukan berkas asli. `normalizePhoto`
+ * boleh diam-diam menyerah karena hasilnya sekadar kurang hemat; pangkas yang diam-diam
+ * menyerah akan mengunggah foto UTUH padahal pasangan baru saja memilih sebagian — mengganti
+ * hasil yang salah dengan pesan galat adalah satu-satunya pilihan yang jujur.
+ */
+export async function cropPhoto(file: File, rect: CropRect): Promise<File | null> {
+  if (typeof createImageBitmap !== 'function' || typeof document === 'undefined') return null
+
+  let bitmap: ImageBitmap | null = null
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
+    const potong = cropRect({ width: bitmap.width, height: bitmap.height }, rect)
+    const size = targetSize(potong.width, potong.height)
+
+    const canvas = document.createElement('canvas')
+    canvas.width = size.width
+    canvas.height = size.height
+    const context = canvas.getContext('2d')
+    if (!context) return null
+    context.drawImage(bitmap, potong.x, potong.y, potong.width, potong.height, 0, 0, size.width, size.height)
+
+    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', webpQuality))
+    if (!blob || !blob.size) return null
+    if (!mediaRules.image.mimeTypes.includes(blob.type as never)) return null
+
+    const stem = file.name.replace(/\.[^.]+$/u, '') || 'foto'
+    return new File([blob], convertedName(`${stem}-pangkas`, blob.type), { type: blob.type, lastModified: Date.now() })
+  } catch {
+    return null
+  } finally {
+    bitmap?.close()
+  }
+}

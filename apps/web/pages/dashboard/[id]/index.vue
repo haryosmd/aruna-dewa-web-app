@@ -56,7 +56,7 @@ useHead({ title: () => invitation.value?.title
           id="dash-view-public"
           :to="`/i/${invitation.slug}`"
           target="_blank"
-          class="inline-flex min-h-11 items-center gap-1.5 text-[0.9375rem] font-semibold text-primary no-underline underline-offset-4 hover:underline"
+          class="inline-flex min-h-11 items-center gap-1.5 text-ui-lg font-semibold text-primary no-underline underline-offset-4 hover:underline"
         >
           Lihat halaman publik
           <ExternalLink :size="15" aria-hidden="true" />
@@ -72,13 +72,13 @@ useHead({ title: () => invitation.value?.title
     <dl class="m-0 grid gap-3 sm:grid-cols-3">
       <div class="card grid content-between gap-3 p-5">
         <dt class="text-caption font-semibold uppercase tracking-[0.1em] text-ink-subtle">Draft</dt>
-        <dd class="m-0 font-display text-[2rem] leading-none font-semibold text-ink">r{{ invitation.revision ?? 0 }}</dd>
+        <dd class="m-0 font-display text-stat leading-none font-semibold text-ink">r{{ invitation.revision ?? 0 }}</dd>
         <dd class="m-0 text-caption text-ink-subtle">Disimpan terpisah dari versi publik.</dd>
       </div>
 
       <div class="card grid content-between gap-3 p-5">
         <dt class="text-caption font-semibold uppercase tracking-[0.1em] text-ink-subtle">Publikasi</dt>
-        <dd class="m-0 font-display text-[2rem] leading-none font-semibold text-ink">
+        <dd class="m-0 font-display text-stat leading-none font-semibold text-ink">
           {{ invitation.publishedAt ? 'Aktif' : 'Belum' }}
         </dd>
         <dd class="m-0 text-caption text-ink-subtle">
@@ -88,7 +88,7 @@ useHead({ title: () => invitation.value?.title
 
       <div class="card grid content-between gap-3 p-5">
         <dt class="text-caption font-semibold uppercase tracking-[0.1em] text-ink-subtle">Alamat</dt>
-        <dd class="m-0 break-all font-display text-[1.5rem] leading-tight font-semibold text-ink">/i/{{ invitation.slug }}</dd>
+        <dd class="m-0 break-all font-display text-h3 leading-tight font-semibold text-ink">/i/{{ invitation.slug }}</dd>
         <dd class="m-0 text-caption text-ink-subtle">Tautan personal tamu ada di halaman Kelola tamu.</dd>
       </div>
     </dl>

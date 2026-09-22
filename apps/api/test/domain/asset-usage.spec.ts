@@ -16,15 +16,15 @@ describe('penjaga penghapusan aset', () => {
   it('mengenali aset yang dipakai galeri versi publik', () => {
     const document = documentWith((doc, url) => {
       const gallery = doc.sections.find(section => section.type === 'gallery')!;
-      gallery.data.images = [url];
+      gallery.data.imageUrls = [url];
     });
     expect(referencesAsset(document, assetId)).toBe(true);
     expect(servesAsset(document, assetId)).toBe(true);
   });
 
-  it('mengenali aset yang dipakai foto cover', () => {
+  it('mengenali aset yang dipakai foto hero', () => {
     const document = documentWith((doc, url) => {
-      doc.sections.find(section => section.type === 'cover')!.data.image = url;
+      doc.sections.find(section => section.type === 'hero')!.data.imageUrl = url;
     });
     expect(referencesAsset(document, assetId)).toBe(true);
   });
@@ -41,7 +41,7 @@ describe('penjaga penghapusan aset', () => {
     const document = documentWith((doc, url) => {
       const gallery = doc.sections.find(section => section.type === 'gallery')!;
       gallery.enabled = false;
-      gallery.data.images = [url];
+      gallery.data.imageUrls = [url];
     });
     expect(referencesAsset(document, assetId), 'masih disebut → tidak boleh dihapus').toBe(true);
     // Tapi tetap tidak boleh disajikan: section mati tidak pernah sampai ke tamu.
@@ -50,7 +50,7 @@ describe('penjaga penghapusan aset', () => {
 
   it('tidak tertukar antara dua aset yang id-nya berdekatan', () => {
     const document = documentWith((doc, url) => {
-      doc.sections.find(section => section.type === 'cover')!.data.image = url;
+      doc.sections.find(section => section.type === 'hero')!.data.imageUrl = url;
     });
     expect(referencesAsset(document, '3f2504e0-4f89-41d3-9a0c-0305e82c3302')).toBe(false);
   });
@@ -91,5 +91,14 @@ describe('sapuan aset yatim setelah publish', () => {
 
   it('tidak menyapu apa pun saat undangan belum pernah terbit dan drafnya memakai asetnya', () => {
     expect(orphanAssetIds([assetId], null, { images: [publicMediaUrl(assetId)] })).toEqual([]);
+  });
+
+  it('menemukan URL ornamen unggahan yang bersarang di ornamentOverrides.unggahan (fase 69)', () => {
+    const document = documentWith((doc, url) => {
+      doc.sections[0]!.data.ornamentOverrides = { unggahan: { symbol: { url, width: 200, height: 100 } } };
+    });
+    expect(servesAsset(document, assetId)).toBe(true);
+    expect(referencesAsset(document, assetId)).toBe(true);
+    expect(orphanAssetIds([assetId], document, null)).toEqual([]);
   });
 });

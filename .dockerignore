@@ -25,3 +25,7 @@ Caddyfile
 # Runbook dan skrip operasi dijalankan dari laptop atau dari server, tidak pernah dari dalam
 # image aplikasi.
 ops
+# `packs/` adalah SUMBER ornamen, 31 MB, dan hanya dibaca scripts/ornament-* di laptop.
+# Komponen Vue-nya sudah digenerate dan ikut git di apps/web/components/ornament, jadi tidak
+# ada satu pun jalur build maupun runtime yang membuka direktori ini.
+packs

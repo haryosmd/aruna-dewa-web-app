@@ -43,6 +43,792 @@ alasannya.
 
 ## Sisa
 
+**Fase 77 — hierarki yang bisa dibaca, dan undangan yang akhirnya punya wajah desktop.** Ditulis
+2026-09-22, dari peninjauan pemilik atas hasil fase 76. Delapan butir; tiga cacat terukur, empat
+soal hierarki yang membusuk pelan sejak fase 72, satu fitur yang paling besar dari semuanya.
+
+**Chrome editor tidak punya skala, dan angkanya menjelaskan kenapa ia terbaca acak.** Di
+`components/dashboard/` ada **79 ukuran huruf arbitrer** (`text-[0.9375rem]` dst.) melawan 80
+pemakaian token — dan 73 dari 80 itu token yang sama, `text-caption`. Skala resmi 8 langkah,
+dalam praktiknya, adalah skala 2 langkah ditambah tujuh ukuran liar: 10/11/12/13/14/15/17px.
+**21 arbitrer di antaranya duplikat persis token yang sudah ada** (18× `0.8125rem` = `caption`,
+3× `1.0625rem` = `body-lg`); itu bug konsistensi, bukan kebutuhan desain.
+
+Akarnya di `DESIGN.md:138` — satu baris yang mengaku "7 langkah" lalu mendaftar **8 nama**, tanpa
+tabel, tanpa aturan pemakaian, dan dengan lubang menganga antara `caption` 13px dan `body` 16px.
+Lubang itulah yang diisi 14px (19×) dan 15px (25×), dua nilai terbanyak. **Nol tes menjaganya**,
+jadi nilai liar ke-80 bisa masuk besok tanpa suara.
+
+Akibatnya bisa ditunjuk, bukan diperdebatkan: "Struktur Undangan" 15/700 sementara nama bagian di
+dalamnya 15/600 — judul panel dan isinya seukuran, hierarkinya cuma 100 poin berat. Tab Inspector
+13px lawan nav Toolbar 14px, padahal keduanya pil `font-semibold rounded-full` yang kembar secara
+visual; beda 1px yang tidak pernah diputuskan siapa pun. Chip "Semua perubahan tersimpan" 13/600
+— seukuran subjudul di sebelahnya tapi satu-satunya yang semibold, berwarna, dan ber-pill, jadi
+bobotnya melampaui perannya sebagai status pasif. Dan `Field.vue` menulis `text-[0.8125rem]` di
+baris 29 lalu `text-caption` di baris 35: nilai yang sama persis, dua ejaan, satu komponen.
+
+Jawabannya lima langkah bernama peran — `ui-label` 12 · `caption` 13 · `ui` 14 · `ui-lg` 15 ·
+`body-lg` 17 — menggantikan tujuh, dengan 10px dan 11px dihapus. Input form **tetap 16px**, dan
+itu bukan kelalaian: di bawah itu Safari iOS memperbesar halaman saat field difokus. Penjaga
+berbasis-teks-sumber menolak `text-[<angka>rem]` di seluruh chrome, meniru
+`invitation-breakpoints.spec.ts` yang sudah jadi preseden.
+
+**Tiga cacat lain.** Latar panggung cokelat (`bg-surface-3` = `#f4efe8`) padahal yang diminta
+kanvas putih — dan tokennya **tidak** boleh digeser, karena ia juga hover tiap tombol ghost,
+latar tab, badge netral, `Skeleton`, `Dropzone`, `Input`, `Avatar`, dan lima seksi landing.
+Kepala rail dan tab inspektor ikut tergulir, karena di kedua panel `<aside>` adalah satu-satunya
+penggulung dan headernya saudara kandung daftar: menggulir bagian menghilangkan kotak cari,
+menggulir form panjang menghilangkan Undo/Redo/Simpan berikut keempat tabnya. Dan tombol musik
+tidak ada — bukan karena CSS melainkan karena `Renderer.vue:441` ber-`v-if="music.url"` sementara
+`settings.musicUrl` kosong: **tidak ada lagu bawaan di kode**, berlawanan dengan dugaan pemilik,
+dan tidak ada satu pun tes yang memverifikasi pemutar muncul di panggung editor.
+
+**Yang terbesar: undangan tidak punya wajah desktop sama sekali.** `tokens.layout` bawaannya
+`kartu`, yang di container ≥768px mengunci `.iv-root` jadi `max-width: 480px` di tengah. Jadi
+ketiga lebar pratinjau memang terlihat sama-sama mobile — itu bukan bug tata letak editor,
+melainkan satu-satunya tata letak yang pernah dibuat. Keputusan pemilik: di ≥1024px panel foto
+**Galeri** melebar di kiri dan diam, kolom seukuran ponsel di kanan yang digulir, dan **tamu ikut
+melihatnya**. Tablet tetap satu kolom, hanya melapang.
+
+Yang menghalangi bukan CSS: seluruh container query section membaca `.iv-root`, jadi begitu ia
+jadi grid selebar 1280 tiap section akan menata diri untuk layar lebar padahal duduk di kolom 480.
+Kolom kanan karena itu wajib membawa `container-type` sendiri (`.iv-column`), dan `.iv-root`
+melepasnya. Ukurannya yang membuktikan perubahan ini aman: tinggi render 390 dan 768 harus
+**identik** sebelum dan sesudah.
+
+**Satu kecurigaan yang wajib diukur lebih dulu, karena tata letak desktop berdiri di atasnya:**
+`.iv-root` ber-`container-type: inline-size` berarti `contain: layout`, yang menjadikannya
+containing block untuk keturunan `position: fixed`. Kalau benar, gerbang, pemutar musik, dan dock
+di halaman tamu selama ini berlabuh ke `.iv-root` setinggi ribuan piksel, bukan ke viewport —
+dan e2e tidak menangkapnya karena Playwright menggulir otomatis sebelum klik sementara
+`toBeVisible()` tidak menuntut elemen berada di dalam viewport.
+
+**Terukur sesudah selesai (2026-09-22).** Chrome editor: **117 nilai arbitrer diganti token**, dan
+di browser sungguhan tinggal enam ukuran huruf — 12 · 13 · 14 · 15 · 16 · 17 — dengan 16 khusus
+isian form. Latar panggung `rgb(255,255,255)`. Kolom undangan per lebar: **390 · 640 · 480**
+(desktop lebih sempit daripada tablet karena di sana ia berbagi layar dengan panel foto). Halaman
+tamu 1440: panel galeri **960px sticky** di kiri, kolom undangan 480px mulai di x=960; di 768 satu
+kolom 640px tanpa panel. **1.393 tes unit (92 berkas)**, dan **247 e2e hijau, nol merah** di
+keempat project (256 total, 9 skip) — termasuk axe 0 violation di editor dan halaman tamu.
+
+**Utang fase 76 ditutup di awal.** Suite penuh terakhirnya 236 lewat, 3 merah, ketiganya tes yang
+sama di project sempit (mobile 360, tablet 768, safari 390) dan bukan flake: bungkaman scroll-spy
+berbasis waktu menelan gulir yang datang di dalam jendelanya. Di lebar sempit `openPreview()`
+mengklik tab "Pratinjau", yang memicu `gulirKe()` berikut bungkamannya; di desktop tab itu tidak
+pernah diklik, jadi separuh project hijau dan separuhnya merah. Bungkamannya dicabut seluruhnya —
+pantulan yang dulu ditakutkan tidak bisa terjadi, karena `sorotSection()` sudah menolak id yang
+sama dan tidak pernah memanggil `fokuskanPanggung()`.
+
+---
+
+**Fase 76 — panggung editor berhenti berbohong, dan ornamen bisa disentuh.** Ditulis 2026-09-22,
+dari peninjauan pemilik di layar. Empat temuan; tiga di antaranya bukan selera melainkan cacat yang
+bisa ditunjuk barisnya.
+
+**Pratinjau ponsel menghitung skalanya hanya dari lebar.** `PhoneFrame.vue:54` memakai
+`Math.min(1, hostWidth / width)` dan tinggi tidak pernah ikut — padahal prop `maxHeight` sudah ada di
+komponen yang sama dan sudah dipakai `/order` sejak fase 65. `Stage.vue` tidak pernah mengopernya.
+Di laptop, bezel 390×844 berikut paddingnya jadi ~976px sementara panggung menyediakan ~550px, jadi
+ponselnya berdiri melewati tepi bawah dan pemilik melihat ponsel raksasa yang terpotong.
+
+**Dan yang terpotong itu tidak bisa digulir sama sekali.** `DeviceBezel.vue:38` memasang
+`maxHeight: ${screenHeight}px` bersama `overflow-hidden` **tanpa** gulir di dalamnya, jadi di mode
+iPhone/Android segala isi di bawah 844px benar-benar tidak bisa dicapai. Yang tergulir selama ini
+adalah viewport panggung (`Stage.vue:144`) — ia menggeser *bingkainya*, bukan isinya. Hanya mode
+"Clean" yang pernah bisa digulir, dan e2e sudah mencatat itu apa adanya di `dashboard.spec.ts:668`
+sebagai keterangan, bukan sebagai cacat. Itu bentuk kegagalan yang paling awet: sudah terlihat,
+sudah ditulis, dan tidak pernah dibaca sebagai bug.
+
+Perbaikannya membalik siapa yang menggulung: layar ponsel jadi wadah gulirnya sendiri setinggi
+viewport perangkat, dan `fit` yang sudah ada otomatis jadi "muat berdasarkan tinggi" karena
+`stageHeight` kini sama dengan `screenHeight` — tidak ada rumus baru, hanya satu prop. Konsekuensi
+yang tidak boleh dilewatkan: scroller berada **di dalam** elemen ber-`transform: scale()`, jadi
+`getBoundingClientRect()` sudah pasca-transform sementara `scrollTop` belum. `stageScrollTop()`
+menerima `scale`.
+
+**Dan yang mengunci gulirnya ternyata bukan bezel, melainkan gerbang amplop** — ketahuan hanya
+karena pemilik meninjau hasilnya di layar dan melaporkan bahwa roda tetikusnya masih diam. Gerbang
+di panggung dulu `absolute inset-0`, menindih seluruh tinggi undangan; agar gulir tidak menampakkan
+gerbang tanpa ujung, panggung menguncinya lewat `overflow-y: hidden` selama amplop belum dibuka.
+Terukur pada keadaan pemilik: `overflowY: 'hidden'`, roda 600px → `scrollTop` 0. Itu benar untuk
+tamu dan salah untuk pasangan — yang sedang menyunting undangannya sendiri tidak sedang "diundang",
+dan tidak ada satu pun isyarat bahwa amplopnya harus dibuka lebih dulu. Gerbang kini sekadar anak
+pertama setinggi satu layar; tidak ada yang perlu dikunci. Bonus: ia dapat `id="iv-opening-envelope"`,
+jadi satu-satunya entri rail yang selama ini tidak punya elemen untuk dituju maupun disorot akhirnya
+punya.
+
+**Bezel dibuang seluruhnya, bukan cuma dari bawaan.** Percobaan pertama menyisakannya sebagai opsi
+dan memindahkan bawaan ke `Clean`; itu keliru pada dua hal sekaligus. `useLocalStorage` membuat
+pasangan yang preferensinya sudah `iphone` tidak pernah melihat bawaan baru — pemilik melaporkan
+"masih ada bezel" dan ia benar. Dan `Clean` sendiri lahir sebagai "iPhone tanpa bezel", jadi tanpa
+bezel ia tidak lagi berbeda dari apa pun. Pemilihnya kini menawarkan apa yang benar-benar mengubah
+tata letak: **Ponsel 390 · Ponsel besar 412 · Desktop 1280**, dirender sebagai layar bersudut
+membulat. `DeviceBezel.vue` dihapus; nilai tersimpan lama dipetakan (`iphone`/`bersih`/`tablet` →
+`ponsel`, `android` → `ponsel-besar`) supaya preferensi yang tersangkut ikut sembuh sendiri.
+
+**Rail "Struktur Undangan" tidak pernah mengikuti gulir.** Sinkronisasinya satu arah sejak fase 70:
+rail → panggung lewat `focusSection`. Arah baliknya memakai resep yang sudah hidup di repo —
+`IntersectionObserver` ber-`rootMargin: '-45% 0px -45% 0px'` milik `Dock.vue:33` — dengan dua
+penjaga anti-pantul: diam selagi `gulirKe()` berjalan, dan diam selagi amplop masih mengunci.
+
+**Amplop terasa mati, dan tidak ada yang mematikannya.** `mode="stage"` memang merender gerbang
+hidup, dan e2e mengklik `[data-gate-seal]` di panggung setiap kali suite jalan. Yang keliru adalah
+areanya: satu-satunya target klik adalah segel selebar 4,75rem, sementara callout di bawahnya
+berbunyi "Klik di sini untuk membuka" — kalimat yang tidak ditepati markupnya. Badan amplop dan
+callout ikut jadi pemicu; segel tetap satu-satunya kontrol beraksesibilitas, karena tombol di dalam
+tombol tidak sah dan jalur keyboard tidak boleh bercabang dua.
+
+**Yang baru, bukan perbaikan:** ornamen di panggung mendapat afordans. Kotak putus-putus tipis saat
+hover, dan klik memindahkan panel kanan ke tab Ornamen dengan kartu slotnya tersorot — bukan
+langsung membuka Studio, supaya pasangan membaca dulu slot apa yang sedang ia sentuh dan di mana
+keping itu dipakai. Substratnya sudah ada seluruhnya: `data-iv-ornament` sudah terpasang di hampir
+tiap ornamen (dipakai `drawSvg`), `sectionOrnamentSlots` sudah memetakan slot per bagian, dan
+`bukaStudio()` sudah menerima slot. Yang kurang hanya nama slotnya di markup — `data-iv-slot` di
+samping atribut yang sudah ada, dijaga vitest yang membaca sumbernya.
+
+Afordans itu **tidak pernah menyeberang ke halaman tamu**: seluruhnya digerbangi `.iv-root--stage`,
+yang hanya ada di panggung editor.
+
+---
+
+**Fase 75 — sisa yang tertunda ditutup, dan satu kartu hitam yang tidak pernah ketahuan.** Ditulis
+2026-09-22, sesudah keenam butir yang belum tercentang di `FASE-72-SISA.md:142-151` ditelusuri sampai
+ke kodenya untuk menjawab satu pertanyaan: mana yang benar-benar perlu dikerjakan.
+
+Jawabannya tidak seragam, dan satu penelusuran membalik urutannya.
+
+**Butir "share-card tidak pernah benar-benar dirender di tes" ternyata bukan utang kebersihan.**
+`fetchPhoto` (`share-card.service.ts:86`) menerima `image/webp`, tapi `@resvg/resvg-js` tidak punya
+dekoder WebP. Diukur langsung lewat satori + resvg yang sudah terpasang: latar WebP menghasilkan PNG
+4.411 byte dengan rata-rata kanal 0,0 dan stdev 0,0 — **kanvas kosong seluruhnya** — sementara sumber
+PNG yang sama menghasilkan 466.044 byte, rata-rata 102,6, stdev 51,5. Dan `normalizePhoto` mengubah
+tiap foto unggahan jadi WebP, jadi setiap pasangan yang memilih `backgroundMode: 'foto'` selama ini
+mengirim kartu **tanpa fotonya** ke WhatsApp dan Facebook — bukan kartu kosong, melainkan lapisan
+gelap, ornamen, dan teks tanpa latarnya. Itu yang membuatnya bertahan lama: hasilnya terlihat
+seperti kartu bertema gelap yang disengaja, bukan seperti kegagalan. Tes elemen yang ada tidak bisa menangkapnya karena
+tidak pernah memanggil satori; e2e tidak bisa karena hanya memeriksa `href`. Persis bentuk kegagalan
+yang dijanjikan tertangkap oleh "dirender sungguhan". `sharp` masuk `apps/api` untuk mendekode satu
+salinan sementara di memori; WebP tetap format simpan dan halaman undangan tidak berubah sedikit pun.
+
+**Tiga butir lain jauh lebih murah dari dugaan, karena substratnya sudah ada.** `PublishedRevision`
+sudah menyimpan snapshot dokumen tiap terbit dan tidak pernah dihapus — riwayat versi tinggal dua
+endpoint dan satu panel. Backend impor Google Sheets **sudah selesai** sejak fase awal
+(`google-sheets.client.ts` + endpointnya); yang kurang cuma Google Picker di web, dan itu menuntut
+konfigurasi Google Cloud milik pemilik, jadi tombolnya dipasang di belakang env dan tidak dirender
+selama env-nya kosong. `catalog.packages` sudah membawa `photoLimit: 15/30/60` dengan **nol pembaca** —
+datanya mati, bukan tidak ada; yang belum ada cuma `Invitation.packageId`.
+
+**Satu butir terbukti mati dan dibuang.** `WishCard.vue:13` menangani ejaan `yes`/`no` yang tidak
+pernah bisa lahir: `Wish.attendance` lahir 2026-09-20 tanpa backfill, penulisnya satu, dan divalidasi
+`z.enum(['hadir','belum-pasti','berhalangan'])`. Yang justru berbahaya bukan cabang matinya melainkan
+penampung di ujungnya, yang menampilkan setiap nilai asing sebagai "Belum pasti" diam-diam.
+
+**Satu butir tetap ditunda, dan alasannya ditulis supaya tidak ditanya ulang.** Undang kolaborator:
+`InvitationMember` + `requireInvitationRole` sudah dipakai di seluruh API, tapi `EDITOR`/`VIEWER` tidak
+bisa dicapai sama sekali — nol endpoint, tidak ada `TokenPurpose` untuk undangan, tidak ada email,
+tidak ada UI. Itu satu fase sendiri, bukan sisa fase 74. Keputusan pemilik.
+
+**Impor tamu mengikuti sheet pemilik, bukan sebaliknya.** Sheet tamu pernikahan yang sungguhan
+berspanduk, berblok ringkasan, berkolom A kosong, dan datanya mulai baris 16 — dan karena
+`parseGuestText` hanya melihat record pertama untuk mencari header, sheet itu **tidak bisa diimpor
+hari ini**: spanduknya dibaca sebagai header dan seluruh kolom jatuh ke pemetaan posisi. Hasilnya
+bukan galat melainkan sampah yang terlihat berhasil. Jadi templatnya meniru bentuk sheet (lengkap
+dengan kolom Anak yang murni pendataan dan tidak pernah wajib, dan kolom nomor WhatsApp), dan
+**parsernya yang mengalah**: preamble dilewati, kolom kiri kosong dibuang, nomor baris yang dilaporkan
+tetap nomor baris spreadsheet aslinya, dan ±190 baris kosong berisi `FALSE` dilewati diam-diam alih-alih
+jadi 190 galat. Empat kolom baru (`guestFrom`, `childCount`, `invitationKind`, `notes`) disimpan
+sungguhan; `Status` sengaja **tidak** — ia sudah diturunkan dari `sentAt` + RSVP, dan kolom kedua yang
+mengklaim hal sama pasti menyimpang.
+
+**Dan satu e2e merah yang bukan utang fase mana pun** akhirnya diperbaiki: `[mobile] guest management`
+364 vs 360, sudah dilokalisasi di `FASE-72-SISA.md:221-244` sampai `grid-template-columns: 343.781px`.
+Dua lapis, karena satu lapis tidak cukup — `DashboardShell` mendapat `minmax(0,1fr)` yang menutup
+seluruh kelas bug itu untuk tiap halaman dasbor, dan kelompok pil filter yang min-content-nya ±345px
+dibuat boleh membungkus. Diukur di antara keduanya, bukan sekali di akhir.
+
+**Fase 74 — template jadi struktural, dan sisa fase 73 ditutup.** Ditulis 2026-09-22. Dua
+bagian, dan bagian keduanya yang jadi judul.
+
+*Sisa fase 73 (74.1–74.6).* Enam butir yang belum tercentang di
+`docs/features/invitation-builder/FASE-72-SISA.md`, ditambah dua koreksi. Koreksi pertama:
+penanam proxy Vue ke dalam dokumen bukan dua situs melainkan **enam** — `ExtrasForm` menulis
+`[...rows(key), {…}]` yang membawa seluruh baris lama sebagai proxy, `tulisGaya()` menyalin
+dangkal `textStyles` yang isinya objek, dan ketiga penulis `tokens` membawa `tokens.motion`
+by-reference. `salinDokumen()` yang memakai JSON tetap ada, tapi turun pangkat dari "satu-satunya
+yang menahan bug" jadi jaring terakhir; yang memperbaikinya adalah `bersihkan()` di titik tulis.
+Koreksi kedua: galeri `viewLabel`/`subtitle` **tidak** tertukar — halaman terbit referensi
+menaruh "LIHAT FOTO" di tiap ubin dan satu caption di bawah grid, persis seperti kode, jadi yang
+dibetulkan dokumennya. Sisanya: tinggi pratinjau yang masih `100svh` di empat tempat dan karena
+itu membaca jendela editor (`PhoneFrame` tidak pernah menghitung tinggi layar dan tidak
+menerbitkan satu pun CSS var; `DeviceBezel` sudah punya prop `screenHeight` yang **yatim**),
+`steps`/`items`/`colors`/`attire` yang disunting `ExtrasForm` tapi tidak ada di `sectionFields`
+sehingga lolos `.passthrough()` tanpa batas, penjaga kelengkapan renderer (`Renderer.vue:152`
+membuang bagian tanpa komponen diam-diam), sistem `copy` yang tinggal permukaan formnya yatim,
+dan pangkas foto di Pustaka Saya yang dijanjikan `FASE-72.md:488`.
+
+*Dua sumbu (74.7–74.11).* Hari ini `templateId` mengompres dua hal: struktur dan warna.
+Akibatnya "template baru" **tidak bisa dinyatakan** — sebuah record template tidak punya tempat
+untuk menyebut bagiannya, dan `Renderer` memilih keluarga komponennya dari `schemaVersion`.
+Payload undang.site yang dibedah fase 72 justru memakai dua sumbu (`templateCode` + `themeId`),
+dan seluruh salinan di produk kita sudah menyebut `templateId` sebagai "tema". Jadi: dua kunci
+opsional baru di akar dokumen — `themeId` (absen = ikut `templateId`) dan `structureId` (absen =
+diturunkan dari `schemaVersion`) — **tanpa** menaikkan `schemaVersion` ke 3, karena tipe
+bagiannya tidak berubah dan versi ketiga akan menuntut jendela pembebasan kedua di
+`hasDesignChange` yang persis mekanisme cacat 73.1. Registry `packages/contracts/src/structures.ts`
+memegang `elegance` (dua belas bagian + empat ekstra) dan `warisan` (v1, pensiun), masing-masing
+membawa daftar bagian, bagian wajib, bagian yang lahir menyala, daftar `headless`, dan keluarga
+komponennya. v1 berhenti jadi pengecualian dan menjadi template struktural yang pensiun — gerakan
+yang sama dengan `liveTemplateIds` untuk tema pensiun. Yang **tetap global** karena berkunci pada
+tipe bagian, bukan template: `sectionFields`, `sectionMeta`, `sectionOrnamentSlots`, `sectionRole`,
+dan terutama **`sectionFeature`** — `publish()` menggerbanginya, dan entri per-struktur akan
+membuka jalan menyelundupkan bagian berbayar ke paket Mula. Pindah struktur mengganti semua id
+bagian, jadi ia dijaga dengan cara 73.1: `restructureDocument()` yang murni dipakai sebagai
+**pembanding** sidik jari, bukan gerbangnya yang dilewati. Sidik jari membaca nilai **teresolusi**
+— menulis `document.structureId` mentah akan mengunci seluruh pelanggan tanpa add-on `design`
+pada simpan pertama, cacat 73.1 kata per kata.
+
+Pemilih struktur di `/order` dirender `v-if="liveStructureIds.length > 1"` dan karena itu
+**belum terlihat**: struktur kedua sengaja tidak dikirim di fase yang sama, supaya nilai
+pemisahannya dibuktikan gerbang tes dan oleh `warisan` yang bolak-balik utuh, bukan oleh kulit
+kedua yang menyembunyikan cacatnya. Hasil bedah referensi akhirnya punya folder yang dijanjikan
+`FASE-72.md:2`: `docs/features/invitation-builder/referensi/undang-site/`, sebagai teks karena
+`.gitignore` menjaga biner `docs/` di luar git.
+
+**Fase 75 selesai 2026-09-22.** Terukur: `pnpm test` 1323 → **1377 hijau** (89 berkas), typecheck
+dan lint bersih, `pnpm test:integration` **49 hijau**, dan seluruh suite e2e di empat project
+**207 lulus · 0 merah · 9 dilewati** dalam 12,5 menit — termasuk `[mobile] guest management` yang
+merah sejak fase 72. Sembilan yang dilewati: enam bawaan, plus tiga project non-desktop pada tes
+kartu bagikan yang memang sengaja hanya mengambil PNG-nya sekali.
+
+**Cacat terbesar fase ini tidak ada di rencananya.** "Share-card tidak pernah dirender di tes"
+dicatat fase 73 sebagai utang tes; ia ternyata menyembunyikan kartu yang terbit tanpa fotonya.
+resvg tidak punya dekoder WebP dan tidak melempar — ia menggambar kosong — sementara
+`normalizePhoto` mengubah tiap unggahan jadi WebP. Diukur di stack sungguhan dengan foto WebP
+unggahan: **sebelum 57.190 byte rata-rata kanal 31,3, sesudah 375.388 byte rata-rata 60,6**, dan
+kedua PNG-nya dilihat. Angkanya bukan 0,0 karena lapisan gelap, ornamen, dan teks tetap tergambar —
+dan itu justru yang membuatnya bertahan lama: hasilnya terlihat seperti kartu bertema gelap yang
+disengaja.
+
+**Penjaganya sempat lahir tidak bisa merah, dan itu ditulis di komentarnya.** Versi pertama hanya
+menuntut `mean > 20`; kartu yang fotonya gagal tetap lolos ambang itu. Dibuktikan dengan mencabut
+transkodenya — kasusnya tetap hijau. Bentuk yang benar membandingkan dua sisi: harus jauh dari
+kartu tanpa foto **dan** dekat dengan kartu berfoto PNG. Dengan itu, mencabut transkode membuat dua
+kasus merah dan mengembalikannya membuat sebelas hijau.
+
+**Tersangka yang dicatat penjejak untuk e2e mobile meleset, dan peringatannya tepat.** Bukan
+kelompok pil filter (min-content 302,77, di bawah jatah 320) melainkan `section.card` Composer
+(347,13), rantainya `#share-live-banner` 305,13 → `+ p-5` → kolom grid `auto` → `scrollWidth` 367
+lawan 360. Dan peringatan "mengubah tata letak tanpa melihat layarnya adalah cara membuat cacat
+kedua" hampir kena: `minmax(0,1fr)` di `DashboardShell` **membuat tesnya hijau** sambil membuat
+kartunya memotong isinya sendiri, 325 lawan 318. Obat sebenarnya `grid-cols-[minmax(0,1fr)]` pada
+kartu Composer, yang mengembalikan pekerjaan memotong ke `truncate`; perbaikan di `DashboardShell`
+tetap dipasang tapi perannya ditulis apa adanya — penjaga kelas, bukan penyembuh kasus ini.
+
+**Lembar tamu pemilik yang sungguhan tidak bisa diimpor sama sekali sebelum fase ini**, dan bukan
+dengan galat melainkan dengan sampah yang terlihat berhasil: spanduk judulnya terbaca sebagai baris
+header. Parser dibuat mengalah pada empat titik, template XLSX dibuat meniru bentuk lembar itu, dan
+templatnya sekaligus jadi fixture parsernya — bulatan yang langsung menangkap dua cacat ("Orang"
+belum jadi sinonim kuota, dan `safeSpreadsheetCell` yang keliru dibubuhkan pada literal sendiri).
+Diverifikasi dua arah di stack: template diunduh dari API lalu diurai kembali utuh, dan ekspor
+lembar pemilik (kolom A kosong, header baris 15, 190 baris `FALSE`) lewat preview → commit → dua
+tamu tersimpan dengan keempat kolom barunya.
+
+**Satu ketidakpastian yang ditulis apa adanya.** Putaran empat-project pertama malam itu melaporkan
+dua merah di `[safari]` — `studio ornamen` dan `kartu bagikan` — keduanya gagal pada simpan draft.
+Tidak satu pun bisa diulang: `--project=safari` sendirian **51/51**, tes ornamennya sendirian
+lulus, dan putaran empat-project berikutnya **207/207**. Putaran pertama itu dimulai tepat sesudah
+`nuxt.config.ts` dikembalikan, jadi server dev-nya masih memulai ulang — bentuk kegagalan yang
+sudah kena sekali di fase ini juga, saat e2e riwayat lulus sendirian lalu merah dalam rombongan
+karena kliknya mendarat sebelum Vue terpasang. Dicatat sebagai **tidak bisa diulang**, bukan
+sebagai "sudah diperbaiki".
+
+**Satu butir sengaja tidak dikerjakan:** undang kolaborator. `InvitationMember` dan
+`requireInvitationRole` sudah dipakai di seluruh API, tapi `EDITOR`/`VIEWER` tidak bisa dicapai
+sama sekali — nol endpoint, tidak ada `TokenPurpose` untuk undangan, tidak ada email, tidak ada UI.
+Satu fase sendiri, bukan sisa. Keputusan pemilik.
+
+Sesudah fase ini `docs/features/invitation-builder/FASE-72-SISA.md` **tidak punya satu butir pun
+yang belum tercentang**.
+
+**Fase 74 selesai 2026-09-22.** Terukur: `pnpm test` 1241 → **1323 hijau**, typecheck dan lint
+bersih, `pnpm test:integration` **49 hijau** dan fixture QA tertulis untuk pertama kalinya sejak
+fase 72, `playwright --project=desktop` **51/51**, dan seluruh suite di empat project **197 lulus · 1
+merah · 6 dilewati** — angka yang sama persis dengan pengukuran sebelum bagian A dikerjakan,
+jadi pemisahan dua sumbu tidak membawa satu pun regresi e2e. Tiga penjaga baru dibuktikan bisa merah lalu
+dikembalikan: mencabut satu `bersihkan()` di `tulis()`, menghapus `quote` dari peta komponen
+(merah di tes DAN di compiler), dan menulis `structureId` mentah di sidik jari — yang terakhir
+menjatuhkan tiga tes yang justru bernama "draft pra-fase-74 tidak boleh terkunci". Pemisahan dua
+sumbu dibuktikan dua arah di stack demo dengan menyetel `warisan` hidup sementara: pemilih
+struktur muncul di `/order`, tombol pindah muncul di editor, dialognya menyebut enam bagian yang
+hilang, dan sesudah dikonfirmasi rail maupun panggung berpindah ke keluarga komponen v1.
+Satu e2e tetap merah — `[mobile] signed-in editor and guest management`, 364 vs 360 — dan
+**dibuktikan bukan regresi fase ini** dengan menjalankannya pada `d3a4ffb`; penelusurannya
+berhenti di `grid-template-columns: 343.781px` pada halaman Generator dan dicatat di penjejak.
+
+**Fase 73 — mengunci fase 72.** Ditulis 2026-09-21 sesudah pemeriksaan ulang fase 72. Dua cacat
+yang ditemukan saat verifikasi 2026-09-20 memang benar diperbaiki, tapi di belakangnya ada tiga
+cacat yang memblokir pelanggan sungguhan dan tidak tersentuh tes mana pun: (1) pasangan tanpa
+add-on `design` yang draftnya masih v1 **tidak bisa menyimpan apa pun selamanya** — editor
+memigrasi dokumennya di klien, lalu gerbang desain membandingkan sidik jari v1 terhadap v2 yang
+urutan bagiannya memang berganti semua; (2) `gift` lahir menyala di dokumen bawaan padahal bukan
+fitur paket Mula, jadi **setiap undangan baru di paket termurah gagal terbit**; (3)
+`migrateLegacyDocument` membuang `enabled` milik empat bagian, membawa musik yang sengaja
+dimatikan, dan bisa menulis ISO 24 karakter ke kolom berbatas 20 sehingga dokumen hasil migrasi
+gagal validasi. Ditambah dua penjaga yang belum ada: riwayat undo masih terkubur di dalam SFC
+`editor.vue` dan satu-satunya buktinya sebuah e2e yang `test.skip` sendiri tanpa akun QA, dan
+aturan "undangan nol breakpoint viewport" (DESIGN.md) dipatuhi 100 % tanpa satu pun tes yang
+mencegahnya merayap kembali. Daftar centang lengkap, beserta utang P2 dan daftar yang resmi
+ditunda, ada di `docs/features/invitation-builder/FASE-72-SISA.md` — **itu berkas penjejaknya,
+bukan berkas ini.** Fase 72 sendiri belum masuk satu commit pun saat fase 73 ditulis; enam commit
+irisannya juga didaftar di sana.
+
+**Fase 72 — template utama "Elegance" dan editor ala Undangan Studio.** Ditulis 2026-09-19,
+dikerjakan 2026-09-20. Pemilik membedah undang.site (editor "Undangan Studio" dan undangan
+terbitnya) lalu memutuskan: struktur undangan **mengikuti format bawaannya persis** — dua belas
+bagian (Opening Envelope, Hero, Mempelai, Hitung Mundur, Rangkaian Acara, Lokasi, Unduh Mantu,
+Quote, Galeri, Hadiah, Ucapan, Penutup) dengan kata-kata **di dalam `data` tiap bagian** — dan
+menjadi template utama kita; editornya "lebih simple" mengikuti tata letak referensi, ditambah
+manajemen ornamen yang sudah kita punya. **Rencana kanvas ala Figma (elemen bebas, drag,
+gerak per aset) dibuang atas perintah pemilik** — jangan diusulkan lagi. Rencana lengkap
+berikut referensi UI (label kolom, pustaka lagu, halaman Generator, Card Style) ada di
+`docs/features/invitation-builder/FASE-72.md`.
+
+*Yang dibangun.* (72.0) `packages/contracts/src/sections.ts`: `schemaVersion: 2`, `sectionFields`
+per tipe (label form + jenis kolom → skema zod `sectionDataSchema()` + form editor yang
+digenerate), `textStyles` per kolom, `background` dan `motion` per bagian, `settings` musik,
+`shareCard`, `tokens.layout`; `createDefaultDocument()` kini v2, `createLegacyDocument()` untuk
+fixture, `migrateLegacyDocument()` dipanggil **editor saat memuat** (server tidak memigrasi;
+versi terbit v1 tetap v1 sampai diterbitkan ulang). (72.1) Toolbar: Editor | Generator |
+Ucapan + status Published; rail Wajib/Opsional dengan tombol mata dan drag; inspektor empat tab
+**Bagian | Global | Ornamen | Kartu** dengan baris ikon undo · redo · pustaka · riwayat ·
+pintasan · simpan · ciut. (72.2) Panggung hidup `mode="stage"` — amplop dirender dan bisa
+diklik, partitur berjalan — dengan zoom 50–100 % dan bezel iPhone/Android/Desktop/Clean.
+(72.3) Tab Global: kartu Musik (⭐ · genre · durasi · volume), Fokuskan untuk Layar, Preset
+Theme (4 palet per tema, `utils/theme-palettes.ts`, dijaga spec kontras), Kustom Warna.
+(72.4) `TextStyleField`: font tema · warna · ukuran px · tebal · miring · reset. (72.5) Tab
+Ornamen: slot bagian aktif + ringkasan penuh + Studio. (72.6) Generator (template WhatsApp
+lima gaya + daftar tamu + Kirim WA) dan Ucapan. (72.7) Tab Kartu + `GET
+/public/share-card/:slug.png` (satori + resvg) sebagai og:image. (72.8) Modal "Pustaka Saya"
+(`useMediaLibrary`, satu instance per halaman) dan kartu "Foto komponen". Renderer v2 di
+`components/invitation/elegance/*.vue`, memakai tema, ornamen, dan partitur GSAP kita — gerak
+per bagian adalah pembeda dari referensi yang hanya menggerakkan amplop.
+
+**Fase 72 selesai 2026-09-20.** Terukur di editor 1440×900 pada undangan yang dimigrasi dari v1:
+rail menampilkan 16 bagian (12 Elegance + 4 ekstra) dengan lima bertanda Wajib tanpa tombol mata;
+panggung iPhone membuka amplop sungguhan lalu memutar partitur; Gaya teks 40px pada "Nama mempelai"
+mengubah `font-size` judul panggung 46,8 → 40px; Simpan mengembalikan "Semua perubahan tersimpan";
+tab Kartu mengganti panggung dengan pratinjau 1200×630 dan `GET /v1/public/share-card/*.png`
+menjawab 200 image/png. `pnpm test` 1201 hijau, `lint` dan `typecheck` bersih, e2e desktop 51/51
+hijau (dashboard 22 + public 29) pada stack non-demo. Dua cacat ditemukan saat verifikasi dan
+diperbaiki: undo setelah menggeser urutan tidak pernah kembali (proxy Vue masuk dokumen →
+`structuredClone` melempar di `undo()`), dan kartu 480px memakai `@media` sehingga pratinjau
+Desktop bergantung pada lebar jendela editor (kini `@container`).
+
+**Fase 71 — form bagian yang utuh, dan gulir yang bocor lewat `sr-only`.** Ditulis 2026-09-19
+dari tiga catatan pemilik di atas tangkapan layar editor: halaman editor di 1440×900 masih bisa
+digulir sebagai halaman — studio naik, sisanya putih — padahal ketiga panel sudah menggulung
+sendiri; blok "Kata-kata" di tab Tema salah nama dan salah tempat, karena memilih "Cover pembuka"
+di rail semestinya membawa *semua* yang mengubah bagian itu (isi, ornamen, tulisan), bukan
+menyuruh pasangan pindah tab dan mencari grup bernama sama; dan tiap kolomnya harus dinamai
+menurut fungsinya "seperti form", bukan istilah desain ("kicker"). Catatan keempatnya — kanvas
+bergaya Figma — ditulis sebagai fase 72, bukan dikerjakan di sini.
+
+**Yang dibangun:** (1) Gulir bocor. Diukur di browser: `document.scrollHeight` 2168 pada
+viewport 900 padahal `<main>` tepat 900; menyembunyikan semua `.sr-only` mengembalikannya ke 900,
+dan satu-satunya `.sr-only` yang berada di luar viewport adalah input berkas `UiDropzone`
+(`offsetParent = body`, top 2167). `.sr-only` itu `position: absolute`; label Dropzone (`grid`)
+tidak ber-posisi, jadi containing block-nya viewport dan `overflow: hidden` milik `<main>` tidak
+mengklipnya — persis kelas bug `.table-wrap` di `main.css`. Label Dropzone jadi `relative`, dan
+akar `DashboardShell` varian studio dipagari `lg:relative lg:h-svh lg:overflow-hidden` supaya
+elemen absolut tersesat berikutnya mati di pagar, apa pun sumbernya. E2e `studio tidak menarik
+gulir dokumen` mengukur `scrollHeight <= innerHeight` di tab Bagian (musik, cover) dan Tema, lalu
+memastikan `scrollTo(0, 9999)` tetap di 0. (2) `CopyForm.vue` dihapus; `CopyFields.vue`
+merender kolom wording bagian yang terpilih di **tab Bagian**, dikelompokkan menurut fungsi
+("Judul & pengantar", "Tombol", "Pesan setelah menjawab", "Saat kosong"), tanpa judul payung —
+label kolom ditulis ulang per fungsi ("Teks kecil di atas judul", "Tulisan tombol kirim").
+`copyGroups` tidak berubah strukturnya (tesnya bijektif); `copyGroupsFor(section)` memetakan,
+dan `gate` menumpang di cover karena amplop hidup di depan cover dan tidak punya entri rail.
+Tombol "Kembalikan bawaan bagian ini" → `kembalikanCopyBagian(section)` hanya menghapus kunci
+grupnya; tab Tema kembali murni global dan hanya menyisakan satu baris "n kalimat ditulis ulang ·
+Kembalikan semua". (3) `sectionOrnamentSlots` di `ornament-slots.ts` — slot mana yang benar-benar
+dirender tiap section, dibaca dari `components/invitation/` dan dijaga vitest yang membaca
+sumbernya — dan `SlotSummary` menerima `slots` supaya form tiap bagian memuat kartu "Ornamen di
+bagian ini" berisi hanya slot itu; nilainya tetap global (satu keping dipakai beberapa bagian)
+dan kartunya mengatakan itu. Cover tetap memegang ringkasan penuh enam belas slot.
+
+**Fase 71 selesai 2026-09-19.** Terukur di 1440×900: `document.scrollHeight` 2168 → 900 dan
+`scrollTo(0, 9999)` tetap di 0 pada tab Bagian (musik, cover) maupun Tema. Form RSVP kini:
+kolom isi → kartu "Ornamen di bagian ini" (Rangkaian, Segel) → tiga belas kolom tulisan dalam
+empat sub-blok ("Judul & pengantar", "Pilihan jawaban", "Tombol", "Pesan setelah menjawab");
+axe 0 pelanggaran pada panel bagian RSVP. Mempelai memuat tiga slot (Rangkaian, Sudut, Pemisah),
+tanpa keping latar dan tanpa kembalikan-semua. Hint per kolom yang terulang tiga belas kali
+diganti satu kalimat di kepala kartu. Vitest 1133 (web 13 spec copy, 35 spec slot termasuk
+penjaga yang membaca sumber section), `lint`, `typecheck` hijau. E2e `dashboard.spec.ts` 72/84 di
+empat project: yang merah adalah `signing in elsewhere` (empat project) dan `device preview`
+safari — keduanya diulang pada worktree commit **sebelum** fase 71 dengan pasangan port sendiri
+dan gagal dengan angka yang sama persis (`login?next=` tanpa `reason`, 5832 < 5923), jadi
+bukan regresi fase ini melainkan keadaan fixture/stack lokal; `background music` safari lulus
+saat diulang. Tab browser yang membuka editor 3000 dengan akun QA yang sama ternyata juga
+mencabut sesi tes — ditutup sebelum pengukuran ulang. Di CI PR #6, `verify` hijau tapi e2e desktop merah pada
+`dashboard screens are accessible`: `color-contrast` di halaman editor tanpa node — `useArunaMotion`
+men-tween `opacity` dari 0 dan runner yang lambat membuat axe membaca panggung di tengah tween.
+Scan dasbor kini mengecualikan `[data-preview-stage]` (undangan diaudit di `public.spec.ts` pada
+ukuran aslinya) dan pesan assert-nya menuliskan target node.
+
+**Fase 70 — rail menggulir panggung, kartu ornamen bersih, bank bingkai dirapikan.** Ditulis
+2026-09-19 dari tiga catatan pemilik di atas tangkapan layar editor dan Studio Ornamen: memilih
+bagian di "Struktur undangan" tidak menggerakkan panggung; kartu ornamen di inspektor memuat tiga
+baris teks per slot; dan sembilan bingkai yang ia tandai "hapus" masih tayang, ditambah satu ubin
+referensi yang meluber dan satu bingkai referensi yang "belum dibelah kiri–kanan".
+
+**Yang dibangun:** (1) `Stage.vue` menerima `focusSection` (type + nonce) dan menggulir viewport
+`overflow-y-auto`-nya sendiri — bukan `window`, `scroll-behavior: smooth` di `html` tidak
+diwarisi — ke `#iv-<type>` yang sudah dipasang tiap section, diukur dengan `getBoundingClientRect`
+karena render 390px di-`scale()`; offset 96px supaya bagian berdiri di bawah pemilih perangkat;
+di ponsel gulirnya dikirim ulang saat tab Pratinjau dibuka. (2) `SlotSummary` jadi grid dua kolom
+ubin berlabel (`SlotCard.vue`): pratinjau, nama slot, nama glyph, Ganti. Hint dan syarat slot
+dicabut dari kartu — mereka sudah ada di header Studio saat slot dibuka. (3) Tidak pernah ada
+mekanisme "berhenti tayang" yang selamat dari fase 59: `kandidat()` membaca seluruh bank, jadi
+pensiun fase 58 diam-diam batal. Kini ada `ornamenDisembunyikan` di `ornament-slots.ts`, dibaca
+hanya oleh `kandidat()` — sembilan id itu tetap di bank (enam bawaan tema pensiun yang dipindai
+gerbang keunikan) dan tetap sah dirender bila sudah terpilih. (4) Ubin `StudioTile` dan kotak
+pratinjau memakai `grid-rows-[minmax(0,1fr)]`: track `auto` mengikuti kontribusi min-content
+`<img>` referensi (aset 1599×3096 minta ±124px pada lebar 64px) dan melampaui `h-20`. (5)
+`bingkai-ukir` di pack `canva-putih-cokelat` dipecah di x 405 menjadi `bingkai-ukir-kiri`/`-kanan`
+kategori `corner` — keputusan fase 59 "tidak dipecah" dibalik pemilik; pipeline referensi dan
+metrik dijalankan ulang, 65 → 66 aset.
+
+**Fase 70 selesai 2026-09-19.** Terukur di 1440: klik RSVP → bagian berdiri 96px di bawah tepi
+viewport (gulir 3416px), Galeri 96px, Cover 86px (dijepit di 0). Studio Bingkai tema Bloom:
+Semua 34 → 24 (sembilan disembunyikan, satu pindah ke Sudut), Bawaan 16 → 7, seluruh ubin
+80px, gambar `lengkung-latar` 62px. Sudut: 46 kandidat termasuk dua paruh ukir. Vitest 788,
+`lint`, `typecheck` hijau; e2e rail + ornamen 12/12 di desktop, tablet, mobile, safari. Dua hal
+yang baru terlihat lewat e2e itu: toolbar fase 67 meluber ke samping di 360px (tombol aksi kini
+membungkus), dan gulir yang dipanggil tepat setelah tab Pratinjau dibuka jatuh pada viewport yang
+belum bisa menggulir karena `PhoneFrame` masih memegang tinggi 0 — diulang per frame sampai bisa,
+lalu dirapikan sekali setelah mengendap.
+
+**Fase 69 — "Buat tema versi Anda sendiri".** Ditulis 2026-09-19 dari permintaan pemilik saat
+menyetujui fase 67: "semua wording, semua aset, bingkai, motion bisa diganti", tombol di landing,
+dan aset amplop yang "dipotong" ikut bisa diganti. Dua keputusan pemilik (sesi yang sama):
+unggahan **raster transparan saja — SVG ditunda** ke fase lain; **bukan tingkat harga baru** —
+seluruhnya di balik add-on `design` yang sudah ada.
+
+Yang sudah ada sebelum fase ini: warna bebas, huruf judul/isi terenumerasi, ubin latar, kepekatan
+ornamen, ornamen per slot dari bank (termasuk segel — yang "dipotong" itu), komposisi cover, motion
+galeri. Yang dibangun, berurutan, tiap langkah satu commit:
+
+(1) **Kata-kata.** `copyKeys` tertutup di contracts (44 kunci; batas 40/80/240 per jenis) dan
+`copy` opsional di dokumen. Bawaan di `utils/invitation-copy.ts` = teks lama persis, `t(key)` di
+konteks renderer; `CoverGate` dan tiga belas section membaca lewatnya. Form "Kata-kata" di tab Tema
+(`CopyForm`, `<details>` per bagian, placeholder = bawaan, tulis saat `change`); kosong/sama
+dengan bawaan dihapus dari dokumen. String konten lama (`text(section, key)`) tidak dipindah;
+aria, toast, dan state "Menyimpan…" tetap tetap.
+(2) **Amplop.** Kantong dan flap — dua `<svg>` inline terakhir di `CoverGate` — jadi lima glyph
+`amplop-*` berkategori `envelopePocket`/`envelopeFlap` (camelCase: `bacaBank()` forge hanya
+membaca `\w+`), slot ke-10 dan ke-11, bawaan di 5 tema hidup dan 8 set pensiun. `fitOf()` tidak
+memberi lencana garis pada lipatan kertas; forge dapat ambang elemen untuk dua kategori itu dan
+tiga deklarasi rectilinear beralasan. Gerbang `data-draw` tetap dipenuhi (garis tepi), aman
+karena selektor motion hanya menyentuh `[data-iv-ornament] [data-draw]`.
+(3) **Gerak per undangan.** `tokens.motion { amplop: pelan|sedang|cepat, masuk: rise|sweep|iris|
+silhouette }`, opsional, "ikut tema" = kunci dihapus. `motion-envelope.ts`: `sedang` adalah fase 68
+persis, segel tetap literal (fase 68 menolak `timeScale` global). `terapkanMotionDokumen()`
+menimpa `entrance` partitur tema; tema lama (Bloom) mendapat partitur minimal hanya bila pasangan
+memilih. `MotionPicker` di tab Tema, dua `<select>`.
+(4) **Ornamen unggahan (raster).** `mediaRules.ornament` (PNG/WebP, 300 KB), `MediaAsset.kind`
++ `width`/`height` (migrasi + backfill), `?jenis=ornament` dinyatakan klien karena PNG yang sama
+bisa foto atau ornamen. `ornament-intake.ts` membaca IHDR/VP8X/VP8L tanpa `sharp`: dimensi dan
+kanal alpha wajib — ornamen tanpa alpha ditolak dengan kalimat. Disimpan di
+`ornamentOverrides.unggahan[slot] = { url, width, height }` dengan **URL publik penuh** karena
+`asset-usage.ts` memutuskan apa yang disajikan tamu dengan mencari URL itu; `OrnamentSet` tema
+tetap id-only, renderer menerima `ResolvedOrnamentSet`. Sembilan slot skalar boleh; amplop (harus
+melar dan diwarnai) dan `layers` (aturan berat) tidak. Tab "Unggahan" di Studio: dropzone, ubin,
+hapus; `Glyph.vue` merender unggahan lewat `ReferenceAsset`.
+(5) **Tombol landing** di header `Themes.vue` → `/order?langkah=tema&addon=design`;
+`langkahDariQuery()` membuka wizard di langkah Tema, add-on Desain tercentang, `checkout()`
+mengembalikan ke langkah 1–2 yang kosong.
+(6) **Gerbang.** `designFingerprint` menyortir `tokens` sampai ke dalam, membaca `copy` dan
+`unggahan`; `{}` ≡ absen di ketiganya. Pesan 400 dan `#design-locked` menyebut kata-kata dan gerak.
+
+**Belum:** unggahan SVG (butuh sanitasi server — ditunda pemilik), "tema sendiri" sebagai
+tingkat harga (pemilik memutuskan tidak). Verifikasi tiap langkah ada di CHANGELOG
+invitation-builder dan landing-order.
+
+**Fase 69 selesai 2026-09-19.** Vitest web 788 → 815, API + contracts 280, forge verify bersih,
+`lint`/`typecheck` hijau. E2e dasbor desktop 19/20 — satu merah `signing in elsewhere ends the
+older session` (sesi/auth, tidak tersentuh fase ini); yang baru: kata-kata, gerak, ornamen
+unggahan (PNG RGBA dirakit di tes), tautan tema sendiri, semuanya hijau desktop + mobile. Catatan
+verifikasi: API owner di 3001 (`nest --watch --exec tsx`) tidak memuat ulang skema contracts yang
+berubah, jadi autosave di web 3000 ditolak 400 sampai API itu dimulai ulang; e2e dijalankan pada
+pasangan sendiri (API dari `dist`, web 3010).
+
+**Fase 68 — amplop membuka lebih pelan.** Ditulis 2026-09-19; pemilik: "motion surat keluarnya
+agak lamaan sedikit, sekarang terlalu cepat". Timeline di `CoverGate.vue` total ≈2,3 detik, dan
+surat naik (`[data-gate-card]`, 0,8 detik `power3.out`) mulai **serentak** dengan flap membuka, jadi
+dua gerakan terbaca sebagai satu jentakan.
+
+**Yang dibangun:** flap 0,8 → 1,1 detik; surat 0,8 → 1,4 detik dan baru mulai saat flap setengah
+terbuka (0,45 detik sesudah flap bergerak, sebelumnya 0,38), supaya terbaca sebagai sebab-akibat;
+pudar akhir 0,45 → 0,6 detik. Dihitung dari posisi timeline: total 2,6 → 3,2 detik.
+
+**Fase 68 selesai 2026-09-19.** Terukur headless di 375: flap 1,12 s · surat 1,57 s · badan
+memudar 2,56 s · gerbang hilang 3,20 s. Satu berkas. `lint`, `typecheck`, vitest hijau. Segel dan sobekannya
+tidak diubah — bagian itu justru enak karena tegas. Tidak memakai `timeScale` global: melambatkan
+segel membuatnya lembek. `prefers-reduced-motion` tetap langsung ke keadaan akhir.
+
+**Fase 67 — rail dasbor ciut jadi ikon, Tooltip pertama, toolbar editor dikelompokkan.** Ditulis
+2026-09-19 setelah pemilik melihat editor di 1440: sidebar dasbor selebar 256px berdiri di
+samping rail struktur yang sudah bisa diciutkan sejak fase 62, dan panggung yang membayar
+harganya. Pemilik juga meminta revisi UI/UX lain yang saya nilai perlu, dan memilih tiga: toolbar
+editor yang membungkus canggung di 1280, rail struktur yang saat ciut tidak menjelaskan ikonnya
+pada mouse, dan tombol "Simpan draft" nonaktif yang pink pudar — mirip tombol aktif.
+
+**Yang dibangun:** `DashboardNav` mendapat tombol ciut/lebar di baris brand (sejajar toggle rail
+struktur; dua toggle di ketinggian yang sama terbaca sebagai satu sistem), lebar 256 → 56px
+mengikuti konvensi rail editor 3.5rem, preferensi di `aruna:dashboard:prefs` lewat
+`useDashboardPrefs` (pola `useEditorPrefs`, `initOnMounted`), berlaku di semua halaman dasbor
+tanpa editor memaksa apa pun. Saat ciut: logo mark saja, judul undangan hilang, lencana demo jadi
+chip 44px, tiap tautan jadi ikon 44×44 dengan `aria-label` dan tooltip di kanan. `UiTooltip` —
+komponen pertama dari daftar DESIGN.md yang belum pernah dibangun — di atas reka-ui dengan
+`as-child` (id tidak ditimpa) dan satu `TooltipProvider` di `app.vue`; token `--z-tooltip 70`.
+Rail struktur memakai tooltip yang sama saat ciut. Toolbar jadi tiga klaster: status tersimpan
+(turun ke barisnya sendiri di bawah 1280), riwayat (undo · redo · reset dalam satu kotak), aksi
+(lihat publik · simpan · publikasikan). `UiButton` primary nonaktif jadi abu netral kecuali sedang
+`aria-busy`, supaya "Menyimpan…" tetap terakota.
+
+**Fase 67 selesai 2026-09-19.** Terukur di 1440 (Laptop): panggung 512 → 928px saat kedua rail
+ciut; di 1280: 352 → 768px. Satu temuan di luar rencana: sweep axe /account jatuh ke 1,6:1
+karena `UiButton` memudarkan warna 200ms dari abu nonaktif ke terakota tepat sesudah hidrasi
+(`<fieldset :disabled="!ready">`) — transisi warna kini hanya saat masuk hover. Vitest 779 hijau,
+e2e desktop (rail baru + sweep axe) hijau. Fase 69 ditulis, belum dikerjakan; dua keputusan
+pemilik masih ditunggu (SVG unggahan, tingkat harga).**Fase 66 — ikon acara universal, medali di atas judul. Selesai 2026-09-19.** Ditulis hari yang
+sama setelah pemilik melihat ikon gereja di samping "Akad nikah" pada pratinjau `/order`. Ikonnya
+`Church` dari lucide, dipilih regex `/akad|pemberkatan|nikah|misa/` — salah rumah bagi pasangan
+Muslim, Hindu, dan Buddha yang jadi mayoritas. Ukurannya 22px sejajar judul 1,65rem, jadi terbaca
+sebagai bullet, bukan penanda acara.
+
+**Yang dibangun:** akad → `HeartHandshake` (dua tangan bersalaman berhati: "janji", sama
+maknanya di ijab kabul, pemberkatan, pawiwahan); resepsi tetap `PartyPopper`. Ikon pindah ke
+atas judul sebagai medali bulat 3,5rem berlatar tint primary 12%, ikon 28px stroke 2 — lingkaran
+memberi massa supaya ikon tidak mengambang di antara dua ornamen sudut. Override untuk tone
+`ink`/`primary` sempat ditulis lalu dibuang: section acara selalu `tone="tint"`, jadi itu kode
+mati. Satu berkas: `sections/Events.vue`. Terukur: medali 56px; jarak ke ornamen sudut 78px di
+375px, 247px di 1440px. `typecheck` dan `lint` hijau.
+
+**Fase 65 — pratinjau wizard yang menjawab langkah, bukan seluruh undangan digulung.** Ditulis
+2026-09-19 sesudah pemilik meminta masukan UX atas panel kanan `/order`: perlukah, dan kalau
+perlu, apakah isinya yang digulung itu relevan.
+
+**Panelnya perlu — ia yang dijual — tapi gagal pada tugas pertamanya.** Judul langkah berbunyi
+"Mari mulai dari nama kalian", dan di kotak `max-h-[34rem]` yang muat hanya foto stok tangan,
+ornamen, dan eyebrow; nama pasangan jatuh di bawah lipatan. Di bawahnya ikut dirender galeri dua
+foto stok, hitung mundur tanpa tanggal, form RSVP, ucapan, dan penutup — tidak satu pun disentuh
+langkah mana pun sebelum bayar, dan foto stok berisiko dibaca sebagai "foto yang saya dapat".
+Dirender selebar kolom (±680px), bukan selebar ponsel tempat tamu membukanya; di bawah `lg` ia
+jatuh ke bawah formulir sebagai kartu yang harus digulung dua kali.
+
+**Yang dibangun:** `utils/order-preview.ts` memutuskan section per langkah — nama: `cover`;
+acara: `events` (+ `countdown` bila tanggal ada); tema: `cover` (cukup: palet, ornamen, foto, dan
+huruf skrip semua di sana; `cover` + `couple` sempat dicoba dan diperkecil sampai 54%); paket:
+seluruh dokumen, dan hanya di sini kotaknya menggulung. Renderer sudah menghormati `enabled`,
+jadi tidak ada prop baru. Logika render-390px-lalu-perkecil ditarik dari `DashboardEditorStage`
+ke `InvitationPhoneFrame` (dipakai keduanya) dan diberi `maxHeight`, supaya section yang
+difokuskan selalu muat di viewport tanpa menggulung — di 900px cover diperkecil 91%, acara +
+hitung mundur 64%. Pergantian langkah: fade-in `sine.inOut` 0,4s lewat `useArunaMotion` (tanpa
+`opacity: 0` di CSS), halaman digulung ke atas, dan di bawah `lg` aside diganti satu baris
+"Tampil sebagai … · arunadewa.id/i/…".
+
+**Kolom "Judul undangan" ternyata dua kali berbohong.** Pemilik melihat cover berganti saat
+mengetik judul, padahal API membangun dokumen lewat `createDefaultDocument(partner1, partner2)`:
+judul cover sungguhan selalu nama pasangan, dan `title` hanya nama di dasbor dan tab. Pratinjau
+kini memakai nama pasangan saja untuk cover, dan kolomnya berganti label jadi "Nama undangan di
+dasbor" dengan keterangan bahwa tamu tidak pernah melihatnya; placeholder-nya nama yang sedang
+diketik supaya "kosongkan" punya wajah.
+
+**Dua hal lain yang ketahuan saat verifikasi.** Nama pasangan di renderer diambil dari section
+`couple` yang *tampil*, jadi tautan kalender di langkah acara berbunyi "Aruna & Dewa" untuk
+pasangan yang baru mengetik namanya — sekarang dicari di seluruh dokumen (di undangan terbit
+tidak berubah: `couple` wajib). Dan `window.scrollTo({ behavior: 'auto' })` di langkah terakhir
+menyisakan 229px: `html { scroll-behavior: smooth }` membuatnya asinkron, lalu dibatalkan refresh
+ScrollTrigger yang baru dipasang renderer; `instant` menyelesaikannya. Terverifikasi di browser
+pada 1440×900 dan 375×812; e2e "device preview renders each width" tetap hijau; 776 unit
+(+7), ESLint bersih.
+
+**Fase 64 — satu perintah menyalakan semuanya, dan kata sandi demo yang bisa diketik.** Ditulis
+2026-09-19, **sebelum satu berkas pun disentuh**, atas permintaan pemilik: satu berkas yang
+dijalankan langsung dan menyalakan seluruh tumpukan, "jd saya ga repot".
+
+**Fase 63 membuat dasbornya terbuka tanpa login; yang belum ia bereskan adalah jalan ke sana.**
+Untuk sampai ke `/dashboard` pemilik masih harus menyalakan empat proses di empat terminal
+(`pnpm db:local`, `pnpm mail:local`, API, web) ditambah tiga langkah Prisma dan `pnpm demo:local`
+— urutan yang tertulis rapi di `README.md` dan `docs/LOCAL-COMMANDS.md` tapi tidak dijalankan oleh
+apa pun. Harganya sudah kelihatan di mesin ini sebelum satu baris ditulis: **delapan pohon
+`pnpm --filter @aruna/api dev` yatim dengan `PPID=1`**, satu di antaranya masih memegang port 3001.
+Menutup terminal tidak pernah mematikan cucu; `pnpm` meneruskan `SIGTERM` satu lompatan saja, dan
+`nest` tidak meneruskannya ke `tsx`.
+
+**Karena itu inti skripnya bukan urutan langkah, melainkan `set -m`.** Dengan job control menyala,
+tiap job latar jadi pemimpin grup prosesnya sendiri (`PGID == PID`), sehingga satu
+`kill -TERM -- -$pid` menjangkau `pnpm` → `nest` → `tsx` sekaligus. Tanpa `set -m` anak berbagi grup
+dengan skrip, `kill -- -$pid` tidak cocok dengan siapa pun, dan `|| true` menelan ESRCH-nya — skrip
+yang terlihat benar tapi menumpuk yatim persis seperti delapan yang sudah ada. Efek kedua `set -m`
+sama pentingnya: job latar tidak lagi berada di grup foreground terminal, jadi Ctrl+C hanya sampai ke
+skrip dan trap-lah satu-satunya yang mematikan — bukan balapan antara siaran SIGINT kernel dan
+pembersihan kita. **Postgres dikecualikan**: backend dan `io worker`-nya pemimpin sesi sendiri, jadi
+`SIGKILL` grup akan meninggalkan backend yatim dan `postmaster.pid` basi; ia dimatikan lewat
+`SIGTERM` ke pid pembungkusnya supaya penangan `pg.stop()` di `local-postgres.mjs` sempat jalan.
+
+**Layanan yang sudah hidup dipakai ulang, bukan digagalkan** — kecuali port 3000. Postgres dikenali
+lewat protokolnya (kirim `SSLRequest` 8 bita, balasan `N`/`S`), bukan lewat nama proses atau
+`docker ps`: jawabannya sama untuk embedded maupun container, dan `docker` justru menggantung saat
+Desktop-nya sedang start. API dikenali lewat `/health` tapi digerbangi lewat `/ready` — dua
+pertanyaan berbeda, karena `/ready` sah menjawab 503 pada API yang tetap layak dipakai ulang. Web di
+:3000 **selalu gagal keras**: dari luar, `dev:demo` dan `nuxt dev` biasa tidak bisa dibedakan, dan
+memakai ulang yang salah menyuguhkan form login — kegagalan paling buruk yang bisa diberikan skrip
+ini. Yang dicetak PID pemiliknya, keputusan dibunuh atau tidak tetap di tangan manusia.
+
+**Urutannya ditentukan oleh satu jebakan.** `pnpm demo:local` harus selesai dan `/ready` harus hijau
+**sebelum** web dinyalakan: kalau browser sampai di `/dashboard` saat akun belum ada atau API belum
+siap, login SSR gagal dan `DemoCooldown.arm()` mengunci auto-login 60 detik — pemilik melihat form
+login dan menyimpulkan demonya rusak. Untuk alasan yang sama probe kesiapan web menembak `/`, tidak
+pernah `/dashboard`.
+
+**Kata sandi akun demo diganti** dari `aruna-demo-local-only` jadi `arunademo123` (12 karakter, lolos
+`min(10)` di kontrak). Emailnya tetap `demo@aruna.local`. Kata sandi ini memang jarang diketik —
+auto-login SSR tidak memintanya — tapi ia dibutuhkan persis saat keadaan sedang tidak enak: jendela
+privat, browser kedua, atau sesi yang baru diusir suite e2e.
+
+**Yang sengaja tidak masuk skrip**, supaya sebuah demo tidak pernah bisa merusak: `pnpm install`
+otomatis, `docker` apa pun di jalur bahagia, worker (ia hanya merekonsiliasi Midtrans, yang justru
+dilewati operator), menulis atau menambal `.env` dan membuat rahasia, `prisma migrate reset` atau
+`rm -rf .data/postgres`, membunuh proses milik orang lain, `--host 0.0.0.0` (auto-login memang
+dikunci loopback), mode daemon — seluruh kontrak pembersihan bergantung pada satu proses foreground.
+
+
+**Fase 64 selesai 2026-09-19.** Yang pertama dikerjakan bukan kode melainkan pembersihan: delapan
+pohon yatim dimatikan lewat grup prosesnya, dan port 3001 yang mereka pegang bebas kembali — kalau
+dibiarkan, skrip justru akan "memakai ulang" API berkode lama. Terukur: jalan panas (Postgres dan
+SMTP lama dipakai ulang) dan jalan dingin (keduanya dinyalakan sendiri) sama-sama sampai spanduk;
+sesudah SIGINT, pohon web dan API **habis** dan port 3000/3001 bebas, sementara layanan yang dipakai
+ulang selamat. Jalur gagal port 3000 berhenti sambil menyebut PID pemiliknya, tanpa membunuh apa
+pun. Permintaan `/dashboard` tanpa cookie ber-`sec-fetch-dest: document` menerbitkan 2 `Set-Cookie`,
+merender lencana demo, dan masuk sebagai `demo@aruna.local`; `/login` tidak menerbitkan satu pun.
+Alur pesanan penuh sebagai akun demo: undangan baru → pesanan `PENDING` Rp279.000 → `checkout`
+menjawab `{"paid":true}` **tanpa `snapUrl`** → 11 fitur aktif. Login manual dengan kata sandi baru
+201, dengan yang lama 401. 1.045 unit (tidak bertambah — skrip shell tidak punya tes unit),
+typecheck 5/5, ESLint bersih.
+
+Dua cacat ketemu saat verifikasi dan langsung ditambal: `curl -fsS` mencetak satu baris galat tiap
+detik selama menunggu (`-S` memang begitu walau ada `-s`), dan pemeriksaan port sesudah pembersihan
+memperingatkan soal port 3000 milik orang lain **pada jalur yang baru saja menolak memakainya** —
+sekarang ia hanya menengok port yang layanannya memang dinyalakan skrip.
+
+Satu hal yang tidak diverifikasi di browser: pane masih memegang sesi operator lama
+(`haryosee@gmail.com`), jadi auto-login demo dibuktikan lewat permintaan tanpa cookie, bukan dengan
+mengusir sesi itu. Yang terlihat di layar adalah dasbor hidup dengan undangan hasil pesanan
+tanpa-bayar di barisan pertama.
+
+**Fase 63 — mode demo lokal: dasbor tanpa login, undangan tanpa bayar.** Ditulis 2026-09-19,
+**sebelum satu berkas pun disentuh**, atas permintaan pemilik yang tiap kali ingin melihat dasbor
+di lokal harus meminta akun QA lalu mengisi form, dan tiap mencoba "Buat undangan" mentok di
+gerbang Midtrans.
+
+**Yang dibangun bukan backdoor.** Login tetap login sungguhan — `POST /auth/login` dengan baris
+`Session` asli — dan pembayaran tetap dilewati oleh aturan yang sudah ada: role `OPERATOR`
+membuat `checkout()` mengembalikan `paid: true` dan `order.vue` sudah menanganinya. Nol
+perubahan di API. Yang baru hanya dua: **akun demo** (`demo@aruna.local`, kata sandi tetap
+`aruna-demo-local-only` mengikuti preseden Postgres `aruna-local-only`) yang di-provision
+`pnpm demo:local` lewat Prisma + argon2 di `apps/api/src/cli/demo.ts` — bukan lewat
+`/auth/register` yang mengirim email dan menghapus akun bila SMTP gagal, dan bukan dengan
+login, karena satu sesi per akun berarti login dari skrip mengusir sesi browser — dan **satu
+sakelar** `NUXT_DEV_DEMO=1` (`web-demo` di launch.json) yang membuat `plugins/auth.server.ts`
+melakukan login itu dari SSR saat tidak ada cookie sesi, meneruskan `Set-Cookie` ke browser
+persis seperti `serverRefresh()` di `useApi.ts`.
+
+**Empat gerbang, semuanya harus lolos:** `import.meta.dev`, env `NUXT_DEV_DEMO=1`, host halaman
+loopback, dan jalur yang memang butuh akun (`/dashboard`, `/order`, `/account`). Halaman tamu
+`/i/*` dan `/login` tidak pernah memicu login, dan hanya permintaan dokumen
+(`sec-fetch-dest: document`) yang boleh — `_payload.json` tidak. Rate limit login 10 per 5
+menit per (IP, email) hanya memaafkan yang berhasil, jadi kegagalan (API mati, akun belum
+di-provision) mengarmkan pendingin 60 detik dengan satu `warn`, bukan mencoba lagi tiap
+refresh. Suite e2e memakai `web-e2e` tanpa sakelar, jadi assertion redirect `/login` dan
+`SESSION_REPLACED` tidak tersentuh. Batasan yang didokumentasikan, bukan diperbaiki: tab atau
+skrip lain yang login sebagai akun demo mengusir sesi browser, dan karena browser masih memegang
+cookie yang dicabut, auto-login tidak jalan — hapus cookie atau buka jendela privat.
+
+**Fase 63 selesai 2026-09-19.** Satu penguatan di luar rencana: cookie yang **ada tapi ditolak**
+(sesi dicabut karena suite e2e masuk memakai akun yang sama) kini ikut memicu login demo, bukan
+memantulkan pemilik ke `/login?reason=SESSION_REPLACED` — persis kejadian yang tadinya hanya
+didokumentasikan. Lencana "Mode demo lokal" mengikuti akun yang sedang masuk, bukan render yang
+kebetulan melakukan login. Jebakan yang ketemu: composable Nuxt yang dipanggil sesudah `await`
+di plugin server melempar dan tertangkap sebagai "login gagal" padahal cookie sudah diteruskan.
+Terukur: 7 probe jalur benar semua, build produksi ber-`NUXT_DEV_DEMO=1` tetap ke `/login`,
+alur `/order` berakhir di dasbor tanpa Midtrans, unit 1.045 (8 baru), lint & typecheck hijau,
+tes redirect/sesi tunggal e2e di `web-e2e` tetap hijau.
+
+**Fase 62 — editor jadi studio tiga panel: pratinjau di tengah, bukan di pinggir.** Ditulis
+2026-09-19, **sebelum satu berkas pun disentuh**, atas permintaan pemilik yang membawa satu
+referensi editor kanvas (rail struktur di kiri, panggung di tengah, inspektor di kanan, toolbar
+tipis di atas).
+
+**Yang salah hari ini bukan warnanya, melainkan proporsinya.** `editor.vue` (1.814 baris, satu
+berkas) memakai tata letak halaman dasbor: `h1` 40px, tombol aksi di kanan, lalu tiga kolom
+`14.5rem · minmax(0,1fr) · minmax(18rem,20rem)`. Pratinjau — alasan pasangan membuka editor —
+mendapat jalur paling sempit dan diperkecil ke **82%** pada 1440, sementara form pengaturan dan
+kartu "Tema & warna" ditumpuk jadi satu gulungan panjang di kolom tengah. Fase 11 dan 12 sudah
+melebarkan kolom pengaturan (312 → 528px) dan memberi pemilih perangkat; keduanya benar, tapi
+keduanya bekerja di dalam proporsi yang keliru.
+
+**Bentuk barunya:** `DashboardShell` dapat `variant="studio"` (main setinggi layar di `lg`, tanpa
+`max-w`/padding; halaman tidak menggulung, panelnya yang menggulung). Toolbar tipis memegang
+`<h1>`, status simpan yang tetap **tertulis** (autosave dicabut fase 18, jadi "Ada perubahan yang
+belum tersimpan" tidak boleh berubah jadi badge kecil "tersimpan di cloud" seperti di referensi),
+undo/redo, Reset, Lihat publik, Simpan draft, Publikasikan. Rail kiri `15rem` (ciut `3.5rem`):
+pencarian bagian, badge "N tampil", sub-label **Wajib/Opsional**. Panggung tengah `minmax(0,1fr)`
+ber-`bg-surface-3` dengan toolbar perangkat mengambang. Inspektor kanan `22rem` (`2xl` 24rem)
+bertab **Bagian | Tema** — dua, bukan tiga seperti referensi, karena "Card Style" tidak punya
+padanan di sini. Dua blok form besar (baris 972–1505 dan 1508–1680) **tidak dipindahkan** ke
+komponen; mereka memutasi `selected.data` langsung dan memanggil ±60 helper halaman, jadi
+dirender lewat named slot inspektor, verbatim. Yang diekstrak hanya chrome yang tidak memegang
+state: `Toolbar`, `SectionRail`, `Stage`, `Inspector` di `components/dashboard/editor/`.
+
+**Kontrak tes yang wajib bertahan** (semuanya dijaga `dashboard.spec.ts`): tab "Pengaturan" /
+"Pratinjau" di bawah `xl`, `[data-preview-stage]` dengan `width` inline dan viewport
+`stage.parentElement.parentElement`, tombol Ponsel/Tablet/Laptop, teks `Selebar Npx`,
+`#editor-save-state`, seluruh `#editor-*`, `#dash-nav-guests`, satu `<h1>`, `scrollWidth <=
+innerWidth` di 360/768/1440/390, dan `DashboardOrnamentStudio` tetap anak langsung slot shell.
+Bug `xl:col-start-3` (komentar baris 1686) lenyap dengan sendirinya: rail → panggung → inspektor
+berurutan di DOM, dan di `lg` hanya satu dari panggung/inspektor yang tampil.
+
+**Dua cacat kecil yang ketahuan saat memetakan, dibereskan sekalian.** Sakelar tampil/sembunyi
+bagian memutasi `section.enabled` lewat `v-model` tanpa `checkpoint()`, jadi mematikan galeri
+tidak bisa di-undo padahal memindahkan urutannya bisa. Dan pencarian bagian yang baru membuat
+`move(index)` di daftar tersaring salah sasaran — panah dimatikan selama ada kueri, dan indeks
+yang dikirim selalu indeks asli. Preferensi (perangkat, tab inspektor, rail ciut) disimpan di
+`localStorage` lewat `useLocalStorage` ber-`initOnMounted`, karena tanpanya HTML server
+(bawaan) dan klien (tersimpan) berbeda dan `aria-pressed` berkedip saat hidrasi.
+
+Kontrak tidak punya flag `required`. `cover`, `couple`, `events` diberi label **Wajib** dan
+sakelarnya dimatikan (tetap di DOM, tetap tercentang); sisanya **Opsional**. Angka lebar jalur
+yang sebenarnya diukur setelah jadi, bukan ditaksir di sini.
+
+**Fase 62 selesai 2026-09-19.** Rail dilebarkan dari rencana 15rem ke **17rem** setelah 240px
+terbukti memaksa "Cover pembuka" dan "Hitung mundur" membungkus di sebelah tiga kontrol; label
+"Opsional" dicabut dari sebelas baris karena checkbox yang hidup sudah mengatakannya. Jalur
+terukur (`getBoundingClientRect`): 1440 → rail 272 · panggung 560 · inspektor 352 (Ponsel 100%,
+Laptop 40%); 1280 → 272 · 400 · 352; 1024 → 272 · 496; 1920 → 272 · 1008 · 384; 375 → satu
+kolom, Ponsel 88%. Overflow halaman nol di semua lebar.
+
+Empat cacat ketahuan dari pengukuran, bukan dari kode. (1) `grid` polos di ponsel memberi jalur
+`minmax(auto,1fr)`: panggung 422px di jendela 360, skala tetap 1, halaman meluber 62px — jalur
+dasar kini `minmax(0,1fr)`. (2) Isi kartu tema 272px di inspektor 22rem, di bawah `@xs` 320px,
+jadi enam tema bertumpuk satu kolom — ambang disetel dari lebar jalur yang diukur. (3) Label
+"Wajib" `ink-subtle` di atas `primary-soft` 4,35:1 — diganti `ink-muted`. (4) **Milik undangan:**
+kicker cover 11px tebal 3,66:1 (`.iv-kicker` 0,7 × `opacity-90`), tak pernah tertangkap karena
+panggung lama tidak menampilkannya sebesar ini; `.iv-kicker` dinaikkan ke 0,8. `editor.vue`
+1.814 → 1.630 baris. Unit 1.037 (8 baru), e2e 176 / 176 hijau di keempat project termasuk tes studio baru.
+Spesifikasi & sebelum/sesudah: [Artifact](https://claude.ai/artifact/BrdeiMTnJpTSULnNRC5zMp).
+
 **Fase 61 — tiga e2e merah yang sudah merah sebelum fase 60, dan sebuah assertion yang tidak
 pernah menjaga apa pun.** Ditulis 2026-09-18, **sebelum satu berkas pun disentuh**. Fase 60
 mencatat ketiganya sebagai "di luar fase ini" dan menundanya; fase ini membereskannya. Dua akar,
@@ -2083,8 +2869,10 @@ Sisa yang diketahui dan sengaja ditunda:
   CC BY-SA, bukan CC0/PD. Pilihannya: terima CC BY-SA untuk audio dengan atribusi di pemutar
   (field `credit` sudah ada), atau pesan rekaman sendiri. Keputusan lisensi, bukan teknis.
   Rinciannya di `docs/features/invitation-builder/sources/MUSIC.md`.
-- **Kuota foto masih satu angka untuk semua paket** (`galleryPhotoLimit = 15`), padahal katalog
-  menjanjikan 15/30/60. `Invitation` belum menyimpan paketnya — hanya daftar entitlement fitur.
+- ~~**Kuota foto masih satu angka untuk semua paket**~~ Selesai di fase 75.7. Yang menahan memang
+  seperti dicatat di sini — `Invitation` tidak menyimpan paketnya — dan itu tidak bisa disimpulkan
+  dari entitlement, karena entitlement cuma daftar fitur dan dua paket bisa membuka fitur yang sama
+  dengan kuota berbeda. Sekarang `Invitation.packageId` dicap di detik yang sama entitlement ditulis.
 - ~~**Autosave bisa menghidupkan kembali URL yang baru dihapus.**~~ Selesai di fase 18, dan
   lebih dalam dari yang dicatat di sini: autosave dicabut seluruhnya.
 - **Tinta tombol `#FFFDF7`** di `MusicPlayer.vue` belum diturunkan jadi `--iv-on-primary`.

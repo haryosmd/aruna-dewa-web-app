@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeDisplayName, buildGuestUrl, invitationDocumentSchema, createDefaultDocument, priceOrder, parseGuestText, safeSpreadsheetCell, templates, templateIds, liveTemplateIds, templateAliases, resolveTemplateId, templateById, normalizeGift, giftAccountLimit } from '../packages/contracts/src/index'
+import { normalizeDisplayName, buildGuestUrl, invitationDocumentSchema, createDefaultDocument, createLegacyDocument, priceOrder, parseGuestText, safeSpreadsheetCell, templates, templateIds, liveTemplateIds, templateAliases, resolveTemplateId, templateById, normalizeGift, giftAccountLimit, normalizeChildCount, normalizeGuestFrom, normalizeInvitationKind } from '../packages/contracts/src/index'
 
 describe('guest identity and links', () => {
   it.each(['Yosi Susanti', 'dr. Yosi Susanti, Sp.OG', 'Drs. Ahmad Hidayat, M.Pd.', 'Anne-Marie & Budi', 'A+B', "O’Connor / % # ?", '山田 太郎'])('preserves %s', name => {
@@ -25,7 +25,10 @@ describe('document and pricing boundaries', () => {
   it('rejects duplicate section IDs and unsupported versions', () => {
     const d=createDefaultDocument();d.sections.push(d.sections[0]!)
     expect(invitationDocumentSchema.safeParse(d).success).toBe(false)
-    expect(invitationDocumentSchema.safeParse({...createDefaultDocument(),schemaVersion:2}).success).toBe(false)
+    expect(invitationDocumentSchema.safeParse({...createDefaultDocument(),schemaVersion:3}).success).toBe(false)
+    // v1 dengan tipe bagian lama tetap sah; v2 hanya menerima tipe Elegance.
+    expect(invitationDocumentSchema.safeParse(createLegacyDocument()).success).toBe(true)
+    expect(invitationDocumentSchema.safeParse({...createLegacyDocument(),schemaVersion:2}).success).toBe(false)
   })
   it('calculates server catalog price and prevents double charging included features', () => {
     expect(priceOrder('mula',['story']).total).toBe(304000)
@@ -36,6 +39,22 @@ describe('document and pricing boundaries', () => {
     expect(() => priceOrder('purnama',['design'])).toThrow()
     expect(() => priceOrder('mula',['story','story'])).toThrow()
     expect(() => priceOrder('free',[])).toThrow()
+  })
+  it('accepts the closed copy layer and rejects strangers (fase 69)', () => {
+    const base = createDefaultDocument()
+    expect(base.copy).toBeUndefined()
+    expect(invitationDocumentSchema.safeParse({ ...base, copy: { 'gate.open': 'Buka' } }).success).toBe(true)
+    expect(invitationDocumentSchema.safeParse({ ...base, copy: { 'gate.open': 'a'.repeat(41) } }).success).toBe(false)
+    expect(invitationDocumentSchema.safeParse({ ...base, copy: { 'kunci.asing': 'x' } }).success).toBe(false)
+  })
+  it('accepts enumerated per-invitation motion and rejects free values (fase 69)', () => {
+    const base = createDefaultDocument()
+    const dengan = (motion: unknown) => invitationDocumentSchema.safeParse({ ...base, tokens: { ...base.tokens, motion } }).success
+    expect(dengan({ amplop: 'pelan', masuk: 'iris' })).toBe(true)
+    expect(dengan({})).toBe(true)
+    expect(dengan({ amplop: 1.5 })).toBe(false)
+    expect(dengan({ masuk: 'tema' })).toBe(false)
+    expect(dengan({ asing: 'x' })).toBe(false)
   })
   it('ships a valid preset for every template', () => {
     for (const template of templates) {
@@ -114,5 +133,115 @@ describe('spreadsheet intake', () => {
     expect(rows[0]?.phone).toBe('=1+1')
     expect(rows[1]?.errors.length).toBeGreaterThan(0)
     expect(safeSpreadsheetCell('=HYPERLINK("bad")')).toBe("'=HYPERLINK(\"bad\")")
+  })
+})
+
+/*
+ * Lembar tamu pemilik yang SUNGGUHAN, disalin bentuknya: kolom A kosong, spanduk judul, blok
+ * ringkasan, dua baris petunjuk, header di baris 15, data mulai baris 16, lalu ratusan baris
+ * kosong yang tetap membawa `FALSE` di kolom Child.
+ *
+ * Sampai fase 75 lembar ini tidak bisa diimpor sama sekali — bukan dengan galat, melainkan dengan
+ * sampah yang terlihat berhasil, karena spanduknya terbaca sebagai baris header.
+ */
+const lembarPemilik = [
+  ',,,,,,,,,',
+  ',GUEST LIST — WEDDING DEA & HARYO,,,,,,,,',
+  ',LSI • Sabtu 03 Oktober 2026,,,,,,,,',
+  ',,,,,,,,,',
+  ',SUMMARY,,,,,,,,',
+  ',,Total Guests (entries),11,,Digital Invitation,,2,,',
+  ',,Total Pax (persons),2,,Printed Hard,,0,,',
+  ',,Children,0,,Confirmed,,0,,',
+  ',,VIP Guests,0,,,,,,',
+  ',,,,,,,,,',
+  ',CARA PAKAI — Isi hanya baris data (mulai baris 16).,,,,,,,,',
+  ',*Nomor tidak perlu di isi,,,,,,,,',
+  ',,,,,,,,,',
+  ',,,,,,,,,',
+  ',No.,Guest Name,Relationship,Guest From,Person,Child,Invitation,Status,Notes',
+  ',1,Evan Hadi Subroto,SID,Groom,1,FALSE,Digital,,',
+  ',2,Hoora,REKANAN,Bride,2,TRUE,Printed Hard,,Bawa anak',
+  ',3,Sahells,,,,FALSE,,,',
+  ',,,,,,FALSE,,,',
+  ',,,,,,FALSE,,,',
+  ',,,,,,FALSE,,,',
+].join('\n')
+
+describe('impor dari lembar kerja yang tidak rapi', () => {
+  it('membaca lembar berspanduk dengan kolom kiri kosong dan header di baris 15', () => {
+    const rows = parseGuestText(lembarPemilik, 'csv')
+    expect(rows).toHaveLength(3)
+    expect(rows.map(r => r.displayName)).toEqual(['Evan Hadi Subroto', 'Hoora', 'Sahells'])
+    expect(rows.every(r => r.errors.length === 0)).toBe(true)
+  })
+
+  it('nomor barisnya nomor baris spreadsheet, bukan indeks sesudah preamble dibuang', () => {
+    // Kalau ini bergeser, pratinjau galat justru menyesatkan: "Baris 2" untuk baris 16.
+    expect(parseGuestText(lembarPemilik, 'csv').map(r => r.row)).toEqual([16, 17, 18])
+  })
+
+  it('ratusan baris kosong ber-FALSE dilewati diam-diam, bukan jadi ratusan galat', () => {
+    const banyak = lembarPemilik + '\n' + Array.from({ length: 180 }, () => ',,,,,,FALSE,,,').join('\n')
+    const rows = parseGuestText(banyak, 'csv')
+    expect(rows).toHaveLength(3)
+    expect(rows.flatMap(r => r.errors)).toEqual([])
+  })
+
+  it('tapi baris bernomor telepon tanpa nama TETAP galat — itu kehilangan data sungguhan', () => {
+    const rows = parseGuestText('Nama,Telepon\nBudi,0811\n,08129876543', 'csv')
+    expect(rows).toHaveLength(2)
+    expect(rows[1]?.errors.length).toBeGreaterThan(0)
+  })
+
+  it('membawa keempat kolom lembar pemilik, dengan sinonim Inggris dikenali', () => {
+    const rows = parseGuestText(lembarPemilik, 'csv')
+    expect(rows[0]).toMatchObject({ group: 'SID', quota: 1, guestFrom: 'pria', invitationKind: 'digital' })
+    expect(rows[0]?.childCount).toBeUndefined()
+    expect(rows[1]).toMatchObject({ quota: 2, guestFrom: 'wanita', childCount: 1, invitationKind: 'cetak', notes: 'Bawa anak' })
+  })
+
+  it('judul kolom bahasa Indonesia dibaca sama, termasuk nomor WhatsApp', () => {
+    const rows = parseGuestText('Nama,Nomor WA,Kategori,Kuota,Dari,Anak,Jenis undangan,Catatan\nYosi,0812,Keluarga,2,Mempelai wanita,2,Digital,Vegetarian', 'csv')
+    expect(rows[0]).toMatchObject({ displayName: 'Yosi', phone: '0812', group: 'Keluarga', quota: 2, guestFrom: 'wanita', childCount: 2, invitationKind: 'digital', notes: 'Vegetarian' })
+  })
+
+  it('tanpa baris header sama sekali, pemetaan posisi lama tidak bergeser', () => {
+    const rows = parseGuestText('Budi Santoso,0812,Teman,2', 'csv')
+    expect(rows[0]).toMatchObject({ row: 1, displayName: 'Budi Santoso', phone: '0812', group: 'Teman', quota: 2 })
+  })
+
+  it('kolom anak tidak pernah menggagalkan baris, apa pun isinya', () => {
+    const rows = parseGuestText('Nama,Anak\nA,\nB,FALSE\nC,-1\nD,entah\nE,3', 'csv')
+    expect(rows.flatMap(r => r.errors)).toEqual([])
+    expect(rows.map(r => r.childCount)).toEqual([undefined, undefined, undefined, undefined, 3])
+  })
+})
+
+describe('normalisasi kolom lembar tamu', () => {
+  it('menyatukan ejaan yang dikenal dan MEMBIARKAN yang tidak dikenal', () => {
+    expect(normalizeGuestFrom('Groom')).toBe('pria')
+    expect(normalizeGuestFrom('  BRIDE ')).toBe('wanita')
+    expect(normalizeGuestFrom('Both')).toBe('keduanya')
+    // Daftar dropdown milik pasangan dan memang mereka ubah sendiri — menolaknya berarti
+    // menolak lembar kerja mereka.
+    expect(normalizeGuestFrom('SID • VIP')).toBe('SID • VIP')
+    expect(normalizeGuestFrom('')).toBeNull()
+  })
+
+  it('FALSE pada kolom centang berarti tidak diisi, bukan angka nol', () => {
+    // Kalau `FALSE` jadi 0, ratusan baris kosong lembar pemilik akan terlihat "punya data".
+    expect(normalizeChildCount('FALSE')).toBeNull()
+    expect(normalizeChildCount('TRUE')).toBe(1)
+    expect(normalizeChildCount('✓')).toBe(1)
+    expect(normalizeChildCount('3')).toBe(3)
+    expect(normalizeChildCount('0')).toBeNull()
+    expect(normalizeChildCount(undefined)).toBeNull()
+  })
+
+  it('bentuk undangan punya tiga ejaan tersimpan', () => {
+    expect(normalizeInvitationKind('Printed Hard')).toBe('cetak')
+    expect(normalizeInvitationKind('Digital')).toBe('digital')
+    expect(normalizeInvitationKind('Not Yet')).toBe('belum')
   })
 })

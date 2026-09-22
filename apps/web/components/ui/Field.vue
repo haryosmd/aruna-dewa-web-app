@@ -24,7 +24,7 @@ const describedBy = computed(() => [props.hint ? `${id.value}-hint` : null, prop
 <template>
   <div class="grid gap-1.5">
     <!-- The asterisk sits outside the label so the accessible name stays exactly the field name. -->
-    <span class="flex items-center gap-1 text-[0.8125rem] font-semibold text-ink">
+    <span class="flex items-center gap-1 text-caption font-semibold text-ink">
       <component :is="as === 'fieldset' ? 'span' : 'label'" :for="as === 'fieldset' ? undefined : id">{{ label }}</component>
       <span v-if="required" class="text-primary" aria-hidden="true">*</span>
     </span>

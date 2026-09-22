@@ -29,6 +29,8 @@
 
   /* Status */
   --color-success: #1f7a4d;
+  /* Fase 72: pil "Tampil", tab aktif, kartu preset — hijau muda referensi. */
+  --color-success-soft: #e6f4ec;
   --color-danger: #b3261e;
   --color-danger-soft: #fdeceb;
   --color-warning: #8a5a00;
@@ -68,6 +70,31 @@
   --text-body--line-height: 1.62;
   --text-caption: 0.8125rem;
   --text-caption--line-height: 1.45;
+
+  /*
+   * Skala antarmuka (fase 77) — tiga langkah yang namanya menyebut PERAN, bukan ukuran, supaya
+   * tidak tertukar dengan skala editorial di atas yang milik landing dan undangan.
+   *
+   * Lahir dari hitungan, bukan selera: chrome dasbor memakai tujuh ukuran huruf
+   * (10/11/12/13/14/15/17px) padahal skala resmi hanya menyediakan 13/16/17 di rentang itu, jadi
+   * 79 nilai arbitrer tumbuh untuk mengisi lubang antara `caption` 13 dan `body` 16 — 14px 19 kali
+   * dan 15px 25 kali. Tiga token ini menutup lubang itu dan menghapus 10px serta 11px.
+   */
+  --text-ui-label: 0.75rem;
+  --text-ui-label--line-height: 1.4;
+  --text-ui-label--letter-spacing: 0.02em;
+  --text-ui: 0.875rem;
+  --text-ui--line-height: 1.5;
+  --text-ui-lg: 0.9375rem;
+  --text-ui-lg--line-height: 1.45;
+  /*
+   * Angka metrik dasbor (jumlah tamu, revisi, total pesanan). Tetap, bukan fluid: kartu statistik
+   * berdampingan dalam grid, dan angka yang ikut melar membuat tingginya berbeda-beda per kolom.
+   * Menyatukan 2 / 2,25 / 2,5rem yang sebelumnya dipakai berdampingan tanpa alasan.
+   */
+  --text-stat: 2.25rem;
+  --text-stat--line-height: 1;
+  --text-stat--letter-spacing: -0.02em;
 
   /* Radius */
   --radius-xs: 4px;
@@ -109,6 +136,7 @@
     --z-overlay: 40;
     --z-modal: 50;
     --z-toast: 60;
+    --z-tooltip: 70;
 
     color-scheme: light;
   }
