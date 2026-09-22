@@ -65,11 +65,12 @@ Tidak ada berkas data mentah — seluruh hasil bedah hidup sebagai prosa di `FAS
   `ASSETS.md`. Seluruhnya **teks** — `.gitignore:12-26` menjaga biner `docs/` di luar git, jadi
   11 tangkapan layar pemilik tetap di arsip lokalnya dan `INDEX.md` menyebutkannya seperti pola
   `sources/INDEX.md`.
-- [ ] Selisih nyata yang menggantikan butir galeri yang dicoret di atas: urutan kolom galeri di
+- [x] Selisih nyata yang menggantikan butir galeri yang dicoret di atas: urutan kolom galeri di
   `FASE-72.md:120` (`title, eyebrow, subtitle, viewLabel`) tidak konsisten dengan `:310`
   (`Label section, Judul, Label preview foto, Caption`) yang menyebut dirinya "persis, urut".
-  Kode mengikuti `:310`, jadi `:120` yang dibetulkan. Angka "Maks 4" sudah dicatat sebaris di
-  atas dan tetap dipertahankan.
+  Kode mengikuti `:310`, jadi `:120` yang dibetulkan. SELESAI `75.14`. Sekalian angka "Maks 4"
+  di `:310` diberi keterangan: sejak fase 75 batasnya per paket (15/30/60), dan 4 itu angka
+  referensi — bukan angka kita.
 
 ## 3. P0 — memblokir pelanggan sungguhan
 
@@ -144,14 +145,36 @@ Tidak ada berkas data mentah — seluruh hasil bedah hidup sebagai prosa di `FAS
 - [x] **Penjaga kelengkapan renderer** SELESAI `74.4`. Dua lapis: tipe peta diketatkan jadi
   `Record<Exclude<…>, Component>` (compiler menuntut entrinya) dan `renderer-coverage.spec.ts`
   menjaga arah sebaliknya. Pengecualiannya dibaca dari `headlessSectionTypes` di kontrak.
-- [ ] Share-card tidak pernah benar-benar dirender di tes (satori+resvg tak pernah dipanggil; e2e
-  hanya memeriksa `href`).
+- [x] **Share-card tidak pernah benar-benar dirender di tes** SELESAI `75.1`–`75.2`, dan butir ini
+  ternyata **bukan utang tes melainkan penyembunyi cacat produksi**.
+
+  `fetchPhoto` menerima `image/webp` dan menyerahkannya apa adanya ke satori, yang menyematkannya
+  ke `<image href>` untuk didekode resvg. **resvg tidak punya dekoder WebP, dan tidak melempar —
+  ia menggambar kosong.** Karena `normalizePhoto` mengubah tiap foto unggahan jadi WebP, praktis
+  setiap kartu `backgroundMode: 'foto'` selama ini terbit tanpa fotonya.
+
+  Terukur lewat pipeline yang sama, foto yang sama dalam dua format: WebP → PNG 4.411 byte,
+  rata-rata kanal 0,0, stdev 0,0 (kanvas kosong); PNG → 466.044 byte, rata-rata 102,6, stdev 51,5.
+  Lalu dibuktikan lagi di stack sungguhan, satu undangan terbit dengan foto WebP unggahan:
+  **sebelum 57.190 byte rata-rata 31,3 — fotonya hilang, tinggal lapisan gelap; sesudah 375.388
+  byte rata-rata 60,6, fotonya ada.** Kedua PNG-nya dilihat, bukan hanya diukur.
+
+  Perbaikannya `sharp` di `apps/api` yang mendekode satu salinan di memori. WebP tetap format
+  simpan dan halaman undangan tidak berubah sedikit pun — di sana pembacanya browser, yang memang
+  bisa. Yang tidak bisa adalah crawler WhatsApp lewat resvg.
+
+  Penjaganya sempat salah bentuk, dan itu dicatat di komentar spec-nya: versi pertama hanya
+  menuntut `mean > 20`, dan kartu yang fotonya gagal tetap menggambar latar tema plus teks
+  sehingga lolos ambang itu. Dibuktikan dengan mencabut transkodenya — kasusnya tetap hijau. Yang
+  benar membandingkan dua sisi sekaligus: harus **jauh** dari kartu tanpa foto dan **dekat**
+  dengan kartu berfoto PNG.
 - [x] DESIGN.md menyebut `.iv-frame` sebagai lapisan pengukur di luar `.iv-root` (`73.5`).
 - [x] **Pangkas foto** SELESAI `74.6` — **tanpa** `vue-advanced-cropper`. Mesinnya sudah ada di
   `utils/image-normalize.ts`; pustaka luar akan memperkenalkan cara kedua untuk salah pada dua
   jebakan yang sudah dibayar di sana (EXIF potret, PNG saat diminta WebP). Dicatat di
   `docs/DEPENDENCIES.md`.
-- [ ] **Ditunda resmi** (ditulis apa adanya, bukan dilupakan): impor Google Sheets (`ImportDialog.vue:111`),
+- [x] **Ditunda resmi** (ditulis apa adanya, bukan dilupakan) — ketiganya ditutup fase 75, yang
+  keempat tetap ditunda dengan alasannya tertulis: impor Google Sheets (`ImportDialog.vue:111`),
   undang kolaborator (`Toolbar.vue:86`), riwayat versi (`editor.vue:466`), dan `WishCard.vue:13`
   yang masih menangani dua ejaan kehadiran.
 
@@ -165,11 +188,16 @@ Tidak ada berkas data mentah — seluruh hasil bedah hidup sebagai prosa di `FAS
     karena itu tampil sebagai jawaban yang tamunya tidak pernah pilih. Sekarang
     `wishAttendanceLabel` di kontrak, dipakai `WishCard.vue` dan `rsvps.vue`, dan nilai tak
     dikenal tidak dapat lencana sama sekali.
-  - [ ] **Riwayat versi** — dikerjakan fase 75; substratnya ternyata sudah ada seluruhnya
-    (`PublishedRevision`, snapshot per terbit, tidak pernah dihapus).
-  - [ ] **Impor Google Sheets** — backend **sudah selesai** sejak awal; yang kurang hanya Google
-    Picker di web, dan itu menuntut konfigurasi Google Cloud milik pemilik. Dipasang di belakang
-    env supaya tidak ada tombol yang terlihat hidup lalu gagal.
+  - [x] **Riwayat versi** SELESAI `75.11`–`75.12`. Substratnya memang sudah ada seluruhnya.
+    Keputusan yang paling menentukan: memulihkan ditulis lewat `saveDraft` yang **sama**, bukan
+    `update` langsung ke `draftDocument` — itu yang menjaga gerbang desain dan penjaga konflik
+    revisi tetap berlaku. Terbukti di stack: pulih ke versi 34 mengubah draft sementara judul yang
+    dilihat tamu tetap versi terbit, dan `draftRevision` basi menjawab 409.
+  - [x] **Impor Google Sheets** SELESAI `75.13` — dengan catatan yang wajib dibaca sebelum
+    menandainya "jalan": backend-nya memang sudah selesai sejak awal, dan yang ditambahkan fase
+    ini hanya Google Picker di web. **Ia tetap gelap sampai pemilik mengisi
+    `NUXT_PUBLIC_GOOGLE_PICKER_API_KEY` dan `_CLIENT_ID`** dari akun Google Cloud-nya; langkahnya
+    di `apps/web/.env.example`. Kedua cabangnya dibuktikan, bukan hanya yang gelap.
   - [-] **Undang kolaborator** — tetap ditunda, keputusan pemilik 2026-09-22. `InvitationMember`
     dan `requireInvitationRole` sudah dipakai di seluruh API, tapi `EDITOR`/`VIEWER` tidak bisa
     dicapai sama sekali: nol endpoint, tidak ada `TokenPurpose` untuk undangan, tidak ada email,

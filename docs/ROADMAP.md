@@ -55,7 +55,9 @@ dekoder WebP. Diukur langsung lewat satori + resvg yang sudah terpasang: latar W
 4.411 byte dengan rata-rata kanal 0,0 dan stdev 0,0 — **kanvas kosong seluruhnya** — sementara sumber
 PNG yang sama menghasilkan 466.044 byte, rata-rata 102,6, stdev 51,5. Dan `normalizePhoto` mengubah
 tiap foto unggahan jadi WebP, jadi setiap pasangan yang memilih `backgroundMode: 'foto'` selama ini
-mengirim kartu hitam ke WhatsApp dan Facebook. Tes elemen yang ada tidak bisa menangkapnya karena
+mengirim kartu **tanpa fotonya** ke WhatsApp dan Facebook — bukan kartu kosong, melainkan lapisan
+gelap, ornamen, dan teks tanpa latarnya. Itu yang membuatnya bertahan lama: hasilnya terlihat
+seperti kartu bertema gelap yang disengaja, bukan seperti kegagalan. Tes elemen yang ada tidak bisa menangkapnya karena
 tidak pernah memanggil satori; e2e tidak bisa karena hanya memeriksa `href`. Persis bentuk kegagalan
 yang dijanjikan tertangkap oleh "dirender sungguhan". `sharp` masuk `apps/api` untuk mendekode satu
 salinan sementara di memori; WebP tetap format simpan dan halaman undangan tidak berubah sedikit pun.
@@ -2663,8 +2665,10 @@ Sisa yang diketahui dan sengaja ditunda:
   CC BY-SA, bukan CC0/PD. Pilihannya: terima CC BY-SA untuk audio dengan atribusi di pemutar
   (field `credit` sudah ada), atau pesan rekaman sendiri. Keputusan lisensi, bukan teknis.
   Rinciannya di `docs/features/invitation-builder/sources/MUSIC.md`.
-- **Kuota foto masih satu angka untuk semua paket** (`galleryPhotoLimit = 15`), padahal katalog
-  menjanjikan 15/30/60. `Invitation` belum menyimpan paketnya — hanya daftar entitlement fitur.
+- ~~**Kuota foto masih satu angka untuk semua paket**~~ Selesai di fase 75.7. Yang menahan memang
+  seperti dicatat di sini — `Invitation` tidak menyimpan paketnya — dan itu tidak bisa disimpulkan
+  dari entitlement, karena entitlement cuma daftar fitur dan dua paket bisa membuka fitur yang sama
+  dengan kuota berbeda. Sekarang `Invitation.packageId` dicap di detik yang sama entitlement ditulis.
 - ~~**Autosave bisa menghidupkan kembali URL yang baru dihapus.**~~ Selesai di fase 18, dan
   lebih dalam dari yang dicatat di sini: autosave dicabut seluruhnya.
 - **Tinta tombol `#FFFDF7`** di `MusicPlayer.vue` belum diturunkan jadi `--iv-on-primary`.

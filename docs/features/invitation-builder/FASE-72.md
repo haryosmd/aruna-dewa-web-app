@@ -117,7 +117,7 @@ partitur GSAP per tema (`utils/motion-score.ts`, `motion-play.ts`, `sectionRole`
 | 6 | `map` | Lokasi | Opsional | `title, subtitle, mapUrl, buttonLabel` | `events.events[*].venue/address/mapUrl` |
 | 7 | `unduh-mantu` | Unduh Mantu | Opsional (mati) | `title, subtitle, kicker, address, mapUrl, buttonLabel` | baru |
 | 8 | `quote` | Quote | Opsional | `title, subtitle, imageUrl` | baru |
-| 9 | `gallery` | Galeri | Opsional | `title, eyebrow, subtitle, viewLabel, lightboxTitle, imageUrls[]` | `gallery.images` |
+| 9 | `gallery` | Galeri | Opsional | `eyebrow, title, viewLabel, subtitle, lightboxTitle, imageUrls[]` | `gallery.images` |
 | 10 | `gift` | Hadiah | Opsional | `title, eyebrow, subtitle, bank1, account1, holder1, bank2, account2, holder2, hasSecondAccount, buttonLabel, copiedLabel` | `gift.accounts` |
 | 11 | `wishes` | Ucapan | Opsional | `title, eyebrow, formTitle, subtitle, nameLabel, namePlaceholder, attendanceLabel, presentLabel, unsureLabel, absentLabel, messageLabel, messagePlaceholder, submitLabel, savingLabel, successLabel, celebrationLabel, loadingLabel, emptyLabel` | `rsvp` + `wishes` (digabung: RSVP = pilihan kehadiran di form ucapan) |
 | 12 | `closing` | Penutup | Wajib | `title, copy, subtitle, greeting, date, imageUrl` | `closing` |
@@ -132,7 +132,7 @@ Teknis:
 - `packages/contracts/src/index.ts`: `sectionTypes` baru; **`sections[].data` divalidasi
   zod per tipe** (`z.discriminatedUnion('type', …)`, bukan lagi `z.record(z.unknown())`),
   semua kolom teks `string().max(240)` (judul 80, label/tombol 40 — pakai `copyLimit` yang
-  ada), `imageUrl` string, `imageUrls` array ≤ `galleryPhotoLimit`. `copy` dan `copyKeys`
+  ada), `imageUrl` string, `imageUrls` array ≤ `maxGalleryPhotoLimit` (plafon; batas per paket ditegakkan di API sejak fase 75). `copy` dan `copyKeys`
   **dihapus dari skema v2** (kata-kata sudah di dalam bagian). `createDefaultDocument()`
   mengisi kata-kata bawaan berbahasa Indonesia seperti tabel di atas.
 - Migrator `migrateDocumentV1toV2()` di contracts (murni, diuji vitest dengan dokumen v1
@@ -307,7 +307,7 @@ gambar terpilih", "Pilih dari Asset Saya"). Kolom teks = `input text`, paragraf 
 | Lokasi (Peta dan alamat acara.) | Label lokasi, Alamat (textarea), URL Google Maps (`url`), Teks tombol Maps |
 | Unduh Mantu (Acara tambahan pihak pria.) | Keterangan, Nama acara, Tanggal acara, Alamat (textarea), URL Google Maps, Teks tombol Maps |
 | Quote (Ayat atau kutipan pilihan.) | Kutipan (textarea), Sumber, Foto komponen |
-| Galeri (Kumpulan foto bahagia.) | Label section, Judul, Label preview foto, Caption, Nama di lightbox, Foto komponen (Maks 4) |
+| Galeri (Kumpulan foto bahagia.) | Label section, Judul, Label preview foto, Caption, Nama di lightbox, Foto komponen (batas per paket sejak fase 75: 15/30/60; referensi memakai 4) |
 | Hadiah (Rekening atau hadiah digital.) | Label section, Judul, Kalimat pengantar (textarea), Bank pertama, Nomor rekening pertama, Pemilik rekening pertama, Teks tombol salin, Teks setelah disalin, sakelar **Aktif** rekening kedua → Nama bank / e-wallet kedua, Nomor rekening kedua, Nama pemilik kedua, tombol Hapus |
 | Ucapan (Kehadiran dan buku tamu.) | Label section, Judul, Judul form, Deskripsi form, Label nama, Placeholder nama, Label kehadiran, Pilihan hadir, Pilihan belum pasti, Pilihan berhalangan, Label ucapan, Placeholder ucapan, Teks tombol kirim, Teks saat menyimpan, Pesan berhasil, Pesan animasi, Pesan saat memuat, Pesan saat kosong |
 | Penutup (Ucapan terima kasih.) | Judul, Paragraf penutup (textarea), Nama mempelai, Salam penutup, Tanggal, Foto komponen |

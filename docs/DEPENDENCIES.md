@@ -37,7 +37,13 @@ lengkap, bukan disebut sekilas.
 satori + resvg yang sudah terpasang, foto yang sama dalam dua format: WebP → PNG 4.411 byte,
 rata-rata kanal 0,0, stdev 0,0; PNG → 466.044 byte, rata-rata 102,6, stdev 51,5. Karena
 `normalizePhoto` mengubah tiap foto unggahan jadi WebP, setiap kartu bagikan `backgroundMode: 'foto'`
-selama ini terbit hitam.
+selama ini terbit **tanpa fotonya**.
+
+Diukur sekali lagi di stack sungguhan, satu undangan terbit dengan foto WebP unggahan: sebelum
+57.190 byte rata-rata 31,3; sesudah 375.388 byte rata-rata 60,6. Angka 31,3 dan bukan 0,0 karena
+kartunya tetap menggambar lapisan gelap, ornamen, dan teksnya — **fotonya yang hilang, bukan
+seluruh kartunya**. Itu juga yang membuat cacat ini bertahan lama: kartunya terlihat seperti kartu
+bertema gelap yang disengaja, bukan seperti kegagalan.
 
 **Kenapa tidak ditulis sendiri seperti 74.6.** Di sana mesinnya sudah ada — `normalizePhoto` sudah
 memegang canvas dan encoder WebP, jadi pangkas cuma pemilih kotak di atasnya. Di sini tidak ada
