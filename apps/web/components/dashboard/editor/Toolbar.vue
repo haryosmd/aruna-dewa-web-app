@@ -82,6 +82,13 @@ const halaman = computed(() => [
         </ul>
       </nav>
 
+      <!--
+        Lebar kelompok ini TIDAK boleh bergantung pada status simpan: dulu "Published" → "Terbitkan
+        ulang" melebarkannya ±40px, di 1440 kelompoknya pindah ke baris kedua pada suntingan pertama,
+        header menebal ±44px, dan panggung melompat turun sekaligus mengecil di tengah seretan.
+        Karena itu tombol terbit selebar label terpanjangnya, dan Undang (belum aktif) hanya ikon di
+        bawah 2xl.
+      -->
       <div class="flex flex-wrap items-center justify-end gap-2">
         <!--
           Pratinjau membuka TAB BARU, dan itu bukan kenyamanan: editor menyimpan perubahan yang
@@ -103,7 +110,7 @@ const halaman = computed(() => [
         <UiTooltip content="Undang kolaborator untuk mengedit bersama — segera" side="bottom">
           <UiButton id="editor-undang" tone="outline" size="sm" disabled aria-label="Undang kolaborator (segera)">
             <UserPlus :size="16" aria-hidden="true" />
-            Undang
+            <span class="hidden 2xl:inline">Undang</span>
           </UiButton>
         </UiTooltip>
         <UiButton
@@ -111,7 +118,7 @@ const halaman = computed(() => [
           :tone="published ? 'primary' : 'ink'"
           size="sm"
           :loading="publishing"
-          :class="cn(published && 'bg-success hover:bg-success')"
+          :class="cn('min-w-[10.5rem] justify-center', published && 'bg-success hover:bg-success')"
           @click="emit('publish')"
         >
           <Check v-if="published && !publishing" :size="16" aria-hidden="true" />

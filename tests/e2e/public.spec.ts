@@ -264,6 +264,9 @@ test.describe('gallery stays visible and contained under reduced motion', () => 
  * diam-diam berhenti terbaca DAN kalau jalur lama diam-diam ikut merender pita.
  */
 test('theme motion scores actually reach the page', async ({ page }) => {
+  // Membuka amplop di SETIAP tema berurutan: di webkit lokal sudah 27,8 dari 30 detik, dan runner
+  // CI melewatinya. Anggarannya yang habis, bukan gerbangnya yang macet.
+  test.slow()
   const berpartitur = []
   const tanpa = []
   for (const template of templates) {

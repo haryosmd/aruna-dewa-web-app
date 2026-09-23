@@ -457,6 +457,21 @@ test.describe('fase 81 · panggung editor', () => {
     await page.locator('#editor-undo').click()
   })
 
+  test('@desktop fase 82: header editor tidak menebal saat suntingan pertama membuatnya "belum tersimpan"', async ({ page }) => {
+    await bukaEditor(page)
+    await pilihBagian(page, 'hero')
+    const tinggiHeader = () => page.locator('#editor-publish').evaluate(el => el.closest('header')!.getBoundingClientRect().height)
+    const sebelum = await tinggiHeader()
+    const sudut = await pusat(page, 'o:corner:tl', 'hero')
+    await page.mouse.move(sudut.x, sudut.y)
+    await page.mouse.down()
+    for (let i = 1; i <= 5; i++) await page.mouse.move(sudut.x + i * 8, sudut.y + i * 4)
+    await page.mouse.up()
+    await expect(page.locator('#editor-save-state')).toHaveText('Ada perubahan yang belum tersimpan')
+    expect(await tinggiHeader()).toBe(sebelum)
+    await page.locator('#editor-undo').click()
+  })
+
   test('@desktop fase 82: pratinjau Lapisan menghadap seperti di kanvas (Simbol · bawah terbalik)', async ({ page }) => {
     await bukaEditor(page)
     await pilihBagian(page, 'hero')

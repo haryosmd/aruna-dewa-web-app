@@ -164,9 +164,27 @@ async function bukaAmplop(stage: import('@playwright/test').Locator) {
   // `force` melewati penantian "enabled" dan gulir otomatis juga: callout baru aktif sesudah modul
   // geraknya siap, dan panggung yang sedang di bagian lain digulir dulu ke amplop di puncaknya.
   await expect(callout).toBeEnabled()
+  /*
+   * Tunggu gulir panggung diam dulu. Pendaratan rail ke bagian yang terakhir dipilih punya ekor
+   * koreksi sampai 2,4 s (fase 80); di runner CI yang lambat ekor itu jatuh SESUDAH `scrollTop = 0`
+   * dan klik mendarat di callout yang sudah terbawa pergi — trace tablet: 0 → 83 → 1680 tepat di
+   * sekitar klik, dan amplopnya tidak pernah dibuka.
+   */
+  await gulirDiam(stage)
   await stage.evaluate((el) => { el.scrollTop = 0 })
+  await gulirDiam(stage)
+  await expect.poll(() => stage.evaluate(el => el.scrollTop)).toBe(0)
   await callout.click({ force: true })
   await terbuka(stage)
+}
+
+/** Posisi gulir panggung tidak berubah selama 300 ms. */
+async function gulirDiam(stage: import('@playwright/test').Locator) {
+  await expect.poll(async () => {
+    const awal = await stage.evaluate(el => el.scrollTop)
+    await stage.page().waitForTimeout(300)
+    return (await stage.evaluate(el => el.scrollTop)) === awal
+  }, { timeout: 8_000 }).toBe(true)
 }
 
 /** Amplop panggung sudah tuntas terbuka, dan panggungnya sudah melewati gerbang. */
