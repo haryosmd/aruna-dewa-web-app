@@ -684,6 +684,9 @@ test('editor menahan perpindahan halaman selama ada perubahan belum tersimpan', 
  * pegangan ⠿ (drag, atau ↑/↓ dari keyboard), dan tab Tema jadi Global.
  */
 test('studio editor: rail, inspektor, dan preferensi yang bertahan', async ({ page }) => {
+  // Alur panjang (rail, inspektor, pratinjau, amplop, zoom, preferensi) yang kini juga menunggu gulir
+  // panggung diam sebelum membuka amplop: di webkit CI 30 detik habis tepat di langkah pemulihannya.
+  test.slow()
   test.skip(!account, 'Run pnpm test:integration first to create an isolated QA account.')
   await signIn(page)
   await page.goto(`/dashboard/${account!.invitationId}/editor`)

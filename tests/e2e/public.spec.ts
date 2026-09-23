@@ -42,7 +42,9 @@ const fitsViewport = (page: import('@playwright/test').Page) =>
 async function bukaGerbang(page: import('@playwright/test').Page) {
   // Demo v2 (fase 72): segel amplop adalah tombolnya, bernama `sealLabel` ("Buka").
   await page.getByRole('button', { name: 'Buka', exact: true }).click()
-  await expect(page.locator('.iv-gate')).toHaveCount(0)
+  // Gerbang baru pergi di akhir timeline amplop: tempo "pelan" sendiri ±5,5 s (segel 1,7 + flap dan
+  // surat sampai 4,2 + badan dan pudar), jadi batas bawaan 5 s pasti kalah di webkit CI.
+  await expect(page.locator('.iv-gate')).toHaveCount(0, { timeout: 15_000 })
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).overflow)).not.toBe('hidden')
 }
 
