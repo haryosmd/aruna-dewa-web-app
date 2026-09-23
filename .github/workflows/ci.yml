@@ -338,6 +338,11 @@ jobs:
   # `@desktop` hanya berlaku di satu project (lihat playwright.config.ts), jadi susunannya
   # desktop 64 + mobile 61 + tablet 61 + safari 61. Keempatnya diukur, bukan dihitung di kepala.
   #
+  # 247 -> 310 (PR #7, fase 78-82): berkas fase78-81.spec.ts masuk git untuk pertama kali, plus
+  # tes baru fase 82 di fase81.spec.ts. Diukur dengan `playwright test --list` per project DAN dari
+  # run CI yang hijau (0 skipped, 0 flaky): desktop 97 + mobile 71 + tablet 71 + safari 71. Desktop
+  # naik lebih banyak karena seluruh fase81.spec.ts bertanda `@desktop`.
+  #
   # `needs: e2e` menunggu keempat matrix job. TANPA `if: always()`: kalau ada yang merah,
   # workflow-nya sudah merah dan job ini tidak perlu menambah kebisingan.
   e2e-gate:
@@ -366,7 +371,7 @@ jobs:
             if (per.length !== 4) { console.error(`::error::${per.length} project melapor, seharusnya 4. Ada job e2e yang tidak pernah sampai menulis laporannya.`); process.exit(1); }
 
             const total = per.reduce((n, p) => n + p.expected, 0);
-            const seharusnya = 247;
+            const seharusnya = 310;
             if (total !== seharusnya) { console.error(`::error::${total} lulus, seharusnya ${seharusnya}. Perbarui angkanya dengan sadar kalau memang ada tes baru.`); process.exit(1); }
             console.log(`${total} eksekusi lulus di empat project.`);
           '
