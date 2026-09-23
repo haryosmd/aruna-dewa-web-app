@@ -54,6 +54,13 @@ test.describe('amplop tamu', () => {
   })
 
   test('gerbang tetap utuh sampai surat berdiri, lalu hero masuk bersamaan pudarnya', async ({ page }) => {
+    /*
+     * `networkidle` belum berarti gerak masuk sudah dipasang. Sebelum terpasang judul hero tampil
+     * dalam keadaan istirahat (opacity 1, aturan markup keadaan-akhir), dan menekan segel di saat
+     * itu mengukur hal lain. Trace safari CI: sampel t=0 hero 1, halaman membeku 1,9 s, sesudahnya
+     * hero 0 sepanjang gerbang utuh. Tanda siapnya adalah hero yang sudah disembunyikan dan ditahan.
+     */
+    await expect.poll(() => page.evaluate(() => Number(getComputedStyle(document.querySelector('#iv-hero [data-iv-lead]')!).opacity)), { timeout: 10_000 }).toBeLessThan(0.1)
     const sampel = await rekamPembukaan(page)
 
     /*
