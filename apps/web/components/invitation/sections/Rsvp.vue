@@ -3,7 +3,7 @@ import { Check, Minus, Plus, RotateCcw, Send, X } from 'lucide-vue-next'
 import type { Section } from '~/types/aruna'
 
 const props = defineProps<{ section: Section; seed: number }>()
-const { orn, intensity, compact, coupleNames, initials, guest, guestError, hasToken, rsvpPending, submitRsvp, t } = useInvitation()
+const { orn, intensity, compact, coupleNames, initials, guest, guestError, hasToken, rsvpPending, submitRsvp, motionOptions, t } = useInvitation()
 
 const root = ref<HTMLElement | null>(null)
 
@@ -62,7 +62,8 @@ useArunaMotion(root, ({ gsap, bloomIn }) => {
   gsap.utils.toArray<HTMLElement>('[data-rsvp-ticket]').forEach((node) => {
     gsap.from(node, { rotateX: -82, y: 26, opacity: 0, transformOrigin: 'top center', duration: 0.9, ease: 'power3.out' })
   })
-})
+  // `motionOptions` sejak fase 79: penggulung panggung dan sakelar Statis, keduanya milik renderer.
+}, motionOptions)
 </script>
 
 <template>
@@ -90,7 +91,7 @@ useArunaMotion(root, ({ gsap, bloomIn }) => {
         -->
         <div data-rsvp-ticket class="iv-ticket" :data-going="finalAttendance">
           <div class="iv-ticket-stub">
-            <OrnamentGlyph :glyph="orn.seal" :initials="initials" class="iv-ticket-seal" aria-hidden="true" />
+            <InvitationOrnamen :initials="initials" slot-id="seal" posisi="utama" class="iv-ticket-seal" aria-hidden="true" />
           </div>
           <div class="iv-ticket-body">
             <p class="iv-kicker m-0">{{ finalAttendance === 'yes' ? t('rsvp.confirmed') : t('rsvp.declined') }}</p>
@@ -127,7 +128,7 @@ useArunaMotion(root, ({ gsap, bloomIn }) => {
             @click="choose('yes')"
           >
             <span class="iv-rsvp-petals" aria-hidden="true">
-              <OrnamentGlyph v-for="n in 3" :key="n" data-rsvp-petal :glyph="orn.floral" class="iv-rsvp-petal" />
+              <InvitationOrnamen v-for="n in 3" :key="n" data-rsvp-petal slot-id="floral" posisi="utama" class="iv-rsvp-petal" />
             </span>
             <Check :size="20" aria-hidden="true" />
             <span class="iv-display text-[1.3rem]">{{ t('rsvp.yes') }}</span>

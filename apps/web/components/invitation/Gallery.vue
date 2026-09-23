@@ -36,6 +36,15 @@ const spotlight = computed(() => props.layout === 'spotlight' && !props.compact 
  * bail total, jadi tanpa JS sorot ini runtuh kembali jadi tumpukan biasa yang tetap
  * terbaca penuh — itulah yang diuji di `tests/e2e/public.spec.ts`.
  */
+/*
+ * Opsi motion milik renderer (fase 79). Di-`inject` opsional, bukan lewat `useInvitation()`:
+ * komponen ini berkontrak prop murni — kedua pembungkusnya yang tahu soal section — dan
+ * `useInvitation()` melempar di luar renderer. Sampai fase ini opsinya tidak dioper sama sekali,
+ * jadi sorot galeri di panggung editor mengukur jendela alih-alih layar ponsel yang menggulung,
+ * dan tombol Statis tidak mematikannya.
+ */
+const konteksMotion = inject(invitationKey, null)?.motionOptions
+
 useArunaMotion(root, ({ gsap }) => {
   if (!spotlight.value) return
   const tiles = gsap.utils.toArray<HTMLElement>('[data-spotlight-tile]')
@@ -63,7 +72,7 @@ useArunaMotion(root, ({ gsap }) => {
       .to(tiles[at - 1]!, { opacity: 0, scale: 1.04, duration: 0.5, ease: 'none' })
       .to(tile, { opacity: 1, scale: 1, duration: 0.5, ease: 'none' }, '<')
   })
-})
+}, konteksMotion)
 
 /** Foto bisa berubah saat editor menyimpan; indeks lama akan menunjuk ke luar array. */
 watch(() => props.images, () => { index.value = 0 })
@@ -112,16 +121,24 @@ function onKey(event: KeyboardEvent) {
         :id="`iv-gallery-tile-${at + 1}`"
         :key="image"
         type="button"
-        data-iv-reveal
-        :data-iv-gallery-slow="at % 2 === 1 ? '' : undefined"
+        :data-iv-reveal="at < 12 ? '' : undefined"
+        :data-iv-gallery-slow="at < 12 && at % 2 === 1 ? '' : undefined"
         class="iv-gallery-tile"
         :aria-label="`Perbesar foto ${at + 1}`"
         @click="show(at)"
       >
         <img :src="image" :alt="`Potret pasangan ${at + 1}`" loading="lazy" data-iv-photo class="iv-gallery-img">
-        <!-- Nomor 01–04 ala referensi: hanya pada layout `grid`, di atas tabir tipis di dasar foto. -->
+        <!--
+          Nomor 01–04 ala referensi: hanya pada layout `grid`, di atas tabir tipis di dasar foto.
+
+          **Berputar** sejak fase 79, bukan menghitung terus. Kuota paket Purnama 60 foto, dan
+          sampai fase ini tile ke-57 menulis `57` — angka yang tidak pernah ada di desain yang
+          melahirkan elemen ini, dan yang terbaca sebagai nomor inventaris, bukan sebagai
+          ornamen editorial. Seluruh `<span>` ini `aria-hidden`; nomor yang dibacakan pembaca
+          layar ada di `aria-label` tombolnya dan tetap berurutan sampai foto terakhir.
+        -->
         <span v-if="props.layout === 'grid'" class="iv-gallery-num" aria-hidden="true">
-          <span class="iv-gallery-num-index">{{ String(at + 1).padStart(2, '0') }}</span>
+          <span class="iv-gallery-num-index">{{ String((at % 4) + 1).padStart(2, '0') }}</span>
           <span v-if="props.viewLabel" class="iv-gallery-num-label">{{ props.viewLabel }}</span>
         </span>
       </button>
@@ -248,6 +265,44 @@ function onKey(event: KeyboardEvent) {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .iv-gallery--grid .iv-gallery-tile { position: relative; aspect-ratio: 4 / 5; }
+/*
+ * Tile terakhir pada jumlah GANJIL mengisi kedua kolom, bukan meninggalkan sel kosong di
+ * sebelahnya. `:last-child:nth-child(odd)` benar tanpa menghitung apa pun di JavaScript: anak
+ * terakhir yang posisinya ganjil hanya mungkin terjadi kalau totalnya ganjil.
+ *
+ * Paling terasa pada satu foto — yang sampai fase 79 berdiri di kolom kiri dengan separuh baris
+ * kosong di kanannya, bentuk yang terbaca sebagai foto yang gagal dimuat. Rasionya turun dari
+ * 4:5 ke 16:10 karena tile selebar dua kolom pada rasio potret akan setinggi dua baris dan
+ * mendominasi seluruh galeri.
+ */
+.iv-gallery--grid .iv-gallery-tile:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+  aspect-ratio: 16 / 10;
+}
+/*
+ * Enam puluh foto adalah tiga puluh baris tile — kuota paket Purnama, dan sampai fase 79
+ * seluruhnya dirender dan diberi ScrollTrigger sendiri-sendiri.
+ *
+ * Dua hal diperbaiki sekaligus, dan **batasnya sengaja sama**: `data-iv-reveal` dan parallax
+ * berhenti di tile ke-12 (lihat markup), dan `content-visibility` mulai di tile ke-13. Jadi
+ * tidak ada satu pun tile yang memegang keduanya.
+ *
+ * Itu bukan kebetulan melainkan syaratnya. `content-visibility: auto` melewati render tata
+ * letak, dan elemen yang dilewati bisa menjawab ScrollTrigger dengan geometri cadangan alih-alih
+ * geometri sesungguhnya — memicu reveal pada posisi yang salah, atau tidak sama sekali. Alih-alih
+ * bertaruh pada perilaku yang hanya bisa diukur dengan enam puluh foto sungguhan, interaksinya
+ * DIHILANGKAN: tile yang di-skip render tidak pernah punya trigger untuk dirusak.
+ *
+ * Harganya jujur dan kecil: tile ke-13 dan seterusnya muncul tanpa gerak masuk. Markup undangan
+ * ditulis pada keadaan akhir, jadi mereka tetap terbaca penuh — persis seperti ketika anggaran
+ * 240 trigger habis dan `useArunaMotion` menjatuhkan sisanya. Untungnya dua: 60 tile yang dulu
+ * menghabiskan ~90 dari anggaran itu sekarang memakai 18, sebelum dua puluh langkah cerita dan
+ * tiga puluh baris rundown ikut mengantre.
+ */
+.iv-gallery--grid .iv-gallery-tile:nth-child(n+13) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1px auto 22rem;
+}
 .iv-gallery-num {
   position: absolute;
   inset: auto 0 0 0;
@@ -257,10 +312,24 @@ function onKey(event: KeyboardEvent) {
   padding: 0.75rem 0.85rem;
   text-align: left;
   color: #fffdf7;
-  background: linear-gradient(to top, rgb(0 0 0 / 0.55), transparent);
+  /*
+   * Tabir dipendekkan dan diringankan (fase 79), BUKAN disembunyikan sampai di-hover.
+   *
+   * Yang salah sebelumnya bukan keberadaannya melainkan jangkauannya: `to top` tanpa henti
+   * menggelapkan sepertiga bawah setiap foto secara permanen, di setiap tema. Sekarang ia
+   * berhenti di 42% dan turun dari 0,55 ke 0,45 — cukup untuk menahan teks putih terbaca di
+   * atas foto apa pun, tidak cukup untuk ikut mewarnai fotonya.
+   *
+   * Menyembunyikannya di `:hover` sempat dicoba dan **ditarik**: aturan repo melarang markup
+   * undangan menyembunyikan apa pun lewat CSS (`apps/web/test/motion-rules.spec.ts`), dan
+   * aturan itu benar — undangan ini harus terbaca penuh tanpa JavaScript. Lagi pula ia dibaca
+   * di ponsel, yang tidak punya hover sama sekali.
+   */
+  background: linear-gradient(to top, rgb(0 0 0 / 0.45), transparent 42%);
   font-family: var(--iv-body);
   pointer-events: none;
 }
+
 .iv-gallery-num-index { font-family: var(--iv-display); font-size: 1.25rem; line-height: 1; }
 .iv-gallery-num-label { font-size: 0.625rem; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.85; }
 

@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { Monitor, RotateCw, Smartphone, Tablet, ZoomIn, ZoomOut } from 'lucide-vue-next'
+import { MailOpen, Maximize2, Minimize2, Monitor, Pause, Play, RotateCw, Smartphone, Tablet, ZoomIn, ZoomOut } from 'lucide-vue-next'
 import type { InvitationDocument } from '~/types/aruna'
 import { zoomMax, zoomMin, zoomStep, type PreviewDevice } from '~/composables/useEditorPrefs'
 import { sectionDomId, stageScrollOffset, stageScrollTop } from '~/utils/editor-sections'
-import { layerSlots, ornamentSlots, type OrnamentSlotKey } from '~/utils/ornament-slots'
-import type { LayerSlot } from '~/utils/ornaments'
+import type { AksiKanvas, InfoKeping } from '~/utils/kanvas'
 
 /*
  * Panggung pratinjau (fase 72.2): pil kiri ↻ | ZOOM ⊖ 100% ⊕, pil kanan pemilih lebar.
@@ -20,8 +19,8 @@ import type { LayerSlot } from '~/utils/ornaments'
  * Lebarnya dirender sungguhan lalu diperkecil, bukan diperkecil lalu dirender: undangan memakai
  * container query di seluruh badannya (`.iv-root`), jadi render 390px berperilaku persis seperti
  * ponsel 390px. Skala tidak pernah melebihi 1 — memperbesar render hanya mengaburkan gambar dan
- * berbohong soal ukuran huruf. Zoom karena itu 50–100 %: ia memperkecil dari "pas", bukan
- * memperbesar melampaui aslinya.
+ * berbohong soal ukuran huruf. Zoom 50–200 % (fase 81) dihitung dari "pas": di atas 100 % bingkai
+ * boleh melebar melewati panggung dan digeser, sampai ukuran aslinya.
  */
 /*
  * `height` sepasang dengan `width`, dan itu bukan hiasan: bagian yang setinggi "satu layar"
@@ -48,25 +47,52 @@ const previewDevices = [
 const props = defineProps<{
   document: InvitationDocument
   focusSection?: { type: string, nonce: number } | null
+  /** Navigasi, rail, dan inspektor sedang dilipat oleh tombol Fokus (fase 81). */
+  fokus?: boolean
+  /** Nonce ▶ gerak dari form (fase 81), diteruskan ke renderer. */
+  putar?: number
+  /** Bagian yang terbuka di form: daftar Lapisannya dipancarkan kanvas (fase 81). */
+  bagianAktif?: string | null
+  /** Add-on desain aktif: tanpa itu kanvas hanya memilih, tidak mengatur tata letak. */
+  bisaDesain?: boolean
 }>()
 const emit = defineEmits<{
   /** Bagian yang sedang berdiri di tengah layar (fase 76), supaya rail ikut menyorot. */
   sectionInView: [type: string]
-  /** Ornamen yang diklik di kanvas (fase 76), supaya inspektor membuka slotnya. */
-  pilihSlot: [target: { slot?: OrnamentSlotKey, layer?: LayerSlot }]
+  /* Kanvas bebas (fase 81) — diteruskan apa adanya ke `editor.vue`, yang menulis dokumen. */
+  ubah: [target: InfoKeping, patch: Record<string, unknown>, catat: boolean]
+  ukurTeks: [target: InfoKeping, fontSize: number, catat: boolean]
+  teks: [target: InfoKeping, nilai: string]
+  aksi: [nama: AksiKanvas, target: InfoKeping]
+  daftar: [InfoKeping[]]
+  /** Minta pemilik halaman melipat/membuka semua panel di sekitar panggung (fase 81). */
+  fokus: []
 }>()
 const device = defineModel<PreviewDevice>('device', { default: 'ponsel' })
 const zoom = defineModel<number>('zoom', { default: 100 })
+/**
+ * Gerak panggung dimatikan (fase 78).
+ *
+ * Diteruskan ke `Renderer` sebagai prop biasa, **tidak** ikut `:key`: mematikan gerak tidak boleh
+ * me-remount pratinjau, karena remount menutup ulang amplop dan melempar posisi gulir pasangan ke
+ * puncak. `useArunaMotion` mengurusnya dengan `ctx.revert()`, yang menulis balik gaya inline gsap
+ * dan menyisakan markup keadaan-akhir yang memang sudah terbaca tanpa JS.
+ */
+const statis = defineModel<boolean>('statis', { default: false })
+/** Keping kanvas yang sedang dipilih (fase 81). */
+const terpilih = defineModel<InfoKeping | null>('terpilih', { default: null })
 
 const viewport = ref<HTMLElement | null>(null)
 let percobaan = 0
 
 /**
- * Gerbang amplop masih berdiri.
+ * Gerbang amplop masih tertutup.
  *
- * **Tidak lagi mengunci gulir** (fase 76): gerbang kini ikut aliran setinggi satu layar, jadi
- * tidak ada yang perlu dikunci. Yang tersisa dari sinyal ini satu: begitu gerbangnya pergi,
- * daftar elemen yang diamati scroll-spy berubah dan pengamatnya harus dipasang ulang.
+ * **Tidak lagi mengunci gulir** (fase 76): gerbang ikut aliran setinggi satu layar, jadi tidak
+ * ada yang perlu dikunci. Sesudah fase 77 ia juga tidak lagi PERGI saat dibuka — ia bagian pertama
+ * undangan dan tetap berdiri, tersegel ulang, supaya bisa dikunjungi lagi dari puncak. Yang
+ * tersisa dari sinyal ini satu: memasang ulang garis dasar scroll-spy di saat gerbangnya dibuka,
+ * supaya sorot rail tidak berpindah sendiri dan menghapus form yang sedang diisi pasangan.
  */
 const terkunci = ref(false)
 
@@ -118,7 +144,50 @@ function gulirKe(type: string, sisa = 30) {
     gulirTerakhir = host.scrollTop
     const id = bagianDiTengah()
     if (id && id !== terakhir) { terakhir = id; emit('sectionInView', id) }
+    jagaPendaratan(tiket, tujuan)
   }, halus ? 900 : 300)
+}
+
+/**
+ * Pendaratan dijaga sebentar sesudah koreksi (fase 80).
+ *
+ * Koreksi di atas hanya sekali. Di bawah beban — suite e2e penuh, atau ponsel lambat — font dan
+ * gambar di atas bagian tujuan masih tiba sesudahnya, dan bagian itu bergeser tanpa satu pun
+ * yang membetulkannya: `dashboard.spec.ts:754` mencatat 38,3px dan tidak pernah pulih selama
+ * lima detik polling. Jadi pendaratan diperiksa tiga kali lagi dalam 2,4 detik — dan dilepas
+ * begitu pasangan menggulir sendiri (`scrollTop` berubah bukan oleh kita), karena menarik balik
+ * gulir orang adalah cacat yang lebih buruk daripada meleset 30px.
+ */
+function jagaPendaratan(tiket: number, tujuan: () => number) {
+  const host = scroller.value
+  if (!host) return
+  /*
+   * Posisi yang KITA tulis, dicatat sendiri. Bukan `gulirTerakhir`: pengamat gulir ikut
+   * menulisnya tiap kali pasangan menggulir, jadi membandingkan dengannya membuat gulir pasangan
+   * terbaca sebagai "belum ada yang menyentuh" — dan panggungnya ditarik balik ke tujuan lama.
+   */
+  let pendaratan = host.scrollTop
+  /*
+   * Satu langkah ekor animasi gulir halus bisa jatuh SESUDAH koreksi instan: terukur di fase 81,
+   * koreksi menulis 6034, frame berikutnya animasi yang belum berhenti menambah langkah terakhirnya
+   * (+18) dan layar mendarat di 6052. Dua frame kemudian titik pendaratannya dibaca ulang dan,
+   * bila masih meleset, ditulis sekali lagi — baru sesudah itu penjaga di bawah memakainya.
+   */
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (tiket !== percobaan) return
+    if (Math.abs(tujuan() - host.scrollTop) > 8) host.scrollTo({ top: tujuan(), behavior: 'instant' })
+    pendaratan = host.scrollTop
+    gulirTerakhir = host.scrollTop
+  }))
+  for (const jeda of [500, 1200, 2400]) {
+    setTimeout(() => {
+      if (tiket !== percobaan || Math.abs(host.scrollTop - pendaratan) > 1) return
+      if (Math.abs(tujuan() - host.scrollTop) <= 8) return
+      host.scrollTo({ top: tujuan(), behavior: 'instant' })
+      pendaratan = host.scrollTop
+      gulirTerakhir = host.scrollTop
+    }, jeda)
+  }
 }
 
 watch(() => props.focusSection, async (fokus) => {
@@ -258,6 +327,48 @@ function pasangPengamat() {
   host.querySelectorAll<HTMLElement>('[data-iv-section], .iv-gate[id]').forEach(el => pengamat!.observe(el))
 }
 
+/**
+ * Amplop selesai dibuka: panggung melompat ke bagian pertama di bawah gerbang.
+ *
+ * Sampai fase 77 tidak ada yang perlu melompat — gerbangnya melepas diri dari DOM dan isi di
+ * bawahnya naik mengisi tempatnya. Itu juga yang membuat amplop jadi satu-satunya bagian yang
+ * tidak bisa dikunjungi dua kali. Sekarang gerbangnya tetap berdiri, jadi pengungkapannya
+ * dilakukan dengan gulir.
+ *
+ * **Sengaja bukan `gulirKe()`, dan itu diukur.** Perjalanan `gulirKe` punya ekor 300–900ms yang
+ * mengoreksi pendaratan lalu melaporkan sorotnya. Untuk lompatan ini ekor itu tidak punya
+ * pekerjaan (lompatnya instan, tidak ada yang perlu dikoreksi) tapi tetap punya akibat: gulir
+ * pasangan yang datang di dalam jendela itu akan **ditarik balik** ke Hero oleh koreksi, dan
+ * laporannya ditelan. Terukur lewat tes "gulir panggung menyorot bagiannya di rail" — panggung
+ * digulir ke Ucapan tepat sesudah amplop dibuka, dan rail diam.
+ *
+ * Jadi: lompat, tulis ulang garis dasar scroll-spy di tempat, selesai. Tanpa laporan sorot,
+ * karena yang membuka amplop biasanya sedang menyunting kata-kata amplop itu — memindahkan
+ * sorot ke Hero akan me-remount form yang sedang ia isi.
+ */
+function ungkap() {
+  bacaScroller()
+  const host = scroller.value
+  if (!host) return
+  const pertama = host.querySelector<HTMLElement>('[data-iv-section][id^="iv-"]')
+  if (!pertama) return
+
+  // Batalkan ekor perjalanan gulir mana pun yang masih menunggu; ini yang paling akhir diminta.
+  percobaan++
+  targetGulir = null
+  host.scrollTo({
+    top: stageScrollTop(
+      { top: host.getBoundingClientRect().top, scrollTop: host.scrollTop },
+      { top: pertama.getBoundingClientRect().top },
+      stageScrollOffset,
+      previewScale.value,
+    ),
+    behavior: 'instant',
+  })
+  gulirTerakhir = host.scrollTop
+  terakhir = bagianDiTengah()
+}
+
 async function segarkanPanggung() {
   await nextTick()
   bacaScroller()
@@ -272,20 +383,26 @@ const kunciBagian = computed(() => props.document.sections.map(section => `${sec
 watch([ulang, kunciBagian, device], segarkanPanggung, { flush: 'post' })
 watch(terkunci, (kunci) => { if (!kunci) segarkanPanggung() })
 
-/* ── Klik ornamen di kanvas (fase 76) ───────────────────────────────────────── */
-function onKlikKanvas(event: MouseEvent) {
-  const awal = event.target as Element | null
-  const keping = awal?.closest<HTMLElement>('[data-iv-slot],[data-layer-slot]')
-  if (!keping) return
-  /*
-   * Kontrol menang atas ornamen. Segel amplop ADALAH tombolnya dan isinya glyph slot `seal`;
-   * tanpa baris ini, satu-satunya cara membuka amplop malah membuka pemilih ornamen.
-   */
-  if (keping.closest('button, a, [role="button"]')) return
-  const layer = keping.dataset.layerSlot
-  if (layer && (layerSlots as readonly string[]).includes(layer)) { emit('pilihSlot', { layer: layer as LayerSlot }); return }
-  const slot = keping.dataset.ivSlot
-  if (slot && (ornamentSlots as readonly string[]).includes(slot)) emit('pilihSlot', { slot: slot as OrnamentSlotKey })
+/**
+ * Gestur gulir pasangan membatalkan perjalanan yang sedang berjalan (fase 80).
+ *
+ * Ekor koreksi `gulirKe` (300–900ms) dan penjaga pendaratan sama-sama menulis `scrollTop`. Tanpa
+ * pembatalan ini, pasangan yang menekan bagian di rail lalu langsung memutar roda tetikus ditarik
+ * balik ke bagian itu — terukur di `fase80.spec.ts`: 9875 → 8653px, 400ms sesudah gulirnya.
+ * Hanya gestur, bukan event `scroll`: gulir halus milik kita sendiri juga memancarkan `scroll`.
+ */
+function batalkanPerjalanan() {
+  percobaan++
+  targetGulir = null
+}
+
+/*
+ * Buka amplop dari toolbar (fase 81). Di panggung klik amplop MEMILIH segel/flap/kantong, jadi
+ * pembukanya dua: callout berikon di bawah amplop, dan tombol ini — yang sekadar menekan callout
+ * itu, supaya hanya ada satu jalur membuka yang harus benar.
+ */
+function bukaAmplop() {
+  viewport.value?.querySelector<HTMLButtonElement>('[data-gate-callout]')?.click()
 }
 
 const aktif = computed(() => previewDevices.find(d => d.id === device.value) ?? previewDevices[0])
@@ -294,8 +411,45 @@ const previewHeight = computed(() => aktif.value.height)
 
 const previewScale = ref(1)
 const previewScalePct = computed(() => Math.round(previewScale.value * 100))
-/** Lebar wadah yang ditawarkan ke bingkai: lebar viewport × zoom. Bingkai yang menghitung skala pasnya. */
+/** Pengali zoom di atas skala pas (fase 81: 50–200 %, 100 % = pas). Bingkai yang menghitung skalanya. */
 const zoomFactor = computed(() => Math.min(zoomMax, Math.max(zoomMin, zoom.value)) / 100)
+/*
+ * Lebar yang tersedia untuk bingkai, diukur dari VIEWPORT panggung dan dioper sebagai angka.
+ *
+ * Fase 76–80 membiarkan bingkai membaca induknya sendiri — pembungkus `w-fit` yang lebarnya justru
+ * hasil bingkai itu. Akibatnya skala pas tidak pernah tumbuh: sesudah Ponsel, Tablet tersangkut di
+ * 0,43 dan Desktop di 0,26 pada jendela yang sama, dan ZOOM tidak mengubah apa pun.
+ */
+/*
+ * Diukur dengan `ResizeObserver` milik sendiri yang mengikuti ref-nya, bukan `useElementSize`.
+ * Sejak fase 81 viewport ini dirender lewat slot `ContextMenuTrigger as-child` milik kanvas, dan
+ * `useElementSize` tertinggal mengamati elemen yang sudah diganti: lebarnya terbaca 0, bingkai
+ * kembali mengukur induknya sendiri, dan Desktop dirender 1:1 selebar 1280px di kolom 528px.
+ */
+const lebarViewport = ref(0)
+const tinggiViewport = ref(0)
+let pengukur: ResizeObserver | null = null
+function ukurViewport(el: HTMLElement) {
+  const gaya = getComputedStyle(el)
+  /*
+   * Tidak pernah negatif. Di bawah `xl` panggung tersembunyi selama tab Pengaturan terbuka, dan
+   * `clientWidth` 0 dikurangi padding sempat melahirkan skala negatif dan tinggi palsu tepat saat
+   * rail memerintahkan gulir — pendaratannya meleset 25px (e2e "studio editor", mobile & tablet).
+   * 0 berarti "belum terukur", sama seperti jawaban `useElementSize` untuk elemen tersembunyi.
+   */
+  lebarViewport.value = Math.max(0, el.clientWidth - Number.parseFloat(gaya.paddingLeft) - Number.parseFloat(gaya.paddingRight))
+  tinggiViewport.value = Math.max(0, el.clientHeight - Number.parseFloat(gaya.paddingTop) - Number.parseFloat(gaya.paddingBottom))
+}
+watch(viewport, (el) => {
+  pengukur?.disconnect()
+  if (!el || typeof ResizeObserver === 'undefined') return
+  ukurViewport(el)
+  pengukur = new ResizeObserver(() => ukurViewport(el))
+  pengukur.observe(el)
+}, { immediate: true, flush: 'post' })
+onBeforeUnmount(() => pengukur?.disconnect())
+/** Ponsel harus terlihat utuh; tablet dan desktop pas lebar lalu mengisi tinggi panggung. */
+const caraMuat = computed(() => (device.value === 'ponsel' ? 'utuh' : 'lebar'))
 
 /*
  * Tinggi yang boleh dipakai ponsel sesudah diperkecil.
@@ -311,7 +465,6 @@ const zoomFactor = computed(() => Math.min(zoomMax, Math.max(zoomMin, zoom.value
  * melewati tepi panggung, dan viewport luar yang menggulungnya; isi undangannya tetap bisa
  * digulir sendiri karena `overscroll-behavior: contain` memisahkan keduanya.
  */
-const { height: tinggiViewport } = useElementSize(viewport)
 const tinggiTersedia = computed(() => (
   tinggiViewport.value ? Math.max(420, Math.round(tinggiViewport.value - 24)) : undefined
 ))
@@ -331,12 +484,33 @@ function ubahZoom(delta: number) {
         <button id="editor-preview-reload" type="button" class="grid h-10 w-10 place-items-center rounded-full text-ink-muted hover:bg-surface-3 hover:text-ink" aria-label="Refresh preview" @click="muatUlang">
           <RotateCw :size="15" aria-hidden="true" />
         </button>
+        <!--
+          Fase 81: dua aksi panggung sebagai ikon bertooltip, di pil yang sudah ada — sebagai pil
+          sendiri keduanya mendorong toolbar ke baris ketiga di kolom panggung 528px (1440×900).
+        -->
+        <UiTooltip content="Buka amplop" side="bottom">
+          <button id="editor-preview-buka-amplop" type="button" class="grid h-10 w-10 place-items-center rounded-full text-ink-muted hover:bg-surface-3 hover:text-ink" aria-label="Buka amplop di pratinjau" @click="bukaAmplop">
+            <MailOpen :size="15" aria-hidden="true" />
+          </button>
+        </UiTooltip>
+        <UiTooltip :content="fokus ? 'Keluar dari fokus' : 'Fokus pratinjau: lipat semua panel'" side="bottom">
+          <button
+            id="editor-preview-fokus"
+            type="button"
+            :aria-pressed="Boolean(fokus)"
+            :aria-label="fokus ? 'Keluar dari fokus pratinjau; buka lagi panel' : 'Fokus pratinjau; lipat navigasi, daftar bagian, dan pengaturan'"
+            :class="cn('hidden h-10 w-10 place-items-center rounded-full lg:grid', fokus ? 'bg-success text-ink-inverse' : 'text-ink-muted hover:bg-surface-3 hover:text-ink')"
+            @click="emit('fokus')"
+          >
+            <component :is="fokus ? Minimize2 : Maximize2" :size="15" aria-hidden="true" />
+          </button>
+        </UiTooltip>
         <span class="mx-0.5 h-5 w-px bg-border" aria-hidden="true" />
         <span class="px-1 text-ui-label font-bold uppercase tracking-[0.12em] text-ink-muted-subtle">Zoom</span>
         <button id="editor-zoom-out" type="button" class="grid h-10 w-10 place-items-center rounded-full text-ink-muted hover:bg-surface-3 hover:text-ink disabled:opacity-40" aria-label="Perkecil Kanvas" :disabled="zoom <= zoomMin" @click="ubahZoom(-zoomStep)">
           <ZoomOut :size="15" aria-hidden="true" />
         </button>
-        <button id="editor-zoom-reset" type="button" class="min-w-[3.25rem] rounded-full px-1 text-ui font-semibold tabular-nums text-ink hover:bg-surface-3" aria-label="Reset zoom ke 100%" @click="zoom = zoomMax">
+        <button id="editor-zoom-reset" type="button" class="min-w-[3.25rem] rounded-full px-1 text-ui font-semibold tabular-nums text-ink hover:bg-surface-3" aria-label="Reset zoom ke 100% (pas)" @click="zoom = 100">
           {{ zoom }}%
         </button>
         <button id="editor-zoom-in" type="button" class="grid h-10 w-10 place-items-center rounded-full text-ink-muted hover:bg-surface-3 hover:text-ink disabled:opacity-40" aria-label="Perbesar Kanvas" :disabled="zoom >= zoomMax" @click="ubahZoom(zoomStep)">
@@ -362,6 +536,30 @@ function ubahZoom(delta: number) {
           {{ option.label }}
         </button>
       </div>
+
+      <!--
+        Gerak: Dinamis ↔ Statis.
+
+        Satu tombol dua keadaan, bukan dua tombol bergantian, karena yang ditanyakan memang satu
+        hal — jadi `aria-pressed` bisa menjawabnya jujur dan pembaca layar tidak perlu menebak
+        mana yang sedang aktif di antara dua pil kembar.
+      -->
+      <div class="pointer-events-auto flex gap-1 rounded-full border border-border bg-surface p-1 shadow-lift">
+        <button
+          id="editor-preview-gerak"
+          type="button"
+          :aria-pressed="!statis"
+          :aria-label="statis ? 'Gerak mati; nyalakan gerak pratinjau' : 'Gerak hidup; matikan gerak pratinjau'"
+          :class="cn(
+            'flex min-h-10 items-center justify-center gap-1.5 rounded-full px-3.5 text-caption font-semibold transition-colors duration-200',
+            statis ? 'text-ink-muted hover:bg-surface-3 hover:text-ink' : 'bg-success text-ink-inverse',
+          )"
+          @click="statis = !statis"
+        >
+          <component :is="statis ? Pause : Play" :size="15" aria-hidden="true" />
+          {{ statis ? 'Statis' : 'Dinamis' }}
+        </button>
+      </div>
     </div>
 
     <p class="pointer-events-none absolute bottom-3 left-1/2 z-[var(--z-raised)] m-0 -translate-x-1/2 rounded-full bg-surface/85 px-3 py-1 text-caption text-ink-muted backdrop-blur">
@@ -369,12 +567,27 @@ function ubahZoom(delta: number) {
       <span v-if="previewScalePct < 100" class="tabular-nums"> · diperkecil {{ previewScalePct }}%</span>
     </p>
 
+    <DashboardEditorKanvas
+      v-model:terpilih="terpilih"
+      :viewport="viewport"
+      :skala="previewScale"
+      :document="props.document"
+      :bagian-aktif="props.bagianAktif"
+      :bisa-desain="props.bisaDesain ?? true"
+      @ubah="(target, patch, catat) => emit('ubah', target, patch, catat)"
+      @ukur-teks="(target, ukuran, catat) => emit('ukurTeks', target, ukuran, catat)"
+      @teks="(target, nilai) => emit('teks', target, nilai)"
+      @aksi="(nama, target) => emit('aksi', nama, target)"
+      @daftar="daftar => emit('daftar', daftar)"
+    >
     <div
       ref="viewport"
-      class="max-h-[36rem] min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-12 pt-28 [scrollbar-gutter:stable] sm:px-6 lg:max-h-none"
-      @click="onKlikKanvas"
+      class="max-h-[36rem] min-h-0 flex-1 overflow-y-auto overflow-x-auto px-4 pb-12 pt-28 [scrollbar-gutter:stable] sm:px-6 lg:max-h-none"
+      @wheel.passive="batalkanPerjalanan"
+      @touchstart.passive="batalkanPerjalanan"
+      @keydown="batalkanPerjalanan"
     >
-      <div class="mx-auto" :style="{ width: `${Math.round(zoomFactor * 100)}%` }">
+      <div class="mx-auto w-fit">
         <!-- Layar polos bersudut membulat: pengganti bezel, dan satu-satunya hiasan yang tersisa. -->
         <div class="mx-auto w-fit overflow-hidden rounded-[1.75rem] bg-surface shadow-float ring-1 ring-border">
           <InvitationPhoneFrame
@@ -383,11 +596,23 @@ function ubahZoom(delta: number) {
             :width="previewWidth"
             :screen-height="previewHeight"
             :max-height="tinggiTersedia"
+            :host-width="lebarViewport || undefined"
+            :muat="caraMuat"
+            :zoom="zoomFactor"
           >
-            <InvitationRenderer :key="ulang" :document="props.document" mode="stage" @gate-lock="value => terkunci = value" />
+            <InvitationRenderer
+              :key="ulang"
+              :document="props.document"
+              mode="stage"
+              :statis="statis"
+              :putar="props.putar ?? 0"
+              @gate-lock="value => terkunci = value"
+              @gate-reveal="ungkap"
+            />
           </InvitationPhoneFrame>
         </div>
       </div>
     </div>
+    </DashboardEditorKanvas>
   </section>
 </template>

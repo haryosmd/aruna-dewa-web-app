@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FolderOpen, Trash2 } from 'lucide-vue-next'
+import { FolderOpen, Play, Trash2 } from 'lucide-vue-next'
 import type { FieldMeta, FontChoice, InvitationSection, SectionBackground, SectionMotion, TextStyle, V2SectionType } from '@aruna/contracts'
 import { isRequiredSection, maxGalleryPhotoLimit, sectionFields, sectionMeta, sectionMotions, selectableFonts } from '@aruna/contracts'
 import { bodyFontOf } from '~/utils/theme'
@@ -35,6 +35,8 @@ const emit = defineEmits<{
   tulisGaya: [key: string, style: TextStyle | null]
   tulisLatar: [patch: Partial<SectionBackground> | null]
   tulisGerak: [motion: SectionMotion]
+  /** Putar ulang gerak masuk bagian ini di panggung (fase 81). */
+  putar: []
   release: [url: string]
 }>()
 
@@ -49,6 +51,23 @@ const motion = computed<SectionMotion>(() => (data.value.motion as SectionMotion
 const str = (key: string) => String(data.value[key] ?? '')
 const bool = (key: string) => Boolean(data.value[key])
 const list = (key: string) => (Array.isArray(data.value[key]) ? (data.value[key] as string[]) : [])
+
+/*
+ * Kolom pilihan (fase 79). Label dan penjelasnya datang dari KONTRAK, bukan dari tabel kedua di
+ * berkas ini seperti `gerakLabels` di bawah — kolom ini digenerate, jadi menambah varian di
+ * `sectionFields` harus cukup untuk memunculkannya di sini.
+ *
+ * `pilihanAktif` sengaja tidak mempercayai isi dokumen: nilai yang tidak dikenal (varian yang
+ * ditarik, atau dokumen yang disunting tangan) akan membuat `<select>` menampilkan opsi pertama
+ * sambil dokumen menyimpan sesuatu yang lain. Jatuh ke opsi pertama membuat yang terlihat dan
+ * yang tersimpan berselisih hanya sampai pasangan menyentuhnya sekali.
+ */
+const tawaran = (field: FieldMeta) => (field.options ?? []).filter(option => !option.usang)
+const pilihanAktif = (field: FieldMeta) => {
+  const nilai = str(field.key)
+  return (field.options ?? []).some(option => option.id === nilai) ? nilai : (tawaran(field)[0]?.id ?? '')
+}
+const hintPilihan = (field: FieldMeta) => (field.options ?? []).find(option => option.id === pilihanAktif(field))?.hint
 
 /** Kolom yang tampil: yang punya syarat `bila` hanya saat sakelarnya menyala. */
 const tampil = computed(() => fields.value.filter(field => !field.bila || bool(field.bila)))
@@ -145,7 +164,11 @@ const idKolom = (key: string) => `editor-field-${type.value}-${key}`
         :locked-by="lockedBy"
         @update:model-value="value => emit('tulis', field.key, value)"
         @update:style="style => emit('tulisGaya', field.key, style)"
-      />
+      >
+        <template v-if="field.saran === 'bank'" #saran="{ draft, pilih: pilihBank }">
+          <DashboardEditorBankSaran :id="`${idKolom(field.key)}-bank`" :nilai="draft" @pilih="pilihBank" />
+        </template>
+      </DashboardEditorTextStyleField>
 
       <UiField v-else-if="field.kind === 'tanggal'" :id="idKolom(field.key)" v-slot="{ id }" :label="field.label" class="rounded-md border border-border bg-surface p-3.5">
         <UiInput :id="id" type="datetime-local" :model-value="str(field.key)" @change="(event: Event) => emit('tulis', field.key, (event.target as HTMLInputElement).value)" />
@@ -153,6 +176,12 @@ const idKolom = (key: string) => `editor-field-${type.value}-${key}`
 
       <UiField v-else-if="field.kind === 'url'" :id="idKolom(field.key)" v-slot="{ id }" :label="field.label" class="rounded-md border border-border bg-surface p-3.5">
         <UiInput :id="id" type="url" placeholder="https://…" :model-value="str(field.key)" @change="(event: Event) => emit('tulis', field.key, (event.target as HTMLInputElement).value.trim())" />
+      </UiField>
+
+      <UiField v-else-if="field.kind === 'pilihan'" :id="idKolom(field.key)" v-slot="{ id }" :label="field.label" :hint="hintPilihan(field)" class="rounded-md border border-border bg-surface p-3.5">
+        <UiSelect :id="id" :model-value="pilihanAktif(field)" @update:model-value="value => emit('tulis', field.key, String(value))">
+          <option v-for="option in tawaran(field)" :key="option.id" :value="option.id">{{ option.label }}</option>
+        </UiSelect>
       </UiField>
 
       <DashboardPhotoField
@@ -224,10 +253,27 @@ const idKolom = (key: string) => `editor-field-${type.value}-${key}`
     />
 
     <!-- Gerak masuk per bagian: pembeda kita dari referensi, yang hanya menggerakkan amplop. -->
+    <!--
+      Mengganti pilihan langsung memutar ulang bagian ini di panggung (fase 81). Tombol ▶ untuk
+      menonton lagi tanpa mengganti apa pun — sebelum fase 81 tidak ada cara melihat efeknya selain ↻,
+      yang juga menutup ulang amplop.
+    -->
     <UiField :id="`editor-motion-${section.id}`" v-slot="{ id }" label="Gerak masuk" :hint="gerakLabels[motion].hint" class="rounded-md border border-border bg-surface p-3.5">
-      <UiSelect :id="id" :model-value="motion" @update:model-value="value => emit('tulisGerak', value as SectionMotion)">
-        <option v-for="option in sectionMotions" :key="option" :value="option">{{ gerakLabels[option].label }}</option>
-      </UiSelect>
+      <div class="flex items-center gap-2">
+        <UiSelect :id="id" class="min-w-0 flex-1" :model-value="motion" @update:model-value="value => emit('tulisGerak', value as SectionMotion)">
+          <option v-for="option in sectionMotions" :key="option" :value="option">{{ gerakLabels[option].label }}</option>
+        </UiSelect>
+        <button
+          :id="`editor-motion-putar-${section.id}`"
+          type="button"
+          class="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-border-strong text-ink hover:bg-surface-3 disabled:opacity-40"
+          :disabled="motion === 'tanpa'"
+          aria-label="Putar gerak masuk bagian ini di pratinjau"
+          @click="emit('putar')"
+        >
+          <Play :size="16" aria-hidden="true" />
+        </button>
+      </div>
     </UiField>
 
     <div class="grid gap-3">

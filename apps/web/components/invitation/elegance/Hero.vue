@@ -18,6 +18,10 @@ const photo = computed(() => text(props.section, 'imageUrl') || themeOf(invitati
 const latar = computed(() => latarBagian(props.section))
 const gerak = computed(() => gerakBagian(props.section))
 const entrance = computed(() => (gerak.value && gerak.value !== 'tema' ? gerak.value : undefined))
+
+/** Bingkai sudah berupa keping (global atau pilihan tempat ini, fase 81), bukan garis CSS bawaannya. */
+const { kanvas } = useLingkupBagian()
+const bingkaiBerkeping = computed(() => Boolean(orn.value.heroFrame || kanvas.value.keping['o:heroFrame:bingkai']?.glyph || kanvas.value.keping['o:heroFrame:bingkai']?.unggahan))
 </script>
 
 <template>
@@ -32,18 +36,40 @@ const entrance = computed(() => (gerak.value && gerak.value !== 'tema' ? gerak.v
     <!-- Tabir gelap dari bawah: teks selalu di atas bidang yang cukup gelap, apa pun fotonya. -->
     <div class="absolute inset-0" style="background: linear-gradient(to top, rgb(0 0 0 / 0.74) 8%, rgb(0 0 0 / 0.26) 52%, rgb(0 0 0 / 0.38))" />
 
-    <!-- Bingkai garis tipis primary, dengan sudut ornamen di dua pojoknya. -->
+    <!--
+      Bingkai (slot `heroFrame`, fase 80): garis tipis primary selama pasangan belum menggantinya —
+      undangan yang sudah terbit tidak bergeser satu piksel pun — dan keping bingkai pilihannya bila
+      sudah. Berdiri sendiri, terpisah dari pembawa sudut, supaya di panggung hanya garisnya yang
+      bisa diklik (lihat `.iv-root--stage .iv-hero-frame-line`), bukan seluruh layar hero.
+    -->
+    <InvitationOrnamen
+      tag="div"
+      slot-id="heroFrame"
+      posisi="bingkai"
+      data-iv-ornament
+      :class="['iv-hero-frame-line', { 'iv-hero-frame-line--glyph': bingkaiBerkeping }]"
+      aria-hidden="true"
+    />
+    <!--
+      Sudut ornamen di pojok bingkai. Empat sejak fase 81 (permintaan pemilik: satu sudut dipakai di
+      keempat pojok); dua yang baru lahir tersembunyi supaya undangan terbit tidak berubah, dan
+      dimunculkan dari daftar Lapisan.
+    -->
     <div class="iv-hero-frame" aria-hidden="true">
-      <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" class="iv-hero-corner iv-hero-corner--tl" />
-      <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" class="iv-hero-corner iv-hero-corner--br" />
+      <InvitationOrnamen data-iv-ornament slot-id="corner" posisi="tl" class="iv-hero-corner iv-hero-corner--tl" />
+      <InvitationOrnamen data-iv-ornament slot-id="corner" posisi="tr" :tampil-bawaan="false" class="iv-hero-corner iv-hero-corner--tr" />
+      <InvitationOrnamen data-iv-ornament slot-id="corner" posisi="bl" :tampil-bawaan="false" class="iv-hero-corner iv-hero-corner--bl" />
+      <InvitationOrnamen data-iv-ornament slot-id="corner" posisi="br" class="iv-hero-corner iv-hero-corner--br" />
     </div>
 
+    <InvitationKanvasLapisan />
+
     <div class="relative grid w-full justify-items-center gap-3">
-      <OrnamentGlyph :glyph="orn.monogram" :initials="initials" data-iv-ornament data-iv-slot="monogram" data-iv-lead class="h-20 w-20 opacity-90" />
+      <InvitationOrnamen :initials="initials" data-iv-ornament slot-id="monogram" posisi="utama" data-iv-lead class="h-20 w-20 opacity-90" />
       <InvitationText :section="props.section" field="monogram" tag="p" data-iv-lead class="iv-display m-0 text-[0.9375rem] tracking-[0.3em]" />
       <InvitationText :section="props.section" field="kicker" tag="p" data-iv-lead class="iv-kicker m-0 opacity-90" />
 
-      <OrnamentGlyph :glyph="orn.symbol" data-iv-ornament data-iv-slot="symbol" class="h-10 w-14 opacity-85" />
+      <InvitationOrnamen data-iv-ornament slot-id="symbol" posisi="atas" class="h-10 w-14 opacity-85" />
       <InvitationText
         :section="props.section"
         field="title"
@@ -52,7 +78,7 @@ const entrance = computed(() => (gerak.value && gerak.value !== 'tema' ? gerak.v
         data-iv-lead
         class="iv-display iv-script m-0 text-[clamp(2.8rem,12cqw,5rem)]"
       />
-      <OrnamentGlyph :glyph="orn.symbol" data-iv-ornament data-iv-slot="symbol" class="h-10 w-14 rotate-180 opacity-85" />
+      <InvitationOrnamen data-iv-ornament slot-id="symbol" posisi="bawah" class="h-10 w-14 opacity-85" style="transform: rotate(180deg)" />
 
       <InvitationText :section="props.section" field="subtitle" tag="p" data-iv-reveal class="iv-body m-0 text-[0.9375rem] opacity-95" />
 
@@ -70,11 +96,31 @@ const entrance = computed(() => (gerak.value && gerak.value !== 'tema' ? gerak.v
 </template>
 
 <style>
-.iv-hero-frame {
+.iv-hero-frame,
+.iv-hero-frame-line {
   position: absolute;
   inset: 1.25rem;
-  border: 1px solid color-mix(in srgb, var(--iv-primary) 70%, #fffdf7);
   pointer-events: none;
+}
+.iv-hero-frame-line { border: 1px solid color-mix(in srgb, var(--iv-primary) 70%, #fffdf7); }
+.iv-hero-frame-line--glyph {
+  border: 0;
+  /* Ramp kertas, alasan yang sama dengan `.iv-hero-corner`. */
+  --iv-orn-deep: #fffdf7;
+  --iv-orn-body: #fffdf7;
+  --iv-orn-accent: rgb(255 253 247 / 0.6);
+  --iv-orn-glow: rgb(255 253 247 / 0.75);
+  color: #fffdf7;
+  opacity: 0.85;
+}
+/*
+ * Panggung editor: garisnya bisa disentuh, isinya tidak. `clip-path` ikut memotong uji-klik, jadi
+ * cincin 10px di tepi ini satu-satunya bagian yang menangkap pointer — teks dan tombol hero di
+ * tengahnya tetap bisa diklik seperti biasa.
+ */
+.iv-root--stage .iv-hero-frame-line {
+  pointer-events: auto;
+  clip-path: polygon(evenodd, -4px -4px, calc(100% + 4px) -4px, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px), -4px -4px, 6px 6px, 6px calc(100% - 6px), calc(100% - 6px) calc(100% - 6px), calc(100% - 6px) 6px, 6px 6px);
 }
 .iv-hero-corner {
   position: absolute;
@@ -92,6 +138,8 @@ const entrance = computed(() => (gerak.value && gerak.value !== 'tema' ? gerak.v
 }
 .iv-hero-corner--tl { top: -0.5rem; left: -0.5rem; }
 .iv-hero-corner--br { bottom: -0.5rem; right: -0.5rem; transform: rotate(180deg); }
+.iv-hero-corner--tr { top: -0.5rem; right: -0.5rem; transform: rotate(90deg); }
+.iv-hero-corner--bl { bottom: -0.5rem; left: -0.5rem; transform: rotate(-90deg); }
 
 /* Petunjuk gulir mengayun pelan; diam bagi yang meminta gerak minimal. */
 .iv-hero-scroll svg { animation: iv-hero-bob 1.6s ease-in-out infinite; }

@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 import { toOrnamentOverrides } from '../utils/invitation-options'
 import {
-  jumlahDiganti, layerSlots, muatLayer, muatSlot, ornamentSlots, sectionOrnamentSlots,
+  jumlahDiganti, layerSlots, muatLayer, muatSlot, ornamentSlots, sectionOrnamentSlots, slotGaris,
   slotCategories, terapkanOverrides, tileWidth,
 } from '../utils/ornament-slots'
 import { layerSlot, ornament, ornamentBank, type OrnamentId } from '../utils/ornaments'
@@ -27,8 +27,9 @@ const ids = Object.keys(ornamentBank) as OrnamentId[]
 const pertama = (cocok: (id: OrnamentId) => boolean) => ids.find(cocok)!
 
 describe('kosakata slot', () => {
-  it('sebelas slot skalar sejak fase 69, dan tiap slot amplop punya lebih dari satu bentuk', () => {
-    expect(ornamentSlots).toHaveLength(11)
+  it('tiga belas slot skalar sejak fase 80, dan tiap slot amplop punya lebih dari satu bentuk', () => {
+    // Sebelas sejak fase 69, + `segue` dan `heroFrame` di fase 80.
+    expect(ornamentSlots).toHaveLength(13)
     for (const slot of ['envelopePocket', 'envelopeFlap'] as const) {
       expect(ids.filter(id => muatSlot(slot, id)).length, slot).toBeGreaterThan(1)
     }
@@ -67,7 +68,11 @@ describe('kosakata slot', () => {
     // dan peta yang menebak `garland: ['garland']` akan menolak bawaan kelima tema sekaligus.
     for (const t of liveTemplateIds) {
       const set = themeOrnaments(t)
-      for (const slot of ornamentSlots) expect(muatSlot(slot, set[slot]), `${t}.${slot}=${set[slot]}`).toBe(true)
+      for (const slot of ornamentSlots) {
+        // Slot garis (fase 80) sengaja tidak diisi tema: bawaannya garis, bukan keping.
+        if ((slotGaris as readonly string[]).includes(slot)) { expect(set[slot], `${t}.${slot}`).toBeUndefined(); continue }
+        expect(muatSlot(slot, set[slot]!), `${t}.${slot}=${set[slot]}`).toBe(true)
+      }
       for (const glyph of set.layers) expect(ornament(glyph).category, `${t}=${glyph}`).toBe('layer')
     }
   })
@@ -210,7 +215,14 @@ describe('sectionOrnamentSlots mengikuti sumber section', () => {
   const invitation = join(__dirname, '..', 'components', 'invitation')
   const berkas: Record<(typeof sectionTypes)[number], string[]> = {
     cover: ['sections/Cover.vue', 'CoverGate.vue'], couple: ['sections/Couple.vue'], events: ['sections/Events.vue'],
-    countdown: ['sections/Countdown.vue'], gallery: ['sections/Gallery.vue'], story: ['sections/Story.vue'],
+    countdown: ['sections/Countdown.vue'], gallery: ['sections/Gallery.vue'],
+    /*
+     * Cerita dipecah jadi lima varian di fase 79, dan daftarnya dibaca dari FOLDER — bukan
+     * diketik di sini. Varian keenam yang memakai slot baru harus memerahkan tes ini sendiri;
+     * daftar yang harus diingat orang adalah persis cara `sectionOrnamentSlots` jadi basi.
+     */
+    story: ['sections/Story.vue', ...readdirSync(join(__dirname, '..', 'components', 'invitation', 'sections', 'story'))
+      .filter(nama => nama.endsWith('.vue')).map(nama => `sections/story/${nama}`)],
     rundown: ['sections/Rundown.vue'], dresscode: ['sections/Dresscode.vue'], video: ['sections/Video.vue'],
     gift: ['sections/Gift.vue'], rsvp: ['sections/Rsvp.vue'], wishes: ['sections/Wishes.vue'],
     closing: ['sections/Closing.vue', 'elegance/Closing.vue'], music: [],
@@ -221,7 +233,12 @@ describe('sectionOrnamentSlots mengikuti sumber section', () => {
   }
   berkas.couple.push('elegance/Couple.vue'); berkas.countdown.push('elegance/Countdown.vue'); berkas.gallery.push('elegance/Gallery.vue')
   berkas.gift.push('elegance/Gift.vue'); berkas.wishes.push('elegance/Wishes.vue')
-  const pola = new RegExp(`\\born(?:aments)?\\.(${ornamentSlots.join('|')})\\b`, 'g')
+  /*
+   * Fase 81: keping berslot dirender lewat `<InvitationOrnamen slot-id="…">`, jadi slot yang
+   * dirender dibaca dari atribut itu — plus `orn.<slot>` / `ornaments.<slot>` yang masih dibaca
+   * langsung (bingkai hero, gerbang yang menerima set lewat prop).
+   */
+  const pola = new RegExp(`(?:\\born(?:aments)?\\.|slot-id=")(${ornamentSlots.join('|')})\\b`, 'g')
 
   it.each(sectionTypes)('%s', (section) => {
     const dipakai = new Set<string>()
@@ -240,24 +257,18 @@ describe('sectionOrnamentSlots mengikuti sumber section', () => {
 })
 
 /**
- * Afordans ornamen di panggung editor (fase 76) berdiri di atas satu atribut, dan atribut itu
- * ditulis tangan di ~43 tempat.
+ * Satu pintu untuk keping berslot (fase 81).
  *
- * `data-iv-ornament` sudah lama ada — `motion-play.ts` memakainya untuk `drawSvg` — tapi ia tidak
- * membawa nama slotnya, jadi kanvas tidak bisa menjawab "keping ini mengisi slot apa". Yang
- * ditambahkan `data-iv-slot` di sebelahnya. Kegagalannya senyap dan itulah kenapa tes ini ada:
- * ornamen yang lupa diberi slot tetap tergambar dengan benar, tetap dianimasikan dengan benar,
- * dan **hanya** tidak bisa diklik — pasangan akan menyimpulkan fiturnya yang rusak, bukan satu
- * atribut yang hilang di satu berkas.
- *
- * Yang sengaja di luar: glyph yang bukan isi slot sama sekali (keping ladang punya
- * `data-layer-slot` sendiri, busana `Dresscode`, venue `Events`, topeng `Segue`).
+ * Fase 76–80 menjaga `data-iv-slot` di ~43 situs yang memanggil `OrnamentGlyph` langsung — dan
+ * penjaga itu hanya memeriksa ATRIBUT. Fase 81 mengukur akibatnya: lima pembawa sudut, segel,
+ * flap, kantong, dan kelopak RSVP punya atributnya tapi tidak pernah menerima klik
+ * (`pointer-events: none`, `<button>` di atasnya). Sekarang semua keping lewat
+ * `InvitationOrnamen`, yang memasang kunci keping, transform kanvas, dan aturan panggung di satu
+ * tempat; tes ini menjaga tidak ada yang merender glyph di luar pintu itu. Bisa-diklik-nya dijaga
+ * e2e `fase81.spec.ts` dengan `elementFromPoint`, bukan dengan membaca markup.
  */
-describe('data-iv-slot menemani tiap ornamen berslot (fase 76)', () => {
+describe('keping undangan lewat satu pintu (fase 81)', () => {
   const invitation = join(__dirname, '..', 'components', 'invitation')
-  const tag = /<OrnamentGlyph\b[^>]*?\/?>/gs
-  const slotDariGlyph = new RegExp(`:glyph="(?:orn|props\\.ornaments)\\.(${ornamentSlots.join('|')})"`)
-
   const berkas = readdirSync(invitation, { recursive: true, encoding: 'utf8' })
     .filter(nama => nama.endsWith('.vue'))
     .map(nama => [nama, readFileSync(join(invitation, nama), 'utf8')] as const)
@@ -266,26 +277,38 @@ describe('data-iv-slot menemani tiap ornamen berslot (fase 76)', () => {
     expect(berkas.length).toBeGreaterThan(20)
   })
 
-  it('tiap OrnamentGlyph berslot membawa data-iv-slot yang cocok', () => {
+  it('OrnamentGlyph hanya dipanggil pintu keping dan lapisan tambahan', () => {
+    const pemanggil = berkas.filter(([, isi]) => /<OrnamentGlyph\b/.test(isi)).map(([nama]) => nama).sort()
+    expect(pemanggil).toEqual(['KanvasLapisan.vue', 'Ornamen.vue'])
+  })
+
+  it('tiap InvitationOrnamen membawa slot dan posisi yang sah', () => {
+    const tag = /<InvitationOrnamen\b[^>]*?\/?>/gs
     const pelanggaran: string[] = []
     let diperiksa = 0
+    const sah = new Set<string>([...ornamentSlots, 'layer', 'venue', 'attire'])
     for (const [nama, isi] of berkas) {
       for (const [teks] of isi.matchAll(tag)) {
-        if (!teks.includes('data-iv-ornament')) continue
-        const slot = slotDariGlyph.exec(teks)?.[1]
-        if (!slot) continue
         diperiksa++
-        if (!teks.includes(`data-iv-slot="${slot}"`)) pelanggaran.push(`${nama} → ${slot}`)
+        const slot = /slot-id="(\w+)"/.exec(teks)?.[1]
+        const posisi = /\sposisi="([^"]+)"/.exec(teks)?.[1] ?? (/:posisi="/.test(teks) ? 'dinamis' : undefined)
+        if (!slot || !sah.has(slot)) pelanggaran.push(`${nama}: slot ${slot ?? 'kosong'}`)
+        if (!posisi || (posisi !== 'dinamis' && !/^[a-z0-9-]{1,16}$/.test(posisi))) pelanggaran.push(`${nama}: posisi ${posisi ?? 'kosong'}`)
       }
     }
     expect(pelanggaran).toEqual([])
-    // Angka bawahnya dijaga supaya regex yang berhenti cocok tidak lulus sebagai "nol pelanggaran".
-    expect(diperiksa).toBeGreaterThanOrEqual(40)
+    expect(diperiksa).toBeGreaterThanOrEqual(55)
   })
 
-  it('tidak memberi slot pada keping ladang — jangkarnya sudah punya atributnya sendiri', () => {
+  it('pita babak tanpa bentuk tetap keping kanvas', () => {
+    const segue = readFileSync(join(invitation, 'Segue.vue'), 'utf8')
+    expect(segue).toContain('slot-id="segue"')
+    expect(segue).toContain('data-iv-el="o:segue:pita"')
+  })
+
+  it('keping ladang tetap membawa jangkarnya ke glyph yang dianimasikan', () => {
     const ladang = readFileSync(join(invitation, 'OrnamentField.vue'), 'utf8')
     expect(ladang).toContain(':data-layer-slot="piece.slot"')
-    expect(ladang).not.toContain('data-iv-slot')
+    expect(ladang).toContain('slot-id="layer"')
   })
 })

@@ -1,6 +1,7 @@
 import type { gsap as GsapType } from 'gsap'
 
 import type { Entrance, OrnamentMotion } from '~/utils/motion-score'
+import { fotoMasuk, gerakKeping, judulMasuk, type FotoMasuk } from '~/utils/motion-entrance'
 
 type Gsap = typeof GsapType
 type Ctx = ReturnType<Gsap['context']>
@@ -35,6 +36,11 @@ export type MotionApi = {
     start?: string
     /** Tata bahasa masuk yang diminta babak. Tetap kalah oleh `data-entrance` di markup. */
     grammar?: Entrance
+    /**
+     * Tata bahasanya pilihan pasangan untuk bagian ini, bukan bawaan babak — jadi ia juga
+     * mengalahkan `data-entrance` yang dipatok komponen (mis. Couple memilih dari `seed`).
+     */
+    paksa?: boolean
     /** Perilaku keping `[data-iv-layer]` di section ini. */
     ornament?: OrnamentMotion
     /** Pengali durasi dan jarak dari partitur babak; pemanggil sudah mematoknya 0,6–1,4. */
@@ -79,6 +85,11 @@ export type MotionApi = {
     next: Element | null,
     options?: { kind?: 'dissolve' | 'veil' | 'wipe'; from?: 'top' | 'bottom'; scrub?: number },
   ) => void
+  /**
+   * Gerak masuk tiap keping kanvas yang memilih geraknya sendiri (`data-iv-gerak`, fase 81), di
+   * dalam `root`. Digerbangi gulir seperti gerak masuk lain, dengan tunda `data-iv-tunda`.
+   */
+  gerakKeping: (root: Element) => void
   /** Menggerakkan sebuah titik menyusuri path SVG mengikuti scrub. */
   travelPath: (path: string | SVGPathElement, dot: string | Element, options?: { trigger?: Element | null; end?: string }) => void
   /**
@@ -161,6 +172,66 @@ const triggerBudget = 240
 const narrowWidth = 640
 
 /**
+ * Seberapa jauh sebuah bagian harus masuk sebelum geraknya dinyalakan, pada jalur
+ * `IntersectionObserver`.
+ *
+ * 14% dari tinggi penggulung ≈ `start: 'top 86%'` yang dipakai `revealUp`. Disamakan dengan
+ * sengaja: dua permukaan yang menyalakan gerak di titik berbeda adalah kebohongan yang sama
+ * dengan panggung yang tidak bergerak sama sekali, cuma lebih sulit dilihat.
+ */
+const ioMargin = '0px 0px -14% 0px'
+
+/** Bentuk minimum yang dibutuhkan gerbang gulir; menghindari pertengkaran dengan tipe overload gsap. */
+type Gerak = { play: () => unknown; reverse: () => unknown; progress: (value: number) => unknown }
+
+export type MotionOptions = {
+  /**
+   * Elemen yang menggulung undangan, kalau yang menggulungnya **bukan jendela**.
+   *
+   * Panggung editor merender undangan di dalam bingkai ponsel yang punya penggulungnya
+   * sendiri (`[data-preview-stage]`), dan ScrollTrigger tidak pernah melihatnya: sampai
+   * fase 78 tidak ada satu pun `scroller:` di seluruh repo, jadi tiap bagian yang tidak
+   * kebetulan berada di viewport jendela saat refresh berhenti di keadaan `from`-nya —
+   * yaitu `opacity: 0`. Terukur sebelum diperbaiki: **22 dari 22** `[data-iv-lead]` bening
+   * saat dipasang, dan tetap 22 dari 22 setelah panggung digulir sampai dasar.
+   *
+   * Sengaja BUKAN `scroller:` milik ScrollTrigger, dan itu bukan selera: bingkai ponsel
+   * diperkecil dengan `transform: scale()` 0,5–1,0. ScrollTrigger mencampur
+   * `getBoundingClientRect()` (ikut terskala) dengan `scrollTop` (tidak terskala), jadi
+   * titik nyalanya meleset sebesar faktor skalanya — 19% pada pratinjau 84%, dua kali lipat
+   * pada zoom 50%. `IntersectionObserver` menghitung perpotongan dari kotak tata letak dan
+   * benar pada skala berapa pun.
+   */
+  scrollRoot?: Ref<HTMLElement | null>
+  /**
+   * Panggung editor meminta gerak dimatikan seluruhnya (tombol Statis).
+   *
+   * Reaktif, dan jalurnya sama persis dengan `prefers-reduced-motion`: context-nya dibongkar
+   * (`ctx.revert()` menulis balik tiap gaya inline yang pernah dipasang gsap), jadi yang
+   * tersisa adalah markup keadaan-akhir yang memang sudah terbaca tanpa JS.
+   *
+   * **Ini pilihan menonton milik editor, bukan pengaturan dokumen.** Ia tidak pernah masuk
+   * `InvitationDocument`, tidak pernah ikut `saveDraft`, tidak pernah ikut terbit.
+   */
+  statis?: Ref<boolean>
+  /**
+   * Gerak masuk ditahan selama `true` (fase 80): halaman tamu yang masih tertutup gerbang amplop.
+   * Trigger tetap dipasang seperti biasa; yang ditunda hanya pemutarannya, dan semua yang sudah
+   * terpicu diputar begitu penahannya dilepas.
+   */
+  tahan?: Ref<boolean>
+  /**
+   * Bangun ulang dan putar lagi saat nilai ini berubah (fase 81).
+   *
+   * Timeline dibangun sekali saat mount, dan gerak masuk per bagian dibaca dari DOM saat itu —
+   * jadi sebelum ini mengganti "Gerak masuk" di editor tidak memutar apa pun sampai ↻, Statis,
+   * atau pergantian lebar. Membangun ulang sudah cukup untuk memutar ulang: pengamat perpotongan
+   * yang baru langsung melaporkan bagian yang sedang terlihat, dan `anim.play()` jalan dari nol.
+   */
+  ulang?: Ref<unknown>
+}
+
+/**
  * Single entry point for GSAP. Registers the plugins once, scopes every tween to
  * the component that asked for it, and reverts on unmount.
  *
@@ -171,6 +242,7 @@ const narrowWidth = 640
 export function useArunaMotion(
   scope: Ref<HTMLElement | null>,
   setup: (api: MotionApi) => void,
+  opts: MotionOptions = {},
 ) {
   let ctx: Ctx | undefined
   let teardown: (() => void) | undefined
@@ -221,12 +293,77 @@ export function useArunaMotion(
      */
     let splits: { revert: () => void }[] = []
 
+    /**
+     * Pengamat perpotongan milik context ini.
+     *
+     * `ctx.revert()` tidak mengenal mereka — ia hanya tahu tween. Tanpa catatan ini, context
+     * yang dibangun ulang saat lebar berganti bucket meninggalkan pengamat lama yang masih
+     * memegang timeline mati, dan tiap pergantian melipatgandakannya.
+     */
+    let pengamat: IntersectionObserver[] = []
+
+    /** Gerak yang sudah terpicu saat `opts.tahan` masih menahan, diputar begitu dilepas. */
+    let tertunda: Gerak[] = []
+
     let triggers = 0
     const canTrigger = () => { triggers += 1; return triggers <= triggerBudget }
 
     const build = () => {
       triggers = 0
       splits = []
+      pengamat = []
+      tertunda = []
+
+      /**
+       * Penggulung undangan, dibaca sekali per pembangunan context.
+       *
+       * Null berarti jendela — halaman tamu, dan jalur ScrollTrigger yang sudah ada.
+       */
+      const penggulung = opts.scrollRoot?.value ?? null
+
+      /**
+       * Menggerbangi satu animasi dengan gulir, dan **memutarnya mundur saat digulir ke atas**.
+       *
+       * Mundurnya keputusan pemilik (fase 78): undangan punya alur cerita, jadi menggulir
+       * balik harus membatalkan pengungkapannya, bukan meninggalkan halaman yang sudah
+       * terlanjur terbuka seluruhnya. Berlaku sama di kedua permukaan — panggung editor yang
+       * berperilaku lain dari halaman tamu adalah persis kebohongan yang ditutup fase 76.
+       *
+       * Yang diputar mundur hanya yang keluar lewat **bawah**. Bagian yang sudah dilewati ke
+       * atas dibiarkan utuh: memundurkannya berarti menggulir turun melewati halaman yang
+       * bagian-bagiannya menghilang satu per satu di belakang punggung, dan tidak ada yang
+       * pernah melihatnya kecuali sebagai kedipan saat berbalik arah.
+       *
+       * Jaring pengamannya satu, dan ia yang membuat seluruh perubahan ini aman: tanpa
+       * `IntersectionObserver`, animasinya langsung dimajukan ke keadaan akhir. Bagian boleh
+       * kehilangan geraknya; ia tidak boleh pernah kehilangan teksnya.
+       */
+      const gerbangGulir = (anim: Gerak, trigger: Element, start: string) => {
+        if (!penggulung) {
+          if (!opts.tahan?.value) {
+            ScrollTrigger.create({ trigger, start, animation: anim as never, toggleActions: 'play none none reverse' })
+            return
+          }
+          // Sama dengan `toggleActions` di atas, kecuali putaran yang jatuh saat masih ditahan.
+          ScrollTrigger.create({
+            trigger,
+            start,
+            onEnter: () => { if (opts.tahan?.value) tertunda.push(anim); else anim.play() },
+            onLeaveBack: () => anim.reverse(),
+          })
+          return
+        }
+        if (typeof IntersectionObserver === 'undefined') { anim.progress(1); return }
+        const io = new IntersectionObserver((entries) => {
+          const entry = entries[entries.length - 1]
+          if (!entry) return
+          if (entry.isIntersecting) { anim.play(); return }
+          const batasAtas = entry.rootBounds?.top ?? penggulung.getBoundingClientRect().top
+          if (entry.boundingClientRect.top >= batasAtas) anim.reverse()
+        }, { root: penggulung, threshold: 0, rootMargin: ioMargin })
+        io.observe(trigger)
+        pengamat.push(io)
+      }
       /**
        * Jam scroll global: satu timeline ber-scrub untuk seluruh halaman, dibuat malas pada
        * panggilan `drift()` pertama dan dipakai bersama semua pemanggil berikutnya. Hidup di
@@ -271,28 +408,29 @@ export function useArunaMotion(
             wrap.appendChild(line)
           })
 
-          gsap.from(split.lines, {
+          const lines = gsap.from(split.lines, {
             yPercent: 108,
             duration: 0.95,
             delay,
             stagger,
             ease: 'expo.out',
-            ...(trigger ? { scrollTrigger: { trigger, start: 'top 80%', toggleActions: 'play none none none' } } : {}),
+            paused: Boolean(trigger),
           })
+          if (trigger) gerbangGulir(lines, trigger, 'top 80%')
         },
 
         revealUp(target, { y = 28, stagger = 0.08, start = 'top 86%' } = {}) {
           const nodes = typeof target === 'string' ? gsap.utils.toArray<HTMLElement>(target) : ([] as HTMLElement[]).concat(target as HTMLElement[])
           nodes.forEach((node, index) => {
             if (!canTrigger()) return
-            gsap.from(node, {
+            gerbangGulir(gsap.from(node, {
               opacity: 0,
               y,
               duration: 0.8,
               delay: (index % 4) * stagger,
               ease: 'power3.out',
-              scrollTrigger: { trigger: node, start, toggleActions: 'play none none none' },
-            })
+              paused: true,
+            }), node, start)
           })
         },
 
@@ -338,10 +476,14 @@ export function useArunaMotion(
             // menjaga daftar trigger tetap bersih dari entri ber-`end` nol.
             if (!(owner as HTMLElement).getBoundingClientRect().height) return
             if (!canTrigger()) return
-            gsap.fromTo(
-              members,
-              { drawSVG: '0%' },
-              { drawSVG: '100%', duration, stagger, ease: 'power2.inOut', scrollTrigger: { trigger: owner, start, toggleActions: 'play none none none' } },
+            gerbangGulir(
+              gsap.fromTo(
+                members,
+                { drawSVG: '0%' },
+                { drawSVG: '100%', duration, stagger, ease: 'power2.inOut', paused: true },
+              ),
+              owner as Element,
+              start,
             )
           })
         },
@@ -349,7 +491,7 @@ export function useArunaMotion(
         bloomIn(target, { origin = 'bottom center', stagger = 0.14, duration = 1.35, start = 'top 88%' } = {}) {
           resolveNodes(target).forEach((node, index) => {
             if (!canTrigger()) return
-            gsap.from(node, {
+            gerbangGulir(gsap.from(node, {
               // Skala, bukan clip-path: ornamen bermassa sudah punya siluetnya sendiri, dan
               // clip-path pada SVG beranak banyak jauh lebih mahal untuk dianimasikan.
               scaleX: 0.42,
@@ -359,15 +501,15 @@ export function useArunaMotion(
               duration,
               delay: (index % 3) * stagger,
               ease: 'expo.out',
-              scrollTrigger: { trigger: node.parentElement ?? node, start, toggleActions: 'play none none none' },
-            })
+              paused: true,
+            }), node.parentElement ?? node, start)
           })
         },
 
         cascadeIn(target, { stagger = 0.12, distance = 46, start = 'top 88%' } = {}) {
           resolveNodes(target).forEach((node, index) => {
             if (!canTrigger()) return
-            gsap.from(node, {
+            gerbangGulir(gsap.from(node, {
               y: -distance,
               rotate: index % 2 === 0 ? -4 : 4,
               opacity: 0,
@@ -375,13 +517,18 @@ export function useArunaMotion(
               duration: 1.2,
               delay: (index % 4) * stagger,
               ease: 'power3.out',
-              scrollTrigger: { trigger: node.parentElement ?? node, start, toggleActions: 'play none none none' },
-            })
+              paused: true,
+            }), node.parentElement ?? node, start)
           })
         },
 
-        orchestrate(section, { stagger = 0.16, duration = 1.35, start = 'top 78%', grammar, ornament, weight = 1, reveal = false } = {}) {
+        orchestrate(section, { stagger = 0.16, duration = 1.35, start = 'top 78%', grammar, paksa = false, ornament, weight = 1, reveal = false } = {}) {
+          /*
+           * Keping yang memilih gerak sendiri (fase 81) dikeluarkan dari koreografi bagiannya —
+           * `gerakKeping()` yang menggerakkannya, dan satu elemen tidak boleh punya dua gerak masuk.
+           */
           const pick = (selector: string) => gsap.utils.toArray<HTMLElement>(section.querySelectorAll(selector))
+            .filter(node => !node.dataset.ivGerak)
           const heading = pick('[data-iv-lead]')
           const photo = pick('[data-iv-photo]')
           const layers = pick('[data-iv-layer]')
@@ -412,11 +559,20 @@ export function useArunaMotion(
           duration *= w
           stagger *= w
 
-          const timeline = gsap.timeline({ scrollTrigger: { trigger: section, start, toggleActions: 'play none none none' } })
+          const timeline = gsap.timeline({ paused: true })
+          gerbangGulir(timeline, section, start)
 
-          if (heading.length) {
-            timeline.from(heading, { y: 26, opacity: 0, duration: duration * 0.7, stagger: stagger * 0.5, ease: 'power3.out' })
-          }
+          /*
+           * Judul ikut tata bahasa (fase 80). Sebelumnya selalu naik 26px, jadi di bagian tanpa
+           * foto pilihan gerak tidak mengubah apa pun — lihat `motion-entrance.ts`.
+           */
+          heading.forEach((node, index) => {
+            const gerak = judulMasuk(grammar, index)
+            const d = duration * 0.7
+            timeline.from(node, { ...gerak.from, duration: d, ease: 'power3.out' }, index === 0 ? 0 : `<${stagger * 0.5}`)
+            if (gerak.clip) timeline.fromTo(node, { clipPath: gerak.clip[0] }, { clipPath: gerak.clip[1], duration: d, ease: 'power2.inOut' }, '<')
+            if (gerak.filter) timeline.fromTo(node, { filter: gerak.filter[0] }, { filter: gerak.filter[1], duration: d * 1.5, ease: 'power1.out', clearProps: 'filter' }, '<')
+          })
           if (photo.length) {
             /*
              * Foto tidak lagi masuk dengan satu reveal seragam. Arah, jarak, dan skalanya
@@ -425,13 +581,7 @@ export function useArunaMotion(
              * tapi cukup berbeda supaya undangan panjang tidak terbaca sebagai satu efek
              * yang diulang sepuluh kali.
              */
-            const entrances = {
-              rise: { x: 0, y: 36, scale: 1.04 },
-              'sweep-left': { x: -46, y: 0, scale: 1.06 },
-              'sweep-right': { x: 46, y: 0, scale: 1.06 },
-              iris: { x: 0, y: 0, scale: 1.06 },
-            } as const
-            const names = Object.keys(entrances) as (keyof typeof entrances)[]
+            const names: FotoMasuk[] = ['rise', 'sweep-left', 'sweep-right', 'iris']
 
             /*
              * Tata bahasa babak memilih dari tabel yang sama, tapi menyempitkannya jadi satu
@@ -440,7 +590,7 @@ export function useArunaMotion(
              * dan menumpuk keduanya pada foto yang sama membuat gerakan masuknya bertabrakan
              * dengan scrub-nya.
              */
-            const fromGrammar = (index: number): keyof typeof entrances => {
+            const fromGrammar = (index: number): FotoMasuk => {
               if (grammar === 'sweep') return index % 2 === 0 ? 'sweep-left' : 'sweep-right'
               if (grammar === 'iris') return 'iris'
               if (grammar === 'rise' || grammar === 'silhouette') return 'rise'
@@ -448,13 +598,11 @@ export function useArunaMotion(
             }
 
             photo.forEach((node, index) => {
-              const declared = node.closest<HTMLElement>('[data-entrance]')?.dataset.entrance
-              const key = (declared && declared in entrances ? declared : fromGrammar(index)) as keyof typeof entrances
-              timeline.from(
-                node,
-                { ...entrances[key], opacity: 0, duration, ease: 'power2.out' },
-                index === 0 ? (heading.length ? '-=0.45' : 0) : `<${stagger}`,
-              )
+              const declared = paksa ? undefined : node.closest<HTMLElement>('[data-entrance]')?.dataset.entrance
+              const key = (declared && (names as string[]).includes(declared) ? declared : fromGrammar(index)) as FotoMasuk
+              const gerak = fotoMasuk(key)
+              timeline.from(node, { ...gerak.from, duration, ease: 'power2.out' }, index === 0 ? (heading.length ? '-=0.45' : 0) : `<${stagger}`)
+              if (gerak.clip) timeline.fromTo(node, { clipPath: gerak.clip[0] }, { clipPath: gerak.clip[1], duration, ease: 'power2.inOut' }, '<')
             })
           }
           /*
@@ -558,19 +706,29 @@ export function useArunaMotion(
              * sini yang berkedip adalah elemen LCP halaman. Yang di bawah lipatan belum
              * pernah terlihat, jadi tidak ada yang bisa berkedip di sana.
              */
-            const terlihat = node.getBoundingClientRect().top < window.innerHeight
+            // Di panggung yang menentukan "sudah terlihat" adalah tepi bawah penggulungnya (fase 81).
+            const terlihat = node.getBoundingClientRect().top < (penggulung ? penggulung.getBoundingClientRect().bottom : window.innerHeight)
             if (terlihat && motionLatency > revealBudget) return
             if (!canTrigger()) return
 
-            gsap.fromTo(
-              node,
-              { filter: 'grayscale(1) brightness(0.3) contrast(1.12)' },
-              {
-                filter: 'grayscale(0) brightness(1) contrast(1)',
-                ease: 'none',
-                scrollTrigger: { trigger: node.parentElement ?? node, start, end, scrub: 0.6 * weight },
-              },
-            )
+            const gelap = { filter: 'grayscale(1) brightness(0.3) contrast(1.12)' }
+            const terang = { filter: 'grayscale(0) brightness(1) contrast(1)' }
+
+            /*
+             * Panggung editor (fase 80): scrub ScrollTrigger membaca jendela, bukan penggulung
+             * panggung, jadi fotonya bisa tertahan gelap selamanya. Di sana siluetnya jadi satu
+             * gerakan terang yang digerbangi pengamat — sama seperti gerak masuk lain.
+             */
+            if (penggulung) {
+              gerbangGulir(gsap.fromTo(node, gelap, { ...terang, duration: 1.4 * weight, ease: 'power1.out', paused: true }), node.parentElement ?? node, start)
+              return
+            }
+
+            gsap.fromTo(node, gelap, {
+              ...terang,
+              ease: 'none',
+              scrollTrigger: { trigger: node.parentElement ?? node, start, end, scrub: 0.6 * weight },
+            })
           })
         },
 
@@ -645,16 +803,28 @@ export function useArunaMotion(
           })
         },
 
+        gerakKeping(scopeRoot) {
+          scopeRoot.querySelectorAll<HTMLElement>('[data-iv-gerak]').forEach((node) => {
+            const preset = gerakKeping(node.dataset.ivGerak ?? '')
+            if (!preset || !canTrigger()) return
+            const tunda = Math.min(2, Math.max(0, Number(node.dataset.ivTunda) || 0))
+            const timeline = gsap.timeline({ paused: true, delay: tunda })
+            timeline.from(node, { ...preset.from, duration: preset.duration, ease: preset.ease })
+            if (preset.clip) timeline.fromTo(node, { clipPath: preset.clip[0] }, { clipPath: preset.clip[1], duration: preset.duration, ease: preset.ease, clearProps: 'clipPath' }, '<')
+            gerbangGulir(timeline, node.closest('[data-iv-section], [data-gate-variant]') ?? node, 'top 85%')
+          })
+        },
+
         countUp(target, to, { duration = 1.4, format = (value: number) => String(Math.round(value)) } = {}) {
           if (!canTrigger()) return
           const state = { value: 0 }
-          gsap.to(state, {
+          gerbangGulir(gsap.to(state, {
             value: to,
             duration,
             ease: 'power2.out',
-            scrollTrigger: { trigger: target, start: 'top 90%', toggleActions: 'play none none none' },
+            paused: true,
             onUpdate: () => { target.textContent = format(state.value) },
-          })
+          }), target, 'top 90%')
         },
       }
 
@@ -662,11 +832,13 @@ export function useArunaMotion(
       }, root)
     }
 
-    build()
+    if (!opts.statis?.value) build()
 
     const teardownCtx = () => {
       ctx?.revert()
       ctx = undefined
+      pengamat.forEach(io => io.disconnect())
+      pengamat = []
       splits.forEach((split) => { try { split.revert() } catch { /* sudah terlepas bersama DOM-nya */ } })
       splits = []
     }
@@ -679,6 +851,38 @@ export function useArunaMotion(
      * tiba, dan setiap `start: 'top 78%'` yang sudah dihitung sebelum itu meleset sepanjang
      * halaman. Sebelum ini tidak ada satu pun `ScrollTrigger.refresh()` di repo.
      */
+    /*
+     * Tombol Statis, dan kenapa ia tidak me-remount apa pun.
+     *
+     * `ctx.revert()` menulis balik tiap gaya inline yang pernah dipasang gsap, jadi
+     * mematikan gerak berarti mengembalikan markup ke keadaan-akhir yang memang sudah
+     * terbaca tanpa JS — bukan memaksa `opacity: 1` di atas keadaan yang salah. Menyalakan
+     * lagi cukup membangun ulang context-nya; gerbang amplop dan posisi gulir tidak ikut
+     * tersentuh, yang tidak akan benar kalau jawabannya remount.
+     */
+    if (opts.tahan) {
+      watch(opts.tahan, (ditahan) => {
+        if (!ditahan) tertunda.splice(0).forEach(anim => anim.play())
+      })
+    }
+
+    if (opts.statis) {
+      watch(opts.statis, (mati) => {
+        if (mati) { teardownCtx(); return }
+        build()
+        ScrollTrigger.refresh()
+      })
+    }
+
+    if (opts.ulang) {
+      watch(opts.ulang, () => {
+        if (opts.statis?.value) return
+        teardownCtx()
+        // Tunggu DOM menulis atribut barunya (`data-iv-entrance`, gerak elemen) dulu.
+        void nextTick(() => { build(); ScrollTrigger.refresh() })
+      })
+    }
+
     let refreshTimer = 0
     const queueRefresh = () => {
       window.clearTimeout(refreshTimer)
@@ -717,7 +921,9 @@ export function useArunaMotion(
         if (next === bucket) { ScrollTrigger.refresh(); return }
         bucket = next
         teardownCtx()
-        build()
+        // Statis tetap statis: pergantian bucket tidak boleh jadi pintu belakang yang
+        // menghidupkan kembali gerak yang sudah dimatikan pasangan.
+        if (!opts.statis?.value) build()
       }, 150)
     })
     observer.observe(root)
@@ -758,5 +964,18 @@ export function useArunaTimeline(scope: Ref<HTMLElement | null>) {
     return true
   }
 
-  return { play }
+  /**
+   * Mengembalikan seluruh gaya inline yang ditulis timeline, tanpa melepas komponennya.
+   *
+   * Dipakai timeline yang boleh diputar lebih dari sekali dalam satu masa hidup komponen —
+   * amplop di panggung editor, yang tersegel lagi setelah pergi dari layar. `ctx.revert()`
+   * adalah satu-satunya cara yang benar: menulis balik gaya sendiri akan meleset pada properti
+   * yang tidak diketahui pemanggil (mis. `will-change` dan `transform` yang dipasang GSAP).
+   */
+  function revert() {
+    ctx?.revert()
+    ctx = undefined
+  }
+
+  return { play, revert }
 }

@@ -13,9 +13,10 @@ import { resolveScore, type Entrance, type SectionRole, type ThemeMotion } from 
  * Berkas ini dihapus setelah kesembilan tema punya partitur.
  */
 export function playLegacyScore(
-  api: Pick<MotionApi, 'gsap' | 'revealUp' | 'parallax' | 'drawSvg' | 'orchestrate'>,
+  api: Pick<MotionApi, 'gsap' | 'revealUp' | 'parallax' | 'drawSvg' | 'orchestrate' | 'silhouette' | 'gerakKeping'>,
+  root?: Element | null,
 ): void {
-  const { gsap, revealUp, parallax, drawSvg, orchestrate } = api
+  const { gsap, revealUp, parallax, drawSvg, orchestrate, silhouette, gerakKeping } = api
 
   // 70px terasa menyentak di layar pendek; 40 cukup untuk membuat foto terbaca sebagai jendela.
   parallax('[data-iv-parallax]', { distance: 40 })
@@ -23,7 +24,7 @@ export function playLegacyScore(
    * Bagian ber-`data-iv-entrance="tanpa"` (fase 72) dilewati. Dokumen v1 tidak pernah punya
    * atribut itu, jadi untuk mereka pemilih ini identik dengan `[data-iv-reveal]` polos.
    */
-  revealUp(`[data-iv-reveal]:not(${DIAM} [data-iv-reveal])`, { y: 26, stagger: 0.07 })
+  revealUp(`[data-iv-reveal]:not([data-iv-gerak]):not(${DIAM} [data-iv-reveal])`, { y: 26, stagger: 0.07 })
 
   /*
    * DrawSVG hanya bisa menggambar stroke. Sejak ornamen digambar bermassa, yang tersisa
@@ -42,8 +43,18 @@ export function playLegacyScore(
    */
   gsap.utils.toArray<HTMLElement>('[data-iv-section]').forEach((section) => {
     if (section.dataset.ivEntrance === 'tanpa') return
-    orchestrate(section, { stagger: 0.16, duration: 1.4, grammar: entranceOverride(section) })
+    const pilihan = entranceOverride(section)
+    /*
+     * Pilihan per bagian berlaku juga di tema tanpa partitur (fase 81). Sebelumnya jalur ini tidak
+     * memberi `paksa` dan tidak pernah memanggil `silhouette()`, jadi di tema bawaan Bloom memilih
+     * Siluet sama dengan Naik — dan Couple tetap memakai arah `seed`-nya.
+     */
+    orchestrate(section, { stagger: 0.16, duration: 1.4, grammar: pilihan, paksa: pilihan !== undefined })
+    if (pilihan === 'silhouette') silhouette(gsap.utils.toArray<HTMLElement>(section.querySelectorAll('[data-iv-photo]')))
   })
+
+  // Gerak per keping kanvas (fase 81), sesudah koreografi bagian yang sudah mengecualikannya.
+  if (root) gerakKeping(root)
 
   // Rel timeline rundown tumbuh mengikuti scroll. Keadaan diam-nya scaleY(1) di CSS.
   gsap.utils.toArray<HTMLElement>('[data-iv-rail]').forEach((node) => {
@@ -110,7 +121,7 @@ const sectionDari = (node: HTMLElement): HTMLElement | null =>
  * yang terlipat akan dapat dua gerakan masuk dari dua sumber sekaligus.
  */
 export function playScore(api: MotionApi, plan: { root: HTMLElement, score: ThemeMotion, compact: boolean }): void {
-  const { gsap, revealUp, parallax, drawSvg, orchestrate, drift, silhouette, segue, container } = api
+  const { gsap, revealUp, parallax, drawSvg, orchestrate, drift, silhouette, segue, container, gerakKeping } = api
   const babak = bacaBabak(plan.root, plan.score)
   if (!babak.length) return
 
@@ -132,10 +143,13 @@ export function playScore(api: MotionApi, plan: { root: HTMLElement, score: Them
        * pemilih. Drift dan segue tetap milik partitur tema, karena keduanya bukan "masuk".
        */
       if (section.dataset.ivEntrance === 'tanpa') continue
-      const entrance = entranceOverride(section) ?? act.entrance
+      const pilihan = entranceOverride(section)
+      const entrance = pilihan ?? act.entrance
 
       orchestrate(section, {
         grammar: entrance,
+        // Pilihan pasangan untuk bagian ini mengalahkan arah yang dipatok komponen (fase 80).
+        paksa: pilihan !== undefined,
         ornament: act.ornament,
         weight: act.weight,
         reveal: true,
@@ -157,8 +171,11 @@ export function playScore(api: MotionApi, plan: { root: HTMLElement, score: Them
     }
   }
 
+  // Gerak per keping kanvas (fase 81), sesudah koreografi bagian yang sudah mengecualikannya.
+  gerakKeping(plan.root)
+
   // Sisa reveal yang tidak terlipat — isi jauh di bawah tepi section panjang.
-  revealUp(`[data-iv-reveal]:not([data-iv-reveal-folded]):not(${DIAM} [data-iv-reveal])`, { y: 26, stagger: 0.07 })
+  revealUp(`[data-iv-reveal]:not([data-iv-reveal-folded]):not([data-iv-gerak]):not(${DIAM} [data-iv-reveal])`, { y: 26, stagger: 0.07 })
 
   /*
    * Jarak parallax dipatok di sini, bukan di data tema: DESIGN.md mematoknya 40 untuk

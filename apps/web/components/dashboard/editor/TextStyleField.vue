@@ -44,6 +44,11 @@ function simpan() {
   if (nilai !== props.modelValue) emit('update:modelValue', nilai)
 }
 
+function pilih(nilai: string) {
+  draft.value = nilai
+  simpan()
+}
+
 function tulisGaya(patch: Partial<TextStyle>) {
   const berikut: TextStyle = { ...(props.style ?? {}), ...patch }
   for (const key of Object.keys(berikut) as (keyof TextStyle)[]) if (berikut[key] === undefined) delete berikut[key]
@@ -73,6 +78,9 @@ const fontsUntukKolom = computed(() => props.field.kind === 'paragraf' ? props.f
         @change="simpan"
       />
     </UiField>
+
+    <!-- Saran di bawah kolom (mis. bank berlogo): membaca ketikan yang belum disimpan, memilih = menyimpan. -->
+    <slot name="saran" :draft="draft" :pilih="pilih" />
 
     <button
       :id="`${id}-gaya`"

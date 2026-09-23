@@ -27,7 +27,7 @@ const latar = computed(() => {
     :background="latar"
     :motion="gerakBagian(props.section)"
   >
-    <OrnamentGlyph :glyph="orn.divider" data-iv-ornament data-iv-slot="divider" data-iv-lead class="h-7 w-48 opacity-80" :style="photo ? undefined : { color: 'var(--iv-primary)' }" />
+    <InvitationOrnamen data-iv-ornament slot-id="divider" posisi="utama" data-iv-lead class="h-7 w-48 opacity-80" :style="photo ? undefined : { color: 'var(--iv-primary)' }" />
     <InvitationText :section="props.section" field="title" tag="blockquote" data-iv-lead class="iv-display m-0 max-w-[34rem] text-[clamp(1.25rem,4.6cqw,1.7rem)] font-normal italic leading-relaxed" multiline />
     <InvitationText :section="props.section" field="subtitle" tag="p" data-iv-reveal class="iv-kicker m-0" />
   </InvitationSection>

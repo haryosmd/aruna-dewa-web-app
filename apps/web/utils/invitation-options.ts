@@ -1,6 +1,6 @@
 import type { EntranceStyle } from '@aruna/contracts'
 import { mediaAssetIdFromUrl } from './media-file'
-import { entranceStyles, storySides, type StorySide } from '@aruna/contracts'
+import { entranceStyles, storySides, storyVariantOptions, storyVariants, type FieldOption, type StorySide, type StoryVariant } from '@aruna/contracts'
 import { uploadableSlots, layerSlots, muatLayer, muatSlot, ornamentSlots, type OrnamentOverrides } from './ornament-slots'
 import { isOrnamentId, ornament, ornamentsByCategory, type OrnamentId } from './ornaments'
 import { themeOrnaments } from './theme'
@@ -207,6 +207,45 @@ export function toStorySteps(value: unknown): StoryStep[] {
     })
   }
   return steps
+}
+
+/*
+ * Wajah bagian cerita (fase 79). Daftarnya DIIMPOR dari kontrak, bukan diketik ulang di sini:
+ * `sectionFields.story` memakai tabel yang sama untuk menggenerate formnya, dan dua daftar yang
+ * bisa berselisih adalah persis bagaimana `selectableCoverLayouts` di atas berakhir yatim.
+ */
+export { storyVariants, storyVariantOptions, type StoryVariant }
+
+/**
+ * Yang ditawarkan pemilih. Varian usang tetap sah di dokumen tapi hilang dari form.
+ *
+ * Dilebarkan ke `FieldOption[]` lebih dulu: `as const satisfies` di kontrak menyempitkan tiap
+ * entri ke literalnya sendiri, dan pada literal yang belum memakai `usang` properti itu memang
+ * tidak ada — jadi tanpa pelebaran ini penyaringnya tidak bisa ditulis sampai ada varian pertama
+ * yang dipensiunkan, yaitu tepat saat ia terlambat.
+ */
+export const selectableStoryVariants: readonly FieldOption[] =
+  (storyVariantOptions as readonly FieldOption[]).filter(option => !option.usang)
+
+export function toStoryVariant(value: unknown): StoryVariant {
+  return (storyVariants as readonly string[]).includes(String(value)) ? (value as StoryVariant) : 'rel'
+}
+
+/**
+ * Varian yang BENAR-BENAR dirender.
+ *
+ * Empat varian membutuhkan langkah; tanpa langkah semuanya jatuh ke `prosa`. Aturan ini murni dan
+ * tinggal di sini, bukan di dalam `Story.vue`, karena dua alasan. Pertama, ia bisa diuji tanpa
+ * merender apa pun. Kedua — dan ini yang membuatnya ada — ia satu-satunya yang menjamin dokumen
+ * lama terlihat persis sama sesudah fase 79: sampai fase ini `Story.vue` bercabang pada
+ * `steps.length` (tanpa langkah → satu foto dan satu paragraf, dengan langkah → rel), dan aturan
+ * di baris ini adalah cabang yang sama, ditulis sekali.
+ *
+ * Itu juga yang membuat bawaan `variant: 'rel'` di kontrak aman untuk dokumen baru, yang lahir
+ * dengan `steps: []`: yang dirender tetap prosa sampai pasangan menambahkan langkah pertamanya.
+ */
+export function storyVariantEfektif(data: Record<string, unknown> | undefined, jumlahLangkah: number): StoryVariant {
+  return jumlahLangkah ? toStoryVariant(data?.variant) : 'prosa'
 }
 
 /* ── Gerak per undangan (fase 69) ───────────────────────────────────────────── */

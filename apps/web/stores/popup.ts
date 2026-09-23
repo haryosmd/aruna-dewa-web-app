@@ -42,6 +42,19 @@ export interface PopupRequest {
   actions: PopupAction[]
   /** Jawaban untuk Escape, klik overlay, dan tombol tutup. Bawaannya `'dismiss'`. */
   dismissId?: string
+  /**
+   * Menuntut satu kata diketik ulang sebelum aksi pertama bisa ditekan (fase 78).
+   *
+   * Dipakai penghapusan permanen di backoffice, dan hanya untuk tindakan yang benar-benar
+   * tidak bisa dibatalkan. Bedanya dengan sekadar tombol merah bukan gaya melainkan tempo:
+   * mengetik memaksa orang membaca apa yang sedang ia hapus, dan itulah satu-satunya penjaga
+   * yang tersisa ketika tidak ada lagi arsip di belakangnya.
+   */
+  confirmText?: {
+    /** Kata yang harus cocok persis — biasanya slug undangannya. */
+    value: string
+    label: string
+  }
 }
 
 /**

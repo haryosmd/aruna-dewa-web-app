@@ -472,6 +472,13 @@ export interface OrnamentSet {
   /** Kantong depan dan flap amplop gerbang (fase 69). */
   envelopePocket: OrnamentId
   envelopeFlap: OrnamentId
+  /**
+   * Dua slot yang bawaannya **garis, bukan keping** (fase 80), jadi tema tidak pernah mengisinya:
+   * pita pergantian babak (bawaannya bentuk dari partitur tema, atau garis polos) dan bingkai hero
+   * Elegance (bawaannya garis CSS 1px). Terisi hanya bila pasangan menggantinya.
+   */
+  segue?: OrnamentId
+  heroFrame?: OrnamentId
   /** Lima layer milik tema, satu per slot. Urutannya tidak penting — `slot` yang dibaca. */
   layers: OrnamentId[]
 }

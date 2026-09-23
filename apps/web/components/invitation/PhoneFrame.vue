@@ -52,7 +52,24 @@ const props = withDefaults(defineProps<{
    * persis seperti ponsel sungguhan dan bingkainya diam.
    */
   scrollable?: boolean
-}>(), { width: 390, maxHeight: undefined, screenHeight: undefined, scrollable: false })
+  /**
+   * Lebar yang tersedia, diberikan pemanggil (fase 81). Tanpa ini lebarnya dibaca dari induk.
+   *
+   * Panggung editor wajib mengopernya. Induknya di sana pembungkus `w-fit` bersudut membulat, yang
+   * lebarnya ditentukan bingkai ini sendiri — jadi `lebarInduk / width` selalu sama dengan `fit` yang
+   * sedang berlaku dan tidak pernah bisa tumbuh. Terukur sebelum fase 81: sesudah Ponsel (±330px)
+   * tablet tersangkut di 330/768 = 0,43 dan desktop di 330/1280 = 0,26, dan ZOOM tak berefek.
+   */
+  hostWidth?: number
+  /**
+   * Cara muat (fase 81). `utuh` = seluruh layar harus terlihat (lebar DAN `maxHeight`) — ponsel.
+   * `lebar` = pas lebar saja; layarnya lalu dipanjangkan sampai mengisi `maxHeight`, jadi tablet dan
+   * desktop tidak lagi jadi kartu pos di tengah panggung kosong. Isinya tetap digulir di dalam.
+   */
+  muat?: 'utuh' | 'lebar'
+  /** Pengali di atas skala pas (ZOOM panggung, 0,5–2). Skala akhir tetap tidak melebihi 1. */
+  zoom?: number
+}>(), { width: 390, maxHeight: undefined, screenHeight: undefined, scrollable: false, hostWidth: undefined, muat: 'utuh', zoom: 1 })
 
 /** Skala yang sedang berlaku, untuk induk yang ingin menuliskannya ("diperkecil 62%"). */
 const scale = defineModel<number>('scale', { default: 1 })
@@ -60,16 +77,30 @@ const scale = defineModel<number>('scale', { default: 1 })
 const frame = ref<HTMLElement | null>(null)
 const stage = ref<HTMLElement | null>(null)
 const host = computed(() => frame.value?.parentElement ?? null)
-const { width: hostWidth } = useElementSize(host)
+const { width: lebarInduk } = useElementSize(host)
 const { height: stageHeight } = useElementSize(stage)
+const hostWidth = computed(() => props.hostWidth ?? lebarInduk.value)
 
-/** Layar bergulir hanya sah kalau tingginya diketahui — tanpa itu tidak ada yang bisa dipotong. */
-const layar = computed(() => (props.scrollable && props.screenHeight ? props.screenHeight : null))
-
-const fit = computed(() => {
-  let next = hostWidth.value ? Math.min(1, hostWidth.value / props.width) : 1
-  if (props.maxHeight && stageHeight.value) next = Math.min(next, props.maxHeight / stageHeight.value)
+/*
+ * Skala pas SEBELUM zoom. Mode `lebar` tidak membaca tinggi sama sekali: tinggi layarnya justru
+ * turunan skala ini (lihat `layar`), jadi membacanya di sini akan membuat lingkaran.
+ */
+const pas = computed(() => {
+  let next = hostWidth.value ? hostWidth.value / props.width : 1
+  if (props.muat === 'utuh' && props.maxHeight && stageHeight.value) next = Math.min(next, props.maxHeight / stageHeight.value)
   return next
+})
+const fit = computed(() => Math.min(1, pas.value * props.zoom))
+
+/**
+ * Layar bergulir hanya sah kalau tingginya diketahui — tanpa itu tidak ada yang bisa dipotong.
+ * Mode `lebar`: layar dipanjangkan sampai bingkai hasil perkecilan mengisi `maxHeight`, tapi tidak
+ * pernah lebih pendek dari viewport perangkat aslinya.
+ */
+const layar = computed(() => {
+  if (!props.scrollable || !props.screenHeight) return null
+  if (props.muat === 'lebar' && props.maxHeight && fit.value > 0) return Math.max(props.screenHeight, Math.round(props.maxHeight / fit.value))
+  return props.screenHeight
 })
 watch(fit, next => { scale.value = next }, { immediate: true })
 

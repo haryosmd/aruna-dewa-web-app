@@ -74,8 +74,10 @@ const entrance = computed(() => (props.motion && props.motion !== 'tema' ? props
       :tone="tone"
       :seed="seed"
     />
+    <!-- Ornamen tambahan pasangan (fase 81), di atas ladang dan isi. -->
+    <InvitationKanvasLapisan />
 
-    <div :class="cn('relative mx-auto grid justify-items-center', compact ? 'gap-4' : 'gap-6')" style="width: min(100%, 42rem)">
+    <div :class="cn('iv-section-isi relative mx-auto grid justify-items-center', compact ? 'gap-4' : 'gap-6')" style="width: min(100%, 42rem)">
       <p v-if="kicker" data-iv-lead class="iv-kicker m-0">{{ kicker }}</p>
 
       <h2 v-if="title" data-iv-lead :class="cn('iv-display m-0', 'text-[clamp(2.1rem,7cqw,3.4rem)]')">

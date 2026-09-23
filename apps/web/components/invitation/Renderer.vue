@@ -5,9 +5,10 @@ import { pilihCopy, resolveCopy } from '~/utils/invitation-copy'
 import type { Component } from 'vue'
 import type { GuestProfile, InvitationDocument, RendererMode, RsvpPayload, Section, Wish, WishPayload } from '~/types/aruna'
 import { toEntrance, toOrnamentOverrides } from '~/utils/invitation-options'
-import { toIntensity } from '~/utils/ornaments'
+import { isUnggahan, toIntensity } from '~/utils/ornaments'
 import { playLegacyScore, playScore } from '~/utils/motion-play'
 import { resolveScore, sectionRole, terapkanMotionDokumen } from '~/utils/motion-score'
+import { tandaGerak } from '~/utils/kanvas'
 import { toEnvelopeSpeed } from '~/utils/motion-envelope'
 import { themeMotion, themeOrnaments } from '~/utils/theme'
 import { terapkanOverrides } from '~/utils/ornament-slots'
@@ -65,8 +66,17 @@ const props = withDefaults(
     mode?: RendererMode
     /** Bentuk lama: `compact` = `mode: 'compact'`. Dipertahankan untuk pemanggil yang sudah ada. */
     compact?: boolean
+    /**
+     * Panggung editor: gerak dimatikan seluruhnya (tombol Statis, fase 78).
+     *
+     * Pilihan menonton milik editor, bukan bagian dokumen — ia tidak pernah sampai ke
+     * `InvitationDocument`, jadi undangan yang dilihat tamu selalu bergerak.
+     */
+    statis?: boolean
+    /** Panggung editor: naikkan untuk memutar ulang gerak masuk yang sedang terlihat (tombol ▶, fase 81). */
+    putar?: number
   }>(),
-  { greeting: '', guest: null, guestError: '', hasToken: false, wishes: () => [], rsvpPending: false, wishPending: false, mode: undefined, compact: false },
+  { greeting: '', guest: null, guestError: '', hasToken: false, wishes: () => [], rsvpPending: false, wishPending: false, mode: undefined, compact: false, statis: false, putar: 0 },
 )
 
 const emit = defineEmits<{
@@ -77,6 +87,14 @@ const emit = defineEmits<{
   wishEntry: [payload: WishPayload]
   /** Panggung editor: gerbang minta wadahnya dikunci (true) atau dilepas (false). */
   gateLock: [locked: boolean]
+  /**
+   * Panggung editor: amplop selesai dibuka, undangannya minta diungkap.
+   *
+   * Sampai fase 77 pengungkapan itu terjadi dengan sendirinya — gerbangnya melepas diri dari DOM
+   * dan isi di bawahnya naik mengisi tempatnya. Kini gerbang tetap berdiri sebagai bagian pertama,
+   * jadi yang mengungkap harus panggungnya: ia yang tahu skala bingkai dan wadah gulirnya.
+   */
+  gateReveal: []
 }>()
 
 const root = ref<HTMLElement | null>(null)
@@ -291,7 +309,7 @@ function submitWishEntry(payload: WishPayload) {
   emit('wishEntry', payload)
 }
 
-const player = ref<{ arm: () => void; pause: () => void } | null>(null)
+const player = ref<{ pause: () => void } | null>(null)
 const musicSection = computed(() => sectionOf('music'))
 /** Musik: `settings` di dokumen v2 (fase 72), section `music` di v1. */
 const music = computed(() => {
@@ -302,9 +320,17 @@ const music = computed(() => {
   return { url: has('music') ? text(musicSection.value, 'url') : '', title: text(musicSection.value, 'title'), credit: text(musicSection.value, 'credit'), volume: 0.6 }
 })
 
+/**
+ * Amplop dibuka.
+ *
+ * Sampai fase 77 baris pertamanya `player.value?.arm()`, dipanggil sinkron di dalam tumpukan
+ * klik gerbang karena itulah izin autoplay yang sah menurut browser. Izinnya memang sah; yang
+ * tidak pernah ditanyakan adalah apakah tamunya mau. Sekarang musik menunggu tombolnya —
+ * tombol itu juga gestur, jadi tidak ada izin yang hilang, cuma keputusan yang berpindah tangan.
+ *
+ * `coverOpen` tetap dipancarkan: ia yang mencatat "undangan dibuka" untuk tamu bertoken.
+ */
 function onGateOpen() {
-  // Sinkron, di dalam tumpukan panggilan klik gerbang — itulah izin autoplay yang sesungguhnya.
-  player.value?.arm()
   emit('coverOpen')
 }
 
@@ -349,6 +375,53 @@ const berpanelSisi = computed(() => kartu.value && !ringkas.value && fotoSisi.va
 const copy = computed(() => resolveCopy(props.document.copy))
 const t = (key: CopyKey) => pilihCopy(copy.value, key)
 
+/**
+ * Penggulung undangan saat ia dipasang di panggung editor.
+ *
+ * Dibaca dari DOM, bukan dioper sebagai prop: `[data-preview-stage]` milik `PhoneFrame`, yang
+ * berdiri di antara panggung dan renderer, dan menyalurkannya lewat dua lapis prop hanya untuk
+ * sampai ke sini berarti dua komponen tahu soal bingkai yang bukan urusan mereka.
+ *
+ * Null di halaman tamu — di sana yang menggulung memang jendela.
+ */
+const penggulung = computed(() => (stage.value ? root.value?.closest<HTMLElement>('[data-preview-stage]') ?? null : null))
+const statis = computed(() => props.statis)
+
+/*
+ * Tanda tangan gerak (fase 81): gerak masuk per bagian, gerak per keping kanvas, dan tombol ▶.
+ * Berubah → timeline dibangun ulang dan bagian yang sedang terlihat diputar dari awal. Hanya di
+ * panggung: dokumen halaman tamu tidak pernah berubah di tempat.
+ */
+const tandaGerakDokumen = computed(() => (stage.value ? `${props.putar}|${tandaGerak(props.document.sections)}` : ''))
+
+/**
+ * Pita babak pilihan pasangan (slot `segue`, fase 80). Menang atas bentuk partitur di SETIAP pita;
+ * kosong berarti tiap babak memakai bentuk partiturnya sendiri. Slot ini tidak menerima unggahan.
+ */
+const pitaBabak = computed(() => {
+  const pilihan = orn.value.segue
+  return pilihan && !isUnggahan(pilihan) ? pilihan : null
+})
+
+/**
+ * Halaman tamu: gerak masuk ditahan selama gerbang amplop menutup undangan (fase 80).
+ *
+ * Tanpa ini hero sudah memutar gerak masuknya saat halaman dimuat — di belakang amplop yang masih
+ * utuh — jadi yang dilihat tamu sesudah membuka adalah hero yang sudah diam. Dilepas oleh `reveal`
+ * gerbang, yang di halaman tamu datang tepat saat gerbangnya mulai pudar. Panggung editor tidak
+ * ditahan: di sana gerbang ikut aliran, dan hero baru masuk layar setelah panggung menggulir.
+ */
+const gerbangTertahan = ref(!stage.value && !ringkas.value && (v2.value ? Boolean(coverSection.value) : has('cover')))
+function onGateReveal() {
+  gerbangTertahan.value = false
+  emit('gateReveal')
+}
+
+/*
+ * Ditulis SEBELUM `provideInvitation` sejak fase 79, bukan di bawah bersama `useArunaMotion`:
+ * konteks menyalurkan keduanya ke section yang memanggil motion sendiri, dan `const` tidak
+ * di-hoist.
+ */
 provideInvitation({
   document: computed(() => props.document),
   orn,
@@ -374,6 +447,7 @@ provideInvitation({
   submitWishEntry,
   // Saat `compact`, pemutarnya memang tidak dirender — `?.` di sini bukan kemalasan.
   pauseMusic: () => player.value?.pause(),
+  motionOptions: { scrollRoot: penggulung, statis, tahan: gerbangTertahan, ulang: tandaGerakDokumen },
 })
 
 // --- Motion ------------------------------------------------------------------
@@ -384,9 +458,9 @@ useArunaMotion(root, (api) => {
    * berubah ketika masing-masing dipindahkan dan dibandingkan sendiri-sendiri.
    */
   const partitur = score.value
-  if (!partitur) return playLegacyScore(api)
+  if (!partitur) return playLegacyScore(api, root.value)
   playScore(api, { root: root.value!, score: partitur, compact: ringkas.value })
-})
+}, { scrollRoot: penggulung, statis, tahan: gerbangTertahan, ulang: tandaGerakDokumen })
 </script>
 
 <template>
@@ -404,6 +478,7 @@ useArunaMotion(root, (api) => {
       :style="style"
       :class="{ 'iv-root--kartu': kartu, 'iv-root--stage': stage }"
       :data-iv-mode="mode"
+      :data-iv-struktur="structure.family"
     >
     <!--
       Panel foto kiri (fase 77). Hanya dirender pada tata letak `kartu` dan hanya terlihat di
@@ -427,19 +502,21 @@ useArunaMotion(root, (api) => {
       Sempat ada pendengar `pointerdown` di sini sebagai cadangan untuk undangan tanpa gerbang —
       dibuang setelah diuji, karena keadaan itu tidak bisa dicapai lewat publish.
     -->
-    <InvitationEleganceOpeningEnvelope
-      v-if="v2 && !ringkas && coverSection"
-      :section="coverSection"
-      :image="coverImage"
-      :speed="kecepatanAmplop"
-      :has-music="Boolean(music.url)"
-      :contained="stage"
-      @open="onGateOpen"
-      @lock="emit('gateLock', true)"
-      @unlock="emit('gateLock', false)"
-    />
+    <InvitationLingkupBagian v-if="v2 && !ringkas && coverSection" :section="coverSection">
+      <InvitationEleganceOpeningEnvelope
+        :section="coverSection"
+        :image="coverImage"
+        :speed="kecepatanAmplop"
+        :has-music="Boolean(music.url)"
+        :contained="stage"
+        @open="onGateOpen"
+        @lock="emit('gateLock', true)"
+        @unlock="emit('gateLock', false)"
+        @reveal="onGateReveal"
+      />
+    </InvitationLingkupBagian>
     <InvitationCoverGate
-      v-else-if="!v2 && !ringkas && has('cover')"
+      v-if="!v2 && !ringkas && has('cover')"
       :couple="coupleNames"
       :date="headlineDate"
       :greeting="greeting"
@@ -453,17 +530,19 @@ useArunaMotion(root, (api) => {
       @open="onGateOpen"
       @lock="emit('gateLock', true)"
       @unlock="emit('gateLock', false)"
+      @reveal="onGateReveal"
     />
 
     <!--
       Urutan diambil dari dokumen, bukan dari urutan tag di berkas ini. Itulah yang
       membuat tombol naik/turun di editor akhirnya berpengaruh pada yang dilihat tamu.
     -->
-    <template v-for="entry in rendered" :key="entry.section.id">
+    <!-- Lingkup tanpa DOM (fase 81): keping kanvas di dalam bagian — dan pita sebelumnya — tahu pemiliknya. -->
+    <InvitationLingkupBagian v-for="entry in rendered" :key="entry.section.id" :section="entry.section">
       <InvitationSegue
         v-if="entry.segue"
         :kind="entry.segue.kind"
-        :shape="'shape' in entry.segue ? entry.segue.shape : null"
+        :shape="pitaBabak ?? ('shape' in entry.segue ? entry.segue.shape : null)"
         :from="'from' in entry.segue ? entry.segue.from : 'bottom'"
       />
       <component
@@ -472,7 +551,7 @@ useArunaMotion(root, (api) => {
         :seed="entry.index"
         :data-iv-act="entry.role"
       />
-    </template>
+    </InvitationLingkupBagian>
 
     <template v-if="!ringkas">
       <InvitationMusicPlayer
@@ -545,6 +624,8 @@ useArunaMotion(root, (api) => {
 }
 .iv-portrait-corner--tl { top: 3.5%; left: 3.5%; }
 .iv-portrait-corner--br { bottom: 3.5%; right: 3.5%; transform: rotate(180deg); }
+.iv-portrait-corner--tr { top: 3.5%; right: 3.5%; transform: rotate(90deg); }
+.iv-portrait-corner--bl { bottom: 3.5%; left: 3.5%; transform: rotate(-90deg); }
 
 /* ── Hadiah ─────────────────────────────────────────────────────────────────── */
 /*
@@ -561,18 +642,40 @@ useArunaMotion(root, (api) => {
   .iv-gift-grid:has(> li + li) { grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); }
 }
 .iv-gift-card { padding: 0; }
-.iv-gift-logo { box-shadow: 0 1px 0 rgb(0 0 0 / 0.06); }
+/* Tile lambang berlatar merek di atas pita merek yang sama: cincin terang tipis + bayangan netral memisahkannya. */
+.iv-gift-logo { box-shadow: 0 0 0 1px rgb(255 255 255 / 0.4), 0 1px 3px rgb(0 0 0 / 0.2); }
 
 /* ── Rundown ────────────────────────────────────────────────────────────────── */
+/*
+ * ⚠ Tiga angka di blok ini TERIKAT satu sama lain dan dihitung dengan tangan:
+ *   `--iv-timeline-waktu` (kolom jam) + `gap` + setengah `--iv-timeline-mark` (lencana)
+ * adalah pusat kolom lencana, dan itulah tempat rel harus berdiri. Sampai fase 79 ketiganya
+ * ditulis sebagai literal di dua aturan berbeda, jadi menaikkan lencana di satu tempat membuat
+ * rel meleset dari titik-titiknya tanpa satu tes pun berbunyi. Sekarang ketiganya satu variabel,
+ * dan `calc()` di bawah menghitungnya, bukan orang.
+ */
 .iv-timeline {
   position: relative;
   display: grid;
   gap: 0;
+  --iv-timeline-waktu: 4.5rem;
+  --iv-timeline-mark: 1.75rem;
+  --iv-timeline-gap: 1rem;
 }
+/*
+ * Wajah Elegance (fase 79) dipagari ke keluarganya, dan itu bukan kehati-hatian berlebih:
+ * berkas `sections/Rundown.vue` dipakai BERSAMA oleh `elegance` dan `warisan`, dan undangan v1
+ * yang sudah terbit masih dibaca tamu hari ini. Melebarkan lencana dan memberi kartu pada baris
+ * di sana berarti mengubah undangan orang yang tidak meminta apa-apa.
+ *
+ * Yang TIDAK dipagari adalah pengikatan tiga angka jadi variabel di atas — itu koreksi, dan ia
+ * berlaku untuk kedua keluarga: sebelumnya posisi rel dihitung tangan di aturan terpisah, jadi
+ * salah satunya bisa bergeser sendirian tanpa satu tes pun berbunyi.
+ */
+[data-iv-struktur='elegance'] .iv-timeline { --iv-timeline-mark: 2.5rem; }
 .iv-timeline-rail {
   position: absolute;
-  /* Sejajar dengan pusat kolom penanda: 4.5rem waktu + 1rem gap + setengah 1.75rem. */
-  left: calc(4.5rem + 1rem + 0.875rem);
+  left: calc(var(--iv-timeline-waktu) + var(--iv-timeline-gap) + var(--iv-timeline-mark) / 2);
   top: 1.75rem;
   bottom: 1.75rem;
   width: 1px;
@@ -580,10 +683,21 @@ useArunaMotion(root, (api) => {
 }
 .iv-timeline-row {
   display: grid;
-  grid-template-columns: 4.5rem 1.75rem 1fr;
-  gap: 1rem;
+  grid-template-columns: var(--iv-timeline-waktu) var(--iv-timeline-mark) 1fr;
+  gap: var(--iv-timeline-gap);
   align-items: start;
   padding-block: 1rem;
+}
+/*
+ * Isi baris duduk di kartu, meminjam kosakata kartu `event` (fase 79) supaya rundown berhenti
+ * terbaca sebagai daftar tempelan v1 di tengah undangan Elegance. Radiusnya gema `.iv-event-arch`
+ * yang dilunakkan: kubah 999px di atas baris setinggi 3rem terbaca sebagai kesalahan, bukan
+ * sebagai arch.
+ */
+[data-iv-struktur='elegance'] .iv-timeline-isi {
+  padding: 0.7rem 0.9rem;
+  border-radius: 1.25rem 1.25rem 0.75rem 0.75rem;
+  background: color-mix(in srgb, var(--iv-primary) 6%, transparent);
 }
 .iv-timeline-time {
   display: inline-flex;
@@ -594,18 +708,25 @@ useArunaMotion(root, (api) => {
   color: var(--iv-primary);
   white-space: nowrap;
 }
+/*
+ * Lencana penanda, seukuran medali `.iv-event-badge` yang dikecilkan (3,5rem → 2,5rem: ini
+ * berdiri per baris, bukan per kartu). Cakramnya WAJIB opaque — rel melintas tepat di belakang
+ * pusatnya, dan cincin tembus pandang membuat garis itu terlihat memotong penandanya sendiri.
+ */
 .iv-timeline-mark {
   position: relative;
   z-index: 1;
   display: grid;
   place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 0.3rem;
+  width: var(--iv-timeline-mark);
+  height: var(--iv-timeline-mark);
+  padding: 0.45rem;
   border-radius: 999px;
-  /* Cakram sewarna latar supaya penanda memotong rel, bukan menumpang di atasnya. */
   background: var(--iv-bg);
   color: var(--iv-primary);
+}
+[data-iv-struktur='elegance'] .iv-timeline-mark {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--iv-primary) 22%, transparent);
 }
 /*
  * Penanda ini dicat `--iv-fg`, jadi tintanya harus `--iv-bg` — bukan putih yang dipanggang.
@@ -767,18 +888,50 @@ useArunaMotion(root, (api) => {
  * `outline`, bukan `border`: ia tidak ikut menghitung tata letak, jadi tidak ada satu piksel pun
  * yang bergeser saat kursor lewat. 1px dan 65% supaya ia menandai, bukan meneriaki.
  */
-.iv-root--stage [data-iv-slot]:hover,
-.iv-root--stage [data-layer-slot]:hover {
-  outline: 1px dashed color-mix(in srgb, var(--iv-primary) 65%, transparent);
-  outline-offset: 2px;
-  cursor: pointer;
+/*
+ * Fase 81: garis hover, pilihan, dan pegangan kini digambar overlay kanvas editor
+ * (`KanvasOverlay.vue`) di LUAR bingkai yang diperkecil — ukurannya px layar, bukan px render, jadi
+ * tetap setipis 1px pada pratinjau 26 % maupun 100 %. Yang tersisa di sini hanya kursor.
+ */
+.iv-root--stage [data-iv-el] { cursor: pointer; }
+.iv-root--stage [data-iv-el][data-iv-terkunci] { cursor: default; }
+
+/*
+ * Keping kanvas (fase 81). `position: relative` supaya geseran teks (`left`/`top`) dan `z-index`
+ * lapis berlaku — di lapisan `base`, jadi `absolute` milik kelas komponen (tanpa lapisan) dan utilitas
+ * Tailwind (lapisan `utilities`) tetap menang atasnya. Pembungkus ornamen `inline-block` tanpa tinggi
+ * baris: glyph di dalamnya mengisi kotak yang dulu dipegang glyph itu sendiri.
+ */
+@layer base {
+  .iv-keping { position: relative; }
+  .iv-keping--ornamen { display: inline-block; line-height: 0; }
 }
+.iv-keping-isi--penuh { display: block; width: 100%; height: 100%; }
+
+/*
+ * Tanpa kecuali (fase 81): setiap keping bisa ditunjuk di panggung, termasuk yang dulu tembus
+ * pointer — sudut potret, kartu acara, kartu tamu, kelopak RSVP, bingkai hero. Diukur sebelum ini:
+ * lima pembawa sudut dan tiga keping amplop tidak pernah menerima klik.
+ */
+.iv-root--stage .iv-keping--ornamen { pointer-events: auto; }
+/*
+ * Kotak isi bagian menutup seluruh lebarnya, termasuk celah kosong di antara baris — dan di bawahnya
+ * tinggal keping ladang. Di panggung kotak itu tembus pointer; anak-anaknya (teks, foto, kartu,
+ * tombol) tetap menerima klik. Terukur di fase 81: ladang Hitung Mundur, Galeri, dan Cerita tidak
+ * bisa ditunjuk sama sekali sebelum aturan ini.
+ */
+.iv-root--stage .iv-section-isi { pointer-events: none; }
+.iv-root--stage .iv-section-isi > * { pointer-events: auto; }
+/* Surat di dalam amplop bening sampai dibuka; kepingnya tidak boleh menghalangi kantong di bawahnya. */
+.iv-root--stage [data-gate-card] .iv-keping { pointer-events: none; }
 
 /*
  * Ladangnya tetap tembus pointer — ia menutupi seluruh section dan akan menelan klik ke isinya.
- * Yang dihidupkan hanya kepingnya, yang persis seluas ornamen yang digambar.
+ * Yang dihidupkan hanya kepingnya (aturan `.iv-keping--ornamen` di atas).
+ *
+ * Amplop di panggung (fase 81, keputusan pemilik): klik segel, flap, atau kantong MEMILIH
+ * kepingnya; amplop dibuka lewat callout berikon dan tombol di toolbar. Halaman tamu tidak berubah.
  */
-.iv-root--stage .iv-field-piece { pointer-events: auto; }
 
 /*
  * Ramp ornamen di bidang gelap, ditulis SEKALI.

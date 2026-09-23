@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   createDefaultDocument, createLegacyDocument, invitationDocumentSchema, migrateLegacyDocument,
   sectionFields, sectionDataSchema, v2SectionTypes, eleganceSectionTypes, sectionMeta, sectionFeature, sectionTypes,
-  isRequiredSection, styledFieldKeys, dateParts, catalog,
+  isRequiredSection, styledFieldKeys, dateParts, catalog, storyVariants, storyVariantOptions,
 } from '../packages/contracts/src/index'
 
 describe('struktur bagian Elegance (fase 72)', () => {
@@ -237,6 +237,11 @@ describe('label kolom ditulis menurut fungsinya (fase 71, dijaga sejak 74.5)', (
     for (const [type, fields] of Object.entries(sectionFields)) {
       for (const field of fields) {
         if (jargon.some(pola => pola.test(field.label.toLowerCase()))) pelanggar.push(`${type}.${field.key}: "${field.label}"`)
+        // Label OPSI ikut, sejak fase 79. Pasangan membacanya di tempat yang sama persis
+        // dengan label kolomnya, jadi tidak ada alasan aturannya berbeda.
+        for (const option of field.options ?? []) {
+          if (jargon.some(pola => pola.test(option.label.toLowerCase()))) pelanggar.push(`${type}.${field.key}[${option.id}]: "${option.label}"`)
+        }
       }
     }
     expect(pelanggar, 'label ini memakai istilah desain, bukan fungsi kolomnya').toEqual([])
@@ -327,5 +332,122 @@ describe('batas struktur berulang bagian ekstra (fase 74.3)', () => {
     const hasil = invitationDocumentSchema.safeParse(doc)
     expect(hasil.success).toBe(false)
     if (!hasil.success) expect(hasil.error.issues[0]!.path).toEqual(['sections', doc.sections.indexOf(story), 'data', 'steps'])
+  })
+})
+
+
+/*
+ * Kolom pilihan bernilai terbatas (fase 79).
+ *
+ * `FieldKind` sampai fase ini tidak punya bentuk enum, jadi tiap pilihan yang hidup di
+ * `section.data` ditulis di luar tabel kolom — dan dua di antaranya berakhir yatim:
+ * `selectableCoverLayouts` dan `selectableGalleryMotions` masih dibaca renderer hari ini tapi
+ * tidak punya satu pun form yang menulisnya sejak fase 72. Berkas ini menjaga jalur barunya.
+ */
+describe('kolom pilihan (fase 79)', () => {
+  it('kolom pilihan selalu punya opsi, dengan id unik dan label terisi', () => {
+    for (const [type, fields] of Object.entries(sectionFields)) {
+      for (const field of fields.filter(f => f.kind === 'pilihan')) {
+        const ids = (field.options ?? []).map(o => o.id)
+        // Tanpa opsi, `kindSchema` mengembalikan `z.never()` — kolomnya ada di form dan
+        // menolak setiap nilai. Gagal di sini, bukan di layar pasangan.
+        expect(ids.length, `${type}.${field.key} tidak punya opsi`).toBeGreaterThanOrEqual(2)
+        expect(new Set(ids).size, `${type}.${field.key} punya id kembar`).toBe(ids.length)
+        for (const option of field.options ?? []) expect(option.label.trim(), `${type}.${field.key}[${option.id}]`).toBeTruthy()
+      }
+    }
+  })
+
+  it('kolom pilihan tidak pernah ikut gaya teks', () => {
+    // `textStyles` diskemakan `.strict()`; key yang bukan teks tamu di sana tidak berarti apa-apa
+    // dan hanya melebarkan permukaan yang harus dijaga selamanya.
+    for (const [type, fields] of Object.entries(sectionFields)) {
+      const styled = styledFieldKeys(type as keyof typeof sectionFields)
+      for (const field of fields.filter(f => f.kind === 'pilihan')) {
+        expect(styled, `${type}.${field.key} ikut styledFieldKeys`).not.toContain(field.key)
+      }
+    }
+  })
+})
+
+describe('varian bagian cerita (fase 79)', () => {
+  /*
+   * Dipin sebagai literal, bukan dihitung dari daftarnya sendiri. Daftar ini sumber `z.enum`,
+   * dan mencabut satu id mematikan revisi terbit yang memakainya — jadi "hanya tumbuh" harus
+   * jadi keputusan yang BERBUNYI, bukan kebiasaan yang diingat orang. Pola yang sama dengan
+   * pin `headlessSectionTypes` di `apps/web/test/renderer-coverage.spec.ts`.
+   */
+  it('daftarnya hanya tumbuh', () => {
+    expect([...storyVariants]).toEqual(['rel', 'prosa', 'tumpuk', 'buku', 'rel-datar'])
+  })
+
+  it('skema menerima tiap varian, menolak yang asing, dan tetap menerima dokumen tanpa kolomnya', () => {
+    const schema = sectionDataSchema('story')
+    for (const id of storyVariants) expect(schema.safeParse({ variant: id }).success, id).toBe(true)
+    expect(schema.safeParse({ variant: 'spiral' }).success).toBe(false)
+    // Yang ini alasan kenapa fase 79 tidak butuh migrasi: dokumen v2 lama tidak punya kolomnya.
+    expect(schema.safeParse({}).success).toBe(true)
+  })
+
+  it('dokumen baru lahir dengan varian yang sah', () => {
+    const story = createDefaultDocument('Dea', 'Haryo', 'aruna-bloom').sections.find(s => s.type === 'story')!
+    expect(storyVariants).toContain(story.data.variant as string)
+    // Lahir `rel` TAPI tanpa langkah, jadi yang dirender tetap prosa — aturannya di
+    // `storyVariantEfektif`, dan `apps/web/test/story-variant.spec.ts` yang membuktikannya.
+    expect(story.data.variant).toBe('rel')
+    expect(story.data.steps).toEqual([])
+  })
+
+  it('dokumen warisan yang dimigrasi mewarisi bawaannya, bukan undefined', () => {
+    const migrasi = migrateLegacyDocument(createLegacyDocument('Dea', 'Haryo'))
+    expect(migrasi.sections.find(s => s.type === 'story')!.data.variant).toBe('rel')
+  })
+
+  it('tiap opsi punya kalimat penjelas — pemilih tanpa penjelas menuntut pasangan menebak', () => {
+    for (const option of storyVariantOptions) expect(option.hint?.trim(), option.id).toBeTruthy()
+  })
+})
+
+/*
+ * Fase 81 — kanvas bebas. Tiap keping yang sudah ada dikunci stabil dan ubahannya disimpan sebagai
+ * penimpaan; ornamen tambahan maksimal 6 per bagian. Skemanya ketat (`strict`): angka di luar
+ * batas, kunci asing, dan properti yang tidak dikenal ditolak di batas controller.
+ */
+describe('kanvas per bagian (fase 81)', () => {
+  const hero = () => createDefaultDocument().sections.find(s => s.type === 'hero')!
+  const sah = (kanvas: unknown) => sectionDataSchema('hero').safeParse({ ...hero().data, kanvas }).success
+
+  it('menerima penimpaan keping ornamen dan teks dengan batasnya', () => {
+    expect(sah({
+      keping: {
+        'o:corner:tl': { x: -3.5, y: 2, skala: 1.4, putar: -35, cerminX: true, opasitas: 0.8, lapis: 3, terkunci: true, glyph: 'sekar-sudut-sulur-kiri', gerak: 'mekar', tunda: 0.3 },
+        'o:corner:tr': { tampil: true, cerminX: true },
+        't:title': { x: 0, y: -4, terkunci: false },
+      },
+    })).toBe(true)
+  })
+
+  it('menolak angka di luar batas, kunci asing, dan properti tak dikenal', () => {
+    expect(sah({ keping: { 'o:corner:tl': { skala: 3.5 } } })).toBe(false)
+    expect(sah({ keping: { 'o:corner:tl': { skala: 0.1 } } })).toBe(false)
+    expect(sah({ keping: { 'o:corner:tl': { putar: 200 } } })).toBe(false)
+    expect(sah({ keping: { 'o:corner:tl': { opasitas: 1.2 } } })).toBe(false)
+    expect(sah({ keping: { 'o:corner:tl': { gerak: 'meledak' } } })).toBe(false)
+    expect(sah({ keping: { 'o:corner:tl': { warna: '#fff' } } })).toBe(false)
+    expect(sah({ keping: { 'bebas:apa-saja': { x: 1 } } })).toBe(false)
+    expect(sah({ lain: [] })).toBe(false)
+  })
+
+  it('ornamen tambahan: glyph atau unggahan, maksimal enam', () => {
+    const satu = { id: 'tambah-1', glyph: 'corner-kawung', x: 50, y: 40, lebar: 24 }
+    expect(sah({ tambahan: [satu] })).toBe(true)
+    expect(sah({ tambahan: [{ ...satu, glyph: undefined, unggahan: { url: 'http://127.0.0.1:3001/v1/public/media/abc', width: 300, height: 300 } }] })).toBe(true)
+    expect(sah({ tambahan: [{ ...satu, glyph: undefined }] })).toBe(false)
+    expect(sah({ tambahan: [{ ...satu, lebar: 0 }] })).toBe(false)
+    expect(sah({ tambahan: Array.from({ length: 7 }, (_, i) => ({ ...satu, id: `t-${i}` })) })).toBe(false)
+  })
+
+  it('dokumen lama tanpa kanvas tetap sah', () => {
+    expect(sectionDataSchema('hero').safeParse(hero().data).success).toBe(true)
   })
 })

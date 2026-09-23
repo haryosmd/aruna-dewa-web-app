@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FolderOpen, History, Image, Keyboard, PanelRightClose, PanelRightOpen, Palette, Redo2, Save, SlidersHorizontal, Sparkles, Undo2 } from 'lucide-vue-next'
+import { FolderOpen, History, Image, Keyboard, MousePointer2, PanelRightClose, PanelRightOpen, Palette, Redo2, Save, SlidersHorizontal, Sparkles, Undo2 } from 'lucide-vue-next'
 import type { InspectorTab } from '~/composables/useEditorPrefs'
 
 /**
@@ -31,6 +31,8 @@ const collapsed = defineModel<boolean>('collapsed', { default: false })
 
 const tabs = [
   { id: 'bagian', label: 'Bagian', icon: SlidersHorizontal },
+  // Fase 81: keping yang dipilih di kanvas, sebagai kontrol bernomor + daftar Lapisan.
+  { id: 'elemen', label: 'Elemen', icon: MousePointer2 },
   { id: 'global', label: 'Global', icon: Palette },
   { id: 'ornamen', label: 'Ornamen', icon: Sparkles },
   { id: 'kartu', label: 'Kartu', icon: Image },
@@ -101,7 +103,7 @@ const tabs = [
           :aria-controls="`editor-inspector-panel-${option.id}`"
           :tabindex="tab === option.id ? 0 : -1"
           :class="cn(
-            'flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-ui font-semibold transition-colors duration-200',
+            'flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-full px-1 text-caption font-semibold transition-colors duration-200',
             tab === option.id ? 'bg-surface text-success shadow-hairline' : 'text-ink-muted hover:text-ink',
           )"
           @click="tab = option.id"
@@ -117,6 +119,9 @@ const tabs = [
       <!-- `@container` di sini, bukan di `<aside>`: tiap varian di dalam form wajib bertanya pada wadahnya (DESIGN.md). -->
       <div v-show="tab === 'bagian'" id="editor-inspector-panel-bagian" role="tabpanel" aria-labelledby="editor-inspector-bagian" class="@container grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-5">
         <slot name="bagian" />
+      </div>
+      <div v-show="tab === 'elemen'" id="editor-inspector-panel-elemen" role="tabpanel" aria-labelledby="editor-inspector-elemen" class="@container grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-5">
+        <slot name="elemen" />
       </div>
       <div v-show="tab === 'global'" id="editor-inspector-panel-global" role="tabpanel" aria-labelledby="editor-inspector-global" class="@container grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-5">
         <slot name="global" />

@@ -74,14 +74,14 @@ void coverLayouts
       -->
       <div v-if="layout === 'arch-potret'" data-iv-photo class="iv-cover-arch">
         <img :src="photo" :alt="`Foto ${coupleNames}`" class="h-full w-full object-cover">
-        <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" data-iv-photo-frame class="iv-portrait-corner iv-portrait-corner--tl" aria-hidden="true" />
-        <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" data-iv-photo-frame class="iv-portrait-corner iv-portrait-corner--br" aria-hidden="true" />
+        <InvitationOrnamen data-iv-ornament slot-id="corner" posisi="tl" data-iv-photo-frame class="iv-portrait-corner iv-portrait-corner--tl" aria-hidden="true" />
+        <InvitationOrnamen data-iv-ornament slot-id="corner" posisi="br" data-iv-photo-frame class="iv-portrait-corner iv-portrait-corner--br" aria-hidden="true" />
       </div>
 
       <!-- Kayon: foto duduk di dalam siluet bingkai milik tema. -->
       <div v-else-if="layout === 'kayon-frame'" class="iv-cover-kayon">
         <img :src="photo" :alt="`Foto ${coupleNames}`" data-iv-photo class="iv-cover-kayon-photo">
-        <OrnamentGlyph :glyph="orn.frame" data-iv-ornament data-iv-slot="frame" data-iv-photo-frame class="iv-cover-kayon-frame" aria-hidden="true" />
+        <InvitationOrnamen data-iv-ornament slot-id="frame" posisi="utama" data-iv-photo-frame class="iv-cover-kayon-frame" aria-hidden="true" />
       </div>
 
       <!-- Kolase prewed: satu foto besar dan dua pendamping. -->
@@ -97,11 +97,10 @@ void coverLayouts
       </div>
 
       <div :class="cn('grid gap-4', layout === 'split-editorial' ? 'justify-items-center @min-[48rem]:justify-items-start' : 'justify-items-center')">
-        <OrnamentGlyph
+        <InvitationOrnamen
           v-if="layout !== 'split-editorial'"
-          :glyph="orn.garland"
           data-iv-ornament
-          data-iv-slot="garland"
+          slot-id="garland" posisi="utama"
           data-iv-lead
           class="h-14 w-64"
           :class="onPhoto ? 'opacity-90' : 'opacity-80'"
@@ -125,10 +124,9 @@ void coverLayouts
         <p v-if="greeting" class="iv-body m-0 mt-6 text-[1.05rem] opacity-95">
           {{ invitation.t('gate.greeting') }} {{ greeting }}
         </p>
-        <OrnamentGlyph
-          :glyph="orn.symbol"
+        <InvitationOrnamen
           data-iv-ornament
-          data-iv-slot="symbol"
+          slot-id="symbol" posisi="utama"
           class="mt-4 h-16 w-20"
           :class="onPhoto ? 'opacity-80' : 'opacity-75'"
           :style="onPhoto ? undefined : { color: 'var(--iv-primary)' }"

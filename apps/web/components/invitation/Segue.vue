@@ -27,6 +27,8 @@ const props = withDefaults(
 
 /** `none` tidak merender apa pun — babak itu memang sengaja bersambung langsung. */
 const tampil = computed(() => props.kind !== 'none')
+/** Pita milik bagian SESUDAHNYA (fase 81) — lingkupnya disediakan loop Renderer. */
+const { section } = useLingkupBagian()
 </script>
 
 <template>
@@ -38,8 +40,14 @@ const tampil = computed(() => props.kind !== 'none')
     :data-segue-from="from"
     aria-hidden="true"
   >
-    <OrnamentGlyph v-if="shape" :glyph="shape" class="iv-segue-shape" data-iv-ornament />
-    <span v-else class="iv-segue-rule" />
+    <!-- `data-iv-slot` sejak fase 80: pitanya kini slot `segue` yang bisa diganti dari kanvas. -->
+    <!--
+      Fase 81: keping kanvas `o:segue:pita`, milik bagian SESUDAH pita (lingkupnya disediakan loop
+      Renderer). `.iv-segue-shape` dipasang di glyph, bukan di pembungkus: kelas itulah yang
+      dianimasikan `segue()`, dan pembungkus membawa transform kanvas.
+    -->
+    <InvitationOrnamen v-if="shape" :glyph="shape" kelas-isi="iv-segue-shape" data-iv-ornament slot-id="segue" posisi="pita" />
+    <span v-else class="iv-segue-rule" data-iv-slot="segue" data-iv-el="o:segue:pita" :data-iv-bagian="section?.id" />
   </div>
 </template>
 

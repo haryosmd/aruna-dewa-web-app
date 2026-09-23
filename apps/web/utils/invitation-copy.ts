@@ -15,7 +15,7 @@ export const copyDefaults: Record<CopyKey, string> = {
   'gate.greeting': 'Kepada Yth.',
   'gate.noGuest': 'Tanpa mengurangi rasa hormat, kami mengundang Anda.',
   'gate.open': 'Buka Undangan',
-  'gate.music': 'Undangan ini memakai musik latar — nyalakan suara ponselmu.',
+  'gate.music': 'Ada musik latar — tekan tombol musik kalau ingin memutarnya.',
   'cover.kicker': 'Undangan pernikahan',
   'couple.kicker': 'Dengan penuh sukacita',
   'events.kicker': 'Rangkaian acara',

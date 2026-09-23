@@ -31,6 +31,8 @@ const props = defineProps<{
   templateId: string
   dipilih: boolean
   bawaan: boolean
+  /** Serasi dengan tema (fase 80): kurasi lama kini jadi lencana, bukan tab yang menyaring. */
+  serasi?: boolean
   slotLabel: string
 }>()
 
@@ -63,7 +65,7 @@ const lencana = computed(() => {
 
 const label = computed(() => [
   `${props.slotLabel}: ${entri.value.name}`,
-  props.bawaan ? '(bawaan tema)' : '',
+  props.bawaan ? '(bawaan tema)' : props.serasi ? '(serasi dengan tema)' : '',
   fit.value.ringkas,
 ].filter(Boolean).join(' — '))
 </script>
@@ -87,7 +89,7 @@ const label = computed(() => [
       v-if="terlihat"
       :glyph="glyph"
       ubin
-      class="min-h-0 max-h-full max-w-full object-contain text-[color:var(--iv-orn-body)]"
+      class="min-h-0 max-h-full max-w-full object-contain text-[color:var(--iv-orn-body)] [rotate:var(--studio-putar,0deg)]"
       aria-hidden="true"
     />
     <UiSkeleton v-else class="h-full w-full" :style="{ aspectRatio: String(entri.ratio) }" />
@@ -105,5 +107,10 @@ const label = computed(() => [
       :class="cn('absolute top-1 right-1', lencana.kelas)"
       aria-hidden="true"
     />
+    <span
+      v-if="bawaan || serasi"
+      class="absolute bottom-1 left-1 rounded-full bg-success-soft px-1.5 text-ui-label font-semibold text-success"
+      aria-hidden="true"
+    >{{ bawaan ? 'Bawaan' : 'Serasi' }}</span>
   </button>
 </template>

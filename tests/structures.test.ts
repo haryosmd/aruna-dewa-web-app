@@ -3,7 +3,7 @@ import {
   catalog, createDefaultDocument, createEleganceSections, headlessSectionTypes, invitationDocumentSchema,
   isLiveStructureId, legacySectionTypes, liveStructureIds, sectionFeature, sectionFields, sectionMeta,
   structureById, structureIds, structures, v2SectionTypes, documentStructureId, documentThemeId,
-  createLegacyDocument, templateIds, liveTemplateIds,
+  createLegacyDocument, templateIds, liveTemplateIds, defaultInputFromDocument, restructureDocument,
 } from '../packages/contracts/src/index'
 
 /*
@@ -181,5 +181,63 @@ describe('dua sumbu di dalam dokumen', () => {
     const doc = createDefaultDocument('Dea', 'Haryo', 'aruna-bloom', {}, 'warisan')
     expect(doc.structureId).toBe('warisan')
     expect(doc.sections.map(s => s.type)).toEqual([...structures.warisan.sectionTypes])
+  })
+})
+
+/*
+ * Fase 78. Dua tempat membangun ulang bagian dari `DefaultDocumentInput` di atas dokumen yang
+ * sudah hidup, dan keduanya dulu kehilangan data yang sama — satu mengoper `{}`, satu mengoper
+ * nama hardcode. Sekarang keduanya membaca dokumennya, dan tes ini yang menahannya di sana.
+ */
+describe('defaultInputFromDocument', () => {
+  const dokumen = createDefaultDocument('Haryo', 'Dea', 'aruna-bloom', {
+    date: '2026-10-03',
+    venue: 'Gedung Serbaguna Melati',
+    address: 'Jalan Mawar 17, Yogyakarta',
+    mapUrl: 'https://maps.example/xyz',
+  })
+
+  it('membaca nama, tanggal, gedung, dan alamat kembali dari dokumennya', () => {
+    const masukan = defaultInputFromDocument(dokumen, { partner1: 'Aruna', partner2: 'Dewa' })
+    expect(masukan.partner1).toBe('Haryo')
+    expect(masukan.partner2).toBe('Dea')
+    expect(masukan.venue).toBe('Gedung Serbaguna Melati')
+    expect(masukan.address).toBe('Jalan Mawar 17, Yogyakarta')
+    expect(masukan.mapUrl).toBe('https://maps.example/xyz')
+    expect(masukan.date).toBeTruthy()
+  })
+
+  it('membangun ulang preset tanpa kehilangan kapan dan di mana menikahnya', () => {
+    const masukan = defaultInputFromDocument(dokumen, { partner1: 'Aruna', partner2: 'Dewa' })
+    const lagi = createDefaultDocument(masukan.partner1, masukan.partner2, 'aruna-bloom', masukan)
+    const acara = lagi.sections.find(section => section.type === 'event')!.data
+    // Inilah yang dulu hilang: argumen keempat `{}` mengembalikan ketiganya ke teks pengisi.
+    expect(acara.day).not.toBe('Hari')
+    expect(acara.date).not.toBe('00')
+    expect(acara.monthYear).not.toBe('Bulan Tahun')
+    expect(lagi.sections.find(section => section.type === 'map')!.data.subtitle).toBe('Gedung Serbaguna Melati\nJalan Mawar 17, Yogyakarta')
+  })
+
+  it('lokasi yang memang belum diisi tidak dibaca sebagai gedung bernama "Lokasi akan diumumkan"', () => {
+    const kosong = createDefaultDocument('Haryo', 'Dea')
+    const masukan = defaultInputFromDocument(kosong, { partner1: 'Aruna', partner2: 'Dewa' })
+    expect(masukan.venue).toBeUndefined()
+    expect(masukan.address).toBeUndefined()
+  })
+
+  it('jatuh ke cadangan hanya ketika dokumennya memang tidak menyebut nama', () => {
+    expect(defaultInputFromDocument(null, { partner1: 'Aruna', partner2: 'Dewa' })).toMatchObject({ partner1: 'Aruna', partner2: 'Dewa' })
+  })
+})
+
+describe('restructureDocument membawa identitas pasangannya', () => {
+  it('bagian yang baru muncul tidak lahir dengan nama orang lain', () => {
+    const warisan = createLegacyDocument('Haryo', 'Dea')
+    const elegance = restructureDocument(warisan, 'elegance')
+    const amplop = elegance.sections.find(section => section.type === 'opening-envelope')!.data
+    // `opening-envelope` tidak ada di struktur warisan, jadi ia dibangun dari bawaan — dan
+    // sebelum fase 78 bawaannya memakai `{ partner1: 'Aruna', partner2: 'Dewa' }` hardcode.
+    expect(amplop.title).toBe('Haryo & Dea')
+    expect(amplop.sealMonogram).toBe('H & D')
   })
 })

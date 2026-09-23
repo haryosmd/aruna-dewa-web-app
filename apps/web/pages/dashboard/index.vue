@@ -1,17 +1,53 @@
 <script setup lang="ts">
 import type { Invitation } from '~/types/aruna'
-import { ArrowRight, Plus } from 'lucide-vue-next'
+import { Archive, ArrowRight, Plus } from 'lucide-vue-next'
 
 definePageMeta({ middleware: 'auth', layout: false })
 
 const invitationsApi = useInvitations()
+const toast = useToast()
+const { confirm } = usePopup()
 const { pending: loading, error, run } = useLoader(true)
 const invitations = ref<Invitation[]>([])
+const mengarsipkan = ref('')
 
 async function load() {
   invitations.value = (await run(() => invitationsApi.list())) ?? []
 }
 await load()
+
+/**
+ * Mengarsipkan undangan milik sendiri.
+ *
+ * Dialognya menyebut seluruh harganya, termasuk yang tidak kelihatan — riwayat terbit dibuang
+ * dan tiga puluh hari kemudian barisnya dimusnahkan penyapu retensi. Kalimat "bisa dipulihkan"
+ * tanpa tanggalnya adalah janji yang tidak kita tepati.
+ */
+async function arsipkan(invitation: Invitation) {
+  const jawaban = await confirm({
+    title: `Arsipkan "${invitation.title}"?`,
+    description: 'Undangan keluar dari daftar ini dan tautannya berhenti bekerja. Riwayat terbitnya dibuang, dan setelah 30 hari undangannya dihapus permanen. Hubungi kami dalam tenggang itu kalau ini keliru.',
+    tone: 'danger',
+    actions: [
+      { id: 'batal', label: 'Batal', tone: 'outline' },
+      { id: 'arsip', label: 'Arsipkan', tone: 'ink' },
+    ],
+    dismissId: 'batal',
+  })
+  if (jawaban !== 'arsip') return
+  mengarsipkan.value = invitation.id
+  try {
+    await invitationsApi.archive(invitation.id)
+    // Dicabut di tempat, bukan dengan memuat ulang seluruh daftar: jawaban server tidak membawa
+    // apa pun yang belum kita tahu, dan memuat ulang membuat kartu-kartu lain berkedip.
+    invitations.value = invitations.value.filter(item => item.id !== invitation.id)
+    toast.success('Undangan diarsipkan.')
+  } catch (cause) {
+    toast.error(apiErrorMessage(cause))
+  } finally {
+    mengarsipkan.value = ''
+  }
+}
 
 useHead({ title: 'Undangan kalian — Aruna Dewa' })
 </script>
@@ -60,8 +96,16 @@ useHead({ title: 'Undangan kalian — Aruna Dewa' })
         </UiButton>
       </div>
 
+      <!--
+        Tombol arsip berdiri DI LUAR anchor, bukan di dalamnya.
+
+        Kartunya satu `NuxtLink` utuh; sebuah `button` di dalam `a` bukan markup yang sah, dan
+        kliknya bertabrakan — yang menekan "arsipkan" akan ikut membuka undangannya. Jadi `li`
+        yang jadi wadah berposisi, anchornya tetap mengisi seluruh kartu, dan tombolnya
+        menumpang di atasnya.
+      -->
       <ul v-else class="m-0 grid gap-4 p-0 list-none sm:grid-cols-2">
-        <li v-for="invitation in invitations" :key="invitation.id">
+        <li v-for="invitation in invitations" :key="invitation.id" class="relative">
           <NuxtLink
             :id="`dash-invitation-${invitation.id}`"
             :to="`/dashboard/${invitation.id}`"
@@ -75,11 +119,27 @@ useHead({ title: 'Undangan kalian — Aruna Dewa' })
             <div class="grid gap-1.5">
               <h2 class="m-0 font-display text-h2 font-semibold text-ink">{{ invitation.title }}</h2>
               <p class="m-0 text-ui-lg text-ink-muted">/i/{{ invitation.slug }}</p>
+              <!--
+                Dibaca dari `status`, bukan dari `publishedAt` sendirian. Sampai fase 78 baris ini
+                bertanya pada kolom yang TIDAK PERNAH DIKIRIM `GET /invitations`, jadi tiap kartu
+                menjawab "Belum dipublikasikan" — termasuk yang badge-nya bertuliskan "Tayang".
+              -->
               <p class="m-0 text-caption text-ink-subtle">
-                {{ invitation.publishedAt ? 'Sudah dipublikasikan' : 'Belum dipublikasikan' }}
+                {{ invitation.status === 'PUBLISHED' ? 'Sedang tayang' : invitation.publishedAt ? 'Pernah tayang, sekarang draf' : 'Belum dipublikasikan' }}
               </p>
             </div>
           </NuxtLink>
+
+          <button
+            :id="`dash-archive-${invitation.id}`"
+            type="button"
+            :disabled="mengarsipkan === invitation.id"
+            :aria-label="`Arsipkan ${invitation.title}`"
+            class="absolute bottom-4 right-4 z-10 grid h-11 w-11 place-items-center rounded-full text-ink-subtle transition-colors duration-200 hover:bg-danger-soft hover:text-danger focus-visible:bg-danger-soft focus-visible:text-danger disabled:opacity-50"
+            @click="arsipkan(invitation)"
+          >
+            <Archive :size="17" aria-hidden="true" />
+          </button>
         </li>
       </ul>
     </main>

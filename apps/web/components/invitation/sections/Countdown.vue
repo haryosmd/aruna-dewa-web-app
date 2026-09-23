@@ -15,7 +15,7 @@ const { orn, intensity, compact, t } = useInvitation()
     :intensity="intensity"
     :seed="props.seed"
   >
-    <OrnamentGlyph :glyph="orn.divider" data-iv-ornament data-iv-slot="divider" class="h-7 w-48 opacity-70" :style="{ color: 'var(--iv-primary)' }" />
+    <InvitationOrnamen data-iv-ornament slot-id="divider" posisi="utama" class="h-7 w-48 opacity-70" :style="{ color: 'var(--iv-primary)' }" />
     <InvitationCountdown :date="text(props.section, 'date')" :arrived="t('countdown.arrived')" :tba="t('countdown.tba')" />
   </InvitationSection>
 </template>

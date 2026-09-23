@@ -68,8 +68,10 @@ describe('tab Disarankan', () => {
     const tanpaKolam = ornamentSlots.filter(slot => !(variantSlots as readonly string[]).includes(slot))
     for (const slot of tanpaKolam) {
       const daftar = disarankan({ slot, templateId: tema })
-      expect(daftar[0], slot).toBe(bawaanSlot({ slot, templateId: tema }))
-      for (const id of daftar.slice(1)) expect(fitOf(id, tema).ok, `${slot}=${id}`).toBe(true)
+      // Slot garis (fase 80) tidak punya bawaan keping; daftarnya langsung yang lolos `fitOf()`.
+      const bawaan = bawaanSlot({ slot, templateId: tema })
+      if (bawaan) expect(daftar[0], slot).toBe(bawaan)
+      for (const id of daftar.slice(bawaan ? 1 : 0)) expect(fitOf(id, tema).ok, `${slot}=${id}`).toBe(true)
     }
   })
 
@@ -166,7 +168,18 @@ describe('glyph yang disembunyikan (fase 70)', () => {
   it('bukan bawaan tema hidup mana pun', () => {
     for (const t of liveTemplateIds) {
       const set = themeOrnaments(t)
-      for (const slot of ornamentSlots) expect(ornamenDisembunyikan.has(set[slot]), `${t}.${slot}`).toBe(false)
+      for (const slot of ornamentSlots) expect(set[slot] !== undefined && ornamenDisembunyikan.has(set[slot]), `${t}.${slot}`).toBe(false)
     }
+  })
+})
+
+describe('mode tambah ornamen (fase 81)', () => {
+  it('kategori menyaring bank; semua = seluruh kategori hiasan tanpa bentuk amplop', () => {
+    const sudut = kandidat({ kategori: 'corner' })
+    expect(sudut.length).toBeGreaterThan(20)
+    expect(sudut.every(id => ornament(id).category === 'corner')).toBe(true)
+    const semua = kandidat({ kategori: 'semua' })
+    expect(semua.length).toBeGreaterThan(sudut.length)
+    expect(semua.some(id => ornament(id).category === 'envelopePocket' || ornament(id).category === 'envelopeFlap')).toBe(false)
   })
 })
