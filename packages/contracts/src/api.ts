@@ -276,6 +276,46 @@ export interface InvitationSummary {
   slug: string
   title: string
   status: string
+  /**
+   * Kapan terakhir diterbitkan; null kalau belum pernah.
+   *
+   * Ikut sejak fase 78, dan itu memperbaiki cacat yang sudah lama hidup: kartu di "Undangan
+   * kalian" membaca `invitation.publishedAt` dari `GET /invitations`, yang tidak pernah
+   * mengirimnya — jadi **setiap** kartu berbunyi "Belum dipublikasikan", termasuk yang tayang.
+   *
+   * Ia berarti "terakhir terbit", bukan "sedang terbit": undangan yang dijadikan draf lagi
+   * mempertahankannya. Yang menjawab "sedang tayang atau tidak" adalah `status`.
+   */
+  publishedAt?: string | null
+  /** ISO; dipakai backoffice untuk mengurutkan dan menghitung umur arsip. */
+  updatedAt?: string
+}
+
+/**
+ * Satu baris tabel backoffice (fase 78).
+ *
+ * **Tanpa `document`**, dan itu disengaja: satu halaman berisi 25 dokumen undangan penuh adalah
+ * muatan yang tidak punya pembaca — kesalahan yang sama yang sudah dicatat untuk
+ * `RevisionSummary`. Operator yang ingin melihat isinya menekan Sunting atau Pratinjau.
+ */
+export interface BackofficeInvitationRow {
+  id: string
+  slug: string
+  title: string
+  status: string
+  /** Email pembuat undangan; kolom "Pemilik" di tabel. */
+  ownerEmail: string
+  guestCount: number
+  createdAt: string
+  updatedAt: string
+  publishedAt?: string | null
+}
+
+export interface BackofficeInvitationPage {
+  items: BackofficeInvitationRow[]
+  total: number
+  page: number
+  pageSize: number
 }
 
 export interface InvitationDetail extends InvitationSummary {

@@ -177,9 +177,12 @@ function anchor(pos: Position, bleed: number): Record<string, string> {
 
 <template>
   <div class="iv-field" :data-dark="dark ? 'true' : 'false'" aria-hidden="true">
-    <OrnamentGlyph
-      v-for="piece in pieces"
+    <!-- Tiap keping ladang juga keping kanvas (fase 81): bisa digeser, diukur, diputar, dikunci. -->
+    <InvitationOrnamen
+      v-for="(piece, index) in pieces"
       :key="piece.key"
+      slot-id="layer"
+      :posisi="`ladang-${index}`"
       :glyph="piece.id"
       data-iv-ornament
       data-iv-layer

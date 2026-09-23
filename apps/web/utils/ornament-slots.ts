@@ -33,8 +33,17 @@ export const ornamentSlots = [
   'frame', 'divider', 'corner', 'floral', 'floralAlt', 'monogram', 'symbol', 'garland', 'seal',
   // Fase 69: dua bentuk amplop gerbang, dulu path inline di CoverGate.vue.
   'envelopePocket', 'envelopeFlap',
+  // Fase 80: dua slot yang bawaannya garis, bukan keping — lihat `slotGaris`.
+  'segue', 'heroFrame',
 ] as const
 export type OrnamentSlotKey = (typeof ornamentSlots)[number]
+
+/**
+ * Slot yang bawaannya garis, bukan keping bank (fase 80). Tema tidak mengisinya, jadi
+ * `set[slot]` untuk keduanya `undefined` sampai pasangan menggantinya — dan pemanggil harus
+ * menggambar garisnya sendiri untuk keadaan itu.
+ */
+export const slotGaris = ['segue', 'heroFrame'] as const satisfies readonly OrnamentSlotKey[]
 
 /**
  * Slot skalar yang benar-benar **dirender** tiap section (fase 71).
@@ -55,7 +64,7 @@ export const sectionOrnamentSlots: Record<(typeof sectionTypes)[number], readonl
   events: ['corner'],
   countdown: ['divider'],
   gallery: ['divider'],
-  story: ['floralAlt', 'monogram'],
+  story: ['floralAlt', 'monogram', 'divider'],
   rundown: ['divider', 'symbol'],
   dresscode: ['floralAlt'],
   video: ['symbol'],
@@ -66,7 +75,9 @@ export const sectionOrnamentSlots: Record<(typeof sectionTypes)[number], readonl
   music: [],
   // Struktur Elegance (fase 72): dirender `components/invitation/elegance/*.vue`.
   'opening-envelope': ['divider', 'seal', 'envelopePocket', 'envelopeFlap', 'corner'],
-  hero: ['monogram', 'symbol', 'corner'],
+  // `segue` tidak milik bagian mana pun: pitanya dirender Renderer DI ANTARA bagian, jadi kartunya
+  // hanya ada di ringkasan penuh. Klik pitanya di kanvas menyorot kartu itu.
+  hero: ['monogram', 'symbol', 'corner', 'heroFrame'],
   event: ['divider', 'corner'],
   map: ['symbol'],
   'unduh-mantu': ['symbol'],
@@ -112,6 +123,8 @@ export const slotCategories: Record<OrnamentSlotKey, readonly OrnamentCategory[]
   seal: ['seal', 'monogram'],
   envelopePocket: ['envelopePocket'],
   envelopeFlap: ['envelopeFlap'],
+  segue: ['divider'],
+  heroFrame: ['frame'],
 }
 
 /**
@@ -172,6 +185,12 @@ export const slotLabels: Record<OrnamentSlotKey, SlotLabel> = {
   seal: { label: 'Segel', hint: 'Lilin penutup amplop yang terbelah saat dibuka, dan cap pada kartu RSVP.' },
   envelopePocket: { label: 'Kantong amplop', hint: 'Bagian depan amplop yang menutupi surat sebelum dibuka.' },
   envelopeFlap: { label: 'Flap amplop', hint: 'Tutup amplop yang terbuka setelah segel terbelah.' },
+  segue: { label: 'Pita babak', hint: 'Pita tipis yang menandai pergantian babak di antara bagian.' },
+  heroFrame: {
+    label: 'Bingkai hero',
+    hint: 'Garis yang membingkai layar pembuka setelah amplop dibuka.',
+    syarat: 'Hanya struktur Elegance.',
+  },
 }
 
 export const layerSlotLabels: Record<LayerSlot, SlotLabel> = {

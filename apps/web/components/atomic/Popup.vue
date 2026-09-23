@@ -44,6 +44,18 @@ function setOpen(next: boolean) {
  * Kalau tombolnya entah kenapa tidak ada, `preventDefault()` tidak dipanggil dan reka-ui
  * mengerjakan bawaannya; fokus tidak pernah tertinggal di luar dialog.
  */
+/*
+ * Isian ketik-ulang (fase 78). Dikosongkan tiap kali popup berganti, supaya jawaban yang
+ * diketik untuk satu undangan tidak pernah tertinggal membuka kunci undangan berikutnya di
+ * antrean — dua penghapusan berturut-turut adalah persis keadaan yang bug itu menunggu.
+ */
+const ketikan = ref('')
+watch(current, () => { ketikan.value = '' })
+const terkunci = computed(() => {
+  const minta = current.value?.request.confirmText
+  return Boolean(minta) && ketikan.value.trim() !== minta!.value
+})
+
 function focusPrimaryAction(event: Event) {
   const first = current.value?.request.actions[0]
   const target = first ? document.getElementById(`aruna-popup-${first.id}`) : null
@@ -98,6 +110,12 @@ function focusPrimaryAction(event: Event) {
           390px memaksa labelnya jadi satu kata, dan "Tinggalkan" yang dipendekkan jadi
           "Buang" adalah cara yang bagus untuk kehilangan pekerjaan orang.
         -->
+        <UiField v-if="current.request.confirmText" id="aruna-popup-confirm" :label="current.request.confirmText.label">
+          <template #default="{ id }">
+            <UiInput :id="id" v-model="ketikan" autocomplete="off" spellcheck="false" />
+          </template>
+        </UiField>
+
         <div class="grid gap-2 sm:flex sm:flex-row-reverse sm:flex-wrap sm:justify-start">
           <UiButton
             v-for="(action, index) in current.request.actions"
@@ -105,6 +123,7 @@ function focusPrimaryAction(event: Event) {
             :key="action.id"
             :tone="action.tone ?? (index === 0 ? 'primary' : 'outline')"
             size="sm"
+            :disabled="index === 0 && terkunci"
             @click="popup.answer(current!.key, action.id)"
           >
             {{ action.label }}

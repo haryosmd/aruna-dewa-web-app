@@ -54,6 +54,20 @@ export interface InvitationContext {
    * jalan lain ke sana selain lewat sini.
    */
   pauseMusic: () => void
+  /**
+   * Opsi motion milik renderer, untuk section yang memanggil `useArunaMotion` sendiri (fase 79).
+   *
+   * Tiga section melakukannya — `Story`, `Gallery`, `Rsvp` — dan sampai fase ini ketiganya
+   * memanggilnya **telanjang**. Akibatnya dua, dan keduanya cacat: di panggung editor mereka
+   * membaca JENDELA sebagai penggulung padahal yang menggulung `[data-preview-stage]`, jadi
+   * ScrollTrigger mereka memicu pada posisi yang tidak pernah benar; dan tombol Statis/Dinamis
+   * (fase 78) tidak mematikan gerakan mereka, karena sakelarnya hanya sampai ke timeline yang
+   * dibangun renderer.
+   *
+   * Fase 79 memecah bagian cerita jadi lima varian, dan tiap varian memanggil motion-nya
+   * sendiri — tanpa kunci ini cacat yang sama berlipat dari tiga tempat jadi tujuh.
+   */
+  motionOptions: { scrollRoot: Ref<HTMLElement | null>; statis: Ref<boolean>; tahan?: Ref<boolean>; ulang?: Ref<unknown> }
 }
 
 export const invitationKey = Symbol('aruna-invitation') as InjectionKey<InvitationContext>

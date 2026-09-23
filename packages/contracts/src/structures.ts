@@ -1,6 +1,6 @@
 import {
-  createEleganceSections, eleganceSectionTypes, extraSectionTypes, headlessSectionTypes,
-  legacySectionTypes, type DefaultDocumentInput, type SectionType, type V2Section,
+  createEleganceSections, defaultInputFromDocument, eleganceSectionTypes, extraSectionTypes,
+  headlessSectionTypes, legacySectionTypes, type DefaultDocumentInput, type SectionType, type V2Section,
 } from './sections'
 
 /**
@@ -187,7 +187,17 @@ export function restructureDocument<T extends DokumenApaPun>(document: T, tujuan
   const tujuan = structures[tujuanId] ?? structures.elegance
   const lama = new Map((document.sections ?? []).map(section => [section.type, section]))
 
-  const sections = tujuan.build({ partner1: 'Aruna', partner2: 'Dewa' }).map(bawaan => {
+  /*
+   * Masukan bawaan dibaca dari dokumen yang sedang direstruktur, bukan dikarang.
+   *
+   * Sebelum fase 78 baris ini `{ partner1: 'Aruna', partner2: 'Dewa' }`, dan akibatnya bisa
+   * ditunjuk: tiap bagian yang ada di struktur TUJUAN tapi belum ada di struktur asal lahir
+   * dengan nama orang lain — pasangan berpindah struktur lalu menemukan "Aruna & Dewa" di
+   * bagian yang baru muncul. Tanggal, gedung, dan alamat ikut hilang lewat pintu yang sama.
+   */
+  const masukan = defaultInputFromDocument(document, { partner1: 'Aruna', partner2: 'Dewa' })
+
+  const sections = tujuan.build(masukan).map(bawaan => {
     const sebelumnya = lama.get(bawaan.type)
     if (!sebelumnya) return bawaan
     return {

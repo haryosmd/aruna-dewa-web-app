@@ -38,12 +38,14 @@ const acara = computed(() => [
       <InvitationText :section="props.section" field="monthYear" tag="span" class="iv-kicker m-0 text-[0.75rem]" />
     </div>
 
-    <OrnamentGlyph :glyph="orn.divider" data-iv-ornament data-iv-slot="divider" class="h-7 w-48 opacity-75" :style="{ color: 'var(--iv-primary)' }" />
+    <InvitationOrnamen data-iv-ornament slot-id="divider" posisi="utama" class="h-7 w-48 opacity-75" :style="{ color: 'var(--iv-primary)' }" />
 
     <ul class="iv-event-list m-0 grid w-full gap-4 p-0 list-none">
       <li v-for="item in acara" :key="item.key" data-iv-reveal class="iv-card iv-event-arch relative grid gap-2 px-6 pb-7 pt-8">
-        <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" class="iv-event-corner iv-event-corner--tl" aria-hidden="true" />
-        <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" class="iv-event-corner iv-event-corner--br" aria-hidden="true" />
+        <InvitationOrnamen data-iv-ornament slot-id="corner" :posisi="`${item.key}-tl`" class="iv-event-corner iv-event-corner--tl" aria-hidden="true" />
+        <InvitationOrnamen data-iv-ornament slot-id="corner" :posisi="`${item.key}-tr`" :tampil-bawaan="false" class="iv-event-corner iv-event-corner--tr" aria-hidden="true" />
+        <InvitationOrnamen data-iv-ornament slot-id="corner" :posisi="`${item.key}-bl`" :tampil-bawaan="false" class="iv-event-corner iv-event-corner--bl" aria-hidden="true" />
+        <InvitationOrnamen data-iv-ornament slot-id="corner" :posisi="`${item.key}-br`" class="iv-event-corner iv-event-corner--br" aria-hidden="true" />
         <span class="iv-event-badge justify-self-center" aria-hidden="true">
           <component :is="item.icon" :size="26" />
         </span>

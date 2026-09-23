@@ -483,7 +483,11 @@ export function formatBytes(bytes: number): string {
  * di API harus bisa menolak bank yang tidak dikenal tanpa mengimpor `apps/web`.
  * Presentasinya (nama tampil, warna merek, path logo) hidup di `apps/web/utils/banks.ts`.
  */
-export const bankIds = ['bca', 'mandiri', 'bri', 'bsi', 'jago', 'jenius', 'seabank', 'other'] as const
+export const bankIds = [
+  'bca', 'mandiri', 'bri', 'bni', 'bsi', 'cimb', 'danamon', 'hsbc', 'digibank', 'jago', 'jenius', 'seabank',
+  'dana', 'gopay', 'ovo',
+  'other',
+] as const
 export type BankId = (typeof bankIds)[number]
 
 /** Satu rekening tujuan. `owner` menandai mempelai pria/wanita; boleh kosong. */
@@ -505,14 +509,26 @@ export interface GiftAccount {
  */
 export const giftAccountLimit = 8
 
+/**
+ * Urutan penting: pencocokan memakai `includes`, jadi alias yang memuat alias lain harus lebih dulu —
+ * "danamon" memuat "dana".
+ */
 const bankAliases: [BankId, string[]][] = [
   ['bca', ['bca', 'central asia']],
   ['mandiri', ['mandiri']],
   ['bsi', ['bsi', 'syariah indonesia']],
   ['bri', ['bri', 'rakyat indonesia']],
+  ['bni', ['bni', 'negara indonesia']],
+  ['cimb', ['cimb', 'niaga']],
+  ['danamon', ['danamon']],
+  ['hsbc', ['hsbc']],
+  ['digibank', ['digibank', 'dbs']],
   ['jago', ['jago']],
   ['jenius', ['jenius', 'smbc', 'btpn']],
   ['seabank', ['seabank', 'sea bank']],
+  ['gopay', ['gopay', 'go-pay', 'go pay']],
+  ['ovo', ['ovo']],
+  ['dana', ['dana']],
 ]
 
 /** Menebak `bankId` dari nama bank yang diketik bebas pada dokumen lama. */

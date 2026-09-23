@@ -6,7 +6,7 @@ import type { Section } from '~/types/aruna'
  * mempelai wanita dan pria berurutan — label, nama script, urutan anak, orang tua.
  */
 const props = defineProps<{ section: Section; seed: number }>()
-const { orn, intensity, compact, coupleNames } = useInvitation()
+const { orn, intensity, compact, coupleNames, mode } = useInvitation()
 
 const photo = computed(() => text(props.section, 'imageUrl'))
 const entrance = computed(() => ['rise', 'sweep-left', 'sweep-right', 'iris'][Math.abs(props.seed) % 4])
@@ -27,12 +27,15 @@ const entrance = computed(() => ['rise', 'sweep-left', 'sweep-right', 'iris'][Ma
     <InvitationText :section="props.section" field="greeting" tag="p" data-iv-lead class="iv-display m-0 text-[1.05rem]" />
     <InvitationText :section="props.section" field="subtitle" tag="p" data-iv-reveal class="iv-body m-0 max-w-[32rem]" multiline />
 
-    <OrnamentGlyph :glyph="orn.floral" data-iv-ornament data-iv-slot="floral" class="h-24 w-20 opacity-80" :style="{ color: 'var(--iv-primary)' }" />
+    <InvitationOrnamen data-iv-ornament slot-id="floral" posisi="utama" class="h-24 w-20 opacity-80" :style="{ color: 'var(--iv-primary)' }" />
 
+    <InvitationSlotKosong v-if="!photo && mode === 'stage'" label="Potret mempelai" hint="Unggah di tab Bagian › Mempelai." />
     <div v-if="photo" data-iv-reveal class="iv-portrait" :data-entrance="entrance">
       <img :src="photo" :alt="`Potret ${coupleNames}`" data-iv-photo loading="lazy" class="h-full w-full object-cover">
-      <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" class="iv-portrait-corner iv-portrait-corner--tl" aria-hidden="true" />
-      <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" class="iv-portrait-corner iv-portrait-corner--br" aria-hidden="true" />
+      <InvitationOrnamen data-iv-ornament slot-id="corner" posisi="tl" class="iv-portrait-corner iv-portrait-corner--tl" aria-hidden="true" />
+      <InvitationOrnamen data-iv-ornament slot-id="corner" posisi="tr" :tampil-bawaan="false" class="iv-portrait-corner iv-portrait-corner--tr" aria-hidden="true" />
+      <InvitationOrnamen data-iv-ornament slot-id="corner" posisi="bl" :tampil-bawaan="false" class="iv-portrait-corner iv-portrait-corner--bl" aria-hidden="true" />
+      <InvitationOrnamen data-iv-ornament slot-id="corner" posisi="br" class="iv-portrait-corner iv-portrait-corner--br" aria-hidden="true" />
     </div>
 
     <div data-iv-reveal class="grid justify-items-center gap-1.5">
@@ -42,7 +45,7 @@ const entrance = computed(() => ['rise', 'sweep-left', 'sweep-right', 'iris'][Ma
       <InvitationText :section="props.section" field="brideParents" tag="p" class="iv-body m-0 text-[0.9375rem] font-semibold" multiline />
     </div>
 
-    <OrnamentGlyph :glyph="orn.divider" data-iv-ornament data-iv-slot="divider" class="h-7 w-52 opacity-75" :style="{ color: 'var(--iv-primary)' }" />
+    <InvitationOrnamen data-iv-ornament slot-id="divider" posisi="utama" class="h-7 w-52 opacity-75" :style="{ color: 'var(--iv-primary)' }" />
 
     <div data-iv-reveal class="grid justify-items-center gap-1.5">
       <InvitationText :section="props.section" field="groomLabel" tag="p" class="iv-kicker m-0" />

@@ -10,7 +10,13 @@
  * yang menerjemahkan hasilnya jadi `play()`/`pause()` dan yang menuliskan `refused` ke
  * penyimpanan sesi.
  */
-export type MusicEvent = 'gate' | 'toggle' | 'leave' | 'hide' | 'show'
+/**
+ * **`gate` dicabut di fase 78.** Membuka amplop dulu berarti "putar" — itulah autoplay-nya, dan
+ * gestur kliknya memang izin yang sah menurut browser. Yang tidak pernah ditanyakan: apakah
+ * tamu meminta musiknya. Sekarang satu-satunya yang menyalakan musik adalah tombolnya sendiri,
+ * di kedua permukaan; empat aturan lain di bawah tidak berubah sedikit pun.
+ */
+export type MusicEvent = 'toggle' | 'leave' | 'hide' | 'show'
 
 export interface MusicState {
   playing: boolean
@@ -27,10 +33,6 @@ export const silentMusic = (refused = false): MusicState => ({ playing: false, r
 
 export function nextMusicState(state: MusicState, event: MusicEvent): MusicState {
   switch (event) {
-    /** Gerbang memberi izin autoplay, tapi tidak memberi izin mengabaikan tamu yang sudah menolak. */
-    case 'gate':
-      return state.refused || state.playing ? state : { ...state, playing: true, pausedByHide: false }
-
     case 'toggle':
       return state.playing
         ? { playing: false, refused: true, pausedByHide: false }

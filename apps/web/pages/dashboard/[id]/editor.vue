@@ -6,11 +6,19 @@ import type {
 } from '@aruna/contracts'
 import type { RevisionSummary } from '@aruna/contracts/api'
 import {
-  canEditDesign as designUnlocked, createDefaultDocument, designFeatureId, documentStructureId, documentThemeId,
+  canEditDesign as designUnlocked, createDefaultDocument, defaultInputFromDocument, designFeatureId, documentStructureId, documentThemeId,
   invitationDocumentSchema, isLiveTemplateId, liveStructureIds, maxGalleryPhotoLimit, restructureDocument, sectionMeta, structures, type StructureId,
   isV2SectionType, migrateLegacyDocument, templateById,
 } from '@aruna/contracts'
 import { toOrnamentOverrides } from '~/utils/invitation-options'
+import {
+  arahDariPutar, bacaKanvas, lapisBaru, normalSudut, slotDariKunci, terapkanKeping, terapkanTambahan, type AksiKanvas, type ArahSudut, type InfoKeping, type Kanvas,
+  putarUntukArah,
+} from '~/utils/kanvas'
+import { sectionDomId } from '~/utils/editor-sections'
+import { maksTambahanKanvas, sectionFields as kolomBagian, type V2SectionType } from '@aruna/contracts'
+import type { OrnamentCategory } from '~/utils/ornaments'
+import { ornamentRamp, rampStyle } from '~/utils/ornament-palette'
 import { ornament, type LayerSlot, type OrnamentId, type UploadedOrnament } from '~/utils/ornaments'
 import { bolehUnggah, sectionOrnamentSlots, terapkanOverrides, type OrnamentOverrides, type OrnamentSlotKey } from '~/utils/ornament-slots'
 import { bawaanSlot } from '~/utils/ornament-search'
@@ -54,6 +62,30 @@ const error = ref('')
 const conflict = ref(false)
 const mobilePanel = ref<'settings' | 'preview'>('settings')
 const prefs = useEditorPrefs()
+const dashPrefs = useDashboardPrefs()
+
+/*
+ * Fokus pratinjau (fase 81): satu tombol yang melipat navigasi, rail, dan inspektor sekaligus.
+ * Tanpa ini desktop 1280 di kolom panggung 528px (1440×900, semua panel terbuka) hanya bisa
+ * dipratinjau di ±0,37. Keadaan sebelumnya diingat supaya menekan lagi mengembalikan persis apa
+ * yang tadi terbuka, bukan membuka semuanya.
+ */
+const fokus = computed(() => prefs.value.railCollapsed && prefs.value.inspectorCollapsed && dashPrefs.value.sidebarCollapsed)
+let sebelumFokus: { rail: boolean, inspector: boolean, nav: boolean } | null = null
+function toggleFokus() {
+  if (fokus.value) {
+    const awal = sebelumFokus ?? { rail: false, inspector: false, nav: false }
+    sebelumFokus = null
+    prefs.value = { ...prefs.value, railCollapsed: awal.rail, inspectorCollapsed: awal.inspector }
+    dashPrefs.value = { ...dashPrefs.value, sidebarCollapsed: awal.nav }
+    return
+  }
+  sebelumFokus = { rail: prefs.value.railCollapsed, inspector: prefs.value.inspectorCollapsed, nav: dashPrefs.value.sidebarCollapsed }
+  prefs.value = { ...prefs.value, railCollapsed: true, inspectorCollapsed: true }
+  dashPrefs.value = { ...dashPrefs.value, sidebarCollapsed: true }
+}
+/** Nonce ▶ gerak (fase 81): naik → panggung memutar ulang gerak masuk yang sedang terlihat. */
+const putarGerak = ref(0)
 const sectionQuery = ref('')
 const designAddon = ref<{ name: string; price: number } | null>(null)
 const { canUndo, canRedo, checkpoint, undo, redo, reset: resetRiwayat } = useDocumentHistory(document)
@@ -144,16 +176,20 @@ function selectSection(id: string) {
 watch(mobilePanel, (panel) => { if (panel === 'preview') fokuskanPanggung(selectedId.value) })
 
 /**
- * Panggung → rail (fase 76): bagian yang sedang berdiri di tengah layar ikut menyorot railnya.
+ * Panggung → rail (fase 76): bagian yang sedang berdiri di tengah layar ikut ditandai di rail.
  *
  * Sengaja **bukan** `selectSection`. Yang itu memanggil `fokuskanPanggung()`, dan panggilan itu
  * akan menggulir panggung ke bagian yang baru saja digulir sendiri oleh pasangan — pantulan yang
- * terbaca sebagai panggung yang menolak digulir. Di sini hanya sorotannya yang berpindah.
+ * terbaca sebagai panggung yang menolak digulir.
+ *
+ * **Dan sejak fase 80 ia juga bukan `selectedId`.** Sebelumnya sorotan ini menulis `selectedId`,
+ * yang sama dengan kunci form Inspector — jadi menambah satu langkah cerita (bagiannya memanjang,
+ * posisi gulir yang sama kini jatuh di Rundown) mengganti form yang sedang diisi pasangan dengan
+ * form Rundown. Gulir kini hanya memindahkan penanda; form hanya berganti oleh klik.
  */
+const terlihatId = ref<string | null>(null)
 function sorotSection(type: string) {
-  const id = document.value.sections.find(section => section.type === type)?.id
-  if (!id || id === selectedId.value) return
-  selectedId.value = id
+  terlihatId.value = document.value.sections.find(section => section.type === type)?.id ?? null
 }
 
 function toggleSection(id: string, enabled: boolean) {
@@ -314,13 +350,27 @@ const ornamentOverrides = computed(() => toOrnamentOverrides(ornamentHost.value?
 const ornamentSet = computed(() => themeOrnaments(document.value.templateId))
 const slotBagianIni = computed(() => (selected.value ? sectionOrnamentSlots[selected.value.type] ?? [] : []))
 
-const studio = ref<{ slot?: OrnamentSlotKey, layer?: LayerSlot, semula: OrnamentOverrides } | null>(null)
+const studio = ref<{
+  slot?: OrnamentSlotKey
+  layer?: LayerSlot
+  semula: OrnamentOverrides
+  /** Fase 81: ganti satu keping di tempatnya saja. */
+  keping?: InfoKeping
+  /** Fase 81: tambah ornamen ke bagian; `id` terisi sesudah pilihan pertama. */
+  tambah?: { bagianId: string, id?: string }
+  semulaKanvas?: { bagianId: string, kanvas: unknown }
+} | null>(null)
 const studioAktif = computed(() => {
   if (!studio.value) return null
+  if (studio.value.keping) return studioKeping(studio.value.keping)
+  if (studio.value.tambah) return studioTambah(studio.value.tambah)
   const { slot, layer } = studio.value
   const berlaku = terapkanOverrides(ornamentSet.value, ornamentOverrides.value)
   const aktif = layer ? berlaku.layers.find(id => ornament(id).slot === layer)! : berlaku[slot!]
-  return { slot, layer, aktif, bawaan: bawaanSlot({ slot, layer, templateId: document.value.templateId })! }
+  return {
+    slot, layer, aktif: aktif ?? null, bawaan: bawaanSlot({ slot, layer, templateId: document.value.templateId }) ?? null,
+    mode: 'slot' as const, kategori: undefined as OrnamentCategory | undefined, tempat: undefined as string | undefined, arah: null as ArahSudut | null,
+  }
 })
 function bukaStudio(target: { slot?: OrnamentSlotKey, layer?: LayerSlot }) {
   if (!canEditDesign.value) return
@@ -338,6 +388,8 @@ const salinOverrides = (): OrnamentOverrides => ({ ...ornamentOverrides.value, l
 function pilihOrnamen(glyph: OrnamentId) {
   const target = studio.value
   if (!target) return
+  if (target.keping) { ubahKanvas(target.keping, { glyph, unggahan: undefined }, false); return }
+  if (target.tambah) { tambahkanPilihan(target.tambah, { glyph }); return }
   const berikut = salinOverrides()
   if (target.layer) berikut.layers = { ...berikut.layers, [target.layer]: glyph }
   else { berikut[target.slot!] = glyph; if (berikut.unggahan && bolehUnggah(target.slot!)) delete berikut.unggahan[target.slot!] }
@@ -345,6 +397,8 @@ function pilihOrnamen(glyph: OrnamentId) {
 }
 function pilihUnggahan(item: UploadedOrnament) {
   const target = studio.value
+  if (target?.keping) { ubahKanvas(target.keping, { unggahan: item, glyph: undefined }, false); return }
+  if (target?.tambah) { tambahkanPilihan(target.tambah, { unggahan: item }); return }
   if (!target?.slot || !bolehUnggah(target.slot)) return
   const berikut = salinOverrides()
   berikut.unggahan = { ...berikut.unggahan, [target.slot]: item }
@@ -354,39 +408,240 @@ function pilihUnggahan(item: UploadedOrnament) {
 function kembalikanSlot() {
   const target = studio.value
   if (!target) return
+  if (target.keping) { ubahKanvas(target.keping, { glyph: undefined, unggahan: undefined }, false); return }
+  if (target.tambah) return
   const berikut = salinOverrides()
   if (target.layer) delete berikut.layers?.[target.layer]
   else { delete berikut[target.slot!]; if (bolehUnggah(target.slot!)) delete berikut.unggahan?.[target.slot!] }
   tulisOverrides(berikut)
 }
-function batalkanStudio() { if (studio.value) tulisOverrides(studio.value.semula) }
-
-/**
- * Klik ornamen di kanvas (fase 76) → tab Ornamen, kartu slotnya tersorot.
- *
- * Studio sengaja TIDAK dibuka langsung: keputusan pemilik. Sebelum memilih keping baru, pasangan
- * perlu membaca slot apa yang barusan ia sentuh dan di mana lagi keping itu dipakai — nilai
- * ornamen berlaku global, satu `divider` yang sama dipakai lima bagian sekaligus, dan itulah yang
- * dikatakan kartu slotnya. `nonce` memakai pola `fokusPanggung`: menyentuh ornamen yang sama dua
- * kali harus tetap menyorot, bukan diam karena nilainya tidak berubah.
- */
-const sorotSlot = ref<{ slot?: OrnamentSlotKey, layer?: LayerSlot, nonce: number } | null>(null)
-function sorotkanSlot(target: { slot?: OrnamentSlotKey, layer?: LayerSlot }) {
-  if (!target.slot && !target.layer) return
-  prefs.value.inspectorTab = 'ornamen'
-  // Di bawah `xl` inspektor bersembunyi selagi tab Pratinjau terbuka — persis tab tempat klik itu
-  // terjadi. Tanpa baris ini, menyentuh ornamen di ponsel tidak memperlihatkan apa pun.
-  mobilePanel.value = 'settings'
-  sorotSlot.value = { ...target, nonce: (sorotSlot.value?.nonce ?? 0) + 1 }
+function batalkanStudio() {
+  const target = studio.value
+  if (!target) return
+  tulisOverrides(target.semula)
+  if (target.semulaKanvas) {
+    const section = bagianDari(target.semulaKanvas.bagianId)
+    if (section) {
+      if (target.semulaKanvas.kanvas) section.data.kanvas = bersihkan(target.semulaKanvas.kanvas)
+      else delete section.data.kanvas
+    }
+    if (target.tambah?.id && kepingTerpilih.value?.kunci === `a:${target.tambah.id}`) kepingTerpilih.value = null
+  }
 }
-/*
- * Dua ringkasan berdiri di panel yang sama, dan keduanya bisa memuat slot yang dituju. Kalau
- * dua kartu menyorot sekaligus, dua `scrollIntoView` saling menimpa dan yang terlihat justru
- * kartu yang bukan konteksnya. Yang tersaring menang bila ia memuatnya — itu kartu yang
- * menjelaskan bagian yang sedang disunting.
+function tutupStudio() {
+  const target = studio.value
+  studio.value = null
+  // Ornamen tambahan yang baru jadi langsung terpilih: pasangan biasanya ingin segera memindahnya.
+  if (target?.tambah?.id) {
+    const kunci = `a:${target.tambah.id}`
+    kepingTerpilih.value = { bagianId: target.tambah.bagianId, kunci, label: 'Ornamen tambahan', jenis: 'tambahan', terkunci: false, tersembunyi: false }
+  }
+}
+
+/* ── Kanvas bebas (fase 81) ─────────────────────────────────────────────────── */
+/**
+ * Keping yang dipilih di kanvas panggung. Memilihnya membuka bagiannya di form dan tab Elemen —
+ * klik adalah klik, jadi aturan fase 80 "hanya klik yang mengganti form" tetap terpenuhi.
  */
-const sorotBagian = computed(() => (sorotSlot.value?.slot && slotBagianIni.value.includes(sorotSlot.value.slot) ? sorotSlot.value : null))
-const sorotPenuh = computed(() => (sorotBagian.value ? null : sorotSlot.value))
+const kepingTerpilih = ref<InfoKeping | null>(null)
+const daftarKeping = ref<InfoKeping[]>([])
+function terimaDaftar(daftar: InfoKeping[]) { daftarKeping.value = daftar }
+const bagianDari = (id: string) => document.value.sections.find(section => section.id === id)
+watch(() => kepingTerpilih.value && `${kepingTerpilih.value.bagianId}|${kepingTerpilih.value.kunci}`, (kunci) => {
+  const info = kepingTerpilih.value
+  if (!kunci || !info) return
+  if (selectedId.value !== info.bagianId) selectedId.value = info.bagianId
+  prefs.value.inspectorTab = 'elemen'
+})
+/** Pilihan dari rail menutup pilihan keping di bagian lain. */
+watch(selectedId, (id) => { if (kepingTerpilih.value && kepingTerpilih.value.bagianId !== id) kepingTerpilih.value = null })
+
+function kanvasBagian(section: { data: Record<string, unknown> }): Kanvas | undefined {
+  return section.data.kanvas ? bersihkan(section.data.kanvas as Kanvas) : undefined
+}
+function simpanKanvas(section: { data: Record<string, unknown> }, kanvas: Kanvas | undefined) {
+  if (kanvas) section.data.kanvas = kanvas
+  else delete section.data.kanvas
+}
+
+/** Satu-satunya penulis kanvas. `catat` = satu langkah undo (gerakan pertama sebuah seretan). */
+function ubahKanvas(target: Pick<InfoKeping, 'bagianId' | 'kunci' | 'jenis'>, patch: Record<string, unknown> | null, catat = true) {
+  if (!canEditDesign.value) return
+  const section = bagianDari(target.bagianId)
+  if (!section) return
+  if (catat) checkpoint()
+  const kanvas = kanvasBagian(section)
+  const bersihPatch = patch ? bersihkan(patch) : null
+  simpanKanvas(section, target.jenis === 'tambahan'
+    ? terapkanTambahan(kanvas, target.kunci.slice(2), bersihPatch)
+    : terapkanKeping(kanvas, target.kunci, bersihPatch))
+}
+
+/** Nilai tersimpan keping terpilih — dibaca panel Elemen dan aksi toggle. */
+function nilaiKeping(target: Pick<InfoKeping, 'bagianId' | 'kunci' | 'jenis'> | null): Record<string, unknown> {
+  if (!target) return {}
+  const kanvas = bacaKanvas(bagianDari(target.bagianId)?.data)
+  if (target.jenis === 'tambahan') return { ...(kanvas.tambahan.find(item => `a:${item.id}` === target.kunci) ?? {}) }
+  return { ...(kanvas.keping[target.kunci] ?? {}) }
+}
+const nilaiTerpilih = computed(() => nilaiKeping(kepingTerpilih.value))
+/** Ringkasan per keping untuk daftar Lapisan: urutan, arah (pratinjau kecilnya), dan cuplikan teks. */
+const ringkasDaftar = computed(() => Object.fromEntries(daftarKeping.value.map((item) => {
+  const nilai = nilaiKeping(item)
+  const teks = item.jenis === 'teks' ? String(bagianDari(item.bagianId)?.data[item.kunci.slice(2)] ?? '').slice(0, 60) : undefined
+  return [item.kunci, {
+    lapis: nilai.lapis as number | undefined, putar: nilai.putar as number | undefined,
+    cerminX: nilai.cerminX as boolean | undefined, cerminY: nilai.cerminY as boolean | undefined, teks,
+  }]
+})))
+const rampLapisan = computed(() => rampStyle(ornamentRamp(document.value.tokens, themeAccent.value)))
+const jumlahTambahan = computed(() => (selected.value ? bacaKanvas(selected.value.data).tambahan.length : 0))
+/** Keping kanvas dipakai terus — nilai terkunci/tersembunyi dari dokumen, bukan dari DOM saat diklik. */
+const kepingSegar = computed(() => {
+  const info = kepingTerpilih.value
+  if (!info) return null
+  const nilai = nilaiTerpilih.value
+  return { ...info, terkunci: Boolean(nilai.terkunci), tersembunyi: nilai.tampil === false }
+})
+
+/** Isi dan ukuran huruf kolom teks yang dipilih. */
+const kolomTerpilih = computed(() => {
+  const info = kepingTerpilih.value
+  if (info?.jenis !== 'teks') return undefined
+  const type = bagianDari(info.bagianId)?.type as V2SectionType | undefined
+  return type ? kolomBagian[type]?.find(field => field.key === info.kunci.slice(2)) : undefined
+})
+const teksTerpilih = computed(() => {
+  const info = kepingTerpilih.value
+  return info?.jenis === 'teks' ? String(bagianDari(info.bagianId)?.data[info.kunci.slice(2)] ?? '') : undefined
+})
+const hurufTerpilih = computed(() => {
+  const info = kepingTerpilih.value
+  if (info?.jenis !== 'teks') return undefined
+  const gaya = (bagianDari(info.bagianId)?.data.textStyles as Record<string, TextStyle> | undefined)?.[info.kunci.slice(2)]
+  if (gaya?.fontSize) return gaya.fontSize
+  // Belum pernah diubah: ukuran yang sedang dirender, supaya kolomnya tidak kosong.
+  const el = globalThis.document?.querySelector<HTMLElement>(`[data-iv-el="${info.kunci}"][data-iv-bagian="${info.bagianId}"]`)
+  return el ? Math.round(Number.parseFloat(getComputedStyle(el).fontSize)) : undefined
+})
+
+function tulisTeksKanvas(target: InfoKeping, nilai: string) {
+  const section = bagianDari(target.bagianId)
+  if (!section || target.jenis !== 'teks') return
+  checkpoint()
+  section.data[target.kunci.slice(2)] = nilai
+}
+function ukurTeksKanvas(target: InfoKeping, ukuran: number, catat = true) {
+  const section = bagianDari(target.bagianId)
+  if (!section || !canEditDesign.value || target.jenis !== 'teks') return
+  if (catat) checkpoint()
+  const kolom = target.kunci.slice(2)
+  const styles = bersihkan({ ...((section.data.textStyles as Record<string, TextStyle> | undefined) ?? {}) })
+  styles[kolom] = { ...(styles[kolom] ?? {}), fontSize: Math.round(Math.min(96, Math.max(10, ukuran))) }
+  section.data.textStyles = styles
+}
+
+function aksiKanvas(nama: AksiKanvas, target: InfoKeping) {
+  const nilai = nilaiKeping(target)
+  switch (nama) {
+    case 'ganti': bukaStudioKeping(target); return
+    case 'kunci': ubahKanvas(target, { terkunci: nilai.terkunci ? undefined : true }); return
+    case 'sembunyikan': ubahKanvas(target, { tampil: false }); return
+    case 'putar90': ubahKanvas(target, { putar: normalSudut(Number(nilai.putar ?? 0) + 90) || undefined }); return
+    case 'cerminX': ubahKanvas(target, { cerminX: nilai.cerminX ? undefined : true }); return
+    case 'kembalikan': ubahKanvas(target, null); return
+    case 'hapus':
+      ubahKanvas(target, null)
+      if (kepingTerpilih.value?.kunci === target.kunci) kepingTerpilih.value = null
+      return
+    case 'putarGerak': putarGerak.value++; return
+    case 'depan': case 'belakang': case 'naik': case 'turun': {
+      const daftar = daftarKeping.value.filter(item => item.bagianId === target.bagianId)
+        .map(item => ({ kunci: item.kunci, lapis: nilaiKeping(item).lapis as number | undefined }))
+      ubahKanvas(target, { lapis: lapisBaru(daftar.length ? daftar : [{ kunci: target.kunci }], target.kunci, nama) })
+    }
+  }
+}
+function tampilKeping(target: InfoKeping, tampil: boolean) {
+  ubahKanvas(target, { tampil: tampil ? true : false })
+}
+
+/** Studio untuk SATU keping: sudut hanya sudut, ladang hanya ladang, dst. */
+function studioKeping(info: InfoKeping) {
+  const nilai = nilaiKeping(info)
+  const slot = slotDariKunci(info.kunci) ?? undefined
+  const aktif = (nilai.unggahan as UploadedOrnament | undefined) ?? (nilai.glyph as OrnamentId | undefined) ?? (info.glyph as OrnamentId | undefined) ?? null
+  const kategori = !slot && info.glyph ? ornament(info.glyph as OrnamentId).category : undefined
+  return {
+    slot, layer: undefined, aktif, bawaan: null, mode: 'keping' as const, kategori,
+    tempat: `${sectionLabels[bagianDari(info.bagianId)?.type ?? ''] ?? ''} · ${info.label}`,
+    arah: slot === 'corner' ? arahDariPutar(info.kunci.split(':')[2] ?? '', Number(nilai.putar ?? 0)) : null,
+  }
+}
+function studioTambah(target: { bagianId: string, id?: string }) {
+  const item = target.id ? bacaKanvas(bagianDari(target.bagianId)?.data).tambahan.find(baris => baris.id === target.id) : undefined
+  return {
+    slot: undefined, layer: undefined, aktif: (item?.unggahan ?? item?.glyph ?? null) as OrnamentId | UploadedOrnament | null,
+    bawaan: null, mode: 'tambah' as const, kategori: undefined as OrnamentCategory | undefined, tempat: undefined, arah: null,
+  }
+}
+function bukaStudioKeping(info: InfoKeping) {
+  if (!canEditDesign.value) return
+  if (nilaiKeping(info).terkunci) { toast.message('Keping ini terkunci. Buka kuncinya di tab Elemen untuk menggantinya dari kanvas.'); return }
+  const section = bagianDari(info.bagianId)
+  checkpoint()
+  studio.value = { keping: info, semula: salinOverrides(), semulaKanvas: { bagianId: info.bagianId, kanvas: section?.data.kanvas ? bersihkan(section.data.kanvas) : undefined } }
+}
+function bukaTambahOrnamen() {
+  const section = selected.value
+  if (!canEditDesign.value || !section) return
+  if (bacaKanvas(section.data).tambahan.length >= maksTambahanKanvas) return
+  checkpoint()
+  studio.value = { tambah: { bagianId: section.id }, semula: salinOverrides(), semulaKanvas: { bagianId: section.id, kanvas: section.data.kanvas ? bersihkan(section.data.kanvas) : undefined } }
+}
+/** Pilihan pertama di mode tambah melahirkan ornamennya di tengah bagian; pilihan berikutnya menggantinya. */
+function tambahkanPilihan(target: { bagianId: string, id?: string }, sumber: { glyph?: OrnamentId, unggahan?: UploadedOrnament }) {
+  const section = bagianDari(target.bagianId)
+  if (!section) return
+  const kanvas = kanvasBagian(section)
+  if (target.id) {
+    simpanKanvas(section, terapkanTambahan(kanvas, target.id, { glyph: sumber.glyph, unggahan: sumber.unggahan }))
+    return
+  }
+  const id = `t-${Date.now().toString(36)}`
+  // Tengah bagian yang sedang terlihat, dalam cqw (tinggi ÷ lebar render).
+  const el = globalThis.document?.getElementById(sectionDomId(section.type))
+  const y = el && el.clientWidth ? Math.round((el.clientHeight / el.clientWidth) * 50) : 30
+  simpanKanvas(section, { ...kanvas, tambahan: [...(kanvas?.tambahan ?? []), bersihkan({ id, ...sumber, x: 50, y, lebar: 28 })] })
+  target.id = id
+}
+/** "Terapkan ke semua sudut": pilihan tempat ini jadi nilai slot, dan tempat lain berhenti menimpanya. */
+function terapkanKeSemua() {
+  const target = studio.value?.keping
+  if (!target) return
+  const slot = slotDariKunci(target.kunci)
+  const glyph = nilaiKeping(target).glyph as OrnamentId | undefined
+  if (!slot || !glyph) return
+  const berikut = salinOverrides()
+  berikut[slot] = glyph
+  if (berikut.unggahan && bolehUnggah(slot)) delete berikut.unggahan[slot]
+  tulisOverrides(berikut)
+  for (const section of document.value.sections) {
+    const kanvas = kanvasBagian(section)
+    if (!kanvas?.keping) continue
+    let hasil: Kanvas | undefined = kanvas
+    for (const kunci of Object.keys(kanvas.keping)) {
+      if (kunci.startsWith(`o:${slot}:`)) hasil = terapkanKeping(hasil, kunci, { glyph: undefined, unggahan: undefined })
+    }
+    simpanKanvas(section, hasil)
+  }
+  toast.message('Dipakai di semua tempat sejenis.')
+}
+function arahStudio(arah: ArahSudut) {
+  const target = studio.value?.keping
+  if (!target) return
+  ubahKanvas(target, { putar: putarUntukArah(target.kunci.split(':')[2] ?? '', arah) || undefined }, false)
+}
 
 function kembalikanSemuaOrnamen() {
   if (!canEditDesign.value) return
@@ -521,18 +776,22 @@ async function reset() {
   })
   if (jawaban !== 'reset') return
   checkpoint()
-  const couple = document.value.sections.find(section => section.type === 'couple')?.data ?? {}
-  const nama = (key: string, fallback: string) => (typeof couple[key] === 'string' && (couple[key] as string).trim()) ? (couple[key] as string) : fallback
   /*
-   * Tema DAN struktur ikut terbawa. Barisnya sudah mengoper tema sejak dulu; strukturnya harus
-   * ikut sejak fase 74.9, kalau tidak pasangan yang menekan "kembalikan preset" diam-diam
-   * kehilangan strukturnya dan mendapat `elegance` bawaan.
+   * Tema, struktur, DAN fakta acara ikut terbawa.
+   *
+   * Barisnya sudah mengoper tema sejak dulu; strukturnya harus ikut sejak fase 74.9, kalau tidak
+   * pasangan yang menekan "kembalikan preset" diam-diam kehilangan strukturnya dan mendapat
+   * `elegance` bawaan. Argumen keempat dulu `{}`, dan itu cacat ketiga yang lolos lebih lama:
+   * tanggal, gedung, dan alamat yang diisi di wizard `/order` dibuang, jadi "kembalikan ke preset"
+   * juga berarti "lupakan kapan dan di mana menikahnya" — seluruh bagian acara kembali ke
+   * "Hari / 00 / Bulan Tahun" dan lokasinya jadi "Lokasi akan diumumkan".
    */
+  const masukan = defaultInputFromDocument(document.value, { partner1: 'Aruna', partner2: 'Dewa' })
   document.value = createDefaultDocument(
-    nama('brideName', nama('partner1', 'Aruna')),
-    nama('groomName', nama('partner2', 'Dewa')),
+    masukan.partner1,
+    masukan.partner2,
     documentThemeId(document.value),
-    {},
+    masukan,
     documentStructureId(document.value),
   )
   toast.message('Preset dimuat kembali. Simpan untuk menerapkannya.')
@@ -691,6 +950,7 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
           v-model:collapsed="prefs.railCollapsed"
           :entries="sectionEntries"
           :selected-id="selectedId"
+          :visible-id="terlihatId"
           :labels="sectionLabels"
           :can-edit-design="canEditDesign"
           :total="document.sections.length"
@@ -713,11 +973,22 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
           v-else
           v-model:device="prefs.device"
           v-model:zoom="prefs.zoom"
+          v-model:statis="prefs.statis"
+          v-model:terpilih="kepingTerpilih"
           :document="document"
           :focus-section="fokusPanggung"
+          :fokus="fokus"
+          :putar="putarGerak"
+          :bagian-aktif="selectedId"
+          :bisa-desain="canEditDesign"
           :class="cn(mobilePanel === 'settings' && 'hidden xl:flex')"
           @section-in-view="sorotSection"
-          @pilih-slot="sorotkanSlot"
+          @fokus="toggleFokus"
+          @ubah="ubahKanvas"
+          @ukur-teks="ukurTeksKanvas"
+          @teks="tulisTeksKanvas"
+          @aksi="aksiKanvas"
+          @daftar="terimaDaftar"
         />
 
         <DashboardEditorInspector
@@ -750,6 +1021,7 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
               @tulis-gaya="tulisGaya"
               @tulis-latar="tulisLatar"
               @tulis-gerak="tulisGerak"
+              @putar="putarGerak++"
               @release="queueRelease"
             />
             <p v-else class="notice m-0">Bagian {{ sectionLabels[selected.type] ?? selected.type }} berasal dari struktur lama. Simpan draft untuk memindahkannya ke struktur baru.</p>
@@ -802,6 +1074,32 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
             />
           </template>
 
+          <template #elemen>
+            <DashboardEditorElemenPanel
+              :info="kepingSegar"
+              :nilai="nilaiTerpilih"
+              :daftar="daftarKeping"
+              :ringkas="ringkasDaftar"
+              :ramp="rampLapisan"
+              :latar="document.tokens.background"
+              :label-bagian="sectionLabels[selected.type] ?? selected.type"
+              :bisa-desain="canEditDesign"
+              :locked-by="lockedBy"
+              :kolom="kolomTerpilih"
+              :teks="teksTerpilih"
+              :ukuran-huruf="hurufTerpilih"
+              :jumlah-tambahan="jumlahTambahan"
+              @ubah="patch => kepingTerpilih && ubahKanvas(kepingTerpilih, patch)"
+              @aksi="nama => kepingTerpilih && aksiKanvas(nama, kepingTerpilih)"
+              @pilih="info => kepingTerpilih = info"
+              @tampil="tampilKeping"
+              @kunci="info => aksiKanvas('kunci', info)"
+              @teks="nilai => kepingTerpilih && tulisTeksKanvas(kepingTerpilih, nilai)"
+              @ukur-teks="ukuran => kepingTerpilih && ukurTeksKanvas(kepingTerpilih, ukuran)"
+              @tambah="bukaTambahOrnamen"
+            />
+          </template>
+
           <template #ornamen>
             <p v-if="!canEditDesign" class="m-0 flex items-start gap-2 rounded-md border border-border bg-surface-2 p-3.5 text-caption text-ink-muted">
               <Lock :size="15" class="mt-0.5 shrink-0 text-ink-subtle" aria-hidden="true" />
@@ -816,7 +1114,6 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
               :accent="themeAccent"
               :terkunci="!canEditDesign"
               :locked-by="lockedBy"
-              :sorot="sorotBagian"
               @buka="bukaStudio"
             />
             <p v-else class="m-0 rounded-md border border-border bg-surface-2 p-3.5 text-caption text-ink-muted">
@@ -829,7 +1126,6 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
               :accent="themeAccent"
               :terkunci="!canEditDesign"
               :locked-by="lockedBy"
-              :sorot="sorotPenuh"
               @buka="bukaStudio"
               @kembalikan-semua="kembalikanSemuaOrnamen"
             />
@@ -863,7 +1159,13 @@ useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
       :tokens="document.tokens"
       :accent="themeAccent"
       :invitation-id="invitation.id"
-      @update:open="terbuka => { if (!terbuka) studio = null }"
+      :mode="studioAktif.mode"
+      :kategori="studioAktif.kategori"
+      :tempat="studioAktif.tempat"
+      :arah="studioAktif.arah"
+      @update:open="terbuka => { if (!terbuka) tutupStudio() }"
+      @terapkan-semua="terapkanKeSemua"
+      @arah="arahStudio"
       @pilih="pilihOrnamen"
       @pilih-unggahan="pilihUnggahan"
       @kembalikan="kembalikanSlot"

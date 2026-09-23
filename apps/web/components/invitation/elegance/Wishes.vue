@@ -122,6 +122,28 @@ function send() {
       <p class="iv-body m-0 text-caption opacity-75">Contoh tampilan — ucapan sungguhan dari tamu akan menggantikannya.</p>
     </div>
 
+    <!--
+      Fase 79. Kolom ini punya form sejak fase 72 dan tidak pernah punya pembaca: pasangan
+      mengisinya, nilainya tersimpan dan ikut terbit, dan tidak ada satu keadaan pun yang
+      menampilkannya — cacat yang sama persis dengan sembilan kolom bagian ekstra, hanya lebih
+      sepi. Ditambal dengan MERENDERNYA, bukan dengan menghapus kolomnya: menghapusnya
+      menyempitkan `styledFieldKeys('wishes')`, dan `textStyles` diskemakan `.strict()`, jadi
+      tiap dokumen terbit yang pernah memberi gaya di kolom itu akan ditolak skema dan berhenti
+      bisa disimpan maupun diterbitkan.
+
+      Keadaannya nyata dan satu-satunya: sesudah tamu mengirim, `submitWishEntry` menyimpan lalu
+      MENGAMBIL ULANG seluruh dinding. Di jendela itu daftar di bawah masih menampilkan keadaan
+      lama, dan baris ini yang menjelaskan kenapa ucapan yang baru ditulis belum kelihatan.
+    -->
+    <InvitationText
+      v-if="wishPending && mode === 'live'"
+      :section="props.section"
+      field="loadingLabel"
+      tag="p"
+      class="iv-body m-0 text-center text-caption opacity-75"
+      role="status"
+    />
+
     <ul class="iv-wish-list m-0 w-full max-w-[28rem] p-0 list-none text-left" aria-live="polite">
       <li v-for="wish in shown" :key="wish.id" data-iv-reveal class="iv-wish-entry iv-card grid gap-1.5 rounded-md px-4 py-3.5">
         <p class="m-0 flex flex-wrap items-center gap-x-2 gap-y-1">

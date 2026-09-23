@@ -15,10 +15,19 @@ Bukan satu saklar, melainkan lima cabang terpisah di kode:
 | `invitations.service.ts:14` | Daftar undangan mengembalikan **semua** baris, bukan hanya miliknya |
 | `invitations.service.ts:81` | Section yang diaktifkan tidak dibatasi fitur paket |
 | `guests.service.ts:16-17` | Token tamu ikut terbaca, untuk setiap undangan |
+| `backoffice/backoffice.service.ts` | `/bo` — tabel **seluruh** undangan, satu-satunya tempat yang memperlihatkan arsip |
+| `invitations.service.ts` (`restore`, `remove`) | Memulihkan arsip, dan menghapus undangan siapa pun **permanen** |
 
-Baris terakhir itu yang paling perlu disadari: **operator bisa membaca tautan personal setiap
-tamu di setiap undangan milik siapa pun.** Perlakukan akunnya seperti akun basis data, bukan
-seperti akun biasa yang kebetulan gratis.
+Dua di antaranya yang paling perlu disadari. **Operator bisa membaca tautan personal setiap tamu
+di setiap undangan milik siapa pun** — dan sejak fase 78, **operator bisa menghapus undangan siapa
+pun secara permanen**, berikut tamu, RSVP, ucapan, pesanan, dan seluruh fotonya, tanpa arsip di
+belakangnya. Perlakukan akunnya seperti akun basis data, bukan seperti akun biasa yang kebetulan
+gratis.
+
+Penghapusan itu menuntut slug undangannya diketik ulang di dialog konfirmasi, dan meninggalkan
+`AuditEvent` `INVITATION_PURGED` yang bertahan setelah barisnya hilang (`onDelete: SetNull`).
+Halaman `/bo` menjawab **404** untuk yang bukan operator, bukan 403: ia tidak perlu mengumumkan
+keberadaannya. Penjaga sesungguhnya `assertOperator` di API, yang menjawab 403.
 
 ## Langkah
 

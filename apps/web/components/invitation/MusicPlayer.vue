@@ -110,7 +110,6 @@ onBeforeUnmount(() => {
 })
 
 defineExpose({
-  arm: () => apply('gate'),
   /** Dipakai section Video saat tamu menekan "Buka siaran". */
   pause: () => apply('leave'),
 })

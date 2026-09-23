@@ -53,9 +53,7 @@ function copyAccount(value: string) {
           class="iv-gift-band flex items-center gap-3 px-5 py-3"
           :style="{ background: bank(account.bankId).brand, color: bank(account.bankId).on }"
         >
-          <span class="iv-gift-logo grid place-items-center rounded-sm bg-white px-2 py-1">
-            <img :src="bank(account.bankId).logo" alt="" aria-hidden="true" width="120" height="40" class="h-5 w-auto">
-          </span>
+          <img :src="bank(account.bankId).logo" alt="" aria-hidden="true" width="99" height="71" class="iv-gift-logo h-8 w-auto shrink-0 rounded-sm">
           <span class="min-w-0 flex-1 text-[0.9375rem] font-semibold">{{ bankName(account.bankId, account.bankLabel) }}</span>
         </div>
 

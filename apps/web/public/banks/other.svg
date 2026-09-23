@@ -1,11 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="120" height="40" viewBox="0 0 120 40" role="img" aria-label="BANK">
-  <!--
-    Penanda sementara, digambar sendiri. BUKAN lambang resmi BANK dan tidak meniru
-    bentuknya. Ganti berkas ini dengan SVG resmi dari brand kit bank yang bersangkutan;
-    tidak ada kode lain yang perlu diubah.
-  -->
-  <rect x="1" y="1" width="34" height="38" rx="8" fill="#5B4B41"/>
-  <path d="M10 26 L18 12 L26 26" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M13.5 21 H22.5" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"/>
-  <text x="44" y="26" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="15" font-weight="700" fill="#5B4B41">BANK</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="99" height="71" viewBox="0 0 99 71" role="img" aria-label="Bank">
+  <!-- Bank di luar daftar: gedung bank netral, digambar sendiri, tile 99×71 seperti yang lain. -->
+  <rect width="99" height="71" fill="#FFFFFF"/>
+  <g fill="none" stroke="#5B4B41" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M33 29 L49.5 19 L66 29 Z"/>
+    <path d="M37 33 V46 M45 33 V46 M54 33 V46 M62 33 V46"/>
+    <path d="M32 51 H67"/>
+  </g>
 </svg>

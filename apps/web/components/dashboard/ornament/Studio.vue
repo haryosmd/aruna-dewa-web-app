@@ -3,10 +3,11 @@ import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPor
 import { Palette, RotateCcw, Search, Trash2, X } from 'lucide-vue-next'
 import type { MediaUploadResult } from '@aruna/contracts/api'
 import { ornamentAssetLimit } from '@aruna/contracts'
-import type { LayerSlot, OrnamentId, OrnamentRef, UploadedOrnament } from '~/utils/ornaments'
+import type { LayerSlot, OrnamentCategory, OrnamentId, OrnamentRef, UploadedOrnament } from '~/utils/ornaments'
+import { arahSudut, type ArahSudut } from '~/utils/kanvas'
 import { isUnggahan, ornament } from '~/utils/ornaments'
 import { fitOf } from '~/utils/ornament-fit'
-import { cariOrnamen, hitungPack, packLabels, packIds, type PackId, type StudioTab } from '~/utils/ornament-search'
+import { cariOrnamen, disarankan, hitungPack, kategoriTambahan, labelKategori, packLabels, packIds, type PackId, type StudioTab } from '~/utils/ornament-search'
 import { bolehUnggah, layerSlotLabels, slotLabels, tileWidthRasio, type OrnamentSlotKey } from '~/utils/ornament-slots'
 import { ornamentRamp, rampStyle } from '~/utils/ornament-palette'
 
@@ -38,13 +39,28 @@ const props = defineProps<{
   slotKey?: OrnamentSlotKey
   layer?: LayerSlot
   templateId: string
-  /** Id bank, atau unggahan pasangan (fase 69) yang sedang terpasang di slot ini. */
-  aktif: OrnamentRef
-  bawaan: OrnamentId
+  /**
+   * Id bank, atau unggahan pasangan (fase 69) yang sedang terpasang di slot ini. Kosong untuk slot
+   * yang bawaannya garis, bukan keping (`segue`, `heroFrame` — fase 80), selama belum diganti.
+   */
+  aktif: OrnamentRef | null
+  bawaan: OrnamentId | null
   tokens: { background: string, foreground: string, primary: string }
   accent: string
   /** Untuk mengunggah dan mendaftar ornamen unggahan; kosong = tab Unggahan tidak ditawarkan. */
   invitationId?: string
+  /**
+   * Fase 81. `slot` = nilai global slot (perilaku lama, kartu tab Ornamen). `keping` = hanya satu
+   * tempat di kanvas (keputusan pemilik), dengan "Terapkan ke semua" untuk menulis ke slotnya.
+   * `tambah` = ornamen baru untuk sebuah bagian — tidak terikat slot, disaring per kategori.
+   */
+  mode?: 'slot' | 'keping' | 'tambah'
+  /** Arah keping sudut yang sedang disunting (mode `keping`, slot `corner`). */
+  arah?: ArahSudut | null
+  /** Label tempat keping untuk judul, mis. "Hero · Sudut kiri atas". */
+  tempat?: string
+  /** Mode keping tanpa slot (ladang, gedung, busana): saring menurut kategori glyph-nya sekarang. */
+  kategori?: OrnamentCategory
 }>()
 
 const emit = defineEmits<{
@@ -53,17 +69,30 @@ const emit = defineEmits<{
   pilihUnggahan: [UploadedOrnament]
   kembalikan: []
   batal: []
+  /** Mode keping: tulis pilihan tempat ini ke slot globalnya, untuk semua tempat sejenis. */
+  terapkanSemua: []
+  /** Mode keping sudut: menghadap ke mana. */
+  arah: [ArahSudut]
 }>()
 
-/** Id bank yang aktif, atau null bila slot ini sedang diisi unggahan. Ubin dan navigasi memakainya. */
-const aktifId = computed<OrnamentId | null>(() => (isUnggahan(props.aktif) ? null : props.aktif))
+const mode = computed(() => props.mode ?? 'slot')
+/** Mode tambah: kategori bank yang sedang disaring. */
+const kategoriPilihan = ref<OrnamentCategory | 'semua'>('semua')
+const pakaiArah = computed(() => mode.value === 'keping' && props.slotKey === 'corner')
+const putarPratinjau = computed(() => `${arahSudut.find(item => item.id === (props.arah ?? 'kiri-atas'))?.sudut ?? 0}deg`)
 
-const tab = ref<StudioTab>('disarankan')
+/** Id bank yang aktif, atau null bila slot ini sedang diisi unggahan. Ubin dan navigasi memakainya. */
+const aktifId = computed<OrnamentId | null>(() => {
+  const aktif: OrnamentRef | null = props.aktif
+  return !aktif || isUnggahan(aktif) ? null : aktif
+})
+
+const tab = ref<StudioTab>('semua')
 const query = ref('')
 const pack = ref<PackId | 'semua'>('semua')
 
 /** Nilai saat Studio dibuka, untuk Escape/Batal. Satu sesi memilih = satu langkah undo. */
-const semula = ref<OrnamentId>(isUnggahan(props.aktif) ? props.bawaan : props.aktif)
+const semula = ref<OrnamentId | null>(aktifId.value ?? props.bawaan)
 
 
 /*
@@ -71,7 +100,9 @@ const semula = ref<OrnamentId>(isUnggahan(props.aktif) ? props.bawaan : props.ak
  * (`uploadableSlots`) dan hanya bila pemanggil memberi `invitationId`. Daftarnya diminta ke API
  * saat dialog dibuka, bukan saat halaman dimuat — kebanyakan sesi editor tidak pernah membukanya.
  */
-const tabUnggahan = computed(() => Boolean(props.invitationId) && Boolean(props.slotKey) && !props.layer && bolehUnggah(props.slotKey!))
+const tabUnggahan = computed(() => Boolean(props.invitationId) && (
+  (mode.value === 'tambah') || (Boolean(props.slotKey) && !props.layer && bolehUnggah(props.slotKey!))
+))
 const { listMedia } = useInvitations()
 const unggah = useMediaUploads(() => props.invitationId ?? '')
 const daftarUnggahan = ref<MediaUploadResult[]>([])
@@ -121,30 +152,31 @@ const terpasang = (item: MediaUploadResult) => isUnggahan(props.aktif) && props.
 function saatDibuka() {
   semula.value = aktifId.value ?? props.bawaan
   // Slot yang sedang diisi unggahan dibuka di tab Unggahan — itulah yang sedang dilihat pasangan.
-  tab.value = isUnggahan(props.aktif) && tabUnggahan.value ? 'unggahan' : 'disarankan'
+  tab.value = isUnggahan(props.aktif) && tabUnggahan.value ? 'unggahan' : 'semua'
   query.value = ''
   pack.value = 'semua'
+  kategoriPilihan.value = 'semua'
   if (tabUnggahan.value) void muatUnggahan()
 }
 watch(() => props.open, terbuka => { if (terbuka) saatDibuka() })
 onMounted(() => { if (props.open) saatDibuka() })
 
 const keterangan = computed(() => (props.layer ? layerSlotLabels[props.layer] : props.slotKey ? slotLabels[props.slotKey] : null))
-const judul = computed(() => keterangan.value?.label ?? 'Ornamen')
+const judul = computed(() => (mode.value === 'tambah' ? 'Tambah ornamen' : props.tempat ?? keterangan.value?.label ?? 'Ornamen'))
+const kategoriCari = computed(() => (mode.value === 'tambah' ? kategoriPilihan.value : !props.slotKey && !props.layer ? props.kategori : undefined))
 
 const hasil = computed(() => cariOrnamen({
-  slot: props.slotKey, layer: props.layer, templateId: props.templateId,
+  slot: props.slotKey, layer: props.layer, kategori: kategoriCari.value, templateId: props.templateId,
   tab: tab.value, query: query.value, pack: pack.value === 'semua' ? undefined : pack.value,
 }))
 
-const jumlahPack = computed(() => hitungPack({ slot: props.slotKey, layer: props.layer }))
+const jumlahPack = computed(() => hitungPack({ slot: props.slotKey, layer: props.layer, kategori: kategoriCari.value }))
 const packTersedia = computed(() => packIds.filter(id => jumlahPack.value[id] > 0))
 const totalSemua = computed(() => cariOrnamen({
-  slot: props.slotKey, layer: props.layer, templateId: props.templateId, tab: 'semua',
+  slot: props.slotKey, layer: props.layer, kategori: kategoriCari.value, templateId: props.templateId, tab: 'semua',
 }).length)
-const totalDisarankan = computed(() => cariOrnamen({
-  slot: props.slotKey, layer: props.layer, templateId: props.templateId, tab: 'disarankan',
-}).length)
+/** Yang serasi dengan tema: diurutkan di depan dan diberi lencana, tidak pernah menyaring. */
+const serasi = computed(() => new Set(disarankan({ slot: props.slotKey, layer: props.layer, templateId: props.templateId })))
 
 const ramp = computed(() => rampStyle(ornamentRamp(props.tokens, props.accent)))
 const fitAktif = computed(() => (aktifId.value ? fitOf(aktifId.value, props.templateId) : { ok: true, flags: [], ringkas: '' }))
@@ -195,7 +227,9 @@ function tutup(simpan: boolean) {
             <p class="eyebrow">Studio ornamen</p>
             <DialogTitle class="m-0 font-display text-h3 font-semibold text-ink">{{ judul }}</DialogTitle>
             <DialogDescription class="m-0 text-caption text-ink-muted">
-              {{ keterangan?.hint }}
+              <span v-if="mode === 'keping'" class="block font-semibold text-ink">Hanya mengganti keping di tempat ini. Tempat lain tetap.</span>
+              <span v-else-if="mode === 'tambah'" class="block font-semibold text-ink">Ornamen baru diletakkan di tengah bagian, lalu bisa digeser, diukur, dan diputar di kanvas.</span>
+              {{ mode === 'tambah' ? '' : keterangan?.hint }}
               <span v-if="keterangan?.syarat" class="block text-ink-subtle">{{ keterangan.syarat }}</span>
               <span class="block">Tekan Escape untuk membatalkan dan kembali ke pilihan semula.</span>
             </DialogDescription>
@@ -214,7 +248,6 @@ function tutup(simpan: boolean) {
             <div class="flex gap-1 rounded-full bg-surface-3 p-1" role="tablist" aria-label="Cakupan pilihan">
               <button
                 v-for="pilihan in [
-                  { id: 'disarankan', label: `Disarankan (${totalDisarankan})` },
                   { id: 'semua', label: `Semua (${totalSemua})` },
                   ...(tabUnggahan ? [{ id: 'unggahan', label: `Unggahan (${daftarUnggahan.length})` }] : []),
                 ]"
@@ -240,10 +273,55 @@ function tutup(simpan: boolean) {
               <UiInput id="studio-cari" v-model="query" type="search" placeholder="Cari nama ornamen" class="pl-9" />
             </label>
 
-            <UiButton id="studio-kembalikan" tone="outline" size="sm" @click="emit('kembalikan')">
+            <UiButton v-if="mode !== 'tambah'" id="studio-kembalikan" tone="outline" size="sm" @click="emit('kembalikan')">
               <RotateCcw :size="15" aria-hidden="true" />
-              Bawaan tema
+              {{ mode === 'keping' ? 'Ikut slot' : 'Bawaan tema' }}
             </UiButton>
+            <UiButton v-if="mode === 'keping' && aktifId" id="studio-terapkan-semua" tone="outline" size="sm" @click="emit('terapkanSemua')">
+              Terapkan ke semua {{ keterangan?.label?.toLowerCase() ?? 'tempat' }}
+            </UiButton>
+          </div>
+
+          <!-- Mode tambah (fase 81): kategori bank, karena ornamen baru tidak terikat slot. -->
+          <div v-if="mode === 'tambah' && tab === 'semua'" class="flex flex-wrap gap-1.5" role="group" aria-label="Saring menurut jenis ornamen">
+            <button
+              v-for="id in ['semua', ...kategoriTambahan]"
+              :id="`studio-kategori-${id}`"
+              :key="id"
+              type="button"
+              :aria-pressed="kategoriPilihan === id"
+              :class="cn(
+                'min-h-9 rounded-full border px-3 text-caption font-medium transition-colors duration-200',
+                kategoriPilihan === id ? 'border-primary bg-primary-soft text-ink' : 'border-border text-ink-muted hover:border-border-strong',
+              )"
+              @click="kategoriPilihan = id as OrnamentCategory | 'semua'"
+            >
+              {{ id === 'semua' ? 'Semua jenis' : labelKategori[id as OrnamentCategory] }}
+            </button>
+          </div>
+
+          <!--
+            Empat arah sudut (fase 81, permintaan pemilik): satu keping dipakai di keempat pojok.
+            Ubin di bawah ikut diputar ke arah yang dipilih, jadi yang dipilih adalah yang terlihat.
+          -->
+          <div v-if="pakaiArah" class="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Arah sudut">
+            <span class="text-caption font-semibold text-ink">Arah</span>
+            <button
+              v-for="item in arahSudut"
+              :id="`studio-arah-${item.id}`"
+              :key="item.id"
+              type="button"
+              role="radio"
+              :aria-checked="arah === item.id"
+              :aria-label="`Menghadap ${item.label.toLowerCase()}`"
+              :class="cn(
+                'grid min-h-10 min-w-10 place-items-center rounded-md border px-2 text-ui-lg transition-colors duration-200',
+                arah === item.id ? 'border-primary bg-primary-soft text-ink' : 'border-border text-ink-muted hover:border-border-strong',
+              )"
+              @click="emit('arah', item.id)"
+            >
+              {{ item.simbol }}
+            </button>
           </div>
 
           <div v-if="tab === 'semua'" class="flex flex-wrap gap-1.5" role="group" aria-label="Saring menurut koleksi">
@@ -322,7 +400,7 @@ function tutup(simpan: boolean) {
               class="flex flex-wrap gap-2"
               role="radiogroup"
               :aria-label="`Pilihan ${judul.toLowerCase()}`"
-              :style="ramp"
+              :style="{ ...ramp, '--studio-putar': pakaiArah ? putarPratinjau : '0deg' }"
             >
               <DashboardOrnamentStudioTile
                 v-for="glyph in hasil"
@@ -331,12 +409,13 @@ function tutup(simpan: boolean) {
                 :template-id="templateId"
                 :dipilih="glyph === aktifId"
                 :bawaan="glyph === bawaan"
+                :serasi="serasi.has(glyph)"
                 :slot-label="judul"
                 @click="emit('pilih', glyph)"
               />
             </div>
             <p v-else class="notice m-0">
-              Tidak ada ornamen yang cocok dengan pencarian itu. Coba kata lain, atau buka tab “Semua”.
+              Tidak ada ornamen yang cocok dengan pencarian itu. Coba kata lain, atau pilih “Semua koleksi”.
             </p>
           </div>
 
@@ -353,10 +432,12 @@ function tutup(simpan: boolean) {
               class="grid h-32 grid-rows-[minmax(0,1fr)] place-items-center overflow-hidden rounded-md p-3"
               :style="{ ...ramp, background: tokens.background }"
             >
-              <OrnamentGlyph :glyph="aktif" ubin class="min-h-0 max-h-full max-w-full object-contain text-[color:var(--iv-orn-body)]" aria-hidden="true" />
+              <OrnamentGlyph v-if="aktif" :glyph="aktif" ubin class="min-h-0 max-h-full max-w-full object-contain text-[color:var(--iv-orn-body)]" :style="pakaiArah ? { rotate: putarPratinjau } : undefined" aria-hidden="true" />
+              <span v-else class="block h-px w-3/4 bg-[color:var(--iv-orn-body)]" aria-hidden="true" />
             </div>
-            <p class="m-0 text-ui font-semibold text-ink">{{ aktifId ? ornament(aktifId).name : 'Unggahan kalian' }}</p>
-            <p v-if="!aktifId" class="m-0 text-caption text-ink-subtle">Raster transparan milik kalian. Warnanya tetap, tidak ikut palet.</p>
+            <p class="m-0 text-ui font-semibold text-ink">{{ aktifId ? ornament(aktifId).name : aktif ? 'Unggahan kalian' : 'Garis bawaan tema' }}</p>
+            <p v-if="!aktif" class="m-0 text-caption text-ink-subtle">Belum diganti keping. Pilih satu dari daftar untuk menggantinya.</p>
+            <p v-else-if="!aktifId" class="m-0 text-caption text-ink-subtle">Raster transparan milik kalian. Warnanya tetap, tidak ikut palet.</p>
             <p v-else-if="aktifId === bawaan" class="m-0 text-caption text-ink-subtle">Bawaan tema.</p>
             <p v-else-if="fitAktif.ok" class="m-0 text-caption text-ink-subtle">Seresep dengan tema kalian.</p>
             <p v-else class="m-0 text-caption text-warning">{{ fitAktif.ringkas }}.</p>
@@ -365,7 +446,7 @@ function tutup(simpan: boolean) {
 
         <footer class="flex flex-wrap justify-end gap-2 border-t border-border p-4 sm:p-5">
           <UiButton id="studio-batal" tone="outline" @click="tutup(false)">Batal</UiButton>
-          <UiButton id="studio-selesai" @click="tutup(true)">Pakai ornamen ini</UiButton>
+          <UiButton id="studio-selesai" :disabled="mode === 'tambah' && !aktifId && !aktif" @click="tutup(true)">{{ mode === 'tambah' ? 'Tambahkan' : 'Pakai ornamen ini' }}</UiButton>
         </footer>
       </DialogContent>
     </DialogPortal>

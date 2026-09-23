@@ -34,6 +34,8 @@
   --color-danger: #b3261e;
   --color-danger-soft: #fdeceb;
   --color-warning: #8a5a00;
+  /* Fase 81: garis panduan kanvas (smart guide) — merah Figma, supaya beda dari hijau pilihan. */
+  --color-panduan: #f24822;
 
   /* Lines */
   --color-border: #e7ded4;

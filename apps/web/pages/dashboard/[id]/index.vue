@@ -52,13 +52,29 @@ useHead({ title: () => invitation.value?.title
     <template #subheading>
       <div class="mt-1 flex flex-wrap items-center gap-3">
         <UiBadge :tone="isPublished ? 'sage' : 'gold'" size="md">{{ isPublished ? 'Tayang' : 'Draf' }}</UiBadge>
+        <!--
+          Dua tautan, bukan satu yang berbohong. Sampai fase 78 "Lihat halaman publik" dipasang
+          TANPA syarat di sebelah badge yang bertuliskan "Draf" — dan `/i/:slug` menolak draf,
+          jadi satu-satunya hal yang dituju tautan itu adalah layar galat.
+        -->
         <NuxtLink
+          v-if="isPublished"
           id="dash-view-public"
           :to="`/i/${invitation.slug}`"
           target="_blank"
           class="inline-flex min-h-11 items-center gap-1.5 text-ui-lg font-semibold text-primary no-underline underline-offset-4 hover:underline"
         >
           Lihat halaman publik
+          <ExternalLink :size="15" aria-hidden="true" />
+        </NuxtLink>
+        <NuxtLink
+          v-else
+          id="dash-view-preview"
+          :to="`/dashboard/${invitation.id}/preview`"
+          target="_blank"
+          class="inline-flex min-h-11 items-center gap-1.5 text-ui-lg font-semibold text-primary no-underline underline-offset-4 hover:underline"
+        >
+          Lihat pratinjau draf
           <ExternalLink :size="15" aria-hidden="true" />
         </NuxtLink>
       </div>

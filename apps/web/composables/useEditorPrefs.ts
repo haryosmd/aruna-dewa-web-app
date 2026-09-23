@@ -13,24 +13,33 @@ import { useLocalStorage } from '@vueuse/core'
  */
 export type PreviewDevice = 'laptop' | 'ponsel' | 'tablet'
 /** Empat tab inspektor (fase 72.1). Nilai lama `tema` dipetakan ke `global`. */
-export type InspectorTab = 'bagian' | 'global' | 'ornamen' | 'kartu'
+export type InspectorTab = 'bagian' | 'elemen' | 'global' | 'ornamen' | 'kartu'
 
 export interface EditorPrefs {
   device: PreviewDevice
   inspectorTab: InspectorTab
   railCollapsed: boolean
   inspectorCollapsed: boolean
-  /** Zoom panggung dalam persen, 50–100; skala akhir tetap tidak melebihi 1 (lihat `Stage.vue`). */
+  /** Zoom panggung dalam persen, 50–200 dari skala pas (fase 81); skala akhir tetap tidak melebihi 1. */
   zoom: number
+  /**
+   * Gerak di panggung dimatikan (fase 78).
+   *
+   * **Pilihan menonton, bukan bagian dokumen.** Ia hidup di sini — bersama zoom dan lebar
+   * pratinjau — justru supaya tidak pernah punya jalan masuk ke `InvitationDocument`: yang
+   * disimpan `localStorage` tidak bisa ikut `saveDraft`, dan undangan yang dilihat tamu karena
+   * itu selalu bergerak.
+   */
+  statis: boolean
 }
 
-export const editorPrefsDefaults: EditorPrefs = { device: 'ponsel', inspectorTab: 'bagian', railCollapsed: false, inspectorCollapsed: false, zoom: 100 }
+export const editorPrefsDefaults: EditorPrefs = { device: 'ponsel', inspectorTab: 'bagian', railCollapsed: false, inspectorCollapsed: false, zoom: 100, statis: false }
 
 const devices = new Set<PreviewDevice>(['laptop', 'ponsel', 'tablet'])
-const tabs = new Set<InspectorTab>(['bagian', 'global', 'ornamen', 'kartu'])
+const tabs = new Set<InspectorTab>(['bagian', 'elemen', 'global', 'ornamen', 'kartu'])
 
 export const zoomMin = 50
-export const zoomMax = 100
+export const zoomMax = 200
 export const zoomStep = 10
 
 function bacaDevice(value: unknown): PreviewDevice {
@@ -72,6 +81,7 @@ export function useEditorPrefs() {
       railCollapsed: typeof stored?.railCollapsed === 'boolean' ? stored.railCollapsed : defaults.railCollapsed,
       inspectorCollapsed: typeof stored?.inspectorCollapsed === 'boolean' ? stored.inspectorCollapsed : defaults.inspectorCollapsed,
       zoom: bacaZoom(stored?.zoom),
+      statis: typeof stored?.statis === 'boolean' ? stored.statis : defaults.statis,
     }),
   })
 }

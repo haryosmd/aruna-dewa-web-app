@@ -47,8 +47,10 @@ function calendarUrl(event: Record<string, unknown>) {
     :seed="props.seed"
   >
     <!-- Ilustrasi gedung berdiri di atas kartu, jadi tamu tahu bentuk tempatnya sebelum membaca alamat. -->
-    <OrnamentGlyph
+    <InvitationOrnamen
       v-if="venue"
+      slot-id="venue"
+      posisi="gedung"
       :glyph="venue"
       data-iv-ornament
       data-iv-lead
@@ -63,8 +65,8 @@ function calendarUrl(event: Record<string, unknown>) {
         data-iv-reveal
         class="iv-card relative grid gap-3 rounded-md px-6 py-8"
       >
-        <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" class="iv-event-corner iv-event-corner--tl" aria-hidden="true" />
-        <OrnamentGlyph :glyph="orn.corner" data-iv-ornament data-iv-slot="corner" class="iv-event-corner iv-event-corner--br" aria-hidden="true" />
+        <InvitationOrnamen data-iv-ornament slot-id="corner" posisi="tl" class="iv-event-corner iv-event-corner--tl" aria-hidden="true" />
+        <InvitationOrnamen data-iv-ornament slot-id="corner" posisi="br" class="iv-event-corner iv-event-corner--br" aria-hidden="true" />
 
         <!-- Medali ikon di atas judul: penanda jenis acara, bukan bullet di samping nama. -->
         <span class="iv-event-badge justify-self-center" aria-hidden="true">
@@ -113,6 +115,8 @@ function calendarUrl(event: Record<string, unknown>) {
 }
 .iv-event-corner--tl { top: 0.5rem; left: 0.5rem; }
 .iv-event-corner--br { bottom: 0.5rem; right: 0.5rem; transform: rotate(180deg); }
+.iv-event-corner--tr { top: 0.5rem; right: 0.5rem; transform: rotate(90deg); }
+.iv-event-corner--bl { bottom: 0.5rem; left: 0.5rem; transform: rotate(-90deg); }
 
 /*
  * Medali ikon acara. Ikon 28px sendirian akan mengambang di antara dua ornamen sudut; lingkaran

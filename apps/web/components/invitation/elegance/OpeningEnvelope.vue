@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<{
   contained?: boolean
 }>(), { speed: 'sedang', hasMusic: false, image: '', contained: false })
 
-const emit = defineEmits<{ open: []; lock: []; unlock: [] }>()
+const emit = defineEmits<{ open: []; lock: []; unlock: []; reveal: [] }>()
 
 const { orn, intensity, coupleNames, initials, greeting } = useInvitation()
 const kolom = (key: string, fallback = '') => text(props.section, key, fallback)
@@ -50,5 +50,6 @@ const kolom = (key: string, fallback = '') => text(props.section, key, fallback)
     @open="emit('open')"
     @lock="emit('lock')"
     @unlock="emit('unlock')"
+    @reveal="emit('reveal')"
   />
 </template>

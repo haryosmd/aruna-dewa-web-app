@@ -113,9 +113,31 @@ export const sectionMeta: Record<V2SectionType, SectionMeta> = {
 
 /**
  * Jenis kolom form. `teks` satu baris; `paragraf` `<textarea>`; `foto` satu URL gambar dari
- * pustaka; `foto[]` beberapa; `tanggal` `datetime-local`; `url` tautan; `boolean` sakelar.
+ * pustaka; `foto[]` beberapa; `tanggal` `datetime-local`; `url` tautan; `boolean` sakelar;
+ * `pilihan` satu dari daftar tertutup.
  */
-export type FieldKind = 'teks' | 'paragraf' | 'tanggal' | 'url' | 'foto' | 'foto[]' | 'boolean'
+export type FieldKind = 'teks' | 'paragraf' | 'tanggal' | 'url' | 'foto' | 'foto[]' | 'boolean' | 'pilihan'
+
+/**
+ * Satu pilihan kolom `pilihan` (fase 79).
+ *
+ * Sampai fase ini enum yang hidup di `section.data` selalu ditulis di luar tabel kolom —
+ * `coverLayouts`/`selectableCoverLayouts`/`toCoverLayout` di web, dan panel Gerak sebagai blok
+ * template tetap di `SectionForm.vue`. Akibatnya bisa ditunjuk: form cover v1 dihapus fase 72
+ * dan `selectableCoverLayouts` masih di sana hari ini tanpa satu pun pembaca, sementara
+ * `section.data.layout` tetap dibaca renderer. Kolom yang digenerate tidak bisa hilang begitu.
+ *
+ * **Hanya tumbuh**, alasan identik `templateIds` dan `sectionTypes`: daftarnya sumber `z.enum`,
+ * dan mencabut satu id mematikan revisi terbit yang memakainya. Nilai yang ditarik dari editor
+ * ditandai `usang`, bukan dihapus.
+ */
+export interface FieldOption {
+  id: string
+  label: string
+  hint?: string
+  /** Tetap sah di dokumen, tapi tidak lagi ditawarkan form. */
+  usang?: boolean
+}
 
 export interface FieldMeta {
   key: string
@@ -129,12 +151,51 @@ export interface FieldMeta {
   limit?: number
   /** Kolom yang hanya tampil bila kolom boolean lain menyala (mis. rekening kedua). */
   bila?: string
+  /** Wajib untuk `kind: 'pilihan'`; kosong adalah bug kontrak, bukan keadaan. Dijaga tes. */
+  options?: readonly FieldOption[]
+  /**
+   * Saran di bawah kolom teks. `bank`: deret tile bank berlogo (fase 82) — nilainya tetap teks
+   * bebas, saran hanya memberi tahu nama mana yang dikenali `matchBankAlias` dan dapat logo.
+   */
+  saran?: 'bank'
 }
 
 const teks = (key: string, label: string, max = 120): FieldMeta => ({ key, label, kind: 'teks', max, gaya: true })
 const paragraf = (key: string, label: string, max = 600): FieldMeta => ({ key, label, kind: 'paragraf', max, gaya: true })
 const url = (key: string, label: string): FieldMeta => ({ key, label, kind: 'url', max: 2048 })
 const foto = (key: string, label = 'Foto komponen'): FieldMeta => ({ key, label, kind: 'foto' })
+/*
+ * Sengaja TANPA `gaya: true`. Nilainya bukan teks yang dibaca tamu, jadi memberinya gaya tidak
+ * berarti apa-apa — dan `styledFieldKeys` mengaliri `textStyles` yang diskemakan `.strict()`.
+ */
+const pilihan = (key: string, label: string, options: readonly FieldOption[]): FieldMeta => ({ key, label, kind: 'pilihan', options })
+
+/**
+ * Wajah bagian Cerita Cinta (fase 79). Satu tabel untuk tiga hal sekaligus: nilai yang SAH di
+ * dokumen (`z.enum` lewat `kindSchema`), pilihan yang DITAWARKAN form, dan kalimat yang
+ * menjelaskannya ke pasangan.
+ *
+ * Berdiri di SINI, bukan di bawah `storySides` bersama saudara-saudaranya, karena `sectionFields`
+ * di bawah ini membacanya saat modul dievaluasi — `const` tidak di-hoist, dan menaruhnya di bawah
+ * memberi `undefined` yang lolos compiler lalu meledak saat impor.
+ *
+ * **Hanya tumbuh.** Varian yang ditarik ditandai `usang: true`, tidak pernah dihapus: ia hidup di
+ * dalam revisi terbit yang masih dibaca tamu hari ini.
+ *
+ * Label ditulis menurut yang DILIHAT pasangan, bukan menurut tekniknya — "Garis perjalanan",
+ * bukan "MotionPath"; "Geser ke samping", bukan "scroll-snap". Aturan yang sama dengan label
+ * kolom, dan penjaganya sama: `tests/sections.test.ts`.
+ */
+export const storyVariantOptions = [
+  { id: 'rel', label: 'Garis perjalanan', hint: 'Langkah berselang kiri-kanan di sepanjang garis melengkung yang tumbuh saat digulir.' },
+  { id: 'prosa', label: 'Satu foto, satu paragraf', hint: 'Cerita ditulis utuh sebagai satu paragraf. Langkah cerita tidak ditampilkan.' },
+  { id: 'tumpuk', label: 'Kartu bertumpuk', hint: 'Tiap langkah jadi kartu yang naik menimpa kartu sebelumnya.' },
+  { id: 'buku', label: 'Halaman berselang', hint: 'Foto di satu sisi, cerita di sisi lain, bergantian seperti membuka buku.' },
+  { id: 'rel-datar', label: 'Geser ke samping', hint: 'Langkah berjajar mendatar; tamu menggesernya satu per satu.' },
+] as const satisfies readonly FieldOption[]
+
+export type StoryVariant = (typeof storyVariantOptions)[number]['id']
+export const storyVariants = storyVariantOptions.map(option => option.id) as readonly StoryVariant[]
 
 /**
  * Kolom tiap bagian, **urut seperti form referensi**. Label ditulis menurut fungsi kolomnya di
@@ -240,13 +301,13 @@ export const sectionFields: Record<V2SectionType, FieldMeta[]> = {
     teks('eyebrow', 'Label section'),
     teks('title', 'Judul'),
     paragraf('subtitle', 'Kalimat pengantar', 400),
-    teks('bank1', 'Bank pertama', 60),
+    { ...teks('bank1', 'Bank pertama', 60), saran: 'bank' },
     teks('account1', 'Nomor rekening pertama', 34),
     teks('holder1', 'Pemilik rekening pertama'),
     teks('buttonLabel', 'Teks tombol salin', 40),
     teks('copiedLabel', 'Teks setelah disalin', 40),
     { key: 'hasSecondAccount', label: 'Rekening kedua aktif', kind: 'boolean' },
-    { ...teks('bank2', 'Nama bank / e-wallet kedua', 60), bila: 'hasSecondAccount' },
+    { ...teks('bank2', 'Nama bank / e-wallet kedua', 60), bila: 'hasSecondAccount', saran: 'bank' },
     { ...teks('account2', 'Nomor rekening kedua', 34), bila: 'hasSecondAccount' },
     { ...teks('holder2', 'Nama pemilik kedua'), bila: 'hasSecondAccount' },
   ],
@@ -283,6 +344,12 @@ export const sectionFields: Record<V2SectionType, FieldMeta[]> = {
     teks('title', 'Judul'),
     paragraf('text', 'Cerita'),
     teks('closing', 'Kalimat penutup cerita'),
+    /*
+     * Terakhir dengan sengaja: `SectionForm` merender `ExtrasForm` ("Langkah cerita") tepat
+     * sesudah seluruh kolom, jadi pemilih bentuk berdiri persis di atas daftar yang bentuknya
+     * ia atur.
+     */
+    pilihan('variant', 'Cara cerita ditampilkan', storyVariantOptions),
   ],
   'rundown': [
     teks('kicker', 'Label section'),
@@ -301,6 +368,19 @@ export const sectionFields: Record<V2SectionType, FieldMeta[]> = {
     teks('open', 'Teks tombol siaran', 40),
   ],
 }
+
+/**
+ * Kolom yang memang tidak dirender siapa pun, dan kenapa. Dibaca `section-fields-render.spec.ts`.
+ *
+ * **Targetnya kosong, dan itu bukan kebetulan.** Sampai fase 79 ada sembilan kolom di bagian
+ * ekstra dan satu di `wishes` yang punya form, tersimpan, ikut terbit, lalu tidak pernah muncul
+ * di layar — pasangan mengisinya dan tidak terjadi apa-apa. Himpunan ini ada supaya pengecualian
+ * yang suatu saat benar-benar perlu harus DITULIS di kontrak, dengan alasannya, bukan diketik
+ * diam-diam ke dalam tes. Aturan yang sama dengan `headlessSectionTypes`.
+ *
+ * Menambahkan sesuatu ke sini adalah keputusan yang harus dibela, bukan cara mematikan tes merah.
+ */
+export const unrenderedFieldKeys: ReadonlySet<string> = new Set<string>()
 
 /** Kolom yang boleh menerima gaya teks pada sebuah tipe. */
 export function styledFieldKeys(type: V2SectionType): string[] {
@@ -339,6 +419,89 @@ export type SectionBackground = z.infer<typeof sectionBackgroundSchema>
 export const sectionMotions = ['tema', 'rise', 'sweep', 'iris', 'silhouette', 'tanpa'] as const
 export type SectionMotion = (typeof sectionMotions)[number]
 
+/* ── Kanvas bebas per bagian (fase 81) ───────────────────────────────────── */
+
+/**
+ * Gerak masuk satu keping kanvas. `bagian` = ikut gerak bagiannya (bawaan); sisanya preset yang
+ * dipetakan `utils/motion-entrance.ts` di web — daftar tertutup karena alasan yang sama dengan
+ * `sectionMotions`: easing bebas membuka jalan ke gerak yang melanggar DESIGN.md.
+ */
+export const kanvasGerak = ['bagian', 'mekar', 'naik', 'sapu', 'iris', 'jatuh', 'gambar', 'tanpa'] as const
+export type KanvasGerak = (typeof kanvasGerak)[number]
+
+/**
+ * Kunci keping yang SUDAH ADA di markup: `o:<slot>:<posisi>` untuk ornamen, `t:<kolom>` untuk teks.
+ * Stabil karena ditulis tangan di komponen, bukan indeks urutan render.
+ */
+export const kunciKepingPola = /^(o:[a-zA-Z]{2,20}:[a-z0-9-]{1,16}|t:[a-zA-Z0-9_]{1,40})$/
+
+const angka = (min: number, max: number) => z.number().finite().min(min).max(max)
+const idGlyph = z.string().regex(/^[a-z0-9-]{1,80}$/)
+const unggahanKanvas = z.object({
+  url: z.string().max(2048),
+  width: z.number().int().min(1).max(8192),
+  height: z.number().int().min(1).max(8192),
+}).strict()
+
+/** Ubahan yang sama-sama dimiliki keping dan ornamen tambahan. */
+const ubahanBersama = {
+  /** Derajat, searah jarum jam. Miring boleh — pemilik memakainya untuk sudut yang condong. */
+  putar: angka(-180, 180).optional(),
+  cerminX: z.boolean().optional(),
+  cerminY: z.boolean().optional(),
+  opasitas: angka(0, 1).optional(),
+  /** Urutan tumpuk di dalam bagiannya. Kosong = urutan markup. */
+  lapis: z.number().int().min(-20).max(40).optional(),
+  /** Tidak bisa disunting di panggung sama sekali — hanya lewat form. Gerak tidak ikut terkunci. */
+  terkunci: z.boolean().optional(),
+  gerak: z.enum(kanvasGerak).optional(),
+  /** Tunda gerak masuk dalam detik. */
+  tunda: angka(0, 2).optional(),
+}
+
+/**
+ * Penimpaan satu keping yang sudah ada. `x`/`y` geseran dalam `cqw` (persen lebar kolom
+ * undangan) supaya posisi sama di ponsel, tablet, dan desktop. `tampil` tiga keadaan: absen =
+ * bawaan tempatnya (dua sudut baru fase 81 lahir tersembunyi).
+ */
+export const kepingKanvasSchema = z.object({
+  x: angka(-100, 100).optional(),
+  y: angka(-400, 400).optional(),
+  /** Skala mendatar (atau seragam bila `skalaY` absen). Shift di panggung mengunci rasionya. */
+  skala: angka(0.25, 3).optional(),
+  skalaY: angka(0.25, 3).optional(),
+  tampil: z.boolean().optional(),
+  /** Ornamen pilihan untuk TEMPAT INI saja (keputusan pemilik fase 81). */
+  glyph: idGlyph.optional(),
+  unggahan: unggahanKanvas.optional(),
+  ...ubahanBersama,
+}).strict()
+export type KepingKanvas = z.infer<typeof kepingKanvasSchema>
+
+/** Ornamen yang ditambahkan pasangan ke sebuah bagian. `x`/`y` pusatnya, `lebar` dalam `cqw`. */
+export const tambahanKanvasSchema = z.object({
+  id: z.string().regex(/^[a-z0-9-]{1,32}$/),
+  glyph: idGlyph.optional(),
+  unggahan: unggahanKanvas.optional(),
+  x: angka(-50, 150),
+  y: angka(-50, 2000),
+  lebar: angka(4, 100),
+  /** Tinggi ÷ lebar asli glyph dikalikan ini; absen = rasio asli. */
+  rasio: angka(0.1, 10).optional(),
+  ...ubahanBersama,
+}).strict().refine(item => Boolean(item.glyph) !== Boolean(item.unggahan), { message: 'Isi tepat satu: glyph atau unggahan' })
+export type TambahanKanvas = z.infer<typeof tambahanKanvasSchema>
+
+export const maksTambahanKanvas = 6
+
+export const kanvasSchema = z.object({
+  keping: z.record(z.string().regex(kunciKepingPola), kepingKanvasSchema)
+    .refine(rekaman => Object.keys(rekaman).length <= 60, { message: 'Terlalu banyak keping' })
+    .optional(),
+  tambahan: z.array(tambahanKanvasSchema).max(maksTambahanKanvas).optional(),
+}).strict()
+export type Kanvas = z.infer<typeof kanvasSchema>
+
 const kindSchema = (field: FieldMeta): z.ZodTypeAny => {
   switch (field.kind) {
     case 'teks': return z.string().max(field.max ?? 120)
@@ -348,6 +511,15 @@ const kindSchema = (field: FieldMeta): z.ZodTypeAny => {
     case 'foto': return z.string().max(2048)
     case 'foto[]': return z.array(z.string().max(2048)).max(field.limit ?? maxGalleryPhotoLimit)
     case 'boolean': return z.boolean()
+    case 'pilihan': {
+      const nilai = (field.options ?? []).map(option => option.id)
+      /*
+       * Kolom pilihan tanpa opsi tidak pernah boleh lahir — `tests/sections.test.ts` yang
+       * menahannya di hulu. Cabang ini hanya menolak menerima apa pun kalau ia lolos, karena
+       * `z.enum([])` bukan tipe yang sah dan diam-diam menerima adalah jawaban yang lebih buruk.
+       */
+      return nilai.length ? z.enum(nilai as [string, ...string[]]) : z.never()
+    }
   }
 }
 
@@ -411,6 +583,7 @@ export function sectionDataSchema(type: V2SectionType) {
     textStyles: z.object(Object.fromEntries(styled.map(key => [key, textStyleSchema.optional()]))).strict().optional(),
     background: sectionBackgroundSchema.optional(),
     motion: z.enum(sectionMotions).optional(),
+    kanvas: kanvasSchema.optional(),
   }).passthrough()
 }
 
@@ -458,6 +631,51 @@ export interface DefaultDocumentInput {
 
 const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
 const hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+
+/** Teks pengisi yang ditulis `createEleganceSections` ketika wizard tidak memberi lokasi. */
+const lokasiPlaceholder = 'Lokasi akan diumumkan'
+
+const teksData = (data: Record<string, unknown> | undefined, key: string): string =>
+  (typeof data?.[key] === 'string' ? (data[key] as string).trim() : '')
+
+/**
+ * Membaca dokumen kembali menjadi masukan yang melahirkannya.
+ *
+ * Ada dua tempat yang membangun ulang bagian dari `DefaultDocumentInput` di atas dokumen yang
+ * sudah hidup — "Kembalikan ke preset awal" di editor, dan `restructureDocument` saat pasangan
+ * berpindah struktur — dan **keduanya sama-sama kehilangan data yang sama** sebelum fase 78.
+ * Yang pertama mengoper `{}`, jadi tanggal, gedung, dan alamat dari wizard `/order` dibuang dan
+ * seluruh bagian acara kembali ke "Hari / 00 / Bulan Tahun". Yang kedua mengoper
+ * `{ partner1: 'Aruna', partner2: 'Dewa' }` hardcode, jadi bagian yang belum ada di struktur asal
+ * lahir dengan nama orang lain.
+ *
+ * Satu fungsi untuk keduanya, dan murni — pembacaannya bisa diuji tanpa DB maupun komponen.
+ * Sengaja membaca dari `data` bagian, bukan dari kolom `Invitation` di database: yang sedang
+ * dibangun ulang adalah dokumen, dan dokumen itulah kebenaran terbarunya.
+ */
+export function defaultInputFromDocument(document: { sections?: { type: string; data?: Record<string, unknown> }[] } | null | undefined, fallback: { partner1: string; partner2: string }): DefaultDocumentInput {
+  const oleh = (type: string) => document?.sections?.find(section => section.type === type)?.data
+  const couple = oleh('couple')
+  const map = oleh('map')
+  const countdown = oleh('countdown')
+
+  // Dua ejaan, karena dua keluarga: Elegance menulis `brideName`/`groomName`, warisan `partner1`/`partner2`.
+  const partner1 = teksData(couple, 'brideName') || teksData(couple, 'partner1') || fallback.partner1
+  const partner2 = teksData(couple, 'groomName') || teksData(couple, 'partner2') || fallback.partner2
+
+  // `map.subtitle` menyatukan gedung dan alamat dengan baris baru; teks pengisinya bukan lokasi.
+  const lokasi = teksData(map, 'subtitle')
+  const baris = lokasi && lokasi !== lokasiPlaceholder ? lokasi.split('\n').map(bagian => bagian.trim()).filter(Boolean) : []
+
+  return {
+    partner1,
+    partner2,
+    date: teksData(countdown, 'targetDate') || undefined,
+    venue: baris[0],
+    address: baris.slice(1).join('\n') || undefined,
+    mapUrl: teksData(map, 'mapUrl') || undefined,
+  }
+}
 
 /** Pecahan tanggal untuk kolom-kolom teks referensi ("Sabtu", "03", "Oktober 2026", "03 · 10 · 2026"). */
 export function dateParts(iso: string | undefined) {
@@ -517,7 +735,7 @@ export function createEleganceSections(input: DefaultDocumentInput): V2Section[]
       receptionTitle: 'Resepsi', receptionTime: '11.00 – 14.00 WIB', receptionNote: 'Sampai selesai',
     } },
     { id: 'map', type: 'map', enabled: true, data: {
-      title: 'Lokasi Akad & Resepsi', subtitle: [venue, address].filter(Boolean).join('\n') || 'Lokasi akan diumumkan',
+      title: 'Lokasi Akad & Resepsi', subtitle: [venue, address].filter(Boolean).join('\n') || lokasiPlaceholder,
       mapUrl: input.mapUrl?.trim() || '', buttonLabel: 'Buka Google Maps',
     } },
     { id: 'unduh-mantu', type: 'unduh-mantu', enabled: false, data: {
@@ -552,7 +770,7 @@ export function createEleganceSections(input: DefaultDocumentInput): V2Section[]
       copy: 'Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Anda berkenan hadir dan memberikan doa restu.',
       subtitle: pasangan, greeting: 'Wassalamu’alaikum Warahmatullahi Wabarakatuh', date: t.dotted || '', imageUrl: '',
     } },
-    { id: 'story', type: 'story', enabled: false, data: { kicker: 'Cerita kami', title: 'Awal sebuah cerita', text: '', closing: '…dan sampailah kami di hari ini.', steps: [] as unknown[] } },
+    { id: 'story', type: 'story', enabled: false, data: { kicker: 'Cerita kami', title: 'Awal sebuah cerita', text: '', closing: '…dan sampailah kami di hari ini.', variant: 'rel', steps: [] as unknown[] } },
     { id: 'rundown', type: 'rundown', enabled: false, data: { kicker: 'Susunan acara', title: 'Rundown', items: [] as unknown[] } },
     { id: 'dresscode', type: 'dresscode', enabled: false, data: { kicker: 'Dresscode', title: 'Yang kami harapkan dikenakan', text: '', note: 'Kenakan yang membuat Anda nyaman.', attire: [] as string[], colors: [] as unknown[] } },
     { id: 'video', type: 'video', enabled: false, data: { kicker: 'Saksikan bersama', title: 'Saksikan kebahagiaan kami', url: '', open: 'Buka siaran' } },

@@ -19,6 +19,11 @@ import { sectionRequirement, type SectionEntry } from '~/utils/editor-sections'
 const props = defineProps<{
   entries: SectionEntry[]
   selectedId: string
+  /**
+   * Bagian yang sedang berdiri di tengah panggung (fase 80). Hanya penanda — ia tidak pernah
+   * mengganti form Inspector; yang menggantinya cuma klik. Lihat `sorotSection` di editor.
+   */
+  visibleId?: string | null
   labels: Readonly<Record<string, string>>
   canEditDesign: boolean
   total: number
@@ -57,7 +62,8 @@ const labelOf = (type: string) => props.labels[type] ?? type
  * membuat pengukuran e2e mendarat di tengah animasi, cacat yang sudah pernah memakan satu fase.
  */
 const daftar = ref<HTMLElement | null>(null)
-watch(() => props.selectedId, async (id) => {
+watch([() => props.selectedId, () => props.visibleId], async ([dipilih, terlihat], [dipilihLama]) => {
+  const id = dipilih !== dipilihLama ? dipilih : terlihat
   if (!id) return
   await nextTick()
   const item = daftar.value?.querySelector<HTMLElement>(`#editor-section-${CSS.escape(id)}`)
@@ -177,7 +183,7 @@ function onHandleKey(index: number, event: KeyboardEvent) {
         :class="cn(
           'grid items-center gap-1 rounded-lg border px-1 transition-colors duration-200',
           collapsed ? 'grid-cols-[auto_minmax(0,1fr)_auto] lg:grid-cols-1' : 'grid-cols-[auto_minmax(0,1fr)_auto]',
-          selectedId === section.id ? 'border-success bg-success-soft/60' : section.enabled ? 'border-transparent hover:bg-surface-3' : 'border-dashed border-border bg-surface/60',
+          selectedId === section.id ? 'border-success bg-success-soft/60' : visibleId === section.id ? 'border-border bg-surface-3/70' : section.enabled ? 'border-transparent hover:bg-surface-3' : 'border-dashed border-border bg-surface/60',
           over === index && dragging !== null && dragging !== index && 'ring-2 ring-primary/50',
           dragging === index && 'opacity-50',
         )"
@@ -206,9 +212,14 @@ function onHandleKey(index: number, event: KeyboardEvent) {
             :class="cn('flex min-h-12 min-w-0 items-center gap-2.5 rounded-md px-1 text-left', collapsed && 'lg:justify-center lg:px-0')"
             :aria-label="collapsed ? labelOf(section.type) : undefined"
             :aria-current="selectedId === section.id ? 'true' : undefined"
+            :data-terlihat="visibleId === section.id ? 'true' : undefined"
             @click="emit('select', section.id)"
           >
-            <component :is="icons[section.type] ?? Image" :size="17" :class="cn('shrink-0', section.enabled ? 'text-ink-muted' : 'text-border-strong')" aria-hidden="true" />
+            <span class="relative grid shrink-0 place-items-center">
+              <component :is="icons[section.type] ?? Image" :size="17" :class="section.enabled ? 'text-ink-muted' : 'text-border-strong'" aria-hidden="true" />
+              <!-- Titik "sedang tampak di panggung": penanda, bukan pilihan (fase 80). -->
+              <span v-if="visibleId === section.id" class="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
+            </span>
             <span :class="cn('grid min-w-0 gap-px', collapsed && 'lg:hidden')">
               <!-- `ink-muted`, bukan `ink-subtle`: dicoret di atas kartu putus-putus, ink-subtle hanya 4,4:1 (axe, fase 72). -->
               <span :class="cn('text-ui font-semibold leading-snug', section.enabled ? 'text-ink' : 'text-ink-muted line-through')">{{ labelOf(section.type) }}</span>

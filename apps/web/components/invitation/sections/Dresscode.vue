@@ -2,37 +2,55 @@
 import type { Section } from '~/types/aruna'
 import { toAttire, toDresscodeColors } from '~/utils/invitation-options'
 
+/**
+ * Fase 79 menaikkan bagian ini ke kontrak Elegance: `kicker`, `title`, dan `note` dibaca dari
+ * `section.data` (ketiganya punya kolom form sejak fase 72 dan tidak satu pun pernah sampai ke
+ * layar), gaya teks berlaku lewat `InvitationText`, dan latar serta gerak per bagian diteruskan.
+ */
 const props = defineProps<{ section: Section; seed: number }>()
 const { orn, intensity, compact, t } = useInvitation()
 
 const attire = computed(() => toAttire(props.section.data.attire))
 const colors = computed(() => toDresscodeColors(props.section.data.colors))
-const note = computed(() => text(props.section, 'text'))
+
+/**
+ * Bagian ini tanpa isi apa pun. Sampai fase 79 keadaan inilah satu-satunya tempat
+ * `t('dresscode.note')` muncul — sebagai satu kalimat besar yang berdiri sendiri.
+ *
+ * Itu yang membuat fallback `note` di bawah harus BERSYARAT. Fallback tanpa syarat akan
+ * menumbuhkan satu baris baru di setiap dokumen warisan yang sudah mengisi keterangannya:
+ * `createLegacySections` tidak pernah menulis `note`, jadi di sana kolomnya selalu kosong, dan
+ * kosong berarti fallback yang menang. Undangan yang sudah terbit bertahun-tahun tiba-tiba
+ * menumbuhkan kalimat yang tidak pernah ditulis pasangannya.
+ */
+const kosong = computed(() => !attire.value.length && !colors.value.length && !text(props.section, 'text'))
 </script>
 
 <template>
   <InvitationSection
-    id="iv-dresscode"
+    :id="sectionDomId('dresscode')"
     tone="tint"
     :compact="compact"
-    :kicker="t('dresscode.kicker')"
-    :title="t('dresscode.title')"
     :ornaments="compact ? null : orn"
     :intensity="intensity"
     :seed="props.seed"
+    :background="latarBagian(props.section)"
+    :motion="gerakBagian(props.section)"
   >
+    <InvitationText :section="props.section" field="kicker" tag="p" data-iv-lead class="iv-kicker m-0" :fallback="t('dresscode.kicker')" />
+    <InvitationText :section="props.section" field="title" tag="h2" data-iv-lead class="iv-display m-0 text-[clamp(2.1rem,7cqw,3.4rem)]" :fallback="t('dresscode.title')" />
+
     <!-- Busana berjejer dulu: tamu memutuskan pakai apa jauh sebelum membaca nama warnanya. -->
     <ul v-if="attire.length" class="iv-attire-row m-0 p-0 list-none">
-      <li v-for="id in attire" :key="id" data-iv-reveal class="iv-attire-item">
-        <OrnamentGlyph :glyph="id" data-iv-ornament class="iv-attire-art" />
+      <li v-for="(id, index) in attire" :key="id" data-iv-reveal class="iv-attire-item">
+        <InvitationOrnamen slot-id="attire" :posisi="`busana-${index}`" :glyph="id" data-iv-ornament class="iv-attire-art" />
         <span class="iv-body text-caption">{{ ornament(id).name }}</span>
       </li>
     </ul>
-    <OrnamentGlyph
+    <InvitationOrnamen
       v-else
-      :glyph="orn.floralAlt"
       data-iv-ornament
-      data-iv-slot="floralAlt"
+      slot-id="floralAlt" posisi="utama"
       class="h-24 w-20 opacity-80"
       :style="{ color: 'var(--iv-primary)' }"
     />
@@ -49,10 +67,21 @@ const note = computed(() => text(props.section, 'text'))
       </li>
     </ul>
 
-    <p v-if="note" data-iv-reveal class="iv-body m-0 max-w-md">{{ note }}</p>
-    <p v-else-if="!attire.length && !colors.length" data-iv-reveal class="iv-display m-0 text-[clamp(1.6rem,6cqw,2.4rem)]">
-      {{ t('dresscode.note') }}
-    </p>
+    <InvitationText :section="props.section" field="text" tag="p" data-iv-reveal class="iv-body m-0 max-w-md" multiline />
+
+    <!--
+      Dua peran, satu kolom. Saat bagian ini kosong `note` berdiri sendiri sebagai kalimat besar —
+      itu wajah lamanya, dan fallback menjaganya utuh untuk dokumen warisan. Saat busana dan warna
+      sudah ada di atasnya, ia jadi catatan kecil di bawah, karena di situ ia memang catatan.
+    -->
+    <InvitationText
+      :section="props.section"
+      field="note"
+      tag="p"
+      data-iv-reveal
+      :fallback="kosong ? t('dresscode.note') : ''"
+      :class="kosong ? 'iv-display m-0 text-[clamp(1.6rem,6cqw,2.4rem)]' : 'iv-body m-0 max-w-md text-caption opacity-80'"
+    />
   </InvitationSection>
 </template>
 

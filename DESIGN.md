@@ -79,18 +79,32 @@ Keempat pasangan itu sekarang juga dihitung **runtime** oleh `apps/web/utils/con
 untuk penjaga kontras di editor. `tests/contrast.test.ts` menegakkan bahwa keenam preset lolos, jadi preset
 yang diubah tanpa audit ulang akan menggagalkan `pnpm test`, bukan diam-diam terbit.
 
-Warna merek bank (teks di atas pita kepala kartu), diverifikasi dengan skrip yang sama:
+Warna merek bank (teks di atas pita kepala kartu), diverifikasi dengan skrip yang sama. Sejak fase 82
+warnanya diambil dari tile lambang di `public/banks/` supaya pita dan tile satu warna:
 
 | Bank | Merek | Teks | Rasio |
 |---|---|---|---:|
 | BCA | `#0060AF` | putih | 6,38:1 |
 | Mandiri | `#003D79` | putih | 10,80:1 |
 | BRI | `#00529C` | putih | 7,82:1 |
+| BNI | `#005E6A` | putih | 7,48:1 |
 | BSI | `#00A39D` | ink | 5,99:1 |
-| Jago | `#F26F21` | ink | 6,30:1 |
-| Jenius SMBC | `#00A9E0` | ink | 6,91:1 |
+| CIMB Niaga | `#EE3124` | ink | 4,54:1 |
+| Danamon | `#004B3A` | putih | 10,16:1 |
+| HSBC | `#DB0011` | putih | 5,22:1 |
+| digibank by DBS | `#FFC134` | ink | 11,52:1 |
+| Jago | `#FDAF27` | ink | 10,10:1 |
+| Jenius SMBC | `#05B0EE` | ink | 7,53:1 |
 | Seabank | `#EE4D2D` | ink | 5,11:1 |
+| DANA | `#108EE9` | ink | 5,41:1 |
+| GoPay | `#00AED6` | ink | 7,15:1 |
+| OVO | `#4C3494` | putih | 9,43:1 |
 | Bank lain | `#5B4B41` | putih | 8,31:1 |
+
+Lambang tampil sebagai **tile** 99×71 dengan latar mereknya sendiri — bukan logo di atas chip putih.
+Sudut (`rounded-sm`), cincin terang tipis, dan bayangan netral digambar CSS kartu (`.iv-gift-logo`);
+tile tidak pernah membawa bayangan atau sudut ter-bake, karena bayangan berwarna satu tema salah di
+tema lainnya.
 
 ### Tipografi
 
@@ -324,20 +338,41 @@ Panggung merender undangan yang sama dengan yang dilihat tamu, jadi tiap afordan
 pasangan harus punya gerbang yang tidak bisa bocor. Gerbangnya satu: kelas `.iv-root--stage`, yang
 hanya ada pada `mode="stage"`.
 
-- **Ornamen bisa disentuh di panggung, tidak pernah di halaman tamu.** Hover memberi
-  `outline: 1px dashed` 65 % primary dengan `outline-offset: 2px` — `outline`, bukan `border`, supaya
-  tidak ada satu piksel pun yang bergeser saat kursor lewat. Klik memindahkan inspektor ke tab
-  Ornamen dan menyorot kartu slotnya; ia tidak membuka Studio, karena nilai ornamen berlaku global
-  dan kartu slot itu yang mengatakannya.
-- **Tiap ornamen berslot membawa `data-iv-slot`** di samping `data-iv-ornament`; keping ladang
-  memakai `data-layer-slot` miliknya sendiri. Dijaga vitest yang membaca sumbernya: ornamen yang
-  lupa diberi slot tetap tergambar dan tetap dianimasikan, dan **hanya** tidak bisa diklik — jenis
-  kegagalan yang terbaca sebagai fitur rusak, bukan sebagai atribut yang hilang.
-- **Kontrol menang atas ornamen.** Delegasi kliknya melewati apa pun yang punya leluhur
-  `button`, `a`, atau `[role="button"]`. Tanpa aturan ini segel amplop — yang isinya glyph slot
-  `seal` — akan membuka pemilih ornamen alih-alih amplopnya.
-- **Ukuran pratinjau dihitung dari lebar DAN tinggi.** Ponsel yang terpotong bukan pratinjau;
-  skalanya menyusut sampai seluruh layar muat, dengan lantai supaya hurufnya tetap terbaca.
+- **Kanvas bebas (fase 81) — semua keping bisa dipegang, tidak pernah di halaman tamu.** Tiap
+  ornamen dan teks bagian adalah keping ber-`data-iv-el` (`o:<slot>:<posisi>`, `t:<kolom>`,
+  `a:<id>` untuk ornamen tambahan). Hover, pilihan, dan pegangan digambar `Kanvas.vue` di LUAR
+  bingkai yang diperkecil, jadi ukurannya px layar:
+  - hover: `outline: 1px dashed var(--color-success)`, `outline-offset: 2px`, label nama keping;
+  - terpilih: garis penuh 1,5px `--color-success`, pegangan 10px di 8 arah (Shift mengunci rasio),
+    pegangan putar bundar 22px di atas (Shift = kelipatan 15°), label ukuran `W × H` di bawah;
+  - terkunci: garis putus-putus 1,5px `--color-gold` dengan gembok, tanpa pegangan. Terkunci
+    berarti tidak bisa disunting di panggung sama sekali (seret, ukur, putar, teks, ganti) —
+    suntingan hanya lewat tab Elemen. Gerak masuk tidak ikut terkunci.
+  - klik dua kali: teks disunting di tempat (`contenteditable="plaintext-only"`), ornamen membuka
+    Studio untuk TEMPAT ITU saja. Klik kanan: menu reka-ui `ContextMenu`.
+  - menyeret meniru Figma: **smart guide** selalu aktif — tepi kiri/tengah/kanan dan
+    atas/tengah/bawah menempel ke keping lain di bagian yang sama dan ke kotak bagiannya, ambang
+    4px layar, plus **jarak seimbang** antar-tetangga sebaris. Garis panduan 1px `--color-panduan`
+    (merah Figma, supaya tidak tertukar dengan hijau pilihan) membentang dari keping ke objeknya,
+    bukan selebar layar; penanda jarak berangka px render. **Shift** mengunci arah (mendatar, tegak,
+    45°, boleh berganti selama ditahan); **⌘/Ctrl** mematikan tempel. Label posisi `X · Y` dalam px
+    render relatif pojok bagian.
+  - daftar Lapisan di tab Elemen **bergambar**: tiap baris membawa pratinjau 32px keping itu dengan
+    ramp ornamen undangan di atas latar undangan, menghadap ke arah yang sama dengan di kanvas; teks
+    memakai ikon `Type` plus cuplikan isinya.
+- **Satu pintu render: `InvitationOrnamen`.** Pembungkus luar membawa kunci keping, kelas tata letak,
+  dan transform kanvas (`translate`/`rotate`/`scale` individual); glyph di dalam membawa atribut
+  gerak. Keduanya tidak boleh digabung: GSAP menulis transform individual jadi `none`. Dijaga vitest
+  (`OrnamentGlyph` hanya dipanggil pintu itu) dan e2e `elementFromPoint` — bukan pembacaan atribut.
+- **Isi bagian tembus klik di panggung.** `.iv-section-isi` `pointer-events: none`, anak-anaknya
+  `auto`: celah kosong di antara baris tidak menelan klik ke keping ladang di bawahnya.
+- **Amplop di panggung dipilih, bukan dibuka.** Klik segel/flap/kantong memilih kepingnya;
+  pembukanya callout berikon (`MailOpen`) di bawah amplop dan tombol ikon di toolbar panggung.
+  Halaman tamu tetap: seluruh badan amplop membuka.
+- **Ukuran pratinjau.** Ponsel muat utuh (lebar DAN tinggi). Tablet dan Desktop pas LEBAR dan
+  layarnya dipanjangkan mengisi tinggi panggung; ZOOM 50–200 % dari pas; tombol Fokus melipat
+  navigasi, rail, dan inspektor. Lebar tersedia diukur dari viewport panggung, tidak pernah dari
+  pembungkus yang lebarnya hasil bingkai itu sendiri. Lantai tinggi tetap, supaya huruf terbaca.
   Layar ponsel yang menggulung isinya sendiri, bukan panggung yang menggeser bingkainya — dan
   karena wadah gulirnya elemen yang di-`scale()`, tiap perhitungan posisi gulir membagi selisih
   rect dengan skalanya lebih dulu.
@@ -689,6 +724,23 @@ masing-masing dengan label per fungsi, bukan dari tab Tema), dan **gerak** (`tok
 amplop tiga tingkat, gaya masuk empat tata bahasa). Semuanya terenumerasi, bukan angka bebas, dan
 semuanya opsional: absen berarti ikut tema, dan editor menghapus kunci alih-alih menulis "ikut
 tema". Partitur motion tetap milik tema; dokumen hanya memilih dari yang tema sediakan.
+
+**Fase 79 menambah sumbu keempat: WAJAH sebuah bagian.** Bagian Cerita punya lima wajah yang
+dipilih dari satu kolom tertutup (`story.variant`: garis perjalanan, satu foto satu paragraf,
+kartu bertumpuk, halaman berselang, geser ke samping). Tiga aturan yang mengikatnya, dan
+ketiganya berlaku untuk setiap kolom wajah yang menyusul:
+
+- **Ia ISI, bukan desain.** Memilih wajah cerita sederajat dengan memilih berapa langkah
+  ceritanya, jadi ia **tidak** berada di balik add-on `design` dan **tidak** masuk
+  `designFingerprint`. Kolom wajah yang digerbangi desain akan mengunci pelanggan begitu
+  restrukturisasi atau reset preset menanam bawaannya — cacat 73.1.
+- **Terenumerasi di kontrak, bukan di lapisan web.** Bentuknya `kind: 'pilihan'` di
+  `sectionFields`, sehingga daftar yang sama melahirkan skema, form, dan kalimat penjelasnya.
+  Pilihan yang ditulis di luar tabel kolom berakhir yatim — `selectableCoverLayouts` hidup tanpa
+  satu pun form yang menulisnya sejak fase 72.
+- **Hanya tumbuh.** Wajah yang ditarik ditandai `usang`, tidak pernah dihapus: ia hidup di dalam
+  revisi terbit yang masih dibaca tamu. Dan wajah yang menuntut sesuatu yang belum diisi pasangan
+  harus **jatuh ke wajah yang tidak menuntutnya**, bukan merender bidang kosong.
 
 ## Aset
 

@@ -8,12 +8,18 @@ import { envelopeTempo, selectableEnvelopeSpeeds, toEnvelopeSpeed } from '../uti
  * yang hampir sama.
  */
 describe('tempo amplop', () => {
-  it('sedang adalah fase 68 persis', () => {
-    expect(envelopeTempo.sedang).toMatchObject({ flap: 1.1, cardFadeAt: 0.45, cardRise: 1.4, body: 0.5, bodyOffset: -0.5, root: 0.6, rootOffset: -0.35 })
+  it('sedang mempertahankan flap dan surat fase 68', () => {
+    expect(envelopeTempo.sedang).toMatchObject({ flap: 1.1, flapOverlap: 0.22, cardFadeAt: 0.45, cardRise: 1.4 })
   })
 
-  it('pelan lebih lambat dari sedang, sedang lebih lambat dari cepat — pada flap dan surat', () => {
-    for (const kunci of ['flap', 'cardRise', 'cardFadeAt'] as const) {
+  it('tabel hanya memuat besaran positif — arah posisi milik susunAmplop, bukan tanda angka', () => {
+    for (const tempo of Object.values(envelopeTempo)) {
+      for (const [kunci, nilai] of Object.entries(tempo)) expect(nilai, kunci).toBeGreaterThan(0)
+    }
+  })
+
+  it('pelan lebih lambat dari sedang, sedang lebih lambat dari cepat — pada flap, surat, dan jedanya', () => {
+    for (const kunci of ['flap', 'cardRise', 'cardFadeAt', 'breath'] as const) {
       expect(envelopeTempo.pelan[kunci], kunci).toBeGreaterThan(envelopeTempo.sedang[kunci])
       expect(envelopeTempo.sedang[kunci], kunci).toBeGreaterThan(envelopeTempo.cepat[kunci])
     }

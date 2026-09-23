@@ -1,4 +1,4 @@
-import type { LayerSlot, OrnamentId } from './ornaments'
+import type { LayerSlot, OrnamentCategory, OrnamentId } from './ornaments'
 import { ornament, ornamentBank } from './ornaments'
 import { fitOf } from './ornament-fit'
 import { muatLayer, muatSlot, ornamenDisembunyikan, type OrnamentSlotKey } from './ornament-slots'
@@ -43,12 +43,22 @@ export function normalkan(teks: string): string {
   return teks.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/-/g, ' ').trim()
 }
 
-export type StudioTab = 'disarankan' | 'semua' | 'unggahan'
+/**
+ * Tab Studio. `disarankan` dihapus di fase 80: ornamen tidak ditentukan tema (keputusan pemilik),
+ * jadi tab yang dibuka pertama tidak boleh menyaring menurut tema. Yang serasi tetap diurutkan di
+ * depan dan diberi lencana — kurasi jadi urutan, bukan pagar.
+ */
+export type StudioTab = 'semua' | 'unggahan'
 
 export interface StudioQuery {
   /** Slot skalar, atau jangkar ladang saat `layer` terisi. */
   slot?: OrnamentSlotKey
   layer?: LayerSlot
+  /**
+   * Mode "Tambah ornamen" (fase 81): tidak terikat slot, jadi yang menyaring adalah kategori bank.
+   * `semua` = seluruh kategori hiasan; bentuk amplop tidak pernah ditawarkan (bukan keping lepas).
+   */
+  kategori?: OrnamentCategory | 'semua'
   templateId: string
   tab: StudioTab
   query?: string
@@ -59,17 +69,27 @@ export interface StudioQuery {
  * Semua id bank yang sah untuk slot/jangkar ini, tanpa penyaringan lain — kecuali
  * `ornamenDisembunyikan`, yang bukan penyaringan kecocokan melainkan keputusan kurasi pemilik
  * (fase 70). Ia dipotong di sini, satu-satunya pintu masuk grid, supaya tab "Semua", hitungan
- * chip pack, dan tab "Disarankan" tidak pernah berselisih.
+ * chip pack, dan lencana "Serasi" tidak pernah berselisih.
  */
-export function kandidat(q: Pick<StudioQuery, 'slot' | 'layer'>): OrnamentId[] {
+export function kandidat(q: Pick<StudioQuery, 'slot' | 'layer' | 'kategori'>): OrnamentId[] {
   const ids = (Object.keys(ornamentBank) as OrnamentId[]).filter(id => !ornamenDisembunyikan.has(id))
   if (q.layer) return ids.filter(id => muatLayer(q.layer!, id))
   if (q.slot) return ids.filter(id => muatSlot(q.slot!, id))
+  if (q.kategori === 'semua') return ids.filter(id => kategoriTambahan.includes(ornament(id).category))
+  if (q.kategori) return ids.filter(id => ornament(id).category === q.kategori)
   return []
 }
 
+/** Kategori yang ditawarkan mode "Tambah ornamen" (fase 81), berurutan untuk chip penyaringnya. */
+export const kategoriTambahan: readonly OrnamentCategory[] = ['corner', 'divider', 'floral', 'symbol', 'seal', 'monogram', 'frame', 'motif', 'layer', 'venue', 'attire']
+export const labelKategori: Record<OrnamentCategory, string> = {
+  corner: 'Sudut', divider: 'Pemisah', floral: 'Rangkaian', symbol: 'Simbol', seal: 'Segel', monogram: 'Monogram',
+  frame: 'Bingkai', motif: 'Motif', layer: 'Ladang', venue: 'Gedung', attire: 'Busana',
+  envelopePocket: 'Kantong amplop', envelopeFlap: 'Tutup amplop',
+}
+
 /**
- * Kolam "Disarankan".
+ * Kolam yang serasi dengan tema — dipakai untuk urutan dan lencana "Serasi", bukan penyaring.
  *
  * Empat slot punya kolam terkurasi sungguhan di `themeVariants`, dijaga gerbang kohesi dan
  * `ornament-variants.spec.ts`; untuk keempatnya kolam itulah jawabannya, apa adanya dan
@@ -77,7 +97,8 @@ export function kandidat(q: Pick<StudioQuery, 'slot' | 'layer'>): OrnamentId[] {
  * punya kolam — untuk mereka "disarankan" berarti **yang lolos `fitOf()`**, yaitu ukuran yang
  * sama yang dipakai gerbang, hanya saja dihitung per keping alih-alih dikurasi tangan.
  */
-export function disarankan(q: Pick<StudioQuery, 'slot' | 'layer' | 'templateId'>): OrnamentId[] {
+export function disarankan(q: Pick<StudioQuery, 'slot' | 'layer' | 'templateId' | 'kategori'>): OrnamentId[] {
+  if (!q.slot && !q.layer) return []
   if (q.slot && (variantSlots as readonly string[]).includes(q.slot)) {
     return [...variantsFor(q.templateId, q.slot as VariantSlot)]
   }
@@ -102,7 +123,7 @@ export function bawaanSlot(q: Pick<StudioQuery, 'slot' | 'layer' | 'templateId'>
  */
 export function cariOrnamen(q: StudioQuery): OrnamentId[] {
   const rekomen = disarankan(q)
-  const dasar = q.tab === 'disarankan' ? rekomen : kandidat(q)
+  const dasar = kandidat(q)
   const peringkat = new Map(rekomen.map((id, i) => [id, i]))
 
   const kata = normalkan(q.query ?? '')
@@ -111,8 +132,6 @@ export function cariOrnamen(q: StudioQuery): OrnamentId[] {
     if (!kata) return true
     return normalkan(`${ornament(id).name} ${id}`).includes(kata)
   })
-
-  if (q.tab === 'disarankan') return disaring
 
   return disaring.sort((a, b) => {
     const ra = peringkat.get(a) ?? Infinity
@@ -126,7 +145,7 @@ export function cariOrnamen(q: StudioQuery): OrnamentId[] {
 }
 
 /** Berapa keping tersedia per pack untuk slot ini — dipakai label penyaring. */
-export function hitungPack(q: Pick<StudioQuery, 'slot' | 'layer'>): Record<PackId, number> {
+export function hitungPack(q: Pick<StudioQuery, 'slot' | 'layer' | 'kategori'>): Record<PackId, number> {
   const keluar = Object.fromEntries(packIds.map(p => [p, 0])) as Record<PackId, number>
   for (const id of kandidat(q)) keluar[packOf(id)] += 1
   return keluar

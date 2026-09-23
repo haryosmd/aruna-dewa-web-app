@@ -4,9 +4,10 @@ import { shareSettingsSchema, type CreateInvitationBody, type ShareSettings } fr
 import { PrismaService } from '../database/prisma.service.js';
 import { Prisma } from '@aruna/database';
 import { MembershipService } from '../common/membership.service.js';
-import { isOperator, type AuthenticatedUser } from '../common/auth.js';
+import { assertOperator, isOperator, type AuthenticatedUser } from '../common/auth.js';
 import { assertGalleryQuota, validatePublishableDocument } from './document-validation.js';
 import { orphanAssetIds } from '../media/asset-usage.js';
+import { revisionsToDropOnArchive } from './lifecycle.js';
 import { storageForAsset } from '../media/storage.js';
 
 @Injectable()
@@ -14,11 +15,145 @@ export class InvitationsService {
   private readonly logger = new Logger(InvitationsService.name);
   constructor(private readonly prisma: PrismaService, private readonly memberships: MembershipService) {}
 
+  /**
+   * Undangan yang boleh muncul di "Undangan kalian".
+   *
+   * `ARCHIVED` dikecualikan di **kedua** cabang, operator maupun bukan: arsip berarti keluar
+   * dari daftar, dan operator yang ingin melihatnya punya tempatnya sendiri di `/bo`.
+   *
+   * `publishedAt` dan `updatedAt` ikut sejak fase 78, dan itu memperbaiki cacat yang sudah lama
+   * hidup: kartu dasbor membaca `invitation.publishedAt` dari jawaban ini, yang tidak pernah
+   * mengirimnya — jadi **setiap** kartu berbunyi "Belum dipublikasikan", termasuk yang tayang.
+   */
   async list(user: AuthenticatedUser) {
-    const rows = isOperator(user)
-      ? await this.prisma.invitation.findMany({ orderBy: { updatedAt: 'desc' } })
-      : await this.prisma.invitation.findMany({ where: { members: { some: { userId: user.sub } } }, orderBy: { updatedAt: 'desc' } });
-    return rows.map((row) => ({ id: row.id, slug: row.slug, title: row.title, status: row.status }));
+    const where = isOperator(user)
+      ? { status: { not: 'ARCHIVED' as const } }
+      : { status: { not: 'ARCHIVED' as const }, members: { some: { userId: user.sub } } };
+    const rows = await this.prisma.invitation.findMany({ where, orderBy: { updatedAt: 'desc' } });
+    return rows.map((row) => ({
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      status: row.status,
+      publishedAt: row.publishedAt?.toISOString() ?? null,
+      updatedAt: row.updatedAt.toISOString(),
+    }));
+  }
+
+  /**
+   * Mengeluarkan undangan dari daftar publik **tanpa menyentuh suntingannya**.
+   *
+   * Ini yang dimaksud "jadikan draf": `status` kembali `DRAFT`, jadi `public.service.ts` —
+   * yang menuntut `PUBLISHED` **dan** `activeRevision` — berhenti menyajikannya. Yang sengaja
+   * TIDAK dilepas: `activeRevisionId`, riwayat revisi, dan `publishedAt`. Ketiganya membuat
+   * "terbitkan lagi" jadi satu klik alih-alih satu pemulihan, dan `publishedAt` tetap berarti
+   * "terakhir terbit", bukan "sedang terbit" — yang menjawab pertanyaan kedua adalah `status`.
+   */
+  async unpublish(user: AuthenticatedUser, invitationId: string) {
+    await this.memberships.requireInvitationRole(user, invitationId, 'EDITOR');
+    const invitation = await this.prisma.invitation.findUnique({ where: { id: invitationId }, select: { status: true } });
+    if (!invitation) throw new NotFoundException('Undangan tidak ditemukan');
+    if (invitation.status === 'ARCHIVED') throw new BadRequestException('Undangan ini sudah diarsipkan');
+    if (invitation.status !== 'PUBLISHED') return { status: invitation.status };
+    await this.prisma.invitation.update({ where: { id: invitationId }, data: { status: 'DRAFT' } });
+    await this.prisma.auditEvent.create({ data: { actorId: user.sub, invitationId, action: 'INVITATION_UNPUBLISHED', targetType: 'Invitation', targetId: invitationId } });
+    return { status: 'DRAFT' as const };
+  }
+
+  /**
+   * Mengarsipkan undangan — dan memangkas yang berat di detik yang sama.
+   *
+   * Pemilik menerima arsip dengan satu syarat: ia tidak boleh menumpuk memori. Jadi arsip di
+   * sini bukan sekadar mengganti status. Dua hal dibuang saat itu juga:
+   *
+   *   1. **Aset yang tidak dirujuk draf.** Berkasnya di penyimpanan, bukan cuma barisnya —
+   *      cascade basis data tidak pernah menyentuh storage, dan itulah cara kuota bocor tanpa
+   *      ada yang bisa melihat sebabnya.
+   *   2. **Seluruh revisi terbit kecuali yang aktif.** Sampai 50 dokumen JSON penuh per
+   *      undangan, tidak satu pun punya pembaca selama undangannya tidak publik.
+   *
+   * Yang tersisa: satu baris undangan, satu dokumen draf, dan tamunya. Pemusnahan penuhnya
+   * dikerjakan penyapu retensi tiga puluh hari kemudian (`MaintenanceService`).
+   */
+  async archive(user: AuthenticatedUser, invitationId: string) {
+    await this.memberships.requireInvitationRole(user, invitationId, 'OWNER');
+    const invitation = await this.prisma.invitation.findUnique({
+      where: { id: invitationId },
+      select: { id: true, status: true, activeRevisionId: true, draftDocument: true },
+    });
+    if (!invitation) throw new NotFoundException('Undangan tidak ditemukan');
+    if (invitation.status === 'ARCHIVED') return { status: 'ARCHIVED' as const };
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.invitation.update({ where: { id: invitationId }, data: { status: 'ARCHIVED' } });
+
+      const revisions = await tx.publishedRevision.findMany({ where: { invitationId }, select: { id: true } });
+      const buang = revisionsToDropOnArchive(revisions, invitation.activeRevisionId);
+      if (buang.length) await tx.publishedRevision.deleteMany({ where: { id: { in: buang } } });
+
+      // Aset diukur terhadap DRAF saja: revisi terbitnya baru saja dibuang, jadi tidak ada
+      // pembaca lain yang tersisa. `orphanAssetIds` menerima dua dokumen; yang kedua null.
+      await this.sweepOrphanAssets(tx, invitationId, null, invitation.draftDocument);
+
+      await tx.auditEvent.create({ data: { actorId: user.sub, invitationId, action: 'INVITATION_ARCHIVED', targetType: 'Invitation', targetId: invitationId, metadata: { revisionsDropped: buang.length } } });
+    });
+    return { status: 'ARCHIVED' as const };
+  }
+
+  /** Mengembalikan undangan arsip ke `DRAFT`. Hanya operator — pasangan tidak bisa melihat arsipnya. */
+  async restore(user: AuthenticatedUser, invitationId: string) {
+    assertOperator(user);
+    const invitation = await this.prisma.invitation.findUnique({ where: { id: invitationId }, select: { status: true } });
+    if (!invitation) throw new NotFoundException('Undangan tidak ditemukan');
+    if (invitation.status !== 'ARCHIVED') return { status: invitation.status };
+    await this.prisma.invitation.update({ where: { id: invitationId }, data: { status: 'DRAFT' } });
+    await this.prisma.auditEvent.create({ data: { actorId: user.sub, invitationId, action: 'INVITATION_RESTORED', targetType: 'Invitation', targetId: invitationId } });
+    return { status: 'DRAFT' as const };
+  }
+
+  /**
+   * Menghapus undangan **permanen**. Hanya operator.
+   *
+   * Urutannya bukan selera, ia satu-satunya urutan yang bekerja:
+   *
+   *   1. **Berkas storage dulu.** Cascade basis data menghapus baris `MediaAsset` tapi tidak
+   *      pernah menyentuh berkasnya; menghapusnya sesudah barisnya hilang berarti tidak ada
+   *      lagi yang tahu kunci mana yang harus dibuang.
+   *   2. **`activeRevisionId` di-null-kan.** `Invitation.activeRevisionId` menunjuk
+   *      `PublishedRevision.id` tanpa `onDelete`, sementara `PublishedRevision.invitationId`
+   *      menunjuk balik dengan `onDelete: Cascade`. Lingkar — tanpa langkah ini Postgres
+   *      menolak penghapusannya dengan pelanggaran kunci asing.
+   *   3. **Barisnya.** Sisanya ikut cascade; `AuditEvent` sengaja `onDelete: SetNull`, jadi
+   *      jejak auditnya bertahan setelah undangannya tidak ada.
+   */
+  async remove(user: AuthenticatedUser, invitationId: string) {
+    assertOperator(user);
+    const invitation = await this.prisma.invitation.findUnique({ where: { id: invitationId }, select: { id: true, slug: true, title: true } });
+    if (!invitation) throw new NotFoundException('Undangan tidak ditemukan');
+
+    await this.dropAssetFiles(this.prisma, invitationId);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.invitation.update({ where: { id: invitationId }, data: { activeRevisionId: null } });
+      await tx.invitation.delete({ where: { id: invitationId } });
+    });
+    // Sesudah transaksi, dan tanpa `invitationId`: barisnya sudah tidak ada untuk ditunjuk.
+    await this.prisma.auditEvent.create({ data: { actorId: user.sub, action: 'INVITATION_PURGED', targetType: 'Invitation', targetId: invitationId, metadata: { slug: invitation.slug, title: invitation.title } } });
+    return { deleted: true };
+  }
+
+  /**
+   * Menghapus berkas seluruh aset satu undangan dari penyimpanan.
+   *
+   * Barisnya dibiarkan — cascade yang mengurusnya. Kegagalan satu berkas dicatat dan tidak
+   * membatalkan penghapusan, mengikuti aturan yang sama dengan `sweepOrphanAssets`: berkas
+   * yatim di storage jauh lebih murah daripada penghapusan yang macet separuh jalan.
+   */
+  private async dropAssetFiles(db: PrismaService, invitationId: string): Promise<void> {
+    const assets = await db.mediaAsset.findMany({ where: { invitationId }, select: { key: true, provider: true } });
+    for (const asset of assets) {
+      try { await storageForAsset(asset.provider).delete(asset.key); }
+      catch (error) { this.logger.error(`Berkas aset gagal dihapus (${asset.key})`, error instanceof Error ? error.stack : String(error)); }
+    }
   }
 
   async create(user: AuthenticatedUser, input: CreateInvitationBody) {
@@ -271,9 +406,26 @@ function kanonikBagian(sections: InvitationDocument['sections'] | undefined): un
     const background = kanonikDalam(data.background);
     if (background && typeof background === 'object' && Object.keys(background as object).length) entry.background = background;
     if (typeof data.motion === 'string' && data.motion) entry.motion = data.motion;
+    // Fase 81: kanvas bebas (geseran, ukuran, putaran, ornamen per tempat, ornamen tambahan).
+    const kanvas = kanonikKanvas(data.kanvas);
+    if (kanvas) entry.kanvas = kanvas;
     if (Object.keys(entry).length) keluar.push({ id: section.id, ...entry });
   }
   return keluar;
+}
+
+/**
+ * `kanvas` (fase 81): `keping` disortir rekursif seperti objek lain, dan `tambahan` — satu-satunya
+ * larik — tiap barisnya ikut disortir. Keping tanpa ubahan (`{}`) dan larik kosong ≡ absen.
+ */
+function kanonikKanvas(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const masuk = value as Record<string, unknown>;
+  const keluar: Record<string, unknown> = {};
+  const keping = kanonikDalam(masuk.keping);
+  if (keping && typeof keping === 'object' && !Array.isArray(keping) && Object.keys(keping as object).length) keluar.keping = keping;
+  if (Array.isArray(masuk.tambahan) && masuk.tambahan.length) keluar.tambahan = masuk.tambahan.map((baris) => kanonikDalam(baris));
+  return Object.keys(keluar).length ? keluar : null;
 }
 
 /** Objek biasa disortir rekursif; primitif dibiarkan; objek kosong dibuang supaya `{}` ≡ absen. */

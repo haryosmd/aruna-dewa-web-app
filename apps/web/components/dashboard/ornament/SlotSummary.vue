@@ -57,7 +57,7 @@ const baris = computed(() => (props.slots ?? ornamentSlots).map(slot => ({
   kunci: slot as string,
   slot,
   layer: undefined as LayerSlot | undefined,
-  glyph: berlaku.value[slot],
+  glyph: berlaku.value[slot] ?? null,
   // Unggahan (fase 69) juga penukaran — kartu harus menandainya "Diganti".
   bawaan: !props.overrides[slot] && !(props.overrides.unggahan && slot in props.overrides.unggahan),
   ...slotLabels[slot],
@@ -98,8 +98,8 @@ const barisLayer = computed(() => layerSlots.map(jangkar => {
         mengganti di sini mengubah semuanya; ringkasan lengkapnya ada di Cover pembuka.
       </p>
       <p v-else class="m-0 text-caption text-ink-subtle">
-        Seluruh bank terbuka. Yang disarankan tampil lebih dulu; yang tidak seresep dengan tema
-        tetap bisa dipilih dan diberi tanda.
+        Seluruh bank terbuka untuk tiap jenis, apa pun temanya. Yang serasi dengan tema tampil
+        lebih dulu dan diberi tanda; sisanya tetap bisa dipilih.
       </p>
     </div>
 

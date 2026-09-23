@@ -14,10 +14,9 @@ const { orn, intensity, compact, coupleNames, initials } = useInvitation()
     :intensity="intensity"
     :seed="props.seed"
   >
-    <OrnamentGlyph
-      :glyph="orn.monogram"
+    <InvitationOrnamen
       data-iv-ornament
-      data-iv-slot="monogram"
+      slot-id="monogram" posisi="utama"
       data-iv-lead
       class="h-32 w-32 opacity-90"
       :initials="initials"
@@ -27,6 +26,6 @@ const { orn, intensity, compact, coupleNames, initials } = useInvitation()
       {{ text(props.section, 'text', 'Merupakan kebahagiaan bagi kami atas kehadiran dan doa Anda.') }}
     </p>
     <p data-iv-reveal class="iv-display iv-script m-0 text-[clamp(2rem,8cqw,3.2rem)]">{{ coupleNames }}</p>
-    <OrnamentGlyph :glyph="orn.garland" data-iv-ornament data-iv-slot="garland" class="h-14 w-64 opacity-75" :style="{ color: 'var(--iv-primary)' }" />
+    <InvitationOrnamen data-iv-ornament slot-id="garland" posisi="utama" class="h-14 w-64 opacity-75" :style="{ color: 'var(--iv-primary)' }" />
   </InvitationSection>
 </template>
